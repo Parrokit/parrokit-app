@@ -27,6 +27,15 @@ abstract class ClipEditorView{
   void setDurationMs(int ms);
   void setSaving(bool saving);
   void showToastMsg(String msg);
+  void ensureSegmentFormsLength(int count);
+  void setSegmentAt(
+      int index, {
+        required String start,
+        required String end,
+        required String original,
+        required String pron,
+        required String ko,
+      });
   void refresh();
   Future<void> closeAfterSaved();
 }

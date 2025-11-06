@@ -134,6 +134,48 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     Navigator.of(context).pop(true);
   }
 
+  @override
+  void ensureSegmentFormsLength(int count) {
+    setState(() {
+      if (_segForms.length < count) {
+        // 늘리기
+        while (_segForms.length < count) {
+          final nf = SegmentInput.empty();
+          // UX: 직전 end를 새 start로 프리필
+          if (_segForms.isNotEmpty) {
+            nf.startCtl.text = _segForms.last.endCtl.text;
+          }
+          _segForms.add(nf);
+        }
+      } else if (_segForms.length > count) {
+        // 줄이기 (뒤에서부터 제거)
+        while (_segForms.length > count) {
+          final removed = _segForms.removeLast();
+          removed.dispose();
+        }
+      }
+    });
+  }
+
+  @override
+  void setSegmentAt(
+    int index, {
+    required String start,
+    required String end,
+    required String original,
+    required String pron,
+    required String ko,
+  }) {
+    setState(() {
+      final f = _segForms[index];
+      f.startCtl.text = start;
+      f.endCtl.text = end;
+      f.originalCtl.text = original;
+      f.pronCtl.text = pron;
+      f.koCtl.text = ko;
+    });
+  }
+
   /// initState & dispose
   @override
   void initState() {
@@ -390,7 +432,7 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
                 FilledButton.icon(
                   icon: const Icon(Icons.subtitles_outlined, size: 18),
                   label: const Text('STT 테스트 (업로드된 영상으로)'),
-                  onPressed: _presenter.onTestStt,
+                  onPressed: _presenter.onSttAndDraft,
                 ),
                 _buildSegmentsSection(),
                 _buildBottomActions(),

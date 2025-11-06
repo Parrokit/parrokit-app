@@ -1,8 +1,13 @@
+import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:parrokit/mvp/editor/adapters/openai_whisper_adapter.dart';
+import 'package:parrokit/mvp/editor/adapters/openai_adapter.dart';
 import 'package:parrokit/mvp/editor/adapters/video_picker_files.dart';
 import 'package:parrokit/mvp/editor/adapters/video_picker_gallery.dart';
+import 'package:parrokit/mvp/editor/clip_editor_model.dart';
+import 'package:parrokit/mvp/editor/ports/asr_port.dart';
 import 'package:parrokit/mvp/editor/ports/video_picker_port.dart';
+import 'package:parrokit/mvp/editor/services/time_code_service.dart';
 import 'package:parrokit/mvp/editor/services/video_meta_service.dart';
 import 'package:parrokit/mvp/editor/usecases/extract_duration_usecase.dart';
 import 'package:parrokit/mvp/editor/usecases/extract_thumbnail_usecase.dart';
@@ -26,6 +31,7 @@ class ClipEditorPresenter {
   final PickVideoUseCase _pickVideo;
   final SaveClipUseCase _saveClip;
   final TranscribeUseCase _transcribe;
+  final TimecodeService _timecode;
 
   ClipEditorPresenter({
     required this.view,
@@ -36,6 +42,7 @@ class ClipEditorPresenter {
     PickVideoUseCase? pickVideo,
     SaveClipUseCase? saveClip,
     TranscribeUseCase? transcribe,
+    TimecodeService? timecode,
   })  : staging = staging ?? FileStagingService(),
         _extractThumb = extractThumb ?? ExtractThumbnailUseCase(VideoMetaServiceImpl()),
         _extractDuration = extractDuration ?? ExtractDurationUseCase(VideoMetaServiceImpl()),
@@ -46,31 +53,149 @@ class ClipEditorPresenter {
               OpenAIWhisperAdapter(apiKey: dotenv.env['OPENAI_API_KEY']!,
                 // 또는 dotenv.env['OPENAI_API_KEY']! 사용
               ),
-            );
+            ),
+        _timecode = timecode ?? TimecodeService();
 
-  void onTestStt() async {
-    // 업로드(스테이징)된 영상 경로를 뷰에서 읽어와 STT 요청만 테스트
-    final picked = view.pickedFile; // ClipEditorView에서 setPicked 한 PlatformFile getter 가정
+
+
+
+  /// STT 결과(asr.segments) + LLM JSON(segments)을 UI에 채운다.
+  /// - 시간: STT 세그먼트의 start/end를 mm:ss.mmm으로
+  /// - 텍스트: LLM 세그먼트의 orig/ko/pron을 각 컨트롤러에 주입
+  void _fillSegmentsFromAsrAndDraft({
+    required List<dynamic> llmSegments,
+    required List<ASRSegment> asrSegments,
+  }) {
+    final count = (llmSegments.length == asrSegments.length)
+        ? llmSegments.length
+        : // 길이가 다르면, 더 짧은 쪽에 맞춰 안전하게 채움
+    (llmSegments.length < asrSegments.length
+        ? llmSegments.length
+        : asrSegments.length);
+
+    view.ensureSegmentFormsLength(count);
+
+    for (int i = 0; i < count; i++) {
+      final draft = llmSegments[i] as Map;
+      final asrSeg = asrSegments[i];
+
+      final start = _timecode.msToMMSSmmm(asrSeg.startMs);
+      final end   = _timecode.msToMMSSmmm(asrSeg.endMs);
+
+      final orig = (draft['orig'] ?? '').toString();
+      final ko   = (draft['ko']   ?? '').toString();
+      final pron = (draft['pron'] ?? '').toString();
+
+      view.setSegmentAt(
+        i,
+        start: start,
+        end: end,
+        original: orig,
+        pron: pron,
+        ko: ko,
+      );
+    }
+
+    view.refresh();
+  }
+  /// STT → LLM(세그먼트 초안 JSON) 통합 & UI 채우기
+  /// - 업로드된 동영상에서 음성 추출/전사
+  /// - 전사 텍스트를 LLM에 전달하여 JSON(원어/번역/발음) 세그먼트 생성
+  /// - 결과를 세그먼트 폼(컨트롤러)에 즉시 주입하고 화면 갱신
+  void onSttAndDraft() async {
+    // 업로드(스테이징)된 영상 경로 확인
+    final picked = view.pickedFile;
     if (picked == null || (picked.path ?? '').isEmpty) {
       view.showToastMsg('먼저 영상 파일을 선택해 주세요.');
       return;
     }
     final path = picked.path!;
     view.setSaving(true);
+
     try {
-      final res = await _transcribe(
+      // 1) STT (segments 포함)
+      final asr = await _transcribe(
         filePath: path,
-        language: 'ja',
+        language: 'ja', // 일본어 가정
         withSegments: true,
       );
-      view.showToastMsg('STT 완료: 세그먼트 ${res.segments.length}개');
-      // 필요 시 화면 업데이트 로직은 이후 단계에서 추가 (예: view.addSegmentRow 등)
+      view.showToastMsg('STT 완료: 세그먼트 ${asr.segments.length}개');
+
+      // 2) LLM 호출 (JSON 강제, 세그먼트 초안 생성)
+      final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+      if (apiKey.trim().isEmpty) {
+        throw Exception('OPENAI_API_KEY가 비어 있습니다.');
+      }
+      final llm = OpenAIAdapter(apiKey: apiKey);
+
+      // ASR 세그먼트를 그대로 LLM에 넘겨 1:1 개수/순서를 강제
+      final asrArray = asr.segments
+          .map((s) => {
+                'start_ms': s.startMs,
+                'end_ms': s.endMs,
+                'text': s.text,
+              })
+          .toList();
+
+      const sys =
+          '너는 일본어 대사 텍스트를 한국어 학습자를 위해 세그먼트별로 가공하는 JSON 생성기다. '
+          '반드시 입력으로 주어진 asr_segments의 **길이와 순서**를 그대로 유지해 동일 개수의 출력 세그먼트를 생성한다. '
+          '각 출력 세그먼트는 {"orig":"","ko":"","pron":""} 만 포함한다. '
+          '규칙: '
+          '1) orig는 입력 text를 기본으로 하되, 필요하면 경미한 기호/띄어쓰기만 정리 가능(내용 변경 금지). '
+          '2) ko는 자연스럽고 간결한 **존댓말**. '
+          '3) pron은 한국어 표기로 읽는 법(예: "お願いします!" → "오네가이시마스!"). '
+          '금지: 세그먼트 추가/삭제/병합/분할/순서변경/설명/코드블록/주석. '
+          '출력은 **오직 하나의 JSON 객체**만: {"segments":[{"orig":"","ko":"","pron":""}, ...]}';
+
+      final userPrompt =
+          '아래 asr_segments와 **동일 개수·동일 순서**의 segments 배열을 만들어 반환하세요. '
+          '출력은 {"segments":[...]} 한 개의 JSON만 허용됩니다.\n'
+          'asr_segments = ${jsonEncode(asrArray)}';
+
+      final jsonStr = await llm.complete(
+        systemPrompt: sys,
+        userPrompt: userPrompt,
+        model: 'gpt-4o-mini',
+        timeout: const Duration(seconds: 60),
+      );
+
+      // 3) 파싱 & UI 채움 + 콘솔 출력
+      final map = jsonDecode(jsonStr);
+      final segs = (map is Map && map['segments'] is List) ? (map['segments'] as List) : const [];
+      // LLM이 실수로 길이를 다르게 주면(드물지만) 안전하게 보정
+      if (segs.length != asr.segments.length) {
+        view.showToastMsg('경고: LLM 세그먼트 개수가 STT와 달라 최소 개수로 보정합니다.');
+      }
+      // 3-1) UI에 세그먼트 주입 (ASR 시간 + LLM 원문/번역/발음)
+      if (segs.isNotEmpty && asr.segments.isNotEmpty) {
+        _fillSegmentsFromAsrAndDraft(
+          llmSegments: segs,
+          asrSegments: asr.segments,
+        );
+        view.showToastMsg('세그먼트 ${segs.length}개 자동 채움');
+      }
+      for (int i = 0; i < segs.length; i++) {
+        final e = segs[i];
+        if (e is Map) {
+          final orig = (e['orig'] ?? '').toString();
+          final ko   = (e['ko'] ?? '').toString();
+          final pron = (e['pron'] ?? '').toString();
+          // ignore: avoid_print
+          print('GPT seg[$i] orig="$orig" | ko="$ko" | pron="$pron"');
+        }
+      }
+      if (segs.isEmpty) {
+        // ignore: avoid_print
+        print('GPT segments: (empty or invalid JSON)\n$jsonStr');
+      }
     } catch (e) {
-      view.showToastMsg('STT 실패: $e');
+      view.showToastMsg('통합 STT/번역 실패: $e');
     } finally {
       view.setSaving(false);
     }
   }
+
 
   // ------- 파일 픽 -------
   Future<void> pickFromSandbox() async {
@@ -110,7 +235,6 @@ class ClipEditorPresenter {
     return await _extractDuration(path);
   }
 
-  final RegExp mmssmmm = RegExp(r'^\d{2}:\d{2}\.\d{3}$');
 
   ({String type, String name, String nameNative, String clipTitle, String epiTitle, int? seasonNum, int? epiNumber}) _validateMeta() {
     final name = view.workName.trim();
@@ -176,16 +300,16 @@ class ClipEditorPresenter {
         view.showToastMsg('세그먼트 ${i + 1}: 시작/끝/원문/발음/번역은 모두 필수입니다.');
         return null;
       }
-      if (!mmssmmm.hasMatch(sText)) {
+      if (!TimecodeService.mmssmmm.hasMatch(sText)) {
         view.showToastMsg('세그먼트 ${i + 1}: 시작 시각 형식이 올바르지 않습니다. 예) 00:04.230');
         return null;
       }
-      if (!mmssmmm.hasMatch(eText)) {
+      if (!TimecodeService.mmssmmm.hasMatch(eText)) {
         view.showToastMsg('세그먼트 ${i + 1}: 종료 시각 형식이 올바르지 않습니다. 예) 00:05.000');
         return null;
       }
-      final start = _parseNormalizedToMs(sText);
-      final end = _parseNormalizedToMs(eText);
+      final start = _timecode.parseToMs(sText);
+      final end = _timecode.parseToMs(eText);
       if (end <= start) {
         view.showToastMsg('세그먼트 ${i + 1}: 종료 시각이 시작보다 커야 합니다.');
         return null;
@@ -290,12 +414,4 @@ class ClipEditorPresenter {
     }
   }
 
-  // ------- 유틸 -------
-  int _parseNormalizedToMs(String normalized) {
-    final m = RegExp(r'^(\d{2}):(\d{2})\.(\d{3})$').firstMatch(normalized)!;
-    final mm = int.parse(m.group(1)!);
-    final ss = int.parse(m.group(2)!);
-    final ms = int.parse(m.group(3)!);
-    return mm * 60000 + ss * 1000 + ms;
-  }
 }
