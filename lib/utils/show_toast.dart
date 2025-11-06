@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 OverlayEntry? _toastEntry;
 Timer? _toastRemoveTimer;
@@ -32,6 +33,7 @@ void showToast(BuildContext context, String msg) {
   );
 
   overlay.insert(_toastEntry!);
+  debugPrint('🍞 Toast: $msg');
 
   // 총 지속시간 뒤 안전 제거
   _toastRemoveTimer = Timer(total, () {

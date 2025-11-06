@@ -105,6 +105,9 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
   int? get durationMsInput => int.tryParse(_durationCtl.text.trim());
 
   @override
+  PlatformFile? get pickedFile => _picked;
+
+  @override
   void setPicked(PlatformFile? f) {
     setState(() => _picked = f);
   }
@@ -384,6 +387,11 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
                 const SizedBox(height: 20),
                 const HairlineDivider(),
                 const SizedBox(height: 12),
+                FilledButton.icon(
+                  icon: const Icon(Icons.subtitles_outlined, size: 18),
+                  label: const Text('STT 테스트 (업로드된 영상으로)'),
+                  onPressed: _presenter.onTestStt,
+                ),
                 _buildSegmentsSection(),
                 _buildBottomActions(),
                 const SizedBox(height: 200),

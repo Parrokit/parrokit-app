@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:parrokit/config/onboarding_prefs.dart';
@@ -23,6 +24,7 @@ import 'package:parrokit/provider/ad_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await ensureAudioHandler();
   final seen = await OnboardingPrefs.isOnboarded();
   final paRouter = buildPaRouter(seenOnboarding: seen);

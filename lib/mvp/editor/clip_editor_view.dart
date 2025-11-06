@@ -19,6 +19,7 @@ abstract class ClipEditorView{
   List<String> get tags;
   List<SegmentInput> get segments;
   int? get durationMsInput;
+  PlatformFile? get pickedFile;
 
   /// UI 업데이트
   void setPicked(PlatformFile? f);

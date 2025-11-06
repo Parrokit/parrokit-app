@@ -1,7 +1,5 @@
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
+import 'package:parrokit/mvp/editor/adapters/openai_whisper_adapter.dart';
 import 'package:parrokit/mvp/editor/adapters/video_picker_files.dart';
 import 'package:parrokit/mvp/editor/adapters/video_picker_gallery.dart';
 import 'package:parrokit/mvp/editor/ports/video_picker_port.dart';
@@ -13,7 +11,9 @@ import 'package:parrokit/mvp/editor/usecases/save_clip_usecase.dart';
 
 import 'package:parrokit/mvp/editor/clip_editor_view.dart';
 import 'package:parrokit/mvp/editor/services/file_staging_service.dart';
+import 'package:parrokit/mvp/editor/usecases/transcribe_usecase.dart';
 import 'package:parrokit/provider/media_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:parrokit/data/local/pa_database.dart' as db;
 
 class ClipEditorPresenter {
@@ -25,6 +25,7 @@ class ClipEditorPresenter {
   final ExtractDurationUseCase _extractDuration;
   final PickVideoUseCase _pickVideo;
   final SaveClipUseCase _saveClip;
+  final TranscribeUseCase _transcribe;
 
   ClipEditorPresenter({
     required this.view,
@@ -34,11 +35,42 @@ class ClipEditorPresenter {
     ExtractDurationUseCase? extractDuration,
     PickVideoUseCase? pickVideo,
     SaveClipUseCase? saveClip,
+    TranscribeUseCase? transcribe,
   })  : staging = staging ?? FileStagingService(),
         _extractThumb = extractThumb ?? ExtractThumbnailUseCase(VideoMetaServiceImpl()),
         _extractDuration = extractDuration ?? ExtractDurationUseCase(VideoMetaServiceImpl()),
         _pickVideo = pickVideo ?? PickVideoUseCase(files: VideoPickerFiles(), gallery: VideoPickerGallery()),
-        _saveClip = saveClip ?? SaveClipUseCase(repo: mediaProvider, staging: staging ?? FileStagingService());
+        _saveClip = saveClip ?? SaveClipUseCase(repo: mediaProvider, staging: staging ?? FileStagingService()),
+        _transcribe = transcribe ??
+            TranscribeUseCase(
+              OpenAIWhisperAdapter(apiKey: dotenv.env['OPENAI_API_KEY']!,
+                // 또는 dotenv.env['OPENAI_API_KEY']! 사용
+              ),
+            );
+
+  void onTestStt() async {
+    // 업로드(스테이징)된 영상 경로를 뷰에서 읽어와 STT 요청만 테스트
+    final picked = view.pickedFile; // ClipEditorView에서 setPicked 한 PlatformFile getter 가정
+    if (picked == null || (picked.path ?? '').isEmpty) {
+      view.showToastMsg('먼저 영상 파일을 선택해 주세요.');
+      return;
+    }
+    final path = picked.path!;
+    view.setSaving(true);
+    try {
+      final res = await _transcribe(
+        filePath: path,
+        language: 'ja',
+        withSegments: true,
+      );
+      view.showToastMsg('STT 완료: 세그먼트 ${res.segments.length}개');
+      // 필요 시 화면 업데이트 로직은 이후 단계에서 추가 (예: view.addSegmentRow 등)
+    } catch (e) {
+      view.showToastMsg('STT 실패: $e');
+    } finally {
+      view.setSaving(false);
+    }
+  }
 
   // ------- 파일 픽 -------
   Future<void> pickFromSandbox() async {
