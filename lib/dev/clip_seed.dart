@@ -149,12 +149,19 @@ final List<_SeedClip> _seedClips = [
 // 2) 공개: 시드 실행 함수 (tmp 저장소 사용)
 // ---------------------------
 Future<bool> runSeedFromFilePickerTmp(BuildContext context) async {
+  if (Navigator.of(context).canPop()) {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+  await Future<void>.delayed(Duration.zero);
+  await Future<void>.delayed(Duration.zero);
+
   try {
     // 1) 파일 6개 선택
     final pick = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['mp4', 'mov', 'mkv'],
       allowMultiple: true,
+      withData: false,
     );
     if (pick == null || pick.files.length != _seedClips.length) return false;
 
