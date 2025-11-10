@@ -22,6 +22,7 @@ abstract class PaRoutes {
   static const library = 'library';
   static const more = 'more';
   static const clips = 'clips';
+  static const recom = 'recom';
   static const recents = 'recents';
   static const clipsCreate = 'clips_create';
   static const clipsEdit = 'clips_edit';
@@ -34,6 +35,7 @@ abstract class PaRoutes {
   static const libraryPath = '/library';
   static const morePath = '/more';
   static const clipsPath = '/clips';
+  static const recomPath = '/recom';
   static const recentsPath = '/recents';
   static const clipsCreatePath = 'create';
   static const clipsEditPath = 'edit';
@@ -87,6 +89,13 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
                 initialTab:
                     int.tryParse(state.uri.queryParameters['tab'] ?? ''),
               ),
+            ),
+          ),
+          GoRoute(
+            path: PaRoutes.recomPath,
+            name: PaRoutes.recom,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ShortsScreen(),
             ),
           ),
           GoRoute(
@@ -167,7 +176,7 @@ class _ParoShellGo extends StatelessWidget {
     return Scaffold(
       body: child,
       bottomNavigationBar: hideNav
-          ? null // 👈 이 경우 NavBar 안나옴
+          ? null // 이 경우 NavBar 안나옴
           : ParoBottomNavBar(
               currentIndex: currentIndex,
               onTap: (i) {
@@ -178,10 +187,13 @@ class _ParoShellGo extends StatelessWidget {
                   case 1:
                     context.go(PaRoutes.explorePath);
                     break;
-                  case 2:
+                  case 3:
                     context.go(PaRoutes.libraryPath);
                     break;
-                  case 3:
+                  case 4:
+                    context.go(PaRoutes.recomPath);
+                    break;
+                  case 5:
                     context.go(PaRoutes.morePath);
                     break;
                 }
