@@ -1,0 +1,9 @@
+${PODS_ROOT}/Target Support Files/ffmpeg_kit_flutter/ffmpeg_kit_flutter-xcframeworks.sh
+${PODS_ROOT}/../.symlinks/plugins/ffmpeg_kit_flutter/ios/Frameworks/ffmpeg-kit-ios-https/ffmpegkit.xcframework
+${PODS_ROOT}/../.symlinks/plugins/ffmpeg_kit_flutter/ios/Frameworks/ffmpeg-kit-ios-https/libavdevice.xcframework
+${PODS_ROOT}/../.symlinks/plugins/ffmpeg_kit_flutter/ios/Frameworks/ffmpeg-kit-ios-https/libavcodec.xcframework
+${PODS_ROOT}/../.symlinks/plugins/ffmpeg_kit_flutter/ios/Frameworks/ffmpeg-kit-ios-https/libavfilter.xcframework
+${PODS_ROOT}/../.symlinks/plugins/ffmpeg_kit_flutter/ios/Frameworks/ffmpeg-kit-ios-https/libavformat.xcframework
+${PODS_ROOT}/../.symlinks/plugins/ffmpeg_kit_flutter/ios/Frameworks/ffmpeg-kit-ios-https/libavutil.xcframework
+${PODS_ROOT}/../.symlinks/plugins/ffmpeg_kit_flutter/ios/Frameworks/ffmpeg-kit-ios-https/libswresample.xcframework
+${PODS_ROOT}/../.symlinks/plugins/ffmpeg_kit_flutter/ios/Frameworks/ffmpeg-kit-ios-https/libswscale.xcframework

@@ -1,0 +1,8 @@
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg_kit_flutter/ffmpeg_kit_ios_local/ffmpegkit.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg_kit_flutter/ffmpeg_kit_ios_local/libavdevice.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg_kit_flutter/ffmpeg_kit_ios_local/libavcodec.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg_kit_flutter/ffmpeg_kit_ios_local/libavfilter.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg_kit_flutter/ffmpeg_kit_ios_local/libavformat.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg_kit_flutter/ffmpeg_kit_ios_local/libavutil.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg_kit_flutter/ffmpeg_kit_ios_local/libswresample.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/ffmpeg_kit_flutter/ffmpeg_kit_ios_local/libswscale.framework
