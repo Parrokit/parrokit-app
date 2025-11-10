@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/constants/library_tab.dart';
 import 'package:parrokit/mvp/onboarding/onboarding_screen.dart';
 import 'package:parrokit/mvp/recent/recent_screen.dart';
+import 'package:parrokit/mvp/recom/recom_screen.dart';
 
 import 'package:parrokit/mvp/shorts/shorts_screen.dart';
 import 'package:parrokit/mvp/editor/clip_editor_screen.dart';
@@ -95,7 +96,7 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
             path: PaRoutes.recomPath,
             name: PaRoutes.recom,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ShortsScreen(),
+              child: RecomScreen(),
             ),
           ),
           GoRoute(
@@ -161,7 +162,8 @@ class _ParoShellGo extends StatelessWidget {
   int _indexFromLocation(String location) {
     if (location.startsWith(PaRoutes.explorePath)) return 1;
     if (location.startsWith(PaRoutes.libraryPath)) return 2;
-    if (location.startsWith(PaRoutes.morePath)) return 3;
+    if (location.startsWith(PaRoutes.recomPath)) return 3;
+    if (location.startsWith(PaRoutes.morePath)) return 4;
     return 0;
   }
 
@@ -187,13 +189,13 @@ class _ParoShellGo extends StatelessWidget {
                   case 1:
                     context.go(PaRoutes.explorePath);
                     break;
-                  case 3:
+                  case 2:
                     context.go(PaRoutes.libraryPath);
                     break;
-                  case 4:
+                  case 3:
                     context.go(PaRoutes.recomPath);
                     break;
-                  case 5:
+                  case 4:
                     context.go(PaRoutes.morePath);
                     break;
                 }
