@@ -7,6 +7,8 @@ import 'package:parrokit/mvp/recom/screens/recommendation_progress_sheet.dart';
 import 'package:parrokit/mvp/recom/screens/recommendation_result_screen.dart';
 import 'package:parrokit/mvp/recom/services/recommendation_service.dart';
 import 'package:parrokit/utils/show_toast.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/cupertino.dart';
 
 /// Main screen where users can select seeds and initiate recommendations.
 class RecommendationSelectScreen extends StatefulWidget {
@@ -83,11 +85,25 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
     showToast(context, '검색어를 선택 목록에 추가했어요.');
   }
 
+  void _selectAllCandidates() {
+    setState(() {
+      _selected
+        ..clear()
+        ..addAll(_candidates);
+    });
+  }
+
+  void _clearSelected() {
+    setState(() {
+      _selected.clear();
+    });
+  }
+
   // ==== 생명주기 ====
   @override
   void initState() {
     super.initState();
-    _db = PaDatabase();
+    _db = context.read<PaDatabase>();
     _loadCandidates();
   }
 
@@ -97,6 +113,7 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
     _custom.dispose();
     super.dispose();
   }
+
   Future<void> _loadCandidates() async {
     final names = await _db.titlesDao.fetchAllTitleNames();
     setState(() {
@@ -104,111 +121,6 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
         ..clear()
         ..addAll(names);
     });
-  }
-
-  Future<void> _showAddSheet() async {
-    final TextEditingController ctrl = TextEditingController();
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) {
-        final bottom = MediaQuery.of(ctx).viewInsets.bottom;
-        return Padding(
-          padding: EdgeInsets.only(bottom: bottom),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(ctx).dividerColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      const Icon(Icons.add_circle_outline),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: ctrl,
-                          autofocus: true,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) =>
-                              Navigator.of(ctx).pop(ctrl.text.trim()),
-                          decoration: const InputDecoration(
-                            hintText: '애니 제목 입력 (예: 단다단 1기)',
-                            border:
-                                OutlineInputBorder(borderSide: BorderSide.none),
-                            filled: true,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: () =>
-                            Navigator.of(ctx).pop(ctrl.text.trim()),
-                        child: const Text('담기'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '제목을 구체적으로 쓸수록 선호도에 더 가까운 추천이 나와요!',
-                      style: Theme.of(ctx).textTheme.bodySmall,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (_search.text.trim().isNotEmpty)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          ActionChip(
-                            avatar:
-                                const Icon(Icons.tips_and_updates, size: 16),
-                            label: Text('‘${_search.text.trim()}’ 담기'),
-                            onPressed: () =>
-                                Navigator.of(ctx).pop(_search.text.trim()),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    if (result != null) {
-      final t = result.trim();
-      if (t.isNotEmpty) {
-        if (!_candidates.contains(t)) {
-          _candidates.insert(0, t);
-        }
-        if (!_selected.contains(t)) {
-          _selected.add(t);
-        }
-        setState(() {});
-        HapticFeedback.lightImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('‘$t’을(를) 선택 목록에 추가했어요.')),
-        );
-      }
-    }
   }
 
   /// Initiates recommendation by calling the server and navigating to result screen.
@@ -219,12 +131,15 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
     final result = await showRecommendationProgress(
       context: context,
       titles: _selected,
-      run: () => service.fetchRecommendations(
-        titles: _selected,
-        topK: _topK,
-        cutoff: _cutoff,
-        excludeWatched: _excludeWatched,
-      ),
+      run: (onProgress) {
+        return service.fetchRecommendationsWithProgress(
+          titles: _selected,
+          topK: _topK,
+          cutoff: _cutoff,
+          excludeWatched: _excludeWatched,
+          onProgress: onProgress,
+        );
+      },
     );
     if (!mounted) return;
     if (result != null) {
@@ -248,21 +163,15 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
         _candidates.where((e) => e.contains(_search.text.trim())).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('애니 추천')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddSheet,
-        label: const Text('애니 추가'),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: Column(
-        children: [
-          _buildSearchField(),
-          _buildSearchHint(),
-          _buildInfoBanner(),
-          _buildSelectedChips(),
-          const SizedBox(height: 8),
-          _buildCandidateChips(filtered),
-        ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildSearchField(),
+            _buildSearchHint(),
+            _buildInfoBanner(),
+            _buildCandidateList(filtered),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomBar(),
     );
@@ -307,7 +216,9 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Wrap(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 8,
           children: [
             InputChip(
@@ -327,6 +238,10 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
   }
 
   Widget _buildInfoBanner() {
+    final allSelected =
+        _candidates.isNotEmpty && _selected.length == _candidates.length;
+    final hasSelection = _selected.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Row(
@@ -344,52 +259,34 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: _candidates.isEmpty
+                ? null
+                : (allSelected ? _clearSelected : _selectAllCandidates),
+            child: Text(allSelected ? '전체 해제' : '전체 선택'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSelectedChips() {
-    if (_selected.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      height: 64,
-      child: ListView.separated(
+  Widget _buildCandidateList(List<String> filtered) {
+    return Expanded(
+      child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: _selected.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemCount: filtered.length,
         itemBuilder: (_, i) {
-          final t = _selected[i];
-          return InputChip(
-            label: Text(t),
-            onDeleted: () => toggle(t),
+          final title = filtered[i];
+          final selected = _selected.contains(title);
+          return ListTile(
+            title: Text(title),
+            trailing: selected
+                ? const Icon(Icons.check_circle)
+                : const Icon(Icons.circle_outlined),
+            onTap: () => toggle(title),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildCandidateChips(List<String> filtered) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: SingleChildScrollView(
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final title in filtered)
-                FilterChip(
-                  selected: _selected.contains(title),
-                  label: Text(title),
-                  onSelected: (_) => toggle(title),
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -399,18 +296,65 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
       minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Row(
         children: [
-          DropdownButton<int>(
-            value: _topK,
-            onChanged: (int? v) {
-              if (v != null) setState(() => _topK = v);
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            child: Text('$_topK개'),
+            onPressed: () {
+              final initialIndex = _topK.clamp(1, 20) - 1;
+              int tempIndex = initialIndex;
+              showCupertinoModalPopup(
+                context: context,
+                builder: (sheetContext) {
+                  return Container(
+                    height: 260,
+                    color: CupertinoColors.systemBackground,
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 44,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              CupertinoButton(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                onPressed: () => Navigator.pop(sheetContext),
+                                child: const Text('취소'),
+                              ),
+                              CupertinoButton(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                onPressed: () {
+                                  setState(() => _topK = tempIndex + 1);
+                                  Navigator.pop(sheetContext);
+                                },
+                                child: const Text('완료'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(height: 0),
+                        Expanded(
+                          child: CupertinoPicker(
+                            scrollController: FixedExtentScrollController(
+                              initialItem: initialIndex,
+                            ),
+                            itemExtent: 36,
+                            onSelectedItemChanged: (index) {
+                              tempIndex = index;
+                            },
+                            children: [
+                              for (var i = 1; i <= 20; i++)
+                                Center(child: Text('$i개')),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
             },
-            items: [
-              for (var i = 1; i <= 20; i++)
-                DropdownMenuItem<int>(
-                  value: i,
-                  child: Text('$i개'),
-                ),
-            ],
           ),
           const SizedBox(width: 8),
           Expanded(

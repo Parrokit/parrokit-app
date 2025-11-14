@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/mvp/recom/entities/anime_meta_data.dart';
 import 'package:parrokit/mvp/recom/entities/recmmendation_runner.dart';
 import 'package:parrokit/mvp/recom/widgets/grabber.dart';
+import 'package:parrokit/utils/show_toast.dart';
 
 
 /// Shows a modal bottom sheet with progress indications while the recommendations
@@ -20,7 +21,6 @@ Future<List<AnimeMetadata>?> showRecommendationProgress({
   );
 }
 
-/// Internal widget used by [showRecommendationProgress].
 class _RecommendationProgressSheet extends StatefulWidget {
   const _RecommendationProgressSheet({required this.titles, required this.run});
 
@@ -46,38 +46,28 @@ class _RecommendationProgressSheetState
 
   Future<void> _kick() async {
     try {
-      setState(() {
-        _status = '선호 분석 중';
-        _progress = 0.3;
+      // 여기서 run에 콜백을 넘겨줌
+      final results = await widget.run((status, progress) {
+        if (!mounted) return;
+        setState(() {
+          _status = status;
+          _progress = progress;
+        });
       });
-      await Future.delayed(const Duration(milliseconds: 400));
-
-      setState(() {
-        _status = '후보 군집화 중';
-        _progress = 0.6;
-      });
-      await Future.delayed(const Duration(milliseconds: 400));
-
-      setState(() {
-        _status = '점수 산정 중';
-        _progress = 0.85;
-      });
-      final r = await widget.run();
 
       if (!mounted) return;
       setState(() {
         _status = '정렬 및 정리 중';
         _progress = 1.0;
       });
-      await Future.delayed(const Duration(milliseconds: 200));
 
+      await Future.delayed(const Duration(milliseconds: 200));
       if (!mounted) return;
-      Navigator.of(context).pop(r);
+      Navigator.of(context).pop(results);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('추천 실패: $e')),
-      );
+      showToast(context, '추천에 실패했습니다!');
+      debugPrint('추천 실패: $e');
       Navigator.of(context).pop(null);
     } finally {
       if (mounted) setState(() => _running = false);
