@@ -1,10 +1,9 @@
 // lib/pa_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/data/constants/library_tab.dart';
 import 'package:parrokit/mvp/onboarding/onboarding_screen.dart';
 import 'package:parrokit/mvp/recent/recent_screen.dart';
-import 'package:parrokit/mvp/recom/recom_screen.dart';
+import 'package:parrokit/mvp/recom/screens/recom_screen.dart';
 
 import 'package:parrokit/mvp/shorts/shorts_screen.dart';
 import 'package:parrokit/mvp/editor/clip_editor_screen.dart';
