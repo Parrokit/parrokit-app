@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parrokit/data/local/pa_database.dart';
 import 'package:parrokit/mvp/recom/recom_presenter.dart';
 import 'package:parrokit/mvp/recom/recom_view.dart';
 import 'package:parrokit/mvp/recom/screens/recommendation_progress_sheet.dart';
@@ -18,23 +19,12 @@ class RecommendationSelectScreen extends StatefulWidget {
 
 class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
     implements RecomView {
-  late final RecomPresenter _presenter;
+  late final PaDatabase _db;
 
   final TextEditingController _search = TextEditingController();
   final TextEditingController _custom = TextEditingController();
 
-  final List<String> _candidates = [
-    '귀멸의 칼날',
-    '주술회전',
-    '하이큐!!',
-    '블루록',
-    '진격의 거인',
-    '나루토',
-    '원피스',
-    '스파이 패밀리',
-    '체인소맨',
-    '단다단',
-  ];
+  final List<String> _candidates = [];
   final List<String> _selected = [];
 
   int _topK = 10;
@@ -97,7 +87,8 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
   @override
   void initState() {
     super.initState();
-    _presenter = RecomPresenter(this);
+    _db = PaDatabase();
+    _loadCandidates();
   }
 
   @override
@@ -105,6 +96,14 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
     _search.dispose();
     _custom.dispose();
     super.dispose();
+  }
+  Future<void> _loadCandidates() async {
+    final names = await _db.titlesDao.fetchAllTitleNames();
+    setState(() {
+      _candidates
+        ..clear()
+        ..addAll(names);
+    });
   }
 
   Future<void> _showAddSheet() async {
