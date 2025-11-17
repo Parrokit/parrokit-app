@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/mvp/onboarding/onboarding_screen.dart';
+import 'package:parrokit/mvp/payment/payment_args.dart';
+import 'package:parrokit/mvp/payment/payment_screen.dart';
 import 'package:parrokit/mvp/recent/recent_screen.dart';
 import 'package:parrokit/mvp/recom/screens/recom_screen.dart';
 import 'package:parrokit/mvp/auth/auth_screen.dart';
@@ -30,6 +32,7 @@ abstract class PaRoutes {
   static const clipsPlay = 'clips_play';
   static const onboarding = 'onboarding';
   static const auth = 'auth';
+  static const payment = 'payment';
 
   // paths
   static const dashboardPath = '/dashboard';
@@ -44,7 +47,10 @@ abstract class PaRoutes {
   static const clipsPlayPath = 'play';
   static const onboardingPath = '/onboarding';
   static const authPath = '/auth';
+  static const paymentPath = '/payment';
 }
+
+
 
 GoRouter buildPaRouter({required bool seenOnboarding}) {
   return GoRouter(
@@ -65,6 +71,22 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
           child: AuthScreen(),
         ),
       ),
+      GoRoute(
+         path: PaRoutes.paymentPath,
+         name: PaRoutes.payment,
+         builder: (context, state) {
+           final args = state.extra as PaymentArgs;
+           return PaymentScreen(
+             merchantUid: args.merchantUid,
+             amount: args.amount,
+             productName: args.productName,
+             buyerEmail: args.buyerEmail,
+             onResult: (result) {
+               // TODO: 서버에 결제 상태 조회 요청 후, Navigator.pop 등 처리
+             },
+           );
+         },
+       ),
       // ShellRoute: 하단 네비바 고정 + 내부 자식 화면만 바뀜
       ShellRoute(
         builder: (context, state, child) {
