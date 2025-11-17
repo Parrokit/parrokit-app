@@ -1,5 +1,6 @@
 // lib/mvp/auth/auth_screen.dart
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:parrokit/utils/show_toast.dart';
 import 'package:provider/provider.dart';
@@ -78,8 +79,19 @@ class _AuthScreenState extends State<AuthScreen> {
           _showToast('비밀번호 재설정 메일을 전송했습니다.');
           break;
       }
-    } catch (e) {
-      _showToast('오류가 발생했습니다: $e');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-credential') {
+        _showToast(
+          '세션이 만료되었어요. 다시 로그인해 주세요.',
+          devMsg:
+              '🔥 FirebaseAuthException at signIn: code=${e.code}, message=${e.message}',
+        );
+        await _userProvider(context).signOut();
+        return;
+      }
+
+      // 나머지 공통 처리
+      _showToast('오류가 발생했습니다: ${e.message}');
     }
   }
 
@@ -100,7 +112,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _resendVerificationEmail() async {
     try {
       await _userProvider(context).sendEmailVerification();
-      if(!mounted) return;
+      if (!mounted) return;
       _showToast('이메일 인증 메일을 다시 전송했습니다.');
     } catch (e) {
       _showToast('인증 메일 재전송 중 오류가 발생했습니다: $e');
@@ -123,9 +135,9 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
-  void _showToast(String message) {
+  void _showToast(String message, {String? devMsg = ''}) {
     if (!mounted) return;
-    showToast(context, message);
+    showToast(context, message, devMsg: devMsg);
   }
 
   String get _primaryButtonLabel {
@@ -209,9 +221,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user?.displayName ??
-                          user?.email ??
-                          '로그인된 사용자',
+                      user?.displayName ?? user?.email ?? '로그인된 사용자',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -221,16 +231,14 @@ class _AuthScreenState extends State<AuthScreen> {
                       Text(
                         user!.email!,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color:
-                              theme.colorScheme.onSurface.withOpacity(0.7),
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                     const SizedBox(height: 4),
                     Text(
                       '코인 ${userProvider.coins}개',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -260,8 +268,7 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton(
-                  onPressed:
-                      _isLoading ? null : _resendVerificationEmail,
+                  onPressed: _isLoading ? null : _resendVerificationEmail,
                   child: const Text('인증 메일 재전송'),
                 ),
               ),
@@ -335,8 +342,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color:
-                          theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: theme.colorScheme.outlineVariant,
@@ -477,9 +483,7 @@ class _AuthTab extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: selected
-                  ? theme.colorScheme.primary
-                  : Colors.transparent,
+              color: selected ? theme.colorScheme.primary : Colors.transparent,
               width: 2,
             ),
           ),

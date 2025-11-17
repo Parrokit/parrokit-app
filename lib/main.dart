@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:parrokit/repositories/user_repository.dart';
+import 'package:parrokit/services/firebase_user_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:parrokit/config/onboarding_prefs.dart';
@@ -14,7 +16,7 @@ import 'package:parrokit/provider/tag_filter_provider.dart';
 import 'package:parrokit/provider/theme_provider.dart';
 import 'package:parrokit/provider/user_provider.dart';
 import 'package:parrokit/services/ad_service.dart';
-import 'package:parrokit/services/auth_service.dart';
+import 'package:parrokit/services/firebase_auth_service.dart';
 import 'package:parrokit/utils/audio_bg.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/theme/pa_theme.dart';
@@ -42,12 +44,18 @@ void main() async {
   // 광고 SDK 초기화
   await MobileAds.instance.initialize();
   AdService().loadAd();
-  
+
   // auth service
   final prefs = await SharedPreferences.getInstance();
-  final userPrefs = UserPrefs(prefs);
-  final authService = AuthService(userPrefs);
-  
+  final _userPrefs = UserPrefs(prefs);
+  final _authService = FirebaseAuthService();
+  final _userService = FirebaseUserService();
+  final _userRepository = UserRepository(
+    _userPrefs,
+    _authService,
+    _userService,
+  );
+
   // IAP Provider
   final iap = IapProvider();
   await iap.init();
@@ -66,7 +74,7 @@ void main() async {
           dispose: (_, db) => db.close(),
         ),
         ChangeNotifierProvider(
-          create: (c) => UserProvider(authService)..init(),
+          create: (c) => UserProvider(_userRepository)..init(),
         ),
         ChangeNotifierProvider<DashboardUiProvider>(
           lazy: false,

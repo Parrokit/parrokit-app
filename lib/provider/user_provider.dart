@@ -2,7 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:parrokit/data/models/user.dart';
-import 'package:parrokit/services/auth_service.dart';
+import 'package:parrokit/repositories/user_repository.dart';
 
 /// 앱 전역에서 사용하는 "현재 유저" 상태를 관리하는 Provider.
 ///
@@ -15,12 +15,12 @@ import 'package:parrokit/services/auth_service.dart';
 /// 나중에 Firebase/Auth 서버를 붙이더라도 이 클래스의 public API는
 /// 최대한 그대로 유지하는 것을 목표로 합니다.
 class UserProvider extends ChangeNotifier {
-  final AuthService _authService;
+  final UserRepository _userRepository;
 
   PaUser? _currentUser;
   bool _isLoading = false;
 
-  UserProvider(this._authService);
+  UserProvider(this._userRepository);
 
   /// 현재 로그인된 유저(없을 수도 있음)
   PaUser? get currentUser => _currentUser;
@@ -29,7 +29,8 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   /// "로그인된 상태"라고 볼 수 있는지 여부
-  bool get isLoggedIn => _currentUser != null;
+  /// 게스트 유저(이메일이 없는 경우)는 false 로 처리합니다.
+  bool get isLoggedIn => _currentUser?.email != null;
 
   /// 현재 코인 수 (유저가 없으면 0)
   int get coins => _currentUser?.coins ?? 0;
@@ -41,11 +42,11 @@ class UserProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final existing = await _authService.getCurrentUser();
+      final existing = await _userRepository.getCurrentUser();
       if (existing != null) {
         _currentUser = existing;
       } else {
-        _currentUser = await _authService.signInAsGuest();
+        _currentUser = await _userRepository.signInAsGuest();
       }
     } finally {
       _setLoading(false);
@@ -57,7 +58,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> signInAsGuest() async {
     _setLoading(true);
     try {
-      _currentUser = await _authService.signInAsGuest();
+      _currentUser = await _userRepository.signInAsGuest();
     } finally {
       _setLoading(false);
     }
@@ -68,7 +69,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> addCoins(int delta) async {
     if (_currentUser == null) return;
 
-    final updated = await _authService.addCoins(delta);
+    final updated = await _userRepository.addCoins(delta);
     if (updated != null) {
       _currentUser = updated;
       notifyListeners();
@@ -77,7 +78,7 @@ class UserProvider extends ChangeNotifier {
 
   /// 유저 정보를 외부(서버, 프로필 편집 화면 등)에서 갱신했을 때 호출합니다.
   Future<void> updateUser(PaUser user) async {
-    await _authService.saveUser(user);
+    await _userRepository.saveUser(user);
     _currentUser = user;
     notifyListeners();
   }
@@ -90,7 +91,7 @@ class UserProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
-      final user = await _authService.signUpWithEmail(
+      final user = await _userRepository.signUpWithEmail(
         email: email,
         password: password,
         sendEmailVerification: sendEmailVerification,
@@ -109,7 +110,7 @@ class UserProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
-      final user = await _authService.signInWithEmail(
+      final user = await _userRepository.signInWithEmail(
         email: email,
         password: password,
       );
@@ -122,24 +123,24 @@ class UserProvider extends ChangeNotifier {
 
   /// 비밀번호 재설정 이메일 전송
   Future<void> sendPasswordResetEmail(String email) async {
-    await _authService.sendPasswordResetEmail(email);
+    await _userRepository.sendPasswordResetEmail(email);
   }
 
   /// 이메일 인증 여부 반환
   Future<bool> isEmailVerified() async {
-    return await _authService.isEmailVerified();
+    return await _userRepository.isEmailVerified();
   }
 
   /// 이메일 인증 메일 재발송
   Future<void> sendEmailVerification() async {
-    await _authService.sendEmailVerification();
+    await _userRepository.sendEmailVerification();
   }
 
   /// Firebase 유저 정보 새로고침 (주로 이메일 인증 직후 사용)
   Future<void> reloadFirebaseUser() async {
     _setLoading(true);
     try {
-      final refreshed = await _authService.reloadFirebaseUser();
+      final refreshed = await _userRepository.reloadFirebaseUser();
       if (refreshed != null) {
         _currentUser = refreshed;
         notifyListeners();
@@ -154,8 +155,9 @@ class UserProvider extends ChangeNotifier {
   Future<void> signOut() async {
     _setLoading(true);
     try {
-      await _authService.signOut();
+      await _userRepository.signOut();
       _currentUser = null;
+      notifyListeners();
     } finally {
       _setLoading(false);
     }

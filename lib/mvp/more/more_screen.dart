@@ -97,12 +97,11 @@ class _MoreScreenState extends State<MoreScreen> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        // TODO: pa_router.dart 에 /auth 라우트 등록 후 사용
                         context.push('/auth');
                       },
                       icon: const Icon(Icons.manage_accounts_outlined),
                       label: Text(
-                        user == null ? '로그인 / 계정 만들기' : '계정 관리',
+                        user?.email == null ? '로그인 / 계정 만들기' : '계정 관리',
                       ),
                     ),
                   ),
