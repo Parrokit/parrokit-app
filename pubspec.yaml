@@ -73,6 +73,9 @@ dependencies:
       url: https://github.com/Sahad2701/ffmpeg-kit.git
       path: flutter/flutter
       ref: flutter_fix_retired_v6.0.3 # 브랜치 지정
+  firebase_core: ^4.2.1
+  cloud_firestore: ^6.1.0
+  firebase_auth: ^6.1.2
 
 
 

@@ -4,7 +4,7 @@ import 'package:parrokit/pa_router.dart';
 import 'package:parrokit/provider/ad_provider.dart';
 import 'package:parrokit/provider/dashboard_ui_provider.dart';
 import 'package:parrokit/provider/iap_provider.dart';
-import 'package:parrokit/services/ad_manager.dart';
+import 'package:parrokit/services/ad_service.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/mvp/shorts/index.dart' as ShortsWidgets;
 
@@ -49,7 +49,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
 
     if (shouldShow) {
       _pauseSignal.value = true;
-      AdManager().showAd(); // premium이면 incrementBy가 false를 반환 → 여기 안 옴
+      AdService().showAd(); // premium이면 incrementBy가 false를 반환 → 여기 안 옴
       _pauseSignal.value = false;
     }
   }

@@ -431,7 +431,7 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   icon: const Icon(Icons.subtitles_outlined, size: 18),
-                  label: const Text('STT 테스트 (업로드된 영상으로)'),
+                  label: const Text('자동 자막 달기'),
                   onPressed: _presenter.onSttAndDraft,
                 ),
                 _buildSegmentsSection(),
