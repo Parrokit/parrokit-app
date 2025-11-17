@@ -28,6 +28,7 @@ class IapProvider extends ChangeNotifier {
 
   Future<void> init() async {
     if (_inited) return; // 중복 초기화 방지
+
     _inited = true;
 
     loading = true;

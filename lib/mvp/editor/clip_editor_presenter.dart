@@ -4,7 +4,6 @@ import 'package:parrokit/mvp/editor/adapters/openai_whisper_adapter.dart';
 import 'package:parrokit/mvp/editor/adapters/openai_adapter.dart';
 import 'package:parrokit/mvp/editor/adapters/video_picker_files.dart';
 import 'package:parrokit/mvp/editor/adapters/video_picker_gallery.dart';
-import 'package:parrokit/mvp/editor/clip_editor_model.dart';
 import 'package:parrokit/mvp/editor/ports/asr_port.dart';
 import 'package:parrokit/mvp/editor/ports/video_picker_port.dart';
 import 'package:parrokit/mvp/editor/services/time_code_service.dart';
@@ -25,6 +24,8 @@ class ClipEditorPresenter {
   final ClipEditorView view;
   final MediaProvider mediaProvider;
   final FileStagingService staging;
+
+  static const int _maxDurationMs = 2 * 60 * 1000; // 최대 2분(120초)
 
   final ExtractThumbnailUseCase _extractThumb;
   final ExtractDurationUseCase _extractDuration;
@@ -382,6 +383,10 @@ class ClipEditorPresenter {
     final durationMs = view.durationMsInput;
     if (durationMs == null || durationMs <= 0) {
       view.showToastMsg('영상 길이(duration)는 필수입니다. 재생 후 자동입력 또는 수동 입력하세요.');
+      return;
+    }
+    if (durationMs > _maxDurationMs) {
+      view.showToastMsg('영상 길이는 최대 2분(120초)까지만 허용됩니다.');
       return;
     }
 
