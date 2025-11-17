@@ -1,9 +1,9 @@
 // lib/pa_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/data/constants/library_tab.dart';
 import 'package:parrokit/mvp/onboarding/onboarding_screen.dart';
 import 'package:parrokit/mvp/recent/recent_screen.dart';
+import 'package:parrokit/mvp/recom/screens/recom_screen.dart';
 
 import 'package:parrokit/mvp/shorts/shorts_screen.dart';
 import 'package:parrokit/mvp/editor/clip_editor_screen.dart';
@@ -22,6 +22,7 @@ abstract class PaRoutes {
   static const library = 'library';
   static const more = 'more';
   static const clips = 'clips';
+  static const recom = 'recom';
   static const recents = 'recents';
   static const clipsCreate = 'clips_create';
   static const clipsEdit = 'clips_edit';
@@ -34,6 +35,7 @@ abstract class PaRoutes {
   static const libraryPath = '/library';
   static const morePath = '/more';
   static const clipsPath = '/clips';
+  static const recomPath = '/recom';
   static const recentsPath = '/recents';
   static const clipsCreatePath = 'create';
   static const clipsEditPath = 'edit';
@@ -87,6 +89,13 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
                 initialTab:
                     int.tryParse(state.uri.queryParameters['tab'] ?? ''),
               ),
+            ),
+          ),
+          GoRoute(
+            path: PaRoutes.recomPath,
+            name: PaRoutes.recom,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: RecomScreen(),
             ),
           ),
           GoRoute(
@@ -152,7 +161,8 @@ class _ParoShellGo extends StatelessWidget {
   int _indexFromLocation(String location) {
     if (location.startsWith(PaRoutes.explorePath)) return 1;
     if (location.startsWith(PaRoutes.libraryPath)) return 2;
-    if (location.startsWith(PaRoutes.morePath)) return 3;
+    if (location.startsWith(PaRoutes.recomPath)) return 3;
+    if (location.startsWith(PaRoutes.morePath)) return 4;
     return 0;
   }
 
@@ -167,7 +177,7 @@ class _ParoShellGo extends StatelessWidget {
     return Scaffold(
       body: child,
       bottomNavigationBar: hideNav
-          ? null // 👈 이 경우 NavBar 안나옴
+          ? null // 이 경우 NavBar 안나옴
           : ParoBottomNavBar(
               currentIndex: currentIndex,
               onTap: (i) {
@@ -182,6 +192,9 @@ class _ParoShellGo extends StatelessWidget {
                     context.go(PaRoutes.libraryPath);
                     break;
                   case 3:
+                    context.go(PaRoutes.recomPath);
+                    break;
+                  case 4:
                     context.go(PaRoutes.morePath);
                     break;
                 }

@@ -20,6 +20,7 @@ class ParoBottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '홈'),
         BottomNavigationBarItem(icon: Icon(Icons.explore), label: '탐색'),
         BottomNavigationBarItem(icon: Icon(Icons.bookmarks), label: '라이브러리'),
+        BottomNavigationBarItem(icon: Icon(Icons.tv), label: '애니 추천!'),
         BottomNavigationBarItem(icon: Icon(Icons.more_horiz), label: '더보기'),
       ],
     );

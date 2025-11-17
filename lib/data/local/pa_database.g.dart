@@ -1980,6 +1980,7 @@ abstract class _$PaDatabase extends GeneratedDatabase {
   late final $ClipTagsTable clipTags = $ClipTagsTable(this);
   late final $RecentClipViewsTable recentClipViews =
       $RecentClipViewsTable(this);
+  late final TitlesDao titlesDao = TitlesDao(this as PaDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

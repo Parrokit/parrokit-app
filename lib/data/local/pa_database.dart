@@ -15,18 +15,25 @@ import 'tables/tags.dart';
 import 'tables/clip_tags.dart';
 import 'tables/recent_clip_views.dart';
 
+import 'dao/titles_dao.dart';
+
 part 'pa_database.g.dart';
 
-@DriftDatabase(tables: [
-  Titles,
-  Releases,
-  Episodes,
-  Clips,
-  Segments,
-  Tags,
-  ClipTags,
-  RecentClipViews,
-])
+@DriftDatabase(
+  tables: [
+    Titles,
+    Releases,
+    Episodes,
+    Clips,
+    Segments,
+    Tags,
+    ClipTags,
+    RecentClipViews,
+  ],
+  daos: [
+    TitlesDao,
+  ],
+)
 class PaDatabase extends _$PaDatabase {
   PaDatabase() : super(_open());
 
