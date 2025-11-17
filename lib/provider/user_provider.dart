@@ -82,6 +82,73 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 이메일 + 비밀번호 회원가입 래핑
+  Future<void> signUpWithEmail({
+    required String email,
+    required String password,
+    bool sendEmailVerification = true,
+  }) async {
+    _setLoading(true);
+    try {
+      final user = await _authService.signUpWithEmail(
+        email: email,
+        password: password,
+        sendEmailVerification: sendEmailVerification,
+      );
+      _currentUser = user;
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// 이메일 + 비밀번호 로그인 래핑
+  Future<void> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    _setLoading(true);
+    try {
+      final user = await _authService.signInWithEmail(
+        email: email,
+        password: password,
+      );
+      _currentUser = user;
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// 비밀번호 재설정 이메일 전송
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _authService.sendPasswordResetEmail(email);
+  }
+
+  /// 이메일 인증 여부 반환
+  Future<bool> isEmailVerified() async {
+    return await _authService.isEmailVerified();
+  }
+
+  /// 이메일 인증 메일 재발송
+  Future<void> sendEmailVerification() async {
+    await _authService.sendEmailVerification();
+  }
+
+  /// Firebase 유저 정보 새로고침 (주로 이메일 인증 직후 사용)
+  Future<void> reloadFirebaseUser() async {
+    _setLoading(true);
+    try {
+      final refreshed = await _authService.reloadFirebaseUser();
+      if (refreshed != null) {
+        _currentUser = refreshed;
+        notifyListeners();
+      }
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 로그아웃/초기화.
   /// 로컬 저장소를 비우고 메모리에 있는 유저도 제거합니다.
   Future<void> signOut() async {

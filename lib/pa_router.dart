@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parrokit/mvp/onboarding/onboarding_screen.dart';
 import 'package:parrokit/mvp/recent/recent_screen.dart';
 import 'package:parrokit/mvp/recom/screens/recom_screen.dart';
+import 'package:parrokit/mvp/auth/auth_screen.dart';
 
 import 'package:parrokit/mvp/shorts/shorts_screen.dart';
 import 'package:parrokit/mvp/editor/clip_editor_screen.dart';
@@ -28,6 +29,7 @@ abstract class PaRoutes {
   static const clipsEdit = 'clips_edit';
   static const clipsPlay = 'clips_play';
   static const onboarding = 'onboarding';
+  static const auth = 'auth';
 
   // paths
   static const dashboardPath = '/dashboard';
@@ -41,6 +43,7 @@ abstract class PaRoutes {
   static const clipsEditPath = 'edit';
   static const clipsPlayPath = 'play';
   static const onboardingPath = '/onboarding';
+  static const authPath = '/auth';
 }
 
 GoRouter buildPaRouter({required bool seenOnboarding}) {
@@ -53,6 +56,13 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
         name: PaRoutes.onboarding,
         pageBuilder: (context, state) => const NoTransitionPage(
           child: OnboardingScreen(),
+        ),
+      ),
+      GoRoute(
+        path: PaRoutes.authPath,
+        name: PaRoutes.auth,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: AuthScreen(),
         ),
       ),
       // ShellRoute: 하단 네비바 고정 + 내부 자식 화면만 바뀜

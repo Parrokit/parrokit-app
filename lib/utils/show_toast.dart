@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-
 OverlayEntry? _toastEntry;
 Timer? _toastRemoveTimer;
 

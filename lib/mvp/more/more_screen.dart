@@ -1,8 +1,9 @@
-// lib/mvp/mores/mores_screen.dart
+// lib/mvp/more/more_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/pa_router.dart';
 import 'package:parrokit/provider/iap_provider.dart';
+import 'package:parrokit/provider/user_provider.dart';
 import '../../utils/send_mail.dart';
 import 'package:parrokit/dev/clip_seed.dart';
 import 'package:parrokit/config/pa_config.dart';
@@ -20,18 +21,95 @@ class MoreScreen extends StatefulWidget {
 }
 
 class _MoreScreenState extends State<MoreScreen> {
-
   @override
   Widget build(BuildContext context) {
     final iap = context.watch<IapProvider>();
-
+    final userProvider = context.watch<UserProvider>();
+    final user = userProvider.currentUser;
     final t = Theme.of(context);
+
     return Scaffold(
       backgroundColor: t.colorScheme.surface,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           children: [
+            const SizedBox(height: 12),
+
+            // 🔹 계정 섹션
+            SectionTitle('계정'),
+            const SizedBox(height: 10),
+            CardContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        child: Icon(
+                          Icons.person_outline,
+                          color: t.colorScheme.onPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 이름 / 이메일 / 게스트
+                            Text(
+                              user?.displayName ??
+                                  user?.email ??
+                                  '게스트 사용자',
+                              style: t.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            // 코인 + 이메일 인증 여부
+                            FutureBuilder<bool>(
+                              future: context
+                                  .read<UserProvider>()
+                                  .isEmailVerified(),
+                              builder: (context, snapshot) {
+                                final verified = snapshot.data ?? false;
+                                final hasEmail = user?.email != null;
+                                final verificationText = !hasEmail
+                                    ? '이메일 계정 없음'
+                                    : (verified ? '이메일 인증 완료' : '이메일 미인증');
+
+                                return Text(
+                                  '코인 ${userProvider.coins}개 · $verificationText',
+                                  style: t.textTheme.bodySmall?.copyWith(
+                                    color: t.colorScheme.onSurfaceVariant,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // TODO: pa_router.dart 에 /auth 라우트 등록 후 사용
+                        context.push('/auth');
+                      },
+                      icon: const Icon(Icons.manage_accounts_outlined),
+                      label: Text(
+                        user == null ? '로그인 / 계정 만들기' : '계정 관리',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 20),
             SectionTitle('플레이어'),
             const SizedBox(height: 10),
@@ -125,11 +203,11 @@ class _MoreScreenState extends State<MoreScreen> {
                 ],
               ),
             ),
-            // MoreScreen build() 내 ListView children에 추가
+
+            // 결제 섹션
             const SizedBox(height: 20),
             SectionTitle('결제'),
             const SizedBox(height: 10),
-            // ... MoreScreen build() 내부의 결제 카드 부분
             CardContainer(
               child: Column(
                 children: [
@@ -147,11 +225,21 @@ class _MoreScreenState extends State<MoreScreen> {
                             onPressed: null, // 비활성
                             label: const Text('구매 완료'),
                             style: FilledButton.styleFrom(
-                              disabledBackgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                              disabledForegroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                              disabledBackgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceVariant,
+                              disabledForegroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              textStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           );
                         }
@@ -159,11 +247,18 @@ class _MoreScreenState extends State<MoreScreen> {
                         // ✅ 2) 아직 미구매면 결제 버튼
                         return FilledButton(
                           style: FilledButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor:
+                            Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
                             elevation: 0,
                           ),
                           onPressed: () async {
@@ -171,13 +266,18 @@ class _MoreScreenState extends State<MoreScreen> {
 
                             if (iap.loading) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('결제 정보를 불러오는 중입니다… 잠시만요.')),
+                                const SnackBar(
+                                  content:
+                                  Text('결제 정보를 불러오는 중입니다… 잠시만요.'),
+                                ),
                               );
                               return;
                             }
                             if (!iap.available) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('스토어에 연결할 수 없습니다.')),
+                                const SnackBar(
+                                  content: Text('스토어에 연결할 수 없습니다.'),
+                                ),
                               );
                               return;
                             }
@@ -185,7 +285,9 @@ class _MoreScreenState extends State<MoreScreen> {
                               await iap.init(); // 재조회
                               if (iap.removeAdsProduct == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('상품 정보를 찾을 수 없습니다.')),
+                                  const SnackBar(
+                                    content: Text('상품 정보를 찾을 수 없습니다.'),
+                                  ),
                                 );
                                 return;
                               }
@@ -195,11 +297,19 @@ class _MoreScreenState extends State<MoreScreen> {
                             showPremiumDialog(
                               context,
                               price: iap.removeAdsProduct!.price,
-                              onBuy: () => context.read<IapProvider>().buyRemoveAds(),
-                              onRestore: () => context.read<IapProvider>().restorePurchases(),
+                              onBuy: () =>
+                                  context.read<IapProvider>().buyRemoveAds(),
+                              onRestore: () =>
+                                  context.read<IapProvider>().restorePurchases(),
                             );
                           },
-                          child: Text(context.watch<IapProvider>().removeAdsProduct?.price ?? 'US\$0.99'),
+                          child: Text(
+                            context
+                                .watch<IapProvider>()
+                                .removeAdsProduct
+                                ?.price ??
+                                'US\$0.99',
+                          ),
                         );
                       },
                     ),
@@ -207,6 +317,7 @@ class _MoreScreenState extends State<MoreScreen> {
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
             SectionTitle('백업'),
             const SizedBox(height: 10),
@@ -216,18 +327,20 @@ class _MoreScreenState extends State<MoreScreen> {
                   NavTile(
                     icon: Icons.privacy_tip_outlined,
                     title: '불러오기',
-                    onTap: () async => await BackupService.instance.restoreBackup(),
-
+                    onTap: () async =>
+                    await BackupService.instance.restoreBackup(),
                   ),
                   const HairlineDivider(),
                   NavTile(
                     icon: Icons.mail_outline,
                     title: '저장하기',
-                    onTap: () async => await BackupService.instance.createBackup(),
+                    onTap: () async =>
+                    await BackupService.instance.createBackup(),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
             SectionTitle('정보'),
             const SizedBox(height: 10),
@@ -275,7 +388,10 @@ class _MoreScreenState extends State<MoreScreen> {
                     subtitle: 'test용',
                     onTap: () async {
                       final ok = await runSeedFromFilePickerTmp(context);
-                      showToast(context, (ok ? '시드 완료!' : '시드 실패 (파일 6개 선택 필요)'));
+                      showToast(
+                        context,
+                        (ok ? '시드 완료!' : '시드 실패 (파일 6개 선택 필요)'),
+                      );
                     },
                   ),
                 ],
@@ -291,12 +407,11 @@ class _MoreScreenState extends State<MoreScreen> {
 Future<void> showPremiumDialog(
     BuildContext context, {
       String price = 'US\$0.99',
-      VoidCallback? onBuy,       // 결제 시작 콜백
-      VoidCallback? onRestore,   // (선택) 복원 콜백
+      VoidCallback? onBuy, // 결제 시작 콜백
+      VoidCallback? onRestore, // (선택) 복원 콜백
     }) {
   return showDialog(
-
-  context: context,
+    context: context,
     builder: (ctx) {
       final cs = Theme.of(ctx).colorScheme;
       final tt = Theme.of(ctx).textTheme;
@@ -307,18 +422,20 @@ Future<void> showPremiumDialog(
       const buttonPadding = EdgeInsets.symmetric(vertical: 4);
 
       return AlertDialog(
-        // 사각 느낌 (적당히 각진)
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         backgroundColor: cs.surface,
         title: Text(
           '프리미엄 (광고 제거)',
-          style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          style: tt.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 간단 설명: 어디서 광고가 나오는지
             Text(
               '광고 노출 위치',
               style: tt.bodyMedium?.copyWith(
@@ -327,10 +444,13 @@ Future<void> showPremiumDialog(
               ),
             ),
             const SizedBox(height: 8),
-            _Bullet(text: '쇼츠: 다음 영상으로 넘길 때 주기적으로 전면 광고'),
-            _Bullet(text: '프리미엄 구입 시 모든 광고가 비활성화됩니다'),
+            const _Bullet(
+              text: '쇼츠: 다음 영상으로 넘길 때 주기적으로 전면 광고',
+            ),
+            const _Bullet(
+              text: '프리미엄 구입 시 모든 광고가 비활성화됩니다',
+            ),
             const SizedBox(height: 16),
-
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
@@ -346,14 +466,12 @@ Future<void> showPremiumDialog(
                   textStyle: buttonTextStyle,
                 ),
                 onPressed: () {
-                  Navigator.of(ctx).pop(); // 모달 닫고
-                  onBuy?.call();           // 결제 시작
+                  Navigator.of(ctx).pop();
+                  onBuy?.call();
                 },
                 child: Text('$price 결제하기'),
               ),
             ),
-
-// 복원 버튼
             if (onRestore != null) ...[
               const SizedBox(height: 8),
               SizedBox(
@@ -377,8 +495,6 @@ Future<void> showPremiumDialog(
                 ),
               ),
             ],
-
-// 닫기 버튼
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
