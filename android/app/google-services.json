@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "392832464036",
+    "project_id": "parrokit-45126",
+    "storage_bucket": "parrokit-45126.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:392832464036:android:bf2360211edc0d832e6231",
+        "android_client_info": {
+          "package_name": "com.bull.parrokit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASS8vOzh1zswL9E4YjKQedYpwykUJuFhY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

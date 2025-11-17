@@ -7,7 +7,7 @@ Timer? _toastRemoveTimer;
 
 /// iOS 스타일 토스트 (Fade In/Out)
 /// 기존 showToast(context, "msg") 호출 그대로 사용 가능
-void showToast(BuildContext context, String msg) {
+void showToast(BuildContext context, String msg, {String? devMsg = ''}) {
   final overlay = Overlay.of(context);
   if (overlay == null) return;
 
@@ -34,7 +34,9 @@ void showToast(BuildContext context, String msg) {
 
   overlay.insert(_toastEntry!);
   debugPrint('🍞 Toast: $msg');
-
+  if (devMsg != '') {
+    debugPrint('🍞 Toast (dev): $devMsg');
+  }
   // 총 지속시간 뒤 안전 제거
   _toastRemoveTimer = Timer(total, () {
     _toastEntry?.remove();
@@ -97,7 +99,8 @@ class _ToastCardState extends State<_ToastCard> {
                 child: Material(
                   color: Colors.transparent,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.85),
                       borderRadius: BorderRadius.circular(12),
