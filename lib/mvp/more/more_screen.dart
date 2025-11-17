@@ -9,7 +9,7 @@ import 'package:parrokit/config/pa_config.dart';
 import 'package:parrokit/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
 import '../../utils/show_toast.dart';
-import '../../services/backup_manager.dart';
+import '../../services/backup_service.dart';
 import 'index.dart';
 
 class MoreScreen extends StatefulWidget {
@@ -216,14 +216,14 @@ class _MoreScreenState extends State<MoreScreen> {
                   NavTile(
                     icon: Icons.privacy_tip_outlined,
                     title: '불러오기',
-                    onTap: () async => await BackupManager.instance.restoreBackup(),
+                    onTap: () async => await BackupService.instance.restoreBackup(),
 
                   ),
                   const HairlineDivider(),
                   NavTile(
                     icon: Icons.mail_outline,
                     title: '저장하기',
-                    onTap: () async => await BackupManager.instance.createBackup(),
+                    onTap: () async => await BackupService.instance.createBackup(),
                   ),
                 ],
               ),

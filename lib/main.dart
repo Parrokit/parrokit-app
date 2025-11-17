@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parrokit/config/onboarding_prefs.dart';
 import 'package:parrokit/config/pa_config.dart';
+import 'package:parrokit/data/local/prefs/user_prefs.dart';
 import 'package:parrokit/provider/dashboard_ui_provider.dart';
 import 'package:parrokit/provider/iap_provider.dart';
 import 'package:parrokit/provider/shorts_provider.dart';
 import 'package:parrokit/provider/tag_filter_provider.dart';
 import 'package:parrokit/provider/theme_provider.dart';
-import 'package:parrokit/services/ad_manager.dart';
+import 'package:parrokit/provider/user_provider.dart';
+import 'package:parrokit/services/ad_service.dart';
+import 'package:parrokit/services/auth_service.dart';
 import 'package:parrokit/utils/audio_bg.dart';
 import 'package:provider/provider.dart';
-
 import 'package:parrokit/theme/pa_theme.dart';
 import 'package:parrokit/pa_router.dart';
-
 import 'package:parrokit/data/local/pa_database.dart';
 import 'package:parrokit/provider/media_provider.dart';
-
-// ⬇️ 추가
 import 'package:parrokit/provider/ad_provider.dart';
 
 void main() async {
@@ -35,8 +35,13 @@ void main() async {
 
   // 광고 SDK 초기화
   await MobileAds.instance.initialize();
-  AdManager().loadAd();
-
+  AdService().loadAd();
+  
+  // auth service
+  final prefs = await SharedPreferences.getInstance();
+  final userPrefs = UserPrefs(prefs);
+  final authService = AuthService(userPrefs);
+  
   // IAP Provider
   final iap = IapProvider();
   await iap.init();
@@ -53,6 +58,9 @@ void main() async {
         Provider<PaDatabase>(
           create: (_) => PaDatabase(),
           dispose: (_, db) => db.close(),
+        ),
+        ChangeNotifierProvider(
+          create: (c) => UserProvider(authService)..init(),
         ),
         ChangeNotifierProvider<DashboardUiProvider>(
           lazy: false,

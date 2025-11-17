@@ -1,10 +1,10 @@
 import 'dart:io' show Platform;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-class AdManager {
-  AdManager._internal();
-  static final AdManager _instance = AdManager._internal();
-  factory AdManager() => _instance;
+class AdService {
+  AdService._internal();
+  static final AdService _instance = AdService._internal();
+  factory AdService() => _instance;
 
   InterstitialAd? _ad;
   bool _isLoading = false;

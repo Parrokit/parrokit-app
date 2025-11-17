@@ -10,10 +10,10 @@ import 'package:file_saver/file_saver.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:restart_app/restart_app.dart';
 
-class BackupManager {
-  BackupManager._internal();
+class BackupService {
+  BackupService._internal();
 
-  static final BackupManager instance = BackupManager._internal();
+  static final BackupService instance = BackupService._internal();
   final String dbRelativePath = 'paro.db';
   final String mediaRelativeDir = '';
 
