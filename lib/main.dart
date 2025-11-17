@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:parrokit/config/onboarding_prefs.dart';
 import 'package:parrokit/config/pa_config.dart';
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
@@ -21,9 +22,14 @@ import 'package:parrokit/pa_router.dart';
 import 'package:parrokit/data/local/pa_database.dart';
 import 'package:parrokit/provider/media_provider.dart';
 import 'package:parrokit/provider/ad_provider.dart';
+import 'package:parrokit/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await dotenv.load(fileName: ".env");
   await ensureAudioHandler();
   final seen = await OnboardingPrefs.isOnboarded();
