@@ -17,15 +17,30 @@ import 'package:parrokit/mvp/editor/clip_editor_view.dart';
 import 'package:parrokit/mvp/editor/services/file_staging_service.dart';
 import 'package:parrokit/mvp/editor/usecases/transcribe_usecase.dart';
 import 'package:parrokit/provider/media_provider.dart';
+import 'package:parrokit/provider/user_provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:parrokit/data/local/pa_database.dart' as db;
+import 'package:parrokit/mvp/editor/services/audio_to_video.dart';
 
 class ClipEditorPresenter {
   final ClipEditorView view;
   final MediaProvider mediaProvider;
+  final UserProvider userProvider;
   final FileStagingService staging;
+  final AudioToVideoService _audioToVideo;
 
   static const int _maxDurationMs = 2 * 60 * 1000; // 최대 2분(120초)
+
+  int _calculateCoinCost(int durationMs) {
+    final seconds = (durationMs / 1000).ceil();
+    if (seconds <= 0) return 0;
+    if (seconds <= 30) return 1;
+    if (seconds <= 60) return 2;
+    if (seconds <= 90) return 3;
+    if (seconds <= 120) return 4;
+    // 안전장치: 최대 2분까지만 허용하지만 혹시 초과해도 동일 비용 처리
+    return 4;
+  }
 
   final ExtractThumbnailUseCase _extractThumb;
   final ExtractDurationUseCase _extractDuration;
@@ -37,6 +52,7 @@ class ClipEditorPresenter {
   ClipEditorPresenter({
     required this.view,
     required this.mediaProvider,
+    required this.userProvider,
     FileStagingService? staging,
     ExtractThumbnailUseCase? extractThumb,
     ExtractDurationUseCase? extractDuration,
@@ -44,7 +60,9 @@ class ClipEditorPresenter {
     SaveClipUseCase? saveClip,
     TranscribeUseCase? transcribe,
     TimecodeService? timecode,
+    AudioToVideoService? audioToVideo,
   })  : staging = staging ?? FileStagingService(),
+        _audioToVideo = audioToVideo ?? FfmpegAudioToVideoService(),
         _extractThumb = extractThumb ?? ExtractThumbnailUseCase(VideoMetaServiceImpl()),
         _extractDuration = extractDuration ?? ExtractDurationUseCase(VideoMetaServiceImpl()),
         _pickVideo = pickVideo ?? PickVideoUseCase(files: VideoPickerFiles(), gallery: VideoPickerGallery()),
@@ -113,6 +131,33 @@ class ClipEditorPresenter {
     final path = picked.path!;
     view.setSaving(true);
 
+    // 동영상 길이에 따라 코인 차감량 계산 및 보유 코인 검증
+    int? durationMs = view.durationMsInput;
+    durationMs ??= await _probeDurationMs(path);
+
+    if (durationMs == null || durationMs <= 0) {
+      view.showToastMsg('영상 길이를 확인할 수 없습니다. 다시 시도해 주세요.');
+      view.setSaving(false);
+      return;
+    }
+    /// 2분 제한
+    ///
+    // if (durationMs > _maxDurationMs) {
+    //   view.showToastMsg('영상 길이는 최대 2분(120초)까지만 STT를 사용할 수 있습니다.');
+    //   view.setSaving(false);
+    //   return;
+    // }
+
+    final cost = _calculateCoinCost(durationMs);
+    if (cost > 0) {
+      final currentCoins = userProvider.coins;
+      if (currentCoins < cost) {
+        view.showToastMsg('코인이 부족합니다. (필요: $cost, 보유: $currentCoins)');
+        view.setSaving(false);
+        return;
+      }
+    }
+
     try {
       // 1) STT (segments 포함)
       final asr = await _transcribe(
@@ -178,6 +223,15 @@ class ClipEditorPresenter {
           asrSegments: asr.segments,
         );
         view.showToastMsg('세그먼트 ${segs.length}개 자동 채움');
+        if (segs.isNotEmpty) {
+          // STT + LLM 세그먼트 생성이 정상 완료된 경우에만 코인 차감
+          final durationMs = view.durationMsInput ?? await _probeDurationMs(path) ?? 0;
+          final cost = _calculateCoinCost(durationMs);
+          if (cost > 0) {
+            userProvider.addCoins(-cost);
+            view.showToastMsg('STT/초안 생성에 코인 $cost개가 사용되었습니다.');
+          }
+        }
       }
       for (int i = 0; i < segs.length; i++) {
         final e = segs[i];
@@ -221,10 +275,19 @@ class ClipEditorPresenter {
   }
 
   Future<void> afterPick({required String path, required String name, required int size}) async {
-    view.setPicked(PlatformFile(name: name, size: size, path: path));
+    // mp3 등이 올라온 경우 mp4로 변환 후, presenter 내부에서는 항상 mp4 경로만 사용
+    String effectivePath = path;
+    try {
+      effectivePath = await _audioToVideo.ensureMp4(path);
+    } catch (e) {
+      view.showToastMsg('오디오를 영상으로 변환하는 중 오류가 발생했습니다: $e');
+      return;
+    }
+
+    view.setPicked(PlatformFile(name: name, size: size, path: effectivePath));
     view.setThumb(null);
-    await _setThumb(path);
-    final ms = await _probeDurationMs(path);
+    await _setThumb(effectivePath);
+    final ms = await _probeDurationMs(effectivePath);
     if (ms != null) view.setDurationMs(ms);
     view.refresh();
   }
@@ -362,6 +425,9 @@ class ClipEditorPresenter {
       return;
     }
 
+    // mp3 등이 저장 직전에 들어온 경우를 대비해 한 번 더 보정
+    final normalizedPath = await _audioToVideo.ensureMp4(stagedPath);
+
     // 1) 메타 검증/파싱
     final meta = _validateMeta();
     final type = meta.type;
@@ -410,7 +476,7 @@ class ClipEditorPresenter {
         durationMs: durationMs,
         segments: segments,
         tags: view.tags,
-        picked: picked!,
+        picked: PlatformFile(name: picked!.name, size: picked.size, path: normalizedPath),
         existingRelPath: existingRelPath,
       );
       view.showToastMsg(isEdit ? '업데이트 완료!' : '저장 완료!');

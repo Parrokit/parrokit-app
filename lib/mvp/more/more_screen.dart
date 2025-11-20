@@ -109,26 +109,6 @@ class _MoreScreenState extends State<MoreScreen> {
                 ],
               ),
             ),
-            /// ----
-            ElevatedButton(
-              onPressed: () {
-                // TODO: 임시 merchantUid, 실제 서비스에서는 서버에서 발급 받아야 함
-                final merchantUid =
-                    'test_${DateTime.now().millisecondsSinceEpoch}';
-
-                context.push(
-                  PaRoutes.paymentPath,
-                  extra: PaymentArgs(
-                    merchantUid: merchantUid,
-                    amount: 3000,
-                    productName: '코인 100개',
-                    buyerEmail: user?.email ?? '',
-                  ),
-                );
-              },
-              child: const Text('결제'),
-            ),
-            /// ----
             const SizedBox(height: 20),
             SectionTitle('플레이어'),
             const SizedBox(height: 10),

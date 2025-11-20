@@ -8,12 +8,14 @@ abstract class PaymentPort {
   ///
   /// - [merchantUid] : 서버에서 생성한 주문 번호
   /// - [amount]      : 결제 금액
+  /// - [coins]       : 코인 개수
   /// - [productName] : 상품명 (예: '코인 100개')
   /// - [buyerEmail]  : 사용자 이메일
   /// - [onResult]    : 결제 창이 닫힌 뒤 콜백 (성공/실패 여부는 서버에서 최종 판단)
   Widget buildPaymentScreen({
     required String merchantUid,
     required int amount,
+    required int coins,
     required String productName,
     required String buyerEmail,
     required PaymentResultCallback onResult,
@@ -27,6 +29,7 @@ class IamportPaymentPort implements PaymentPort {
   Widget buildPaymentScreen({
     required String merchantUid,
     required int amount,
+    required int coins,
     required String productName,
     required String buyerEmail,
     required PaymentResultCallback onResult,
@@ -34,6 +37,7 @@ class IamportPaymentPort implements PaymentPort {
     return PaymentScreen(
       merchantUid: merchantUid,
       amount: amount,
+      coins: coins,
       productName: productName,
       buyerEmail: buyerEmail,
       onResult: onResult,

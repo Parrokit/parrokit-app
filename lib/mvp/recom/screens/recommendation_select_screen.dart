@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/local/pa_database.dart';
+import 'package:parrokit/mvp/recom/entities/recom_result_args.dart';
 import 'package:parrokit/mvp/recom/recom_presenter.dart';
 import 'package:parrokit/mvp/recom/recom_view.dart';
 import 'package:parrokit/mvp/recom/screens/recommendation_progress_sheet.dart';
 import 'package:parrokit/mvp/recom/screens/recommendation_result_screen.dart';
 import 'package:parrokit/mvp/recom/services/recommendation_service.dart';
+import 'package:parrokit/pa_router.dart';
 import 'package:parrokit/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/cupertino.dart';
@@ -143,15 +146,14 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
     );
     if (!mounted) return;
     if (result != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => RecommendationResultScreen(
-            results: result,
-            titles: List<String>.from(_selected),
-            topK: _topK,
-            cutoff: _cutoff,
-            excludeWatched: _excludeWatched,
-          ),
+      context.pushNamed(
+        PaRoutes.recomResult,
+        extra: RecomResultArgs(
+          results: result,
+          titles: List<String>.from(_selected),
+          topK: _topK,
+          cutoff: _cutoff,
+          excludeWatched: _excludeWatched,
         ),
       );
     }

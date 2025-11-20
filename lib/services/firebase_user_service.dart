@@ -1,6 +1,7 @@
 // lib/services/firebase_user_service.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:parrokit/data/models/user.dart';
 
 class FirebaseUserService {
   final FirebaseFirestore _firestore;
@@ -28,10 +29,30 @@ class FirebaseUserService {
     return snap.data();
   }
 
-  Future<void> updateCoins(String uid, int coins) async {
+  Future<void> updateUserCoins({
+    required String uid,
+    required int coins,
+  }) async {
     await _firestore.collection('users').doc(uid).update({
       'coins': coins,
       'lastPurchaseAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<PaUser?> loadUserDocument({required String uid}) async {
+    final snap = await _firestore.collection('users').doc(uid).get();
+    if (!snap.exists) {
+      return null;
+    }
+
+    final data = snap.data()!;
+    return PaUser(
+      id: uid,
+      displayName: data['displayName'],
+      email: data['email'],
+      coins: data['coins'] ?? 0,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      updatedAt: DateTime.now(),
+    );
   }
 }

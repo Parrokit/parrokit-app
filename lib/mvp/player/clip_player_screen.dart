@@ -394,7 +394,6 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
           elevation: 0,
           foregroundColor: fg,
           title: const Text('재생'),
-          centerTitle: true,
         ),
         body: Center(
             child: CircularProgressIndicator(
@@ -410,7 +409,6 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
           elevation: 0,
           foregroundColor: fg,
           title: const Text('재생'),
-          centerTitle: true,
         ),
         body: const Center(child: Text('클립을 찾을 수 없습니다.')),
       );
@@ -423,7 +421,6 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         foregroundColor: fg,
-        centerTitle: true,
         title: Text(_appBarTitle),
       ),
       body: _initialized
