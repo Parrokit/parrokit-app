@@ -25,8 +25,41 @@ class UserRepository {
 
   /// 현재 로컬에 저장된 유저를 반환합니다.
   /// 저장된 유저가 없으면 null을 반환합니다.
+  /// 현재 로그인된 Firebase 유저 + Firestore 유저 문서를 기준으로
+  /// 최신 PaUser 를 만들어서 반환합니다.
+  /// - 로그인 안 되어 있으면 null
+  /// - Firestore 문서가 없으면 최소한 Auth 정보 + 로컬 캐시로 구성
   Future<PaUser?> getCurrentUser() async {
-    return _userPrefs.loadUser();
+    // 1. Firebase Auth 에 현재 로그인된 유저가 있는지 확인
+    final fbUser = _authService.currentUser;
+    if (fbUser == null) {
+      // 로그인 자체가 안 되어 있으면 null
+      return null;
+    }
+
+    // 2. Firestore 기준 유저 문서 조회
+    final serverUser =
+    await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+
+    // 3. 로컬 캐시(SharedPreferences)에 저장된 유저 (폴백용)
+    final localUser = _userPrefs.loadUser();
+
+    // 4. 최종적으로 앱에서 쓸 PaUser 조합
+    final user = PaUser(
+      id: fbUser.uid,
+      displayName: fbUser.displayName ??
+          serverUser?.displayName ??
+          localUser?.displayName,
+      email: fbUser.email ?? serverUser?.email ?? localUser?.email,
+      coins: serverUser?.coins ?? localUser?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? localUser?.createdAt,
+      updatedAt: DateTime.now(),
+    );
+
+    // 5. 최신 상태를 로컬에도 다시 캐싱
+    await _userPrefs.saveUser(user);
+
+    return user;
   }
 
   /// 이메일 + 비밀번호로 회원가입을 수행합니다.

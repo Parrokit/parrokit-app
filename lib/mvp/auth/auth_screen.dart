@@ -8,7 +8,7 @@ import 'package:parrokit/pa_router.dart';
 import 'package:parrokit/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/provider/user_provider.dart';
-
+import 'package:intl/intl.dart';
 enum _AuthMode {
   signIn,
   signUp,
@@ -586,8 +586,14 @@ class _CoinPackageCard extends StatelessWidget {
   });
 
   String get _formattedPrice {
-    // 간단한 가격 포맷 (₩1000 형태)
-    return '₩${package.price}';
+    /// 가격 포맷 (₩1,000 형태)
+    final formatter = NumberFormat.currency(
+      locale: 'ko_KR',
+      symbol: '₩',
+      decimalDigits: 0,
+    );
+
+    return formatter.format(package.price);
   }
 
   @override
