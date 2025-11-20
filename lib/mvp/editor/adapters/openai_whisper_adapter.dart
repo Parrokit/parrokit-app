@@ -19,7 +19,7 @@ class OpenAIWhisperAdapter implements ASRPort {
 
   OpenAIWhisperAdapter({
     required this.apiKey,
-    this.defaultModel = 'whisper-1',
+    this.defaultModel = 'gpt-4o-transcribe-diarize',
   });
 
   static const _endpoint = 'https://api.openai.com/v1/audio/transcriptions';
@@ -29,8 +29,17 @@ class OpenAIWhisperAdapter implements ASRPort {
     final normalized = path.startsWith('file://') ? path.substring(7) : path;
     final lower = normalized.toLowerCase();
     // If already an audio file (and not also a video extension), just return as-is
-    final isAudio = lower.endsWith('.mp3') || lower.endsWith('.wav') || lower.endsWith('.m4a') || lower.endsWith('.aac') || lower.endsWith('.flac') || lower.endsWith('.ogg');
-    final isVideo = lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.mkv') || lower.endsWith('.webm') || lower.endsWith('.avi');
+    final isAudio = lower.endsWith('.mp3') ||
+        lower.endsWith('.wav') ||
+        lower.endsWith('.m4a') ||
+        lower.endsWith('.aac') ||
+        lower.endsWith('.flac') ||
+        lower.endsWith('.ogg');
+    final isVideo = lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.mkv') ||
+        lower.endsWith('.webm') ||
+        lower.endsWith('.avi');
     if (isAudio && !isVideo) {
       return normalized;
     }
@@ -41,7 +50,8 @@ class OpenAIWhisperAdapter implements ASRPort {
       final wavOut = '${tmpDir.path}/stt_${base}.wav';
 
       // 1) Try AAC(M4A) 16kHz mono
-      final m4aCmd = '-hide_banner -loglevel info -y -i "$normalized" -vn -ac 1 -ar 16000 -c:a aac -b:a 96k "$m4aOut"';
+      final m4aCmd =
+          '-hide_banner -loglevel info -y -i "$normalized" -vn -ac 1 -ar 16000 -c:a aac -b:a 96k "$m4aOut"';
       var session = await FFmpegKit.execute(m4aCmd);
       var rc = await session.getReturnCode();
       if (rc != null && rc.isValueSuccess() && await File(m4aOut).exists()) {
@@ -49,7 +59,8 @@ class OpenAIWhisperAdapter implements ASRPort {
       }
 
       // 2) Fallback: WAV (PCM S16LE) 16kHz mono
-      final wavCmd = '-hide_banner -loglevel info -y -i "$normalized" -vn -ac 1 -ar 16000 -sample_fmt s16 -c:a pcm_s16le "$wavOut"';
+      final wavCmd =
+          '-hide_banner -loglevel info -y -i "$normalized" -vn -af "volume=2" -ac 1 -ar 16000 -sample_fmt s16 -c:a pcm_s16le "$wavOut"';
       session = await FFmpegKit.execute(wavCmd);
       rc = await session.getReturnCode();
       if (rc != null && rc.isValueSuccess() && await File(wavOut).exists()) {
@@ -85,10 +96,8 @@ class OpenAIWhisperAdapter implements ASRPort {
 
     final req = http.MultipartRequest('POST', Uri.parse(_endpoint));
     // Sanitize API key: trim, strip smart quotes and surrounding quotes
-    final _cleanKey = apiKey
-        .trim()
-        .replaceAll('\u201C', '')
-        .replaceAll('\u201D', '');
+    final _cleanKey =
+        apiKey.trim().replaceAll('\u201C', '').replaceAll('\u201D', '');
     if (_cleanKey.isEmpty) {
       throw ArgumentError('OPENAI_API_KEY is empty after sanitization.');
     }
@@ -98,7 +107,19 @@ class OpenAIWhisperAdapter implements ASRPort {
     req.fields['model'] = chosenModel;
     req.fields['temperature'] = '0';
 
-    req.fields['response_format'] = withSegments ? 'verbose_json' : 'json';
+    if (chosenModel == 'gpt-4o-transcribe-diarize') {
+      // diarize 모델: speaker + segment 타임스탬프 포함된 diarized_json + 자동 청킹
+      req.fields['response_format'] = 'diarized_json';
+      req.fields['chunking_strategy'] = 'auto';
+    } else if (chosenModel.startsWith('gpt-4o-mini-transcribe') ||
+        chosenModel.startsWith('gpt-4o-transcribe')) {
+      // GPT transcribe 계열: json만 지원, segments는 없음 (text만)
+      req.fields['response_format'] = 'json';
+    } else {
+      // Whisper 계열(whisper-1 등)은 verbose_json 지원
+      req.fields['response_format'] = withSegments ? 'verbose_json' : 'json';
+    }
+
     if (language != null && language.isNotEmpty) {
       req.fields['language'] = language;
     }
@@ -107,12 +128,16 @@ class OpenAIWhisperAdapter implements ASRPort {
       // 동영상이면 mp3로 추출 후 업로드
       final uploadPath = await _ensureAudioMp3(filePath);
       final filename = p.basename(uploadPath);
-      final mime = lookupMimeType(filename)
-          ?? (filename.toLowerCase().endsWith('.m4a') ? 'audio/m4a'
-              : filename.toLowerCase().endsWith('.wav') ? 'audio/wav'
-              : filename.toLowerCase().endsWith('.mp3') ? 'audio/mpeg'
-              : filename.toLowerCase().endsWith('.mp4') ? 'video/mp4'
-              : 'application/octet-stream');
+      final mime = lookupMimeType(filename) ??
+          (filename.toLowerCase().endsWith('.m4a')
+              ? 'audio/m4a'
+              : filename.toLowerCase().endsWith('.wav')
+                  ? 'audio/wav'
+                  : filename.toLowerCase().endsWith('.mp3')
+                      ? 'audio/mpeg'
+                      : filename.toLowerCase().endsWith('.mp4')
+                          ? 'video/mp4'
+                          : 'application/octet-stream');
       req.files.add(await http.MultipartFile.fromPath(
         'file',
         uploadPath,
@@ -120,8 +145,8 @@ class OpenAIWhisperAdapter implements ASRPort {
         contentType: MediaType.parse(mime),
       ));
     } else {
-      final filename = 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      final mime = 'audio/m4a';
+      final filename = 'audio_${DateTime.now().millisecondsSinceEpoch}.wav';
+      final mime = 'audio/wav';
       req.files.add(http.MultipartFile.fromBytes(
         'file',
         bytes!,
