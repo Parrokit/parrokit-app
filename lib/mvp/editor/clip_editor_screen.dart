@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:parrokit/mvp/editor/services/file_staging_service.dart';
+import 'package:parrokit/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -183,6 +184,7 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     _presenter = ClipEditorPresenter(
       view: this,
       mediaProvider: context.read<MediaProvider>(),
+      userProvider: context.read<UserProvider>(),
     );
     if (widget.clipId != null) {
       _isEdit = true;
@@ -408,11 +410,19 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = context.watch<UserProvider>();
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('편집'),
-        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              '코인 ${userProvider.coins}개',
+            ),
+          ),
+        ],
         elevation: 0,
       ),
       body: SafeArea(

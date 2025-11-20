@@ -17,6 +17,7 @@ ${BUILT_PRODUCTS_DIR}/RecaptchaInterop/RecaptchaInterop.framework
 ${BUILT_PRODUCTS_DIR}/SDWebImage/SDWebImage.framework
 ${BUILT_PRODUCTS_DIR}/SwiftyGif/SwiftyGif.framework
 ${BUILT_PRODUCTS_DIR}/abseil/absl.framework
+${BUILT_PRODUCTS_DIR}/app_links/app_links.framework
 ${BUILT_PRODUCTS_DIR}/audio_service/audio_service.framework
 ${BUILT_PRODUCTS_DIR}/audio_session/audio_session.framework
 ${BUILT_PRODUCTS_DIR}/file_picker/file_picker.framework
@@ -26,6 +27,8 @@ ${BUILT_PRODUCTS_DIR}/flutter_file_dialog/flutter_file_dialog.framework
 ${BUILT_PRODUCTS_DIR}/flutter_native_splash/flutter_native_splash.framework
 ${BUILT_PRODUCTS_DIR}/gRPC-C++/grpcpp.framework
 ${BUILT_PRODUCTS_DIR}/gRPC-Core/grpc.framework
+${BUILT_PRODUCTS_DIR}/iamport_flutter/iamport_flutter.framework
+${BUILT_PRODUCTS_DIR}/iamport_webview_flutter/iamport_webview_flutter.framework
 ${BUILT_PRODUCTS_DIR}/image_picker_ios/image_picker_ios.framework
 ${BUILT_PRODUCTS_DIR}/in_app_purchase_storekit/in_app_purchase_storekit.framework
 ${BUILT_PRODUCTS_DIR}/just_audio/just_audio.framework

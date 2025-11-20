@@ -90,15 +90,21 @@ class UserRepository {
       throw StateError('FirebaseAuth: user is null after signIn');
     }
 
-    // 기존에 로컬에 저장된 유저가 있다면 coins 를 이어받도록 시도
+    // 1) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
+    // FirebaseUserService 쪽에 uid로 유저 문서를 로드하는 메서드가 있다고 가정합니다.
+    // 예: Future<PaUser?> loadUserDocument({required String uid});
+    final serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+
+    // 2) 로컬에 저장된 유저는 캐시/폴백 용도로만 사용
     final existingLocal = await _userPrefs.loadUser();
 
     final user = PaUser(
       id: fbUser.uid,
-      displayName: fbUser.displayName,
-      email: fbUser.email,
-      coins: existingLocal?.coins ?? 0,
-      createdAt: existingLocal?.createdAt,
+      displayName:
+          fbUser.displayName ?? serverUser?.displayName ?? existingLocal?.displayName,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email,
+      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
     );
 
@@ -140,13 +146,17 @@ class UserRepository {
       return null;
     }
 
+    // 서버의 유저 문서를 먼저 조회해서 coins 등을 동기화
+    final serverUser = await _firebaseUserService.loadUserDocument(uid: refreshed.uid);
+
     final existingLocal = await _userPrefs.loadUser();
     final user = PaUser(
       id: refreshed.uid,
-      displayName: refreshed.displayName ?? existingLocal?.displayName,
-      email: refreshed.email ?? existingLocal?.email,
-      coins: existingLocal?.coins ?? 0,
-      createdAt: existingLocal?.createdAt,
+      displayName:
+          refreshed.displayName ?? serverUser?.displayName ?? existingLocal?.displayName,
+      email: refreshed.email ?? serverUser?.email ?? existingLocal?.email,
+      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
     );
 
@@ -197,7 +207,15 @@ class UserRepository {
         .addCoins(delta)
         .copyWith(updatedAt: DateTime.now());
 
+    // 1) 로컬 저장
     await _userPrefs.saveUser(updated);
+
+    // 2) Firestore 갱신 (예시 코드)
+    await _firebaseUserService.updateUserCoins(
+      uid: updated.id,
+      coins: updated.coins,
+    );
+
     return updated;
   }
 

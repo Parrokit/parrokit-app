@@ -42,7 +42,6 @@ class _RecentScreenState extends State<RecentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('최근 본 클립'),
-        centerTitle: true,
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,

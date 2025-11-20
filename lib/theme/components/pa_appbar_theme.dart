@@ -13,9 +13,8 @@ AppBarTheme paAppBarTheme(ColorScheme cs, {required bool isDark}) {
     foregroundColor: cs.onSurface,
     elevation: 0,
     surfaceTintColor: Colors.transparent,
-    centerTitle: false,
+    centerTitle: true,
     toolbarHeight: 56,
-
     // 제목 스타일 (onSurface에 자동 맞춤)
     titleTextStyle: TextStyle(
       fontSize: 18,

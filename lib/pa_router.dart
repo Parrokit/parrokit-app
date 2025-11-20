@@ -2,9 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/mvp/onboarding/onboarding_screen.dart';
+import 'package:parrokit/mvp/payment/payment_args.dart';
+import 'package:parrokit/mvp/payment/payment_screen.dart';
 import 'package:parrokit/mvp/recent/recent_screen.dart';
+import 'package:parrokit/mvp/recom/entities/recom_result_args.dart';
 import 'package:parrokit/mvp/recom/screens/recom_screen.dart';
 import 'package:parrokit/mvp/auth/auth_screen.dart';
+import 'package:parrokit/mvp/recom/screens/recommendation_result_screen.dart';
 
 import 'package:parrokit/mvp/shorts/shorts_screen.dart';
 import 'package:parrokit/mvp/editor/clip_editor_screen.dart';
@@ -24,12 +28,16 @@ abstract class PaRoutes {
   static const more = 'more';
   static const clips = 'clips';
   static const recom = 'recom';
+  static const recomResult = 'recom_result';
   static const recents = 'recents';
   static const clipsCreate = 'clips_create';
   static const clipsEdit = 'clips_edit';
   static const clipsPlay = 'clips_play';
   static const onboarding = 'onboarding';
   static const auth = 'auth';
+  static const payment = 'payment';
+  static const paymentSuccess = 'payment_success';
+  static const paymentFail = 'payment_fail';
 
   // paths
   static const dashboardPath = '/dashboard';
@@ -38,18 +46,62 @@ abstract class PaRoutes {
   static const morePath = '/more';
   static const clipsPath = '/clips';
   static const recomPath = '/recom';
+  static const recomResultPath = '/recom/result';
   static const recentsPath = '/recents';
   static const clipsCreatePath = 'create';
   static const clipsEditPath = 'edit';
   static const clipsPlayPath = 'play';
   static const onboardingPath = '/onboarding';
   static const authPath = '/auth';
+  static const paymentPath = '/payment';
+  static const paymentSuccessPath = '/payment/success';
+  static const paymentFailPath = '/payment/fail';
 }
+
+
 
 GoRouter buildPaRouter({required bool seenOnboarding}) {
   return GoRouter(
+    debugLogDiagnostics: true,
     initialLocation:
         seenOnboarding ? PaRoutes.dashboardPath : PaRoutes.onboardingPath,
+    redirect: (context, state) {
+      final uri = state.uri;
+      final loc = uri.toString();
+
+      // 0) 앱 루트('/') → 대시보드로
+      if (loc == '/') {
+        return PaRoutes.dashboardPath;
+      }
+
+      // 1) PortOne(Iamport) 앱 스킴 처리
+      // 예: parrokit:///?imp_success=true&imp_uid=...&merchant_uid=...
+      if (uri.scheme == 'parrokit') {
+        final successParam =
+            uri.queryParameters['imp_success'] ?? uri.queryParameters['success'];
+
+        if (successParam == 'true') {
+          return PaRoutes.paymentSuccessPath;
+        }
+        if (successParam == 'false') {
+          return PaRoutes.paymentFailPath;
+        }
+
+        // 옛날 방식: parrokit://payment/success 같은 형태도 지원
+        if (loc.startsWith('parrokit://payment/success')) {
+          return PaRoutes.paymentSuccessPath;
+        }
+        if (loc.startsWith('parrokit://payment/fail')) {
+          return PaRoutes.paymentFailPath;
+        }
+
+        // 그 외 parrokit://* 로 열리면 기본적으로 대시보드로
+        return PaRoutes.dashboardPath;
+      }
+
+      return null; // 나머지는 그대로 둠
+    },
+
     routes: [
       GoRoute(
         path: PaRoutes.onboardingPath,
@@ -64,6 +116,33 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
         pageBuilder: (context, state) => const NoTransitionPage(
           child: AuthScreen(),
         ),
+      ),
+      GoRoute(
+         path: PaRoutes.paymentPath,
+         name: PaRoutes.payment,
+         builder: (context, state) {
+           final args = state.extra as PaymentArgs;
+           return PaymentScreen(
+             merchantUid: args.merchantUid,
+             amount: args.amount,
+             coins: args.coins,
+             productName: args.productName,
+             buyerEmail: args.buyerEmail,
+             onResult: (result) {
+               // TODO: 서버에 결제 상태 조회 요청 후, Navigator.pop 등 처리
+             },
+           );
+         },
+       ),
+      GoRoute(
+        path: PaRoutes.paymentSuccessPath,
+        name: PaRoutes.paymentSuccess,
+        builder: (context, state) => const PaymentSuccessScreen(),
+      ),
+      GoRoute(
+        path: PaRoutes.paymentFailPath,
+        name: PaRoutes.paymentFail,
+        builder: (context, state) => const PaymentFailScreen(),
       ),
       // ShellRoute: 하단 네비바 고정 + 내부 자식 화면만 바뀜
       ShellRoute(
@@ -107,6 +186,20 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: RecomScreen(),
             ),
+          ),
+          GoRoute(
+            path: PaRoutes.recomResultPath,
+            name: PaRoutes.recomResult,
+            builder: (context, state) {
+              final args = state.extra as RecomResultArgs;
+              return RecommendationResultScreen(
+                results: args.results,
+                titles: args.titles,
+                topK: args.topK,
+                cutoff: args.cutoff,
+                excludeWatched: args.excludeWatched,
+              );
+            },
           ),
           GoRoute(
             path: PaRoutes.morePath,

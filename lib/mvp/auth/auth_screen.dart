@@ -2,6 +2,9 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parrokit/mvp/payment/payment_args.dart';
+import 'package:parrokit/pa_router.dart';
 import 'package:parrokit/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/provider/user_provider.dart';
@@ -158,6 +161,12 @@ class _AuthScreenState extends State<AuthScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('계정'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.go(PaRoutes.morePath);
+          },
+        ),
       ),
       body: SafeArea(
         child: Center(
@@ -181,102 +190,142 @@ class _AuthScreenState extends State<AuthScreen> {
     final user = userProvider.currentUser;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          '내 계정',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '현재 로그인된 계정 정보를 확인하고, 이메일 인증과 로그아웃을 관리할 수 있어요.',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant,
-            ),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                child: Icon(
-                  Icons.person_outline,
-                  color: theme.colorScheme.onPrimary,
+        // 상단 내용은 스크롤 가능 영역에 넣기
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '내 계정',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.displayName ?? user?.email ?? '로그인된 사용자',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                const SizedBox(height: 8),
+                Text(
+                  '현재 로그인된 계정 정보를 확인하고, 이메일 인증과 로그아웃을 관리할 수 있어요.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color:
+                        theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceVariant
+                        .withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
                     ),
-                    const SizedBox(height: 4),
-                    if (user?.email != null)
-                      Text(
-                        user!.email!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        child: Icon(
+                          Icons.person_outline,
+                          color: theme.colorScheme.onPrimary,
                         ),
                       ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '코인 ${userProvider.coins}개',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.displayName ??
+                                  user?.email ??
+                                  '로그인된 사용자',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (user?.email != null)
+                              Text(
+                                user!.email!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '코인 ${userProvider.coins}개',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        if (user?.email != null) ...[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '이메일 인증',
-              style: theme.textTheme.titleMedium,
+                const SizedBox(height: 24),
+                if (user?.email != null) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '이메일 인증',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed:
+                              _isLoading ? null : _checkEmailVerification,
+                          child: const Text('인증 여부 확인'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed:
+                              _isLoading ? null : _resendVerificationEmail,
+                          child: const Text('인증 메일 재전송'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                CoinStoreSection(
+                  onPackageSelected: (pkg) {
+                    _showToast(
+                      '₩${pkg.price} 결제로 코인 ${pkg.totalCoins}개를 충전할게요. (+${pkg.bonusCoins} 보너스)',
+                    );
+
+                    final merchantUid =
+                        'pay_${DateTime.now().millisecondsSinceEpoch}';
+
+                    context.push(
+                      PaRoutes.paymentPath,
+                      extra: PaymentArgs(
+                        merchantUid: merchantUid,
+                        amount: pkg.price,
+                        coins: pkg.totalCoins,
+                        productName: '코인 ${pkg.totalCoins}개',
+                        buyerEmail: user?.email ?? '',
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : _checkEmailVerification,
-                  child: const Text('인증 여부 확인'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading ? null : _resendVerificationEmail,
-                  child: const Text('인증 메일 재전송'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-        ],
-        const Spacer(),
+        ),
+        // 하단 고정 로그아웃 버튼
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -455,6 +504,141 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class CoinPackage {
+  final int price; // KRW
+  final int coins; // 기본 코인
+  final int bonusCoins; // 보너스 코인
+
+  const CoinPackage({
+    required this.price,
+    required this.coins,
+    required this.bonusCoins,
+  });
+
+  int get totalCoins => coins + bonusCoins;
+}
+
+class CoinStoreSection extends StatelessWidget {
+  final ValueChanged<CoinPackage>? onPackageSelected;
+
+  const CoinStoreSection({
+    super.key,
+    this.onPackageSelected,
+  });
+
+  static const List<CoinPackage> _packages = [
+    CoinPackage(price: 1000, coins: 80, bonusCoins: 8), // 10% 보너스
+    CoinPackage(price: 3000, coins: 240, bonusCoins: 24),
+    CoinPackage(price: 5000, coins: 400, bonusCoins: 40),
+    CoinPackage(price: 10000, coins: 800, bonusCoins: 80),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '코인 충전',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '1,000원 단위로 결제하고, 각 결제마다 10% 보너스 코인이 추가로 지급돼요.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Column(
+          children: _packages
+              .map(
+                (pkg) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _CoinPackageCard(
+                    package: pkg,
+                    onTap: () => onPackageSelected?.call(pkg),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _CoinPackageCard extends StatelessWidget {
+  final CoinPackage package;
+  final VoidCallback? onTap;
+
+  const _CoinPackageCard({
+    required this.package,
+    this.onTap,
+  });
+
+  String get _formattedPrice {
+    // 간단한 가격 포맷 (₩1000 형태)
+    return '₩${package.price}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant,
+        ),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
+        title: Text(
+          _formattedPrice,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        subtitle: Text(
+          '총 ${package.totalCoins}코인 (기본 ${package.coins} + 보너스 ${package.bonusCoins})',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '+10% 보너스',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

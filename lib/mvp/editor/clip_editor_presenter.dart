@@ -16,16 +16,29 @@ import 'package:parrokit/mvp/editor/usecases/save_clip_usecase.dart';
 import 'package:parrokit/mvp/editor/clip_editor_view.dart';
 import 'package:parrokit/mvp/editor/services/file_staging_service.dart';
 import 'package:parrokit/mvp/editor/usecases/transcribe_usecase.dart';
+import 'package:parrokit/prompts/asr_to_segments_prompts.dart';
 import 'package:parrokit/provider/media_provider.dart';
+import 'package:parrokit/provider/user_provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:parrokit/data/local/pa_database.dart' as db;
+
+import 'package:parrokit/mvp/editor/services/audio_to_video.dart';
 
 class ClipEditorPresenter {
   final ClipEditorView view;
   final MediaProvider mediaProvider;
+  final UserProvider userProvider;
   final FileStagingService staging;
+  final AudioToVideoService _audioToVideo;
 
-  static const int _maxDurationMs = 2 * 60 * 1000; // 최대 2분(120초)
+  static const int _maxDurationMs = 5 * 60 * 1000; // 최대 5분(300초)
+
+  int _calculateCoinCost(int durationMs) {
+    final seconds = (durationMs / 1000).ceil();
+    if (seconds <= 0) return 0;
+    // 30초당 1코인: 1~30초=1, 31~60초=2, ...
+    return ((seconds + 29) ~/ 30);
+  }
 
   final ExtractThumbnailUseCase _extractThumb;
   final ExtractDurationUseCase _extractDuration;
@@ -37,6 +50,7 @@ class ClipEditorPresenter {
   ClipEditorPresenter({
     required this.view,
     required this.mediaProvider,
+    required this.userProvider,
     FileStagingService? staging,
     ExtractThumbnailUseCase? extractThumb,
     ExtractDurationUseCase? extractDuration,
@@ -44,21 +58,27 @@ class ClipEditorPresenter {
     SaveClipUseCase? saveClip,
     TranscribeUseCase? transcribe,
     TimecodeService? timecode,
+    AudioToVideoService? audioToVideo,
   })  : staging = staging ?? FileStagingService(),
-        _extractThumb = extractThumb ?? ExtractThumbnailUseCase(VideoMetaServiceImpl()),
-        _extractDuration = extractDuration ?? ExtractDurationUseCase(VideoMetaServiceImpl()),
-        _pickVideo = pickVideo ?? PickVideoUseCase(files: VideoPickerFiles(), gallery: VideoPickerGallery()),
-        _saveClip = saveClip ?? SaveClipUseCase(repo: mediaProvider, staging: staging ?? FileStagingService()),
+        _audioToVideo = audioToVideo ?? FfmpegAudioToVideoService(),
+        _extractThumb =
+            extractThumb ?? ExtractThumbnailUseCase(VideoMetaServiceImpl()),
+        _extractDuration =
+            extractDuration ?? ExtractDurationUseCase(VideoMetaServiceImpl()),
+        _pickVideo = pickVideo ??
+            PickVideoUseCase(
+                files: VideoPickerFiles(), gallery: VideoPickerGallery()),
+        _saveClip = saveClip ??
+            SaveClipUseCase(
+                repo: mediaProvider, staging: staging ?? FileStagingService()),
         _transcribe = transcribe ??
             TranscribeUseCase(
-              OpenAIWhisperAdapter(apiKey: dotenv.env['OPENAI_API_KEY']!,
+              OpenAIWhisperAdapter(
+                apiKey: dotenv.env['OPENAI_API_KEY']!,
                 // 또는 dotenv.env['OPENAI_API_KEY']! 사용
               ),
             ),
         _timecode = timecode ?? TimecodeService();
-
-
-
 
   /// STT 결과(asr.segments) + LLM JSON(segments)을 UI에 채운다.
   /// - 시간: STT 세그먼트의 start/end를 mm:ss.mmm으로
@@ -70,9 +90,9 @@ class ClipEditorPresenter {
     final count = (llmSegments.length == asrSegments.length)
         ? llmSegments.length
         : // 길이가 다르면, 더 짧은 쪽에 맞춰 안전하게 채움
-    (llmSegments.length < asrSegments.length
-        ? llmSegments.length
-        : asrSegments.length);
+        (llmSegments.length < asrSegments.length
+            ? llmSegments.length
+            : asrSegments.length);
 
     view.ensureSegmentFormsLength(count);
 
@@ -81,10 +101,10 @@ class ClipEditorPresenter {
       final asrSeg = asrSegments[i];
 
       final start = _timecode.msToMMSSmmm(asrSeg.startMs);
-      final end   = _timecode.msToMMSSmmm(asrSeg.endMs);
+      final end = _timecode.msToMMSSmmm(asrSeg.endMs);
 
       final orig = (draft['orig'] ?? '').toString();
-      final ko   = (draft['ko']   ?? '').toString();
+      final ko = (draft['ko'] ?? '').toString();
       final pron = (draft['pron'] ?? '').toString();
 
       view.setSegmentAt(
@@ -99,6 +119,7 @@ class ClipEditorPresenter {
 
     view.refresh();
   }
+
   /// STT → LLM(세그먼트 초안 JSON) 통합 & UI 채우기
   /// - 업로드된 동영상에서 음성 추출/전사
   /// - 전사 텍스트를 LLM에 전달하여 JSON(원어/번역/발음) 세그먼트 생성
@@ -113,6 +134,34 @@ class ClipEditorPresenter {
     final path = picked.path!;
     view.setSaving(true);
 
+    // 동영상 길이에 따라 코인 차감량 계산 및 보유 코인 검증
+    int? durationMs = view.durationMsInput;
+    durationMs ??= await _probeDurationMs(path);
+
+    if (durationMs == null || durationMs <= 0) {
+      view.showToastMsg('영상 길이를 확인할 수 없습니다. 다시 시도해 주세요.');
+      view.setSaving(false);
+      return;
+    }
+
+    /// 2분 제한
+    ///
+    // if (durationMs > _maxDurationMs) {
+    //   view.showToastMsg('영상 길이는 최대 2분(120초)까지만 STT를 사용할 수 있습니다.');
+    //   view.setSaving(false);
+    //   return;
+    // }
+
+    final cost = _calculateCoinCost(durationMs);
+    if (cost > 0) {
+      final currentCoins = userProvider.coins;
+      if (currentCoins < cost) {
+        view.showToastMsg('코인이 부족합니다. (필요: $cost, 보유: $currentCoins)');
+        view.setSaving(false);
+        return;
+      }
+    }
+
     try {
       // 1) STT (segments 포함)
       final asr = await _transcribe(
@@ -122,76 +171,125 @@ class ClipEditorPresenter {
       );
       view.showToastMsg('STT 완료: 세그먼트 ${asr.segments.length}개');
 
-      // 2) LLM 호출 (JSON 강제, 세그먼트 초안 생성)
+      // 2) LLM 호출 (배치 기반 JSON 강제, 세그먼트 초안 생성)
       final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
       if (apiKey.trim().isEmpty) {
         throw Exception('OPENAI_API_KEY가 비어 있습니다.');
       }
       final llm = OpenAIAdapter(apiKey: apiKey);
 
-      // ASR 세그먼트를 그대로 LLM에 넘겨 1:1 개수/순서를 강제
-      final asrArray = asr.segments
-          .map((s) => {
-                'start_ms': s.startMs,
-                'end_ms': s.endMs,
-                'text': s.text,
-              })
-          .toList();
+      // ASR 세그먼트를 배치 단위로 잘라 LLM에 넘겨 1:1 개수/순서를 강제
+      final allDraftSegments = <Map<String, dynamic>>[];
+      const batchSize = 5; // 필요 시 10, 30 등으로 조정 가능
+      final sys = kSttDraftPrompt.system;
 
-      const sys =
-          '너는 일본어 대사 텍스트를 한국어 학습자를 위해 세그먼트별로 가공하는 JSON 생성기다. '
-          '반드시 입력으로 주어진 asr_segments의 **길이와 순서**를 그대로 유지하며 동일 개수의 출력 세그먼트를 생성한다. '
-          '각 출력 세그먼트는 {"orig":"","ko":"","pron":""} 만 포함한다. '
-          '규칙: '
-          '1) orig: 입력 text를 그대로 사용하되, 필요한 경우 경미한 기호나 띄어쓰기만 수정 가능(내용 변경 금지). '
-          '2) ko: 자연스럽고 간결한 **존댓말 번역**. 직역이 어색할 경우 의미 중심으로 부드럽게 표현. '
-          '3) pron: 일본어 문장을 **한국어 발음 표기**로 적되, '
-          '   가능한 한 실제 발음에 가깝게 히라가나/가타카나를 한국어로 음차한다. '
-          '   예: "お願いします!" → "오네가이시마스!", "だよ" → "다요", "なんだから" → "난다카라", "意味ないよ" → "이미 나이요". '
-          '   한자어는 일본식 발음을 따르고, 억양이나 장음은 단순 표기로 한다(예: "お兄ちゃん" → "오니이짱"). '
-          '금지: 세그먼트 추가/삭제/병합/분할/순서변경/설명/코드블록/주석. '
-          '출력은 반드시 **하나의 JSON 객체**만 허용: {"segments":[{"orig":"","ko":"","pron":""}, ...]}';
-
-      final userPrompt =
-          '아래 asr_segments와 동일 개수·동일 순서의 segments 배열을 생성하세요. '
-          '출력은 {"segments":[...]} 하나의 JSON만 허용됩니다.\n'
-          'asr_segments = ${jsonEncode(asrArray)}';
-
-      final jsonStr = await llm.complete(
-        systemPrompt: sys,
-        userPrompt: userPrompt,
-        model: 'gpt-4o-mini',
-        timeout: const Duration(seconds: 60),
-      );
-
-      // 3) 파싱 & UI 채움 + 콘솔 출력
-      final map = jsonDecode(jsonStr);
-      final segs = (map is Map && map['segments'] is List) ? (map['segments'] as List) : const [];
-      // LLM이 실수로 길이를 다르게 주면(드물지만) 안전하게 보정
-      if (segs.length != asr.segments.length) {
-        view.showToastMsg('경고: LLM 세그먼트 개수가 STT와 달라 최소 개수로 보정합니다.');
-      }
-      // 3-1) UI에 세그먼트 주입 (ASR 시간 + LLM 원문/번역/발음)
-      if (segs.isNotEmpty && asr.segments.isNotEmpty) {
-        _fillSegmentsFromAsrAndDraft(
-          llmSegments: segs,
-          asrSegments: asr.segments,
+      for (int offset = 0; offset < asr.segments.length; offset += batchSize) {
+        final batch = asr.segments.sublist(
+          offset,
+          (offset + batchSize > asr.segments.length)
+              ? asr.segments.length
+              : offset + batchSize,
         );
-        view.showToastMsg('세그먼트 ${segs.length}개 자동 채움');
-      }
-      for (int i = 0; i < segs.length; i++) {
-        final e = segs[i];
-        if (e is Map) {
-          final orig = (e['orig'] ?? '').toString();
-          final ko   = (e['ko'] ?? '').toString();
-          final pron = (e['pron'] ?? '').toString();
+
+        final asrArray = batch
+            .map((s) => {
+                  'start_ms': s.startMs,
+                  'end_ms': s.endMs,
+                  'text': s.text,
+                })
+            .toList();
+
+        final userPrompt =
+            '${kSttDraftPrompt.userPrefix}${jsonEncode(asrArray)}';
+
+        final jsonStr = await llm.complete(
+          systemPrompt: sys,
+          userPrompt: userPrompt,
+          model: 'gpt-4o-mini',
+          timeout: const Duration(seconds: 60),
+        );
+
+        final map = jsonDecode(jsonStr);
+        final segs = (map is Map && map['segments'] is List)
+            ? (map['segments'] as List)
+            : const [];
+
+        // LLM이 실수로 길이를 다르게 주면(드물지만) 안전하게 보정
+        if (segs.length != batch.length) {
+          view.showToastMsg(
+              '경고: LLM 세그먼트 개수가 STT 배치(${offset}~${offset + batch.length - 1})와 달라 최소 개수로 보정합니다.');
+        }
+
+        final count = segs.length < batch.length ? segs.length : batch.length;
+        for (int i = 0; i < count; i++) {
+          final e = segs[i];
+          if (e is Map) {
+            allDraftSegments.add({
+              'orig': (e['orig'] ?? '').toString(),
+              'ko': (e['ko'] ?? '').toString(),
+              'pron': (e['pron'] ?? '').toString(),
+            });
+          } else {
+            allDraftSegments.add({'orig': '', 'ko': '', 'pron': ''});
+          }
+        }
+
+        // 디버그 출력 (배치별)
+        for (int i = 0; i < segs.length; i++) {
+          final e = segs[i];
+          if (e is Map) {
+            final orig = (e['orig'] ?? '').toString();
+            final ko = (e['ko'] ?? '').toString();
+            final pron = (e['pron'] ?? '').toString();
+            // ignore: avoid_print
+            print(
+                'GPT batch[$offset] seg[$i] orig="$orig" | ko="$ko" | pron="$pron"');
+          }
+        }
+
+        if (segs.isEmpty) {
           // ignore: avoid_print
-          print('GPT seg[$i] orig="$orig" | ko="$ko" | pron="$pron"');
+          print(
+              'GPT batch[$offset] segments: (empty or invalid JSON)\n$jsonStr');
         }
       }
-      if (segs.isEmpty) {
+
+      // 3) UI 채움 + 콘솔 출력 (전체 배치 결과 기준)
+      if (allDraftSegments.isNotEmpty && asr.segments.isNotEmpty) {
+        // 전체 길이가 다르면 _fillSegmentsFromAsrAndDraft에서 더 짧은 쪽 기준으로 안전하게 채워짐
+        if (allDraftSegments.length != asr.segments.length) {
+          view.showToastMsg('경고: LLM 전체 세그먼트 개수가 STT와 달라 최소 개수로 보정합니다.');
+        }
+
+        _fillSegmentsFromAsrAndDraft(
+          llmSegments: allDraftSegments,
+          asrSegments: asr.segments,
+        );
+        view.showToastMsg('세그먼트 ${allDraftSegments.length}개 자동 채움');
+
+        // STT + LLM 세그먼트 생성이 정상 완료된 경우에만 코인 차감
+        final durationMs =
+            view.durationMsInput ?? await _probeDurationMs(path) ?? 0;
+        final cost = _calculateCoinCost(durationMs);
+        if (cost > 0) {
+          userProvider.addCoins(-cost);
+          view.showToastMsg('STT/초안 생성에 코인 $cost개가 사용되었습니다.');
+        }
+      }
+
+      // 전체 결과 디버그 출력
+      for (int i = 0; i < allDraftSegments.length; i++) {
+        final e = allDraftSegments[i];
+        final orig = (e['orig'] ?? '').toString();
+        final ko = (e['ko'] ?? '').toString();
+        final pron = (e['pron'] ?? '').toString();
         // ignore: avoid_print
-        print('GPT segments: (empty or invalid JSON)\n$jsonStr');
+        print('GPT seg[$i] orig="$orig" | ko="$ko" | pron="$pron"');
+      }
+
+      if (allDraftSegments.isEmpty) {
+        // ignore: avoid_print
+        print('GPT segments: (empty or invalid JSON for all batches)');
       }
     } catch (e) {
       view.showToastMsg('통합 STT/번역 실패: $e');
@@ -200,13 +298,13 @@ class ClipEditorPresenter {
     }
   }
 
-
   // ------- 파일 픽 -------
   Future<void> pickFromSandbox() async {
     final picked = await _pickVideo(PickSource.files);
     if (picked == null) return;
     final (rawPath, pf) = picked;
-    final stagedPath = await staging.stageFromPath(rawPath, suggestedName: pf.name);
+    final stagedPath =
+        await staging.stageFromPath(rawPath, suggestedName: pf.name);
     final size = pf.size;
     await afterPick(path: stagedPath, name: pf.name, size: size);
   }
@@ -215,16 +313,27 @@ class ClipEditorPresenter {
     final picked = await _pickVideo(PickSource.gallery);
     if (picked == null) return;
     final (rawPath, pf) = picked;
-    final stagedPath = await staging.stageFromPath(rawPath, suggestedName: pf.name);
+    final stagedPath =
+        await staging.stageFromPath(rawPath, suggestedName: pf.name);
     final size = pf.size;
     await afterPick(path: stagedPath, name: pf.name, size: size);
   }
 
-  Future<void> afterPick({required String path, required String name, required int size}) async {
-    view.setPicked(PlatformFile(name: name, size: size, path: path));
+  Future<void> afterPick(
+      {required String path, required String name, required int size}) async {
+    // mp3 등이 올라온 경우 mp4로 변환 후, presenter 내부에서는 항상 mp4 경로만 사용
+    String effectivePath = path;
+    try {
+      effectivePath = await _audioToVideo.ensureMp4(path);
+    } catch (e) {
+      view.showToastMsg('오디오를 영상으로 변환하는 중 오류가 발생했습니다: $e');
+      return;
+    }
+
+    view.setPicked(PlatformFile(name: name, size: size, path: effectivePath));
     view.setThumb(null);
-    await _setThumb(path);
-    final ms = await _probeDurationMs(path);
+    await _setThumb(effectivePath);
+    final ms = await _probeDurationMs(effectivePath);
     if (ms != null) view.setDurationMs(ms);
     view.refresh();
   }
@@ -239,8 +348,15 @@ class ClipEditorPresenter {
     return await _extractDuration(path);
   }
 
-
-  ({String type, String name, String nameNative, String clipTitle, String epiTitle, int? seasonNum, int? epiNumber}) _validateMeta() {
+  ({
+    String type,
+    String name,
+    String nameNative,
+    String clipTitle,
+    String epiTitle,
+    int? seasonNum,
+    int? epiNumber
+  }) _validateMeta() {
     final name = view.workName.trim();
     final nameNative = view.workNameNative.trim();
     final clipTitle = view.clipTitle.trim();
@@ -249,19 +365,51 @@ class ClipEditorPresenter {
 
     if (clipTitle.isEmpty) {
       view.showToastMsg('클립 제목은 필수입니다.');
-      return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: null, epiNumber: null);
+      return (
+        type: type,
+        name: name,
+        nameNative: nameNative,
+        clipTitle: clipTitle,
+        epiTitle: epiTitle,
+        seasonNum: null,
+        epiNumber: null
+      );
     }
     if (name.isEmpty) {
       view.showToastMsg('작품명은 필수입니다.');
-      return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: null, epiNumber: null);
+      return (
+        type: type,
+        name: name,
+        nameNative: nameNative,
+        clipTitle: clipTitle,
+        epiTitle: epiTitle,
+        seasonNum: null,
+        epiNumber: null
+      );
     }
     if (nameNative.isEmpty) {
       view.showToastMsg('원어 작품명은 필수입니다.');
-      return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: null, epiNumber: null);
+      return (
+        type: type,
+        name: name,
+        nameNative: nameNative,
+        clipTitle: clipTitle,
+        epiTitle: epiTitle,
+        seasonNum: null,
+        epiNumber: null
+      );
     }
     if (epiTitle.isEmpty) {
       view.showToastMsg(type == 'movie' ? '영화 제목은 필수입니다.' : '회차 제목은 필수입니다.');
-      return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: null, epiNumber: null);
+      return (
+        type: type,
+        name: name,
+        nameNative: nameNative,
+        clipTitle: clipTitle,
+        epiTitle: epiTitle,
+        seasonNum: null,
+        epiNumber: null
+      );
     }
 
     int? seasonNum, epiNumber;
@@ -270,23 +418,63 @@ class ClipEditorPresenter {
       epiNumber = int.tryParse(view.episodeText.trim());
       if (seasonNum == null) {
         view.showToastMsg('시즌 번호는 숫자로 필수입니다.');
-        return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: null, epiNumber: null);
+        return (
+          type: type,
+          name: name,
+          nameNative: nameNative,
+          clipTitle: clipTitle,
+          epiTitle: epiTitle,
+          seasonNum: null,
+          epiNumber: null
+        );
       }
       if (epiNumber == null) {
         view.showToastMsg('화 번호는 숫자로 필수입니다.');
-        return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: null, epiNumber: null);
+        return (
+          type: type,
+          name: name,
+          nameNative: nameNative,
+          clipTitle: clipTitle,
+          epiTitle: epiTitle,
+          seasonNum: null,
+          epiNumber: null
+        );
       }
       if (seasonNum <= 0) {
         view.showToastMsg('시즌 번호는 1 이상이어야 합니다.');
-        return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: null, epiNumber: null);
+        return (
+          type: type,
+          name: name,
+          nameNative: nameNative,
+          clipTitle: clipTitle,
+          epiTitle: epiTitle,
+          seasonNum: null,
+          epiNumber: null
+        );
       }
       if (epiNumber <= 0) {
         view.showToastMsg('화 번호는 1 이상이어야 합니다.');
-        return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: null, epiNumber: null);
+        return (
+          type: type,
+          name: name,
+          nameNative: nameNative,
+          clipTitle: clipTitle,
+          epiTitle: epiTitle,
+          seasonNum: null,
+          epiNumber: null
+        );
       }
     }
 
-    return (type: type, name: name, nameNative: nameNative, clipTitle: clipTitle, epiTitle: epiTitle, seasonNum: seasonNum, epiNumber: epiNumber);
+    return (
+      type: type,
+      name: name,
+      nameNative: nameNative,
+      clipTitle: clipTitle,
+      epiTitle: epiTitle,
+      seasonNum: seasonNum,
+      epiNumber: epiNumber
+    );
   }
 
   List<db.Segment>? _collectAndValidateSegments({required int durationMs}) {
@@ -300,7 +488,11 @@ class ClipEditorPresenter {
       final pr = f.pronCtl.text.trim();
       final ko = f.koCtl.text.trim();
 
-      if (sText.isEmpty || eText.isEmpty || ja.isEmpty || pr.isEmpty || ko.isEmpty) {
+      if (sText.isEmpty ||
+          eText.isEmpty ||
+          ja.isEmpty ||
+          pr.isEmpty ||
+          ko.isEmpty) {
         view.showToastMsg('세그먼트 ${i + 1}: 시작/끝/원문/발음/번역은 모두 필수입니다.');
         return null;
       }
@@ -362,6 +554,9 @@ class ClipEditorPresenter {
       return;
     }
 
+    // mp3 등이 저장 직전에 들어온 경우를 대비해 한 번 더 보정
+    final normalizedPath = await _audioToVideo.ensureMp4(stagedPath);
+
     // 1) 메타 검증/파싱
     final meta = _validateMeta();
     final type = meta.type;
@@ -372,7 +567,10 @@ class ClipEditorPresenter {
     final seasonNum = meta.seasonNum;
     final epiNumber = meta.epiNumber;
 
-    if (clipTitle.isEmpty || name.isEmpty || nameNative.isEmpty || epiTitle.isEmpty) {
+    if (clipTitle.isEmpty ||
+        name.isEmpty ||
+        nameNative.isEmpty ||
+        epiTitle.isEmpty) {
       return; // 메시지는 _validateMeta 안에서 처리됨
     }
     if (type == 'season' && (seasonNum == null || epiNumber == null)) {
@@ -386,7 +584,7 @@ class ClipEditorPresenter {
       return;
     }
     if (durationMs > _maxDurationMs) {
-      view.showToastMsg('영상 길이는 최대 2분(120초)까지만 허용됩니다.');
+      view.showToastMsg('영상 길이는 최대 5분(300초)까지만 허용됩니다.');
       return;
     }
 
@@ -410,7 +608,8 @@ class ClipEditorPresenter {
         durationMs: durationMs,
         segments: segments,
         tags: view.tags,
-        picked: picked!,
+        picked: PlatformFile(
+            name: picked!.name, size: picked.size, path: normalizedPath),
         existingRelPath: existingRelPath,
       );
       view.showToastMsg(isEdit ? '업데이트 완료!' : '저장 완료!');
@@ -421,5 +620,4 @@ class ClipEditorPresenter {
       view.setSaving(false);
     }
   }
-
 }
