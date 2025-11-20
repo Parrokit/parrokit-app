@@ -48,6 +48,7 @@ class PaTheme {
       outlinedButtonTheme: paOutlinedButtonTheme(cs, isDark: isDark),
       textButtonTheme:     paTextButtonTheme(cs, isDark: isDark),
       toggleButtonsTheme:  paToggleButtonsTheme(cs, isDark: isDark),
+      filledButtonTheme:  paFilledButtonTheme(cs,isDark: isDark),
 
       inputDecorationTheme: paInputDecorationTheme(cs, isDark: isDark),
       chipTheme: paChipTheme(cs, isDark: isDark),

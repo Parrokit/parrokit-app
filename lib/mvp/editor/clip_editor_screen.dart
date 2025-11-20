@@ -24,7 +24,6 @@ import 'package:parrokit/data/local/pa_database.dart' as db;
 /// 위젯
 import 'widgets/file_hero_card.dart';
 import 'widgets/hairline_divider.dart';
-import 'widgets/input_card.dart';
 import 'widgets/labeled_text_field.dart';
 import 'widgets/section_title.dart';
 import 'widgets/segment_card.dart';
@@ -52,11 +51,12 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
   String? _existingRelPath;
   int? _existingDurationMS;
   _PickSource _lastPickSource = _PickSource.file;
+  int _currentStep = 0;
 
   /// --- 폼 컨트롤러
   final _titleCtl = TextEditingController();
   final _nameCtl = TextEditingController();
-  final _nameNativeCtl = TextEditingController();
+  final _nameNativeCtl = TextEditingController(text: '-');
   final _episodeCtl = TextEditingController();
   final _durationCtl = TextEditingController();
   final _seasonCtl = TextEditingController();
@@ -418,41 +418,175 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              '코인 ${userProvider.coins}개',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.monetization_on_rounded,
+                  color: Colors.amber,
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${userProvider.coins}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
             ),
           ),
         ],
         elevation: 0,
       ),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-              children: [
-                _buildFileSection(),
-                const SizedBox(height: 24),
-                const HairlineDivider(),
-                const SizedBox(height: 16),
-                _buildMetaSection(),
-                const SizedBox(height: 20),
-                const HairlineDivider(),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  icon: const Icon(Icons.subtitles_outlined, size: 18),
-                  label: const Text('자동 자막 달기'),
-                  onPressed: _presenter.onSttAndDraft,
-                ),
-                _buildSegmentsSection(),
-                _buildBottomActions(),
-                const SizedBox(height: 200),
-              ],
+            Expanded(
+              child: Stack(
+                children: [
+                  Stepper(
+                    type: StepperType.horizontal,
+                    currentStep: _currentStep,
+                    onStepContinue: _handleStepContinue,
+                    onStepCancel: _handleStepCancel,
+                    onStepTapped: (index) {
+                      setState(() {
+                        _currentStep = index;
+                      });
+                    },
+                    // Stepper 내부 기본 버튼은 숨김
+                    controlsBuilder: (context, details) =>
+                        const SizedBox.shrink(),
+                    steps: [
+                      Step(
+                        title: const SizedBox.shrink(),
+                        isActive: _currentStep >= 0,
+                        state: _currentStep > 0
+                            ? StepState.complete
+                            : StepState.indexed,
+                        content: _FileStep(
+                          fileSection: _buildFileSection(),
+                        ),
+                      ),
+                      Step(
+                        title: const SizedBox.shrink(),
+                        isActive: _currentStep >= 1,
+                        state: _currentStep > 1
+                            ? StepState.complete
+                            : StepState.indexed,
+                        content: _WorkNameStep(
+                          workNameSection: _buildWorkNameSection(),
+                        ),
+                      ),
+                      Step(
+                        title: const SizedBox.shrink(),
+                        isActive: _currentStep >= 2,
+                        state: _currentStep > 2
+                            ? StepState.complete
+                            : StepState.indexed,
+                        content: _TypeStep(
+                          typeSection: _buildTypeSection(),
+                        ),
+                      ),
+                      Step(
+                        title: const SizedBox.shrink(),
+                        isActive: _currentStep >= 3,
+                        state: _currentStep > 3
+                            ? StepState.complete
+                            : StepState.indexed,
+                        content: _SeasonEpisodeStep(
+                          seasonEpisodeSection: _buildSeasonEpisodeSection(),
+                        ),
+                      ),
+                      Step(
+                        title: const SizedBox.shrink(),
+                        isActive: _currentStep >= 4,
+                        state: _currentStep > 4
+                            ? StepState.complete
+                            : StepState.indexed,
+                        content: _TitlesStep(
+                          titlesSection: _buildTitlesSection(),
+                        ),
+                      ),
+                      Step(
+                        title: const SizedBox.shrink(),
+                        isActive: _currentStep >= 5,
+                        state: _currentStep > 5
+                            ? StepState.complete
+                            : StepState.indexed,
+                        content: _TagsStep(
+                          tagsSection: _buildTagsSection(),
+                        ),
+                      ),
+                      Step(
+                        title: const SizedBox.shrink(),
+                        isActive: _currentStep >= 6,
+                        state: StepState.indexed,
+                        content: _SegmentsStep(
+                          onSttAndDraft: _presenter.onSttAndDraft,
+                          onAddSeg: _onAddSeg,
+                          segmentsSection: _buildSegmentsSection(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_saving) Positioned.fill(child: _buildSavingOverlay()),
+                ],
+              ),
             ),
-            if (_saving) Positioned.fill(child: _buildSavingOverlay()),
+            // 화면 맨 아래 고정된 이전/다음 버튼
+            Container(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                16 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: _buildStepperControls(),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  void _handleStepContinue() {
+    if (_currentStep < 6) {
+      setState(() => _currentStep += 1);
+    } else {
+      _presenter.save(
+        isEdit: _isEdit,
+        clipId: widget.clipId,
+        picked: _picked,
+        existingRelPath: _existingRelPath,
+      );
+    }
+  }
+
+  void _handleStepCancel() {
+    if (_currentStep == 0) {
+      Navigator.of(context).maybePop();
+    } else {
+      setState(() => _currentStep -= 1);
+    }
+  }
+
+  Widget _buildStepperControls() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _saving ? null : _handleStepCancel,
+            child: Text(_currentStep == 0 ? '취소' : '이전'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _saving ? null : _handleStepContinue,
+            child: const Text('다음'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -463,7 +597,7 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle('영상 파일'),
+        SectionTitle("영상 정보"),
         const SizedBox(height: 10),
         FileHeroCard(
           picked: _picked,
@@ -514,30 +648,32 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
   }
 
   Widget _buildTypeSelector(TextTheme tt) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: SegmentedButton<String>(
-            segments: [
-              ButtonSegment(
-                value: 'season',
-                label: Text(
-                  '시즌',
-                  style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
-                ),
+        SectionTitle("시즌 또는 영화"),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'season',
+                    label: Text('시즌'),
+                  ),
+                  ButtonSegment(
+                    value: 'movie',
+                    label: Text('영화'),
+                  ),
+                ],
+                selected: {_selectedType},
+                onSelectionChanged: (s) =>
+                    setState(() => _selectedType = s.first),
+                showSelectedIcon: false,
               ),
-              ButtonSegment(
-                value: 'movie',
-                label: Text(
-                  '영화',
-                  style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-            selected: {_selectedType},
-            onSelectionChanged: (s) => setState(() => _selectedType = s.first),
-            showSelectedIcon: false,
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -548,6 +684,8 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SectionTitle("태그 추가"),
+        const SizedBox(height: 10),
         LabeledTextField(
           label: '태그(선택)',
           hint: '기억하기 쉽고 다시 찾기 편한 태그를 입력하세요.',
@@ -574,7 +712,11 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
             const SizedBox(width: 8),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: t.colorScheme.onPrimary,
+                side: BorderSide(
+                  width: 1,
+                  color: t.colorScheme.onSurface.withOpacity(0.38),
+                ),
+                backgroundColor: t.colorScheme.surface,
                 foregroundColor: t.colorScheme.primary,
               ),
               child: const Text('모두 지우기'),
@@ -588,18 +730,10 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
           runSpacing: -8,
           children: _tags
               .map((t) => Chip(
-                    label: Text(
-                      t,
-                      style: tt.bodyMedium?.copyWith(color: cs.onPrimary),
-                    ),
-                    backgroundColor: cs.primary,
+                    label: Text(t),
                     deleteIcon: const Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: Colors.white70,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
                     ),
                     onDeleted: () => setState(() => _tags.remove(t)),
                   ))
@@ -609,110 +743,139 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     );
   }
 
-  Widget _buildMetaSection() {
-    final t = Theme.of(context);
-    final tt = t.textTheme;
-    final cs = t.colorScheme;
-
+  Widget _buildWorkNameSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle('영상 정보'),
+        SectionTitle("작품 이름"),
         const SizedBox(height: 10),
-        InputCard(
-          children: [
-            LabeledTextField(
-              label: '클립 제목',
-              hint: '클립 제목을 입력하세요.',
-              controller: _titleCtl,
-              helper: '어떤 장면인지 바로 알아볼 수 있게 간결하게 적어주세요.',
-              prefixIcon: Icons.title,
-              clearable: true,
-            ),
-            const SizedBox(height: 10),
-            LabeledTextField(
-              label: '작품명',
-              hint: '작품의 이름을 입력하세요.',
-              controller: _nameCtl,
-              prefixIcon: Icons.movie_outlined,
-              clearable: true,
-            ),
-            LabeledTextField(
-              label: '원어 작품명',
-              hint: '작품의 본토 이름을 입력하세요.',
-              controller: _nameNativeCtl,
-              prefixIcon: Icons.movie_outlined,
-              clearable: true,
-            ),
-            const SizedBox(height: 10),
-            _buildTypeSelector(tt),
-            const SizedBox(height: 10),
-            if (_selectedType == 'season')
-              LabeledTextField(
-                label: '시즌',
-                hint: '몇 번째 시즌인지 숫자로 입력하세요.',
-                controller: _seasonCtl,
-                keyboardType: TextInputType.number,
-                prefixIcon: Icons.layers_outlined,
-                clearable: true,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
-            const SizedBox(height: 10),
-            if (_selectedType == 'season')
-              LabeledTextField(
-                label: '화',
-                hint: '몇 번째 회차인지 숫자로 입력하세요.',
-                controller: _episodeCtl,
-                keyboardType: TextInputType.number,
-                prefixIcon: Icons.confirmation_number_outlined,
-                clearable: true,
-              ),
-            const SizedBox(height: 10),
-            LabeledTextField(
-              label: _selectedType == 'movie' ? '영화 제목' : '회차 제목',
-              hint: _selectedType == 'movie'
-                  ? '회차의 제목을 입력하세요.'
-                  : '영화의 제목을 입력하세요.',
-              helper: _selectedType == 'movie'
-                  ? '시리즈가 없는 단독 영화의 경우,\n작품명과 동일하거나 편한대로 작성해주세요.'
-                  : '수정한 경우, 기존 값은 새 내용으로 갱신됩니다.',
-              controller: _epiTitleCtl,
-              prefixIcon: Icons.title_outlined,
-              clearable: true,
-            ),
-            const SizedBox(height: 10),
-            _buildTagsEditor(tt, cs),
-          ],
+        LabeledTextField(
+          label: '작품명',
+          hint: '작품의 이름을 입력하세요.',
+          controller: _nameCtl,
+          prefixIcon: Icons.movie_outlined,
+          clearable: true,
+        ),
+        LabeledTextField(
+          label: '원어 작품명',
+          hint: '작품의 본토 이름을 입력하세요.',
+          controller: _nameNativeCtl,
+          prefixIcon: Icons.movie_outlined,
+          clearable: true,
         ),
       ],
     );
   }
 
-  Widget _buildSegmentsHeader() {
-    return Row(
+  Widget _buildTypeSection() {
+    final tt = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle('구간 정보'),
-        const Spacer(),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('구간 추가'),
-          onPressed: _onAddSeg,
+        const SizedBox(height: 10),
+        _buildTypeSelector(tt),
+      ],
+    );
+  }
+
+  Widget _buildSeasonEpisodeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionTitle("시즌/화"),
+        const SizedBox(height: 10),
+        if (_selectedType == 'season')
+          LabeledTextField(
+            label: '시즌',
+            hint: '몇 번째 시즌인지 숫자로 입력하세요.',
+            controller: _seasonCtl,
+            keyboardType: TextInputType.number,
+            prefixIcon: Icons.layers_outlined,
+            clearable: true,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+        const SizedBox(height: 10),
+        if (_selectedType == 'season')
+          LabeledTextField(
+            label: '화',
+            hint: '몇 번째 회차인지 숫자로 입력하세요.',
+            controller: _episodeCtl,
+            keyboardType: TextInputType.number,
+            prefixIcon: Icons.confirmation_number_outlined,
+            clearable: true,
+          ),
+        if (_selectedType == 'movie')
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Text(
+              '영화 타입은 시즌/회차 정보가 필요하지 않습니다.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Theme.of(context).hintColor),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTitlesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionTitle("제목"),
+        const SizedBox(height: 10),
+        LabeledTextField(
+          label: _selectedType == 'movie' ? '영화 제목' : '회차 제목',
+          hint: _selectedType == 'movie' ? '영화의 제목을 입력하세요.' : '회차의 제목을 입력하세요.',
+          helper: _selectedType == 'movie'
+              ? '시리즈가 없는 단독 영화의 경우,\n작품명과 동일하거나 편한대로 작성해주세요.'
+              : '수정한 경우, 기존 값은 새 내용으로 갱신됩니다.',
+          controller: _epiTitleCtl,
+          prefixIcon: Icons.title_outlined,
+          clearable: true,
         ),
+        const SizedBox(height: 10),
+        LabeledTextField(
+          label: '클립 제목',
+          hint: '클립 제목을 입력하세요.',
+          controller: _titleCtl,
+          helper: '어떤 장면인지 바로 알아볼 수 있게 간결하게 적어주세요.',
+          prefixIcon: Icons.title,
+          clearable: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTagsSection() {
+    final t = Theme.of(context);
+    final tt = t.textTheme;
+    final cs = t.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        _buildTagsEditor(tt, cs),
       ],
     );
   }
 
   Widget _buildSegmentsList() {
+    final total = _segForms.length;
+
     return Column(
       children: [
-        for (int i = 0; i < _segForms.length; i++) ...[
+        for (int realIndex = total - 1; realIndex >= 0; realIndex--) ...[
+          // 최신 구간(높은 번호)이 위로 오도록 역순으로 렌더링
           SegmentCard(
-            index: i + 1,
-            startCtl: _segForms[i].startCtl,
-            endCtl: _segForms[i].endCtl,
-            originalCtl: _segForms[i].originalCtl,
-            pronCtl: _segForms[i].pronCtl,
-            koCtl: _segForms[i].koCtl,
+            index: realIndex + 1,
+            // 예: total=3일 때 3, 2, 1 순서로 표시
+            startCtl: _segForms[realIndex].startCtl,
+            endCtl: _segForms[realIndex].endCtl,
+            originalCtl: _segForms[realIndex].originalCtl,
+            pronCtl: _segForms[realIndex].pronCtl,
+            koCtl: _segForms[realIndex].koCtl,
           ),
           const SizedBox(height: 6),
           Row(
@@ -721,7 +884,7 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
               OutlinedButton.icon(
                 icon: const Icon(Icons.delete_outline, size: 18),
                 label: const Text('구간 삭제'),
-                onPressed: () => _onRemoveSeg(i),
+                onPressed: () => _onRemoveSeg(realIndex),
               ),
             ],
           ),
@@ -735,34 +898,7 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSegmentsHeader(),
-        const SizedBox(height: 8),
         _buildSegmentsList(),
-      ],
-    );
-  }
-
-  Widget _buildBottomActions() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            child: const Text('취소'),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
-            child: const Text('저장'),
-            onPressed: () => _presenter.save(
-              isEdit: _isEdit,
-              clipId: widget.clipId,
-              picked: _picked,
-              existingRelPath: _existingRelPath,
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -771,6 +907,146 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     return Container(
       color: Colors.black.withOpacity(0.25),
       child: const Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _FileStep extends StatelessWidget {
+  const _FileStep({
+    required this.fileSection,
+  });
+
+  final Widget fileSection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+      child: fileSection,
+    );
+  }
+}
+
+class _WorkNameStep extends StatelessWidget {
+  const _WorkNameStep({
+    required this.workNameSection,
+  });
+
+  final Widget workNameSection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+      child: workNameSection,
+    );
+  }
+}
+
+class _TypeStep extends StatelessWidget {
+  const _TypeStep({
+    required this.typeSection,
+  });
+
+  final Widget typeSection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+      child: typeSection,
+    );
+  }
+}
+
+class _SeasonEpisodeStep extends StatelessWidget {
+  const _SeasonEpisodeStep({
+    required this.seasonEpisodeSection,
+  });
+
+  final Widget seasonEpisodeSection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+      child: seasonEpisodeSection,
+    );
+  }
+}
+
+class _TitlesStep extends StatelessWidget {
+  const _TitlesStep({
+    required this.titlesSection,
+  });
+
+  final Widget titlesSection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+      child: titlesSection,
+    );
+  }
+}
+
+class _TagsStep extends StatelessWidget {
+  const _TagsStep({
+    required this.tagsSection,
+  });
+
+  final Widget tagsSection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+      child: tagsSection,
+    );
+  }
+}
+
+class _SegmentsStep extends StatelessWidget {
+  const _SegmentsStep({
+    required this.onSttAndDraft,
+    required this.onAddSeg,
+    required this.segmentsSection,
+  });
+
+  final VoidCallback onSttAndDraft;
+  final VoidCallback onAddSeg;
+  final Widget segmentsSection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionTitle("자막 정보"),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              FilledButton.icon(
+                icon: const Icon(Icons.subtitles_outlined, size: 18),
+                label: const Text('자동 자막 달기'),
+                onPressed: onSttAndDraft,
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('구간 추가'),
+                onPressed: onAddSeg,
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 12),
+          segmentsSection,
+        ],
+      ),
     );
   }
 }

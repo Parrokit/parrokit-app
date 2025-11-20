@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../../utils/show_toast.dart';
 import '../../services/backup_service.dart';
 import 'index.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -363,15 +364,41 @@ class _MoreScreenState extends State<MoreScreen> {
                   NavTile(
                     icon: Icons.privacy_tip_outlined,
                     title: '개인정보 처리방침',
-                    onTap: () => showToast(context, '웹뷰/문서 열기'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const WebDocumentScreen(
+                            title: '개인정보 처리방침',
+                            url:
+                                'https://www.notion.so/2025-11-20-2b1b6c6245ad80b38685e5b20cc4be73?source=copy_link',
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const HairlineDivider(),
                   NavTile(
-                    icon: Icons.mail_outline,
-                    title: '문의/피드백',
-                    subtitle: '팀에게 메일 보내기',
-                    onTap: () => sendEmail(context),
+                    icon: Icons.privacy_tip_outlined,
+                    title: '이용 약관',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const WebDocumentScreen(
+                            title: '이용 약관',
+                            url:
+                                'https://www.notion.so/2025-11-20-2b1b6c6245ad80d2b741e496571298be?source=copy_link',
+                          ),
+                        ),
+                      );
+                    },
                   ),
+                  // const HairlineDivider(),
+                  // NavTile(
+                  //   icon: Icons.mail_outline,
+                  //   title: '문의/피드백',
+                  //   subtitle: '팀에게 메일 보내기',
+                  //   onTap: () => sendEmail(context),
+                  // ),
                 ],
               ),
             ),
@@ -398,6 +425,65 @@ class _MoreScreenState extends State<MoreScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class WebDocumentScreen extends StatefulWidget {
+  const WebDocumentScreen({
+    super.key,
+    required this.title,
+    required this.url,
+  });
+
+  final String title;
+  final String url;
+
+  @override
+  State<WebDocumentScreen> createState() => _WebDocumentScreenState();
+}
+
+class _WebDocumentScreenState extends State<WebDocumentScreen> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.transparent)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) {
+              setState(() => _isLoading = false);
+            }
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Stack(
+        children: [
+          WebViewWidget(controller: _controller),
+          if (_isLoading)
+            LinearProgressIndicator(
+              minHeight: 2,
+              color: cs.primary,
+              backgroundColor: cs.surfaceVariant,
+            ),
+        ],
       ),
     );
   }

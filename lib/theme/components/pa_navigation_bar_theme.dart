@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 BottomNavigationBarThemeData paBottomNavigationBar(ColorScheme cs, {required bool isDark}) {
   return BottomNavigationBarThemeData(
     type: BottomNavigationBarType.fixed,
-    backgroundColor: cs.background,
+    backgroundColor: cs.surface,
     selectedItemColor: cs.primary,
     unselectedItemColor: cs.onSurface.withOpacity(0.6),
     showSelectedLabels: true,

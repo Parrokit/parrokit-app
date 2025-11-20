@@ -188,6 +188,8 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildLoggedInView(ThemeData theme) {
     final userProvider = context.watch<UserProvider>();
     final user = userProvider.currentUser;
+    final isEmailVerified =
+        FirebaseAuth.instance.currentUser?.emailVerified ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -224,6 +226,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CircleAvatar(
                         radius: 24,
@@ -262,14 +265,58 @@ class _AuthScreenState extends State<AuthScreen> {
                                     .withOpacity(0.7),
                               ),
                             ),
+                            const SizedBox(height: 6),
+                            if (isEmailVerified)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.verified,
+                                    size: 16,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '이메일 인증됨',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: _isLoading ? null : _onLogout,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              '로그아웃',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withOpacity(0.8),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24),
-                if (user?.email != null) ...[
+                if (user?.email != null && !isEmailVerified) ...[
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -325,23 +372,6 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ),
         ),
-        // 하단 고정 로그아웃 버튼
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _onLogout,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text('로그아웃'),
-          ),
-        ),
-        const SizedBox(height: 8),
       ],
     );
   }

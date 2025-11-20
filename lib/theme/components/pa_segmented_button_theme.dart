@@ -5,37 +5,24 @@ SegmentedButtonThemeData paSegmentedButtonTheme(ColorScheme cs, {required bool i
   return SegmentedButtonThemeData(
     style: ButtonStyle(
       shape: WidgetStatePropertyAll(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
       ),
       padding: const WidgetStatePropertyAll(
         EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       ),
 
-      // 선: 선택 시 primary, 기본은 outlineVariant(헤어라인 느낌)
-      side: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
-        return BorderSide(
-          color: selected ? cs.primary : cs.outlineVariant,
-          width: selected ? 1.2 : 0.8,
-        );
-      }),
-
       // 배경: 선택 시 은은한 채움, 비선택은 surface
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
-        final selOpacity = isDark ? 0.16 : 0.12; // 다크에서 약간 더 진하게
-        return selected ? cs.primary.withOpacity(selOpacity) : cs.surface;
+        final selOpacity = isDark ? 0.16 : 0.12;
+        return selected ? cs.primary: cs.surface;
       }),
 
       // 글자/아이콘: 선택 시 primary, 평소엔 onSurface
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
-        return selected ? cs.primary : cs.onSurface;
+        return selected ? cs.onPrimary : cs.onSurface;
       }),
-
-      textStyle: const WidgetStatePropertyAll(
-        TextStyle(fontWeight: FontWeight.w700),
-      ),
 
       // hover/pressed 효과: onSurface 기반 투명도
       overlayColor: WidgetStateProperty.resolveWith((states) {
