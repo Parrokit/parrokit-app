@@ -77,6 +77,10 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
   /// 작품명 자동완성용 전체 목록
   List<String> _allTitleNames = [];
 
+  /// 시즌/회차 자동완성용 목록
+  List<int> _seasonNumbers = [];
+  List<int> _episodeNumbers = [];
+
   /// view 구현
   @override
   BuildContext get context => super.context;
@@ -210,6 +214,71 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
       });
     } catch (e) {
       showToastMsg('작품 목록을 불러오는 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// 현재 입력된 작품명 기준으로 시즌 목록 로드
+  Future<void> _loadSeasonOptionsForTitle(String titleName) async {
+    if (titleName.isEmpty || _selectedType != 'season') return;
+    try {
+      final nums = await _titlesDao.fetchSeasonNumbersByTitleName(titleName);
+      if (!mounted) return;
+      setState(() {
+        _seasonNumbers = nums;
+      });
+    } catch (e) {
+      showToastMsg('시즌 정보를 불러오는 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// 현재 작품명 + 시즌 기준으로 회차 목록 로드
+  Future<void> _loadEpisodeOptionsForCurrent() async {
+    final titleName = _nameCtl.text.trim();
+    final seasonText = _seasonCtl.text.trim();
+    if (titleName.isEmpty || seasonText.isEmpty || _selectedType != 'season') {
+      return;
+    }
+    final seasonNumber = int.tryParse(seasonText);
+    if (seasonNumber == null) return;
+
+    try {
+      final nums = await _titlesDao.fetchEpisodeNumbers(
+        titleName: titleName,
+        seasonNumber: seasonNumber,
+      );
+      if (!mounted) return;
+      setState(() {
+        _episodeNumbers = nums;
+      });
+    } catch (e) {
+      showToastMsg('회차 정보를 불러오는 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// 현재 작품명 + 시즌 + 화 기준으로 에피소드 제목 자동 채우기
+  Future<void> _autoFillEpisodeTitleIfExists() async {
+    final titleName = _nameCtl.text.trim();
+    final seasonText = _seasonCtl.text.trim();
+    final episodeText = _episodeCtl.text.trim();
+    if (titleName.isEmpty || seasonText.isEmpty || episodeText.isEmpty) return;
+    if (_selectedType != 'season') return;
+
+    final seasonNumber = int.tryParse(seasonText);
+    final episodeNumber = int.tryParse(episodeText);
+    if (seasonNumber == null || episodeNumber == null) return;
+
+    try {
+      final title = await _titlesDao.findEpisodeTitle(
+        titleName: titleName,
+        seasonNumber: seasonNumber,
+        episodeNumber: episodeNumber,
+      );
+      if (!mounted || title == null || title.isEmpty) return;
+      setState(() {
+        _epiTitleCtl.text = title;
+      });
+    } catch (_) {
+      // 조용히 무시
     }
   }
 
@@ -836,6 +905,17 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
             setState(() {
               _nameCtl.text = selection;
             });
+
+            () async {
+              final native = await _titlesDao.findNativeByName(selection);
+              await _loadSeasonOptionsForTitle(selection);
+              if (!mounted) return;
+              if (native != null) {
+                setState(() {
+                  _nameNativeCtl.text = native;
+                });
+              }
+            }();
           },
           fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
             // 초기값 동기화
@@ -851,6 +931,26 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
               _nameCtl.text = textEditingController.text;
             });
 
+            // 🔹 포커스 해제 시 nameNative 자동 채우기 및 시즌 목록 로드
+            focusNode.addListener(() {
+              if (!focusNode.hasFocus) {
+                final name = textEditingController.text.trim();
+                if (name.isEmpty) return;
+
+                () async {
+                  final native = await _titlesDao.findNativeByName(name);
+                  await _loadSeasonOptionsForTitle(name);
+                  if (!mounted) return;
+
+                  if (native != null) {
+                    setState(() {
+                      _nameNativeCtl.text = native;
+                    });
+                  }
+                }();
+              }
+            });
+
             return TextField(
               controller: textEditingController,
               focusNode: focusNode,
@@ -862,12 +962,12 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
                 suffixIcon: textEditingController.text.isEmpty
                     ? null
                     : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          textEditingController.clear();
-                          _nameCtl.clear();
-                        },
-                      ),
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    textEditingController.clear();
+                    _nameCtl.clear();
+                  },
+                ),
               ),
             );
           },
@@ -936,26 +1036,215 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
       children: [
         SectionTitle("시즌/화"),
         const SizedBox(height: 10),
-        if (_selectedType == 'season')
-          LabeledTextField(
-            label: '시즌',
-            hint: '몇 번째 시즌인지 숫자로 입력하세요.',
-            controller: _seasonCtl,
-            keyboardType: TextInputType.number,
-            prefixIcon: Icons.layers_outlined,
-            clearable: true,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        if (_selectedType == 'season') ...[
+          // 시즌 자동완성
+          Autocomplete<int>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              final query = textEditingValue.text.trim();
+              if (query.isEmpty) {
+                return _seasonNumbers;
+              }
+              final qNum = int.tryParse(query);
+              if (qNum == null) {
+                return _seasonNumbers.where(
+                  (n) => n.toString().contains(query),
+                );
+              }
+              return _seasonNumbers.where((n) => n == qNum);
+            },
+            displayStringForOption: (option) => option.toString(),
+            onSelected: (int selection) {
+              setState(() {
+                _seasonCtl.text = selection.toString();
+              });
+              _loadEpisodeOptionsForCurrent();
+            },
+            fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+              // 초기값 동기화
+              if (textEditingController.text != _seasonCtl.text) {
+                textEditingController.text = _seasonCtl.text;
+                textEditingController.selection = TextSelection.collapsed(
+                  offset: textEditingController.text.length,
+                );
+              }
+
+              // 내부 컨트롤러와 _seasonCtl 동기화
+              textEditingController.addListener(() {
+                _seasonCtl.text = textEditingController.text;
+              });
+
+              // 포커스 해제 시 회차 목록 로드
+              focusNode.addListener(() {
+                if (!focusNode.hasFocus) {
+                  _loadEpisodeOptionsForCurrent();
+                }
+              });
+
+              return TextField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  labelText: '시즌',
+                  hintText: '몇 번째 시즌인지 숫자로 입력하세요.',
+                  prefixIcon: const Icon(Icons.layers_outlined),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: textEditingController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            textEditingController.clear();
+                            _seasonCtl.clear();
+                            setState(() {
+                              _episodeNumbers = [];
+                              _episodeCtl.clear();
+                            });
+                          },
+                        ),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              );
+            },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(10),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: 280,
+                      minWidth: 240,
+                    ),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 1, thickness: 0.5),
+                      itemBuilder: (context, index) {
+                        final option = options.elementAt(index);
+                        return InkWell(
+                          onTap: () => onSelected(option),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            child: Text(option.toString()),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        const SizedBox(height: 10),
-        if (_selectedType == 'season')
-          LabeledTextField(
-            label: '화',
-            hint: '몇 번째 회차인지 숫자로 입력하세요.',
-            controller: _episodeCtl,
-            keyboardType: TextInputType.number,
-            prefixIcon: Icons.confirmation_number_outlined,
-            clearable: true,
+          const SizedBox(height: 10),
+          // 화 자동완성
+          Autocomplete<int>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              final query = textEditingValue.text.trim();
+              if (query.isEmpty) {
+                return _episodeNumbers;
+              }
+              final qNum = int.tryParse(query);
+              if (qNum == null) {
+                return _episodeNumbers.where(
+                  (n) => n.toString().contains(query),
+                );
+              }
+              return _episodeNumbers.where((n) => n == qNum);
+            },
+            displayStringForOption: (option) => option.toString(),
+            onSelected: (int selection) {
+              setState(() {
+                _episodeCtl.text = selection.toString();
+              });
+              _autoFillEpisodeTitleIfExists();
+            },
+            fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+              // 초기값 동기화
+              if (textEditingController.text != _episodeCtl.text) {
+                textEditingController.text = _episodeCtl.text;
+                textEditingController.selection = TextSelection.collapsed(
+                  offset: textEditingController.text.length,
+                );
+              }
+
+              // 내부 컨트롤러와 _episodeCtl 동기화
+              textEditingController.addListener(() {
+                _episodeCtl.text = textEditingController.text;
+              });
+
+              // 포커스 해제 시 에피소드 제목 자동 채우기
+              focusNode.addListener(() {
+                if (!focusNode.hasFocus) {
+                  _autoFillEpisodeTitleIfExists();
+                }
+              });
+
+              return TextField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  labelText: '화',
+                  hintText: '몇 번째 회차인지 숫자로 입력하세요.',
+                  prefixIcon: const Icon(Icons.confirmation_number_outlined),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: textEditingController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            textEditingController.clear();
+                            _episodeCtl.clear();
+                          },
+                        ),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              );
+            },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(10),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: 280,
+                      minWidth: 240,
+                    ),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 1, thickness: 0.5),
+                      itemBuilder: (context, index) {
+                        final option = options.elementAt(index);
+                        return InkWell(
+                          onTap: () => onSelected(option),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            child: Text(option.toString()),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
+        ],
         if (_selectedType == 'movie')
           Padding(
             padding: const EdgeInsets.only(top: 4.0),

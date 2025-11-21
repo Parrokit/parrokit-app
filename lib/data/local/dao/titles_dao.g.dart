@@ -5,4 +5,7 @@ part of 'titles_dao.dart';
 // ignore_for_file: type=lint
 mixin _$TitlesDaoMixin on DatabaseAccessor<PaDatabase> {
   $TitlesTable get titles => attachedDatabase.titles;
+  $ReleasesTable get releases => attachedDatabase.releases;
+  $EpisodesTable get episodes => attachedDatabase.episodes;
+  $ClipsTable get clips => attachedDatabase.clips;
 }
