@@ -95,6 +95,7 @@ class OpenAIWhisperAdapter implements ASRPort {
     }
 
     final req = http.MultipartRequest('POST', Uri.parse(_endpoint));
+
     // Sanitize API key: trim, strip smart quotes and surrounding quotes
     final _cleanKey =
         apiKey.trim().replaceAll('\u201C', '').replaceAll('\u201D', '');
@@ -138,6 +139,11 @@ class OpenAIWhisperAdapter implements ASRPort {
                       : filename.toLowerCase().endsWith('.mp4')
                           ? 'video/mp4'
                           : 'application/octet-stream');
+
+      final f = File(uploadPath);
+      final size = await f.length();
+      debugPrint('STT uploadPath=$uploadPath, size=$size bytes');
+
       req.files.add(await http.MultipartFile.fromPath(
         'file',
         uploadPath,
@@ -156,7 +162,7 @@ class OpenAIWhisperAdapter implements ASRPort {
     }
 
     final streamed =
-        await req.send().timeout(timeout ?? const Duration(seconds: 60));
+        await req.send().timeout(timeout ?? const Duration(seconds: 1000));
     final res = await http.Response.fromStream(streamed);
 
     if (res.statusCode != 200) {

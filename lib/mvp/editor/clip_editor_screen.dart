@@ -1468,6 +1468,9 @@ class _SegmentsStep extends StatelessWidget {
         children: [
           SectionTitle("자막 정보"),
           const SizedBox(height: 10),
+          Text("* 자동 자막 기능은 주변 소음이 크거나\n   음악이 포함된 영상에서는 정확도가 낮을 수 있어요."),
+          const SizedBox(height: 5),
+
           Row(
             children: [
               FilledButton.icon(

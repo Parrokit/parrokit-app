@@ -1,5 +1,6 @@
 // lib/mvp/player/clip_player_screen.dart
 import 'dart:io' show File;
+import 'dart:typed_data';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:parrokit/config/pa_config.dart';
@@ -77,6 +78,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
       context.read<DashboardUiProvider>().logRecent(widget.clipId);
     });
   }
+
 
 // 로딩부: clipId로만 로드
   Future<void> _loadFromDb() async {
@@ -235,6 +237,10 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
           ? Duration(milliseconds: _seg.endMs)
           : null;
 
+      // MediaProvider를 한 번만 읽어서 썸네일 Uri 생성에 넘겨줌
+      final media = context.read<MediaProvider>();
+      final artUri = await _resolvedThumbUri(media);
+
       // 3) 백그라운드 오디오 설정 및 재생
       final h = await ensureAudioHandler();
       await (h as dynamic).loadSourceLocal(
@@ -243,6 +249,8 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
         clipBegin: clipBegin,
         clipEnd: clipEnd,
         loop: _loopSeg,
+        title: _clip?.title?.isNotEmpty == true ? _clip!.title! : '클립',
+        artUri: artUri,
       );
       await h.seek(pos);
       await h.play();
@@ -284,6 +292,29 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
     } finally {
       _isTakingBack = false;
     }
+  }
+
+  // 🎴 클립 썸네일(Uint8List) → 임시 파일 → Uri 변환
+  Future<Uri?> _resolvedThumbUri(MediaProvider media) async {
+    // MediaProvider.clipItems에서 현재 clipId에 해당하는 썸네일 찾기
+    Uint8List? thumbBytes;
+    try {
+      final item =
+          media.clipItems.firstWhere((it) => it.clip.id == widget.clipId);
+      thumbBytes = item.thumbnail;
+    } catch (_) {
+      thumbBytes = null;
+    }
+
+    if (thumbBytes == null || thumbBytes.isEmpty) return null;
+
+    // 임시 디렉토리에 jpg로 저장 후, 파일 Uri 반환
+    final tmpDir = await getTemporaryDirectory();
+    final path = '${tmpDir.path}/clip_${widget.clipId}.jpg';
+    final file = File(path);
+    await file.writeAsBytes(thumbBytes, flush: true);
+
+    return Uri.file(file.path);
   }
 
   Future<String> _resolvedSourcePath() async {

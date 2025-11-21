@@ -1,16 +1,12 @@
 // lib/mvp/more/more_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/mvp/payment/payment_args.dart';
 import 'package:parrokit/pa_router.dart';
 import 'package:parrokit/provider/iap_provider.dart';
 import 'package:parrokit/provider/user_provider.dart';
-import '../../utils/send_mail.dart';
-import 'package:parrokit/dev/clip_seed.dart';
 import 'package:parrokit/config/pa_config.dart';
 import 'package:parrokit/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
-import '../../utils/show_toast.dart';
 import '../../services/backup_service.dart';
 import 'index.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -402,27 +398,27 @@ class _MoreScreenState extends State<MoreScreen> {
                 ],
               ),
             ),
-
-            SectionTitle('데모'),
-            const SizedBox(height: 10),
-            CardContainer(
-              child: Column(
-                children: [
-                  NavTile(
-                    icon: Icons.cloud_upload_outlined,
-                    title: '데모 시드 넣기 (6개)',
-                    subtitle: 'test용',
-                    onTap: () async {
-                      final ok = await runSeedFromFilePickerTmp(context);
-                      showToast(
-                        context,
-                        (ok ? '시드 완료!' : '시드 실패 (파일 6개 선택 필요)'),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+            //
+            // SectionTitle('데모'),
+            // const SizedBox(height: 10),
+            // CardContainer(
+            //   child: Column(
+            //     children: [
+            //       NavTile(
+            //         icon: Icons.cloud_upload_outlined,
+            //         title: '데모 시드 넣기 (6개)',
+            //         subtitle: 'test용',
+            //         onTap: () async {
+            //           final ok = await runSeedFromFilePickerTmp(context);
+            //           showToast(
+            //             context,
+            //             (ok ? '시드 완료!' : '시드 실패 (파일 6개 선택 필요)'),
+            //           );
+            //         },
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ],
         ),
       ),

@@ -73,6 +73,9 @@ class _BgAudioHandler extends BaseAudioHandler with SeekHandler {
     Duration? clipBegin,
     Duration? clipEnd,
     bool loop = false,
+    String? title,
+    String? subtitle,
+    Uri? artUri,
   }) async {
     // 안전장치: 반드시 절대경로
     assert(absolutePath.startsWith('/'), 'absolute path required');
@@ -80,7 +83,16 @@ class _BgAudioHandler extends BaseAudioHandler with SeekHandler {
     _clipStart = clipBegin;
     _clipEnd = clipEnd;
 
-    mediaItem.add(MediaItem(id: absolutePath, title: 'Playing'));
+    final item = MediaItem(
+      id: absolutePath,
+      title: title ?? '클립',
+      artist: subtitle,
+      artUri: artUri,
+      duration: clipBegin != null && clipEnd != null
+          ? clipEnd - clipBegin
+          : null,
+    );
+    mediaItem.add(item);
 
     final src = _buildSource();
     await _player.setAudioSource(src, preload: true);

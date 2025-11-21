@@ -45,7 +45,7 @@ class OpenAIAdapter implements LLMPort {
 
     final resp = await http
         .post(uri, headers: headers, body: body)
-        .timeout(timeout ?? const Duration(seconds: 60));
+        .timeout(timeout ?? const Duration(seconds: 240));
 
     if (resp.statusCode != 200) {
       throw Exception('OpenAI chat failed (${resp.statusCode}): ${resp.body}');
