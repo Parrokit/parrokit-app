@@ -49,6 +49,6 @@ dependencies {
     // 한 단계 낮은 버전으로 강제 고정
     implementation "androidx.core:core-ktx:1.15.0"
     implementation "androidx.core:core:1.15.0"
-    implementation files("${project(':ffmpeg_kit_flutter').projectDir}/flutter/android/libs/ffmpeg-kit-https-6.0-2.aar")
+    implementation files("${project(':ffmpeg_kit_flutter').projectDir}/libs/ffmpeg-kit-https-6.0-2.aar")
 
 }
