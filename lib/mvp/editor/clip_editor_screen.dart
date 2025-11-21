@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parrokit/data/local/dao/titles_dao.dart';
 import 'package:parrokit/mvp/editor/services/file_staging_service.dart';
 import 'package:parrokit/provider/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -67,6 +68,8 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
 
   /// presenter
   late final ClipEditorPresenter _presenter;
+  late final TitlesDao _titlesDao;
+
 
   /// 그 외 변수
   String _selectedType = 'season';
@@ -186,12 +189,64 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
       mediaProvider: context.read<MediaProvider>(),
       userProvider: context.read<UserProvider>(),
     );
+    _titlesDao = context.read<db.PaDatabase>().titlesDao;
+
     if (widget.clipId != null) {
       _isEdit = true;
       _loadForEdit(widget.clipId!);
     }
   }
+  Future<void> _showTitlePicker() async {
+    try {
+      // 1) DB에서 제목 목록 가져오기
+      final names = await _titlesDao.fetchAllTitleNames();
+      if (!mounted) return;
 
+      final selected = await showModalBottomSheet<String>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (ctx) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                const Text(
+                  '작품 선택',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: names.length,
+                    itemBuilder: (ctx, i) {
+                      final name = names[i];
+                      return ListTile(
+                        title: Text(name),
+                        onTap: () => Navigator.of(ctx).pop(name),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      // 2) 사용자가 고른 값 반영
+      if (selected != null && selected.isNotEmpty) {
+        setState(() {
+          _nameCtl.text = selected;
+        });
+      }
+    } catch (e) {
+      showToastMsg('작품 목록을 불러오는 중 오류가 발생했습니다: $e');
+    }
+  }
   @override
   void dispose() {
     _titleCtl.dispose();
@@ -583,7 +638,8 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
         Expanded(
           child: ElevatedButton(
             onPressed: _saving ? null : _handleStepContinue,
-            child: const Text('다음'),
+            child: Text(_currentStep == 6 ? '저장' : '다음'),
+
           ),
         ),
       ],
@@ -747,14 +803,25 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle("작품 이름"),
-        const SizedBox(height: 10),
-        LabeledTextField(
-          label: '작품명',
-          hint: '작품의 이름을 입력하세요.',
-          controller: _nameCtl,
-          prefixIcon: Icons.movie_outlined,
-          clearable: true,
+        Row(
+          children: [
+            Expanded(
+              child: LabeledTextField(
+                label: '작품명',
+                hint: '작품의 이름을 입력하세요.',
+                controller: _nameCtl,
+                prefixIcon: Icons.movie_outlined,
+                clearable: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // 👉 기존 작품명 메뉴 보기 버튼
+            IconButton.outlined(
+              onPressed: _showTitlePicker,
+              icon: const Icon(Icons.list_rounded),
+              tooltip: '저장된 작품에서 선택',
+            ),
+          ],
         ),
         LabeledTextField(
           label: '원어 작품명',

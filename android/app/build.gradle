@@ -25,7 +25,7 @@ android {
         applicationId "com.bull.parrokit"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -42,4 +42,13 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // core-ktx / core 1.16.0은 AGP 8.6 필요해서 에러 나니까,
+    // 한 단계 낮은 버전으로 강제 고정
+    implementation "androidx.core:core-ktx:1.15.0"
+    implementation "androidx.core:core:1.15.0"
+    implementation files("${project(':ffmpeg_kit_flutter').projectDir}/flutter/android/libs/ffmpeg-kit-https-6.0-2.aar")
+
 }
