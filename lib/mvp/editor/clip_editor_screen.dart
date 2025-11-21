@@ -74,6 +74,9 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
   /// 그 외 변수
   String _selectedType = 'season';
 
+  /// 작품명 자동완성용 전체 목록
+  List<String> _allTitleNames = [];
+
   /// view 구현
   @override
   BuildContext get context => super.context;
@@ -190,12 +193,26 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
       userProvider: context.read<UserProvider>(),
     );
     _titlesDao = context.read<db.PaDatabase>().titlesDao;
+    _loadTitleNames();
 
     if (widget.clipId != null) {
       _isEdit = true;
       _loadForEdit(widget.clipId!);
     }
   }
+  /// 작품명 자동완성용 전체 목록 로드
+  Future<void> _loadTitleNames() async {
+    try {
+      final names = await _titlesDao.fetchAllTitleNames();
+      if (!mounted) return;
+      setState(() {
+        _allTitleNames = names;
+      });
+    } catch (e) {
+      showToastMsg('작품 목록을 불러오는 중 오류가 발생했습니다: $e');
+    }
+  }
+
   Future<void> _showTitlePicker() async {
     try {
       // 1) DB에서 제목 목록 가져오기
@@ -803,26 +820,94 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: LabeledTextField(
-                label: '작품명',
-                hint: '작품의 이름을 입력하세요.',
-                controller: _nameCtl,
-                prefixIcon: Icons.movie_outlined,
-                clearable: true,
+        Autocomplete<String>(
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            final query = textEditingValue.text.trim();
+            if (query.isEmpty) {
+              return _allTitleNames;
+            }
+            return _allTitleNames.where(
+              (name) =>
+                  name.toLowerCase().contains(query.toLowerCase()),
+            );
+          },
+          displayStringForOption: (option) => option,
+          onSelected: (String selection) {
+            setState(() {
+              _nameCtl.text = selection;
+            });
+          },
+          fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+            // 초기값 동기화
+            if (textEditingController.text != _nameCtl.text) {
+              textEditingController.text = _nameCtl.text;
+              textEditingController.selection = TextSelection.collapsed(
+                offset: textEditingController.text.length,
+              );
+            }
+
+            // Autocomplete 내부 컨트롤러와 _nameCtl 동기화
+            textEditingController.addListener(() {
+              _nameCtl.text = textEditingController.text;
+            });
+
+            return TextField(
+              controller: textEditingController,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                labelText: '작품명',
+                hintText: '작품의 이름을 입력하세요.',
+                prefixIcon: const Icon(Icons.movie_outlined),
+                border: const OutlineInputBorder(),
+                suffixIcon: textEditingController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          textEditingController.clear();
+                          _nameCtl.clear();
+                        },
+                      ),
               ),
-            ),
-            const SizedBox(width: 8),
-            // 👉 기존 작품명 메뉴 보기 버튼
-            IconButton.outlined(
-              onPressed: _showTitlePicker,
-              icon: const Icon(Icons.list_rounded),
-              tooltip: '저장된 작품에서 선택',
-            ),
-          ],
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(10),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 280,
+                    minWidth: 240,
+                  ),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, thickness: 0.5),
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return InkWell(
+                        onTap: () => onSelected(option),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Text(option),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
         ),
+        const SizedBox(height: 8),
         LabeledTextField(
           label: '원어 작품명',
           hint: '작품의 본토 이름을 입력하세요.',
