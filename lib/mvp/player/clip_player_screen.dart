@@ -1,7 +1,6 @@
 // lib/mvp/player/clip_player_screen.dart
 import 'dart:io' show File;
 import 'dart:typed_data';
-import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:parrokit/config/pa_config.dart';
 import 'package:parrokit/provider/dashboard_ui_provider.dart';
@@ -41,7 +40,8 @@ class ClipPlayerScreen extends StatefulWidget {
   State<ClipPlayerScreen> createState() => _ClipPlayerScreenState();
 }
 
-class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBindingObserver{
+class _ClipPlayerScreenState extends State<ClipPlayerScreen>
+    with WidgetsBindingObserver {
   PlayScope _scope = PlayScope.segment;
   late VideoPlayerController _controller;
 
@@ -52,14 +52,17 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
   bool _loopSeg = true;
   bool _showSubs = true;
   double _rate = 1.0;
-  bool _isHandingOff = false;
-  bool _isTakingBack = false;
+  bool _isBackground = false; // true면 백그라운드(오디오 전용) 모드
+  bool _bgPlaying = false; // 백그라운드 오디오 재생 상태
   // ✅ Drift rows 그대로 사용
   Clip? _clip;
   List<Segment> _segments = const [];
   String _appBarTitle = '재생';
 
   Segment get _seg => _segments[_segIndex];
+
+  bool get _isPlaying =>
+      _controller.value.isInitialized && _controller.value.isPlaying;
 
   @override
   void initState() {
@@ -78,7 +81,6 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
       context.read<DashboardUiProvider>().logRecent(widget.clipId);
     });
   }
-
 
 // 로딩부: clipId로만 로드
   Future<void> _loadFromDb() async {
@@ -129,7 +131,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
 
     await _controller.seekTo(target);
     if (mounted) setState(() {});
-    final h = await ensureAudioHandler();
+    final h = await BgAudio.instance.ensureAudioHandler();
     await h.seek(target);
   }
 
@@ -137,17 +139,13 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
     if (_clip == null) return;
     final src = _clip!.filePath;
 
-    final isNetwork = src.startsWith('http://') || src.startsWith('https://');
-
     String resolvedPath = src;
-    if (!isNetwork && !src.startsWith('/')) {
+    if (!src.startsWith('/')) {
       final docs = await getApplicationDocumentsDirectory();
       resolvedPath = '${docs.path}/$src';
     }
 
-    _controller = isNetwork
-        ? VideoPlayerController.networkUrl(Uri.parse(src))
-        : VideoPlayerController.file(File(resolvedPath));
+    _controller = VideoPlayerController.file(File(resolvedPath));
 
     await _controller.initialize();
     await _controller.setLooping(false);
@@ -207,28 +205,36 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (!_initialized || _clip == null || _segments.isEmpty) return;
 
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      // ⬇️ 백그라운드 전환: 비디오 → 오디오
-      await _handoffToBackgroundAudio();
-    } else if (state == AppLifecycleState.resumed) {
-      // ⬇️ 포그라운드 복귀: 오디오 → 비디오
-      await _takeBackFromBackgroundAudio();
+    // 오디오 전용 모드에서는 audio_service가 자체적으로 백그라운드 재생을 담당하므로
+    // 별도의 핸들링을 하지 않는다.
+    if (_isBackground) return;
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // 앱이 나갈 때는 비디오만 일시정지
+      if (_controller.value.isInitialized && _controller.value.isPlaying) {
+        await _controller.pause();
+      }
     }
   }
-  Future<void> _handoffToBackgroundAudio() async {
-    if (_isHandingOff) return;
-    _isHandingOff = true;
+
+  Future<void> _enterAudioOnlyMode() async {
+    if (_isBackground) return;
+    if (!_controller.value.isInitialized || _clip == null) return;
+
+    // ✅ 먼저 UI부터 바꿔준다 (토글 누르자마자 반응하도록)
+    _isBackground = true;
+    _bgPlaying = false;
+    if (mounted) setState(() {});
+
     try {
-      if (!_controller.value.isInitialized) return;
-
-      // 1) 비디오 먼저 정지(팝 소리 예방하고 싶으면 볼륨 0 → pause)
-      // await _controller.setVolume(0.0); // 선택
+      // 1) 비디오가 재생 중이었는지 여부와 현재 위치를 기억
       await _controller.pause();
-
-      // 2) 소스/포지션 준비
-      final src = await _resolvedSourcePath();
-      if (src.isEmpty || !src.startsWith('/')) return;
       final pos = _controller.value.position;
+
+      // 2) 소스/클립 범위 준비
+      final src = await _resolvedSourcePath();
+      if (src.isEmpty) return;
 
       final clipBegin = _scope == PlayScope.segment
           ? Duration(milliseconds: _seg.startMs)
@@ -237,12 +243,12 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
           ? Duration(milliseconds: _seg.endMs)
           : null;
 
-      // MediaProvider를 한 번만 읽어서 썸네일 Uri 생성에 넘겨줌
+      // 3) 썸네일 Uri 준비
       final media = context.read<MediaProvider>();
       final artUri = await _resolvedThumbUri(media);
 
-      // 3) 백그라운드 오디오 설정 및 재생
-      final h = await ensureAudioHandler();
+      // 4) audio_handler로 로드 + 재생
+      final h = await BgAudio.instance.ensureAudioHandler();
       await (h as dynamic).loadSourceLocal(
         absolutePath: src,
         speed: _rate,
@@ -253,44 +259,66 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
         artUri: artUri,
       );
       await h.seek(pos);
-      await h.play();
-    } finally {
-      _isHandingOff = false;
+      await h.pause();
+
+      // 🔄 백그라운드 재생이 시작된 뒤, 재생 버튼 아이콘이 바로 반영되도록 UI 갱신
+      if (mounted) setState(() {});
+    } catch (_) {
+      // 실패했으면 모드를 원복해 준다
+      if (mounted) {
+        _isBackground = false;
+        _bgPlaying = false;
+        setState(() {});
+      }
     }
   }
 
-  Future<void> _takeBackFromBackgroundAudio() async {
-    if (_isTakingBack) return;
-    _isTakingBack = true;
+  Future<void> _exitAudioOnlyMode() async {
+    if (!_isBackground) return;
+
+    // ✅ 먼저 UI에서 오디오 전용 모드를 끈다
+    _isBackground = false;
+    if (mounted) setState(() {});
+
     try {
-      final h = await ensureAudioHandler();
-
-      // 1) 백그라운드 오디오 먼저 정지
-      final isPlaying = (h as dynamic).playing as bool? ?? false;
-      final bgPos = (h as dynamic).position as Duration? ?? Duration.zero;
-      if (isPlaying) {
-        await h.pause();
+      final h = await BgAudio.instance.ensureAudioHandler();
+      Duration bgPos;
+      try {
+        bgPos = (h as dynamic).position as Duration? ?? Duration.zero;
+      } catch (_) {
+        bgPos = Duration.zero;
       }
 
-      // 2) 비디오에 위치 반영
-      final pos = bgPos;
-      if (_scope == PlayScope.segment) {
-        final st = Duration(milliseconds: _seg.startMs);
-        final en = Duration(milliseconds: _seg.endMs);
-        final clamped = pos < st ? st : (pos >= en ? st : pos);
-        await _controller.seekTo(clamped);
-      } else {
-        await _controller.seekTo(pos);
-      }
+      await h.stop();
+      _bgPlaying = false;
 
-      // 3) 속도/볼륨/재생 재개
-      await _controller.setPlaybackSpeed(_rate);
-      if (mounted && _controller.value.isInitialized) {
-        // await _controller.setVolume(1.0); // 선택(위에서 0으로 내렸다면)
-        await _controller.play();
+      if (_controller.value.isInitialized) {
+        var target = bgPos;
+        if (_scope == PlayScope.segment) {
+          final st = Duration(milliseconds: _seg.startMs);
+          final en = Duration(milliseconds: _seg.endMs);
+          if (target < st || target >= en) {
+            target = st;
+          }
+        }
+        await _controller.seekTo(target);
+        await _controller.setPlaybackSpeed(_rate);
       }
-    } finally {
-      _isTakingBack = false;
+    } catch (_) {
+      // 만약 실패했다면, 다시 오디오 모드로 되돌린다
+      if (mounted) {
+        _isBackground = true;
+        _bgPlaying = true;
+        setState(() {});
+      }
+    }
+  }
+
+  Future<void> _toggleAudioOnlyMode() async {
+    if (_isBackground) {
+      await _exitAudioOnlyMode();
+    } else {
+      await _enterAudioOnlyMode();
     }
   }
 
@@ -319,12 +347,11 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
 
   Future<String> _resolvedSourcePath() async {
     final src = _clip!.filePath;
-    final isNetwork = src.startsWith('http://') || src.startsWith('https://');
-    if (isNetwork) return src;
     if (src.startsWith('/')) return src;
     final docs = await getApplicationDocumentsDirectory();
     return '${docs.path}/$src';
   }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -335,31 +362,78 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
     super.dispose();
   }
 
-  Future<void> _playPause() async {
+// 🎬 포그라운드(영상) 재생/일시정지
+  Future<void> _playPauseVideo() async {
     if (!_initialized || _segments.isEmpty) return;
-    if (_controller.value.isPlaying) {
-      await _controller.pause();
-    } else {
-      if (_scope == PlayScope.segment) {
-        final pos = _controller.value.position;
-        final st = Duration(milliseconds: _seg.startMs);
-        final en = Duration(milliseconds: _seg.endMs);
-        if (pos < st || pos >= en) {
-          await _controller.seekTo(st);
+    if (_isBackground) return; // 백그라운드 모드면 여기서 끝
+
+    debugPrint(
+      '[PLAY-VIDEO] tap: isBackground=$_isBackground, '
+      'video=${_controller.value.isInitialized && _controller.value.isPlaying}',
+    );
+
+    try {
+      if (_controller.value.isPlaying) {
+        await _controller.pause();
+      } else {
+        if (_scope == PlayScope.segment) {
+          final pos = _controller.value.position;
+          final st = Duration(milliseconds: _seg.startMs);
+          final en = Duration(milliseconds: _seg.endMs);
+          if (pos < st || pos >= en) {
+            await _controller.seekTo(st);
+          }
         }
+        await _controller.play();
       }
-      await _controller.play();
-    }
-    if (mounted) setState(() {});
+      if (mounted) setState(() {});
+    } finally {}
   }
 
-  Future<void> _prevSeg() async =>
-      _jumpToSegment((_segIndex - 1).clamp(0, _segments.length - 1));
+  // 🎧 백그라운드(오디오 전용) 재생/일시정지 토글
+  Future<void> _playPauseBg() async {
+    if (!_initialized || _segments.isEmpty) return;
+    if (!_isBackground) return; // 포그라운드 모드면 여기서 끝
 
-  Future<void> _nextSeg() async =>
-      _jumpToSegment((_segIndex + 1).clamp(0, _segments.length - 1));
+    debugPrint(
+      '[PLAY-BG] tap: isBackground=$_isBackground, bg=$_bgPlaying',
+    );
+    final h = await BgAudio.instance.ensureAudioHandler();
+
+    try {
+      if (_bgPlaying) {
+        if (mounted)
+          setState(() {
+            _bgPlaying = false;
+          });
+        await h.pause();
+
+        debugPrint('pause - $_bgPlaying');
+      } else {
+        setState(() {
+          _bgPlaying = true;
+        });
+        await h.play();
+
+        debugPrint('play - $_bgPlaying');
+      }
+    } catch (e) {
+      debugPrint('BG TOGGLE ERROR: $e');
+    } finally {}
+  }
+
+  Future<void> _prevSeg() async {
+    if (_isBackground) return;
+    await _jumpToSegment((_segIndex - 1).clamp(0, _segments.length - 1));
+  }
+
+  Future<void> _nextSeg() async {
+    if (_isBackground) return;
+    await _jumpToSegment((_segIndex + 1).clamp(0, _segments.length - 1));
+  }
 
   Future<void> _jumpToSegment(int index, {bool autoplay = false}) async {
+    if (_isBackground) return;
     if (_segments.isEmpty) return;
     if (index == _segIndex) {
       await _controller.seekTo(Duration(milliseconds: _seg.startMs));
@@ -377,32 +451,20 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
   }
 
   Future<void> _toggleLoop() async {
+    if (_isBackground) return;
     setState(() => _loopSeg = !_loopSeg);
-
     await _controller.setLooping(_scope == PlayScope.full && _loopSeg);
-
-    // 🔊 백그라운드 오디오에도 동기화
-    await (audioHandler as dynamic).setLoop(_loopSeg);
-    if (_scope == PlayScope.segment) {
-      await (audioHandler as dynamic).setClip(
-        start: Duration(milliseconds: _seg.startMs), // ← begin 아님
-        end: Duration(milliseconds: _seg.endMs),
-      );
-    } else {
-      await (audioHandler as dynamic).setClip(); // 전체로 복원
-    }
   }
 
-  Future<void> _toggleSubs() async => setState(() => _showSubs = !_showSubs);
+  Future<void> _toggleSubs() async {
+    if (_isBackground) return;
+    setState(() => _showSubs = !_showSubs);
+  }
 
   Future<void> _setRate(double r) async {
+    if (_isBackground) return;
     _rate = r;
     await _controller.setPlaybackSpeed(r);
-
-    // 🔑 오디오 핸들러에도 속도 적용
-    if (audioHandler != null) {
-      await (audioHandler as dynamic).setSpeed(r);
-    }
 
     if (mounted) setState(() {});
   }
@@ -454,161 +516,218 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen> with WidgetsBinding
         foregroundColor: fg,
         title: Text(_appBarTitle),
       ),
-      body: _initialized
-          ? Column(
+      body: Column(
+        children: [
+          // --- Video + Subs ---
+          AspectRatio(
+            aspectRatio: _controller.value.aspectRatio == 0
+                ? 16 / 9
+                : _controller.value.aspectRatio,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                // --- Video + Subs ---
-                AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio == 0
-                      ? 16 / 9
-                      : _controller.value.aspectRatio,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // ⬇️ 탭하면 재생 중일 때만 pause
-                      Positioned.fill(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque, // 빈 곳도 탭 인식
-                          onTap: () {
-                            if (_controller.value.isPlaying) {
-                              _playPause(); // -> pause
-                            }
-                          },
-                          child: VideoPlayer(_controller),
-                        ),
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      if (_isBackground) {
+                        _playPauseBg();
+                      } else {
+                        _playPauseVideo();
+                      }
+                    },
+                    child: _isBackground
+                        ? Container(
+                            color: Colors.black,
+                          )
+                        : VideoPlayer(_controller),
+                  ),
+                ),
+                if (_showSubs)
+                  PlainSubtitleOverlay(
+                    ja: _seg.original,
+                    pron: _seg.pron,
+                    ko: _seg.trans,
+                  ),
+              ],
+            ),
+          ),
+          // --- Timeline ---
+          IgnorePointer(
+            ignoring: _isBackground,
+            child: SegmentTimeline(
+              controller: _controller,
+              start: Duration(milliseconds: _seg.startMs),
+              end: Duration(milliseconds: _seg.endMs),
+              onSeek: _onUserSeek,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // --- Controls ---
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              alignment: WrapAlignment.center,
+              children: [
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  IgnorePointer(
+                    ignoring: _isBackground,
+                    child: Opacity(
+                      opacity: _isBackground ? 0.4 : 1.0,
+                      child: CircleIconButton(
+                        icon: Icons.skip_previous_rounded,
+                        onTap: _prevSeg,
+                        tooltip: '이전 구간',
+                        isLight: isLight,
                       ),
-
-                      if (_showSubs)
-                        PlainSubtitleOverlay(
-                          ja: _seg.original,
-                          pron: _seg.pron,
-                          ko: _seg.trans,
-                        ),
-
-                      if (!_controller.value.isPlaying)
-                        Center(
-                          child: CircleIconButton(
-                            icon: Icons.play_arrow_rounded,
-                            onTap: _playPause,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (_isBackground)
+                    CircleIconButton(
+                      icon: _bgPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      onTap: _playPauseBg,
+                      tooltip: _bgPlaying ? '일시정지' : '재생',
+                      emphasized: true,
+                      isLight: isLight,
+                      bg: Colors.transparent,
+                    ),
+                  if (!_isBackground)
+                    CircleIconButton(
+                      icon: _isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      onTap: _playPauseVideo,
+                      tooltip: _isPlaying ? '일시정지' : '재생',
+                      emphasized: true,
+                      isLight: isLight,
+                      bg: Colors.transparent,
+                    ),
+                  const SizedBox(width: 8),
+                  IgnorePointer(
+                    ignoring: _isBackground,
+                    child: Opacity(
+                      opacity: _isBackground ? 0.4 : 1.0,
+                      child: CircleIconButton(
+                        icon: Icons.skip_next_rounded,
+                        onTap: _nextSeg,
+                        tooltip: '다음 구간',
+                        isLight: isLight,
+                      ),
+                    ),
+                  ),
+                ]),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IgnorePointer(
+                        ignoring: _isBackground,
+                        child: Opacity(
+                          opacity: _isBackground ? 0.4 : 1.0,
+                          child: TogglePill(
+                            icon: Icons.all_inclusive_rounded,
+                            label: _scope == PlayScope.segment ? '구간' : '전체재생',
+                            active: _scope == PlayScope.full,
+                            onTap: () async {
+                              // full → segment 전환 시, 현재 위치가 세그먼트 밖이면 세그 시작으로 정렬
+                              if (_scope == PlayScope.full) {
+                                final pos = _controller.value.position;
+                                final st = Duration(milliseconds: _seg.startMs);
+                                final en = Duration(milliseconds: _seg.endMs);
+                                if (!(pos >= st && pos < en)) {
+                                  await _controller.seekTo(st);
+                                }
+                                // 세그먼트 모드로 가면 컨트롤러 루프는 끈다
+                                await _controller.setLooping(false);
+                                setState(() => _scope = PlayScope.segment);
+                              } else {
+                                // 전체재생 모드로 전환: 컨트롤러 루프는 _loopSeg 설정을 따른다(전체 영상 반복)
+                                await _controller.setLooping(_loopSeg);
+                                setState(() => _scope = PlayScope.full);
+                              }
+                            },
                             isLight: isLight,
-                            size: 64,
                           ),
                         ),
-                    ],
-                  ),
-                ),
-
-                // --- Timeline ---
-                SegmentTimeline(
-                  controller: _controller,
-                  start: Duration(milliseconds: _seg.startMs),
-                  end: Duration(milliseconds: _seg.endMs),
-                  onSeek: _onUserSeek,
-                ),
-
-                const SizedBox(height: 8),
-
-                // --- Controls ---
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      Row(mainAxisSize: MainAxisSize.min, children: [
-                        CircleIconButton(
-                          icon: Icons.skip_previous_rounded,
-                          onTap: _prevSeg,
-                          tooltip: '이전 구간',
-                          isLight: isLight,
+                      ),
+                      const SizedBox(width: 8),
+                      IgnorePointer(
+                        ignoring: _isBackground,
+                        child: Opacity(
+                          opacity: _isBackground ? 0.4 : 1.0,
+                          child: TogglePill(
+                            icon: Icons.repeat_rounded,
+                            label: '반복',
+                            active: _loopSeg,
+                            onTap: _toggleLoop,
+                            isLight: isLight,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        CircleIconButton(
-                          icon: _controller.value.isPlaying
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          onTap: _playPause,
-                          tooltip: _controller.value.isPlaying ? '일시정지' : '재생',
-                          emphasized: true,
-                          isLight: isLight,
-                          bg: Colors.transparent,
+                      ),
+                      const SizedBox(width: 8),
+                      IgnorePointer(
+                        ignoring: _isBackground,
+                        child: Opacity(
+                          opacity: _isBackground ? 0.4 : 1.0,
+                          child: TogglePill(
+                            icon: Icons.subtitles_rounded,
+                            label: '자막',
+                            active: _showSubs,
+                            onTap: _toggleSubs,
+                            isLight: isLight,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        CircleIconButton(
-                          icon: Icons.skip_next_rounded,
-                          onTap: _nextSeg,
-                          tooltip: '다음 구간',
-                          isLight: isLight,
-                        ),
-                      ]),
-                      Row(mainAxisSize: MainAxisSize.min, children: [
-                        TogglePill(
-                          icon: Icons.all_inclusive_rounded,
-                          label: _scope == PlayScope.segment ? '구간' : '전체재생',
-                          active: _scope == PlayScope.full,
-                          onTap: () async {
-                            // full → segment 전환 시, 현재 위치가 세그먼트 밖이면 세그 시작으로 정렬
-                            if (_scope == PlayScope.full) {
-                              final pos = _controller.value.position;
-                              final st = Duration(milliseconds: _seg.startMs);
-                              final en = Duration(milliseconds: _seg.endMs);
-                              if (!(pos >= st && pos < en)) {
-                                await _controller.seekTo(st);
-                              }
-                              // 세그먼트 모드로 가면 컨트롤러 루프는 끈다
-                              await _controller.setLooping(false);
-                              setState(() => _scope = PlayScope.segment);
-                            } else {
-                              // 전체재생 모드로 전환: 컨트롤러 루프는 _loopSeg 설정을 따른다(전체 영상 반복)
-                              await _controller.setLooping(_loopSeg);
-                              setState(() => _scope = PlayScope.full);
-                            }
-                          },
-                          isLight: isLight,
-                        ),
-                        const SizedBox(width: 8),
-                        TogglePill(
-                          icon: Icons.repeat_rounded,
-                          label: '반복',
-                          active: _loopSeg,
-                          onTap: _toggleLoop,
-                          isLight: isLight,
-                        ),
-                        const SizedBox(width: 8),
-                        TogglePill(
-                          icon: Icons.subtitles_rounded,
-                          label: '자막',
-                          active: _showSubs,
-                          onTap: _toggleSubs,
-                          isLight: isLight,
-                        ),
-                        const SizedBox(width: 8),
-                        SpeedMenu(
+                      ),
+                      const SizedBox(width: 8),
+                      TogglePill(
+                        icon: Icons.headphones_rounded,
+                        label: '백그라운드',
+                        active: _isBackground,
+                        onTap: _toggleAudioOnlyMode,
+                        isLight: isLight,
+                      ),
+                      const SizedBox(width: 8),
+                      IgnorePointer(
+                        ignoring: _isBackground,
+                        child: Opacity(
+                          opacity: _isBackground ? 0.4 : 1.0,
+                          child: SpeedMenu(
                             value: _rate,
                             onSelected: _setRate,
-                            isLight: isLight),
-                      ]),
+                            isLight: isLight,
+                          ),
+                        ),
+                      ),
                     ],
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // --- Segments List ---
-                Expanded(
-                  child: SegmentList(
-                    segments: _segments,
-                    currentIndex: _segIndex,
-                    onTapItem: (i) => _jumpToSegment(i, autoplay: true),
                   ),
                 ),
               ],
-            )
-          : Center(
-              child: CircularProgressIndicator(
-                  color: isLight ? cs.primary : Colors.white)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // --- Segments List ---
+          Expanded(
+            child: IgnorePointer(
+              ignoring: _isBackground,
+              child: Opacity(
+                opacity: _isBackground ? 0.4 : 1.0,
+                child: SegmentList(
+                  segments: _segments,
+                  currentIndex: _segIndex,
+                  onTapItem: (i) => _jumpToSegment(i, autoplay: true),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

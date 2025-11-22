@@ -33,7 +33,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await dotenv.load(fileName: ".env");
-  await ensureAudioHandler();
+  await BgAudio.instance.ensureAudioHandler();
   final seen = await OnboardingPrefs.isOnboarded();
   final paRouter = buildPaRouter(seenOnboarding: seen);
   // Config/Theme
