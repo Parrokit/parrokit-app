@@ -2,6 +2,7 @@
 import 'dart:io' show File;
 import 'dart:typed_data';
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:parrokit/config/pa_config.dart';
 import 'package:parrokit/provider/dashboard_ui_provider.dart';
@@ -59,6 +60,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
   bool _isFullscreen = false;
   bool _overlayVisible = true;
   Timer? _overlayTimer;
+
   // ✅ Drift rows 그대로 사용
   Clip? _clip;
   List<Segment> _segments = const [];
@@ -559,7 +561,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
     }
 
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: _isFullscreen ? Colors.black : bg,
       appBar: _isFullscreen
           ? null
           : AppBar(
@@ -570,60 +572,105 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
               title: Text(_appBarTitle),
             ),
       body: _isFullscreen
-          ? Center(
-              child: AspectRatio(
-                aspectRatio: _controller.value.aspectRatio == 0
-                    ? 16 / 9
-                    : _controller.value.aspectRatio,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned.fill(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          _showOverlayTemporarily();
-                          if (_isBackground) {
-                            _playPauseBg();
-                          } else {
-                            _playPauseVideo();
-                          }
-                        },
-                        child: _isBackground
-                            ? Container(
-                                color: Colors.black,
-                              )
-                            : VideoPlayer(_controller),
-                      ),
-                    ),
-                    if (_showSubs)
-                      PlainSubtitleOverlay(
-                        ja: _seg.original,
-                        pron: _seg.pron,
-                        ko: _seg.trans,
-                      ),
-                    Positioned(
-                      right: 12,
-                      bottom: 12,
-                      child: AnimatedOpacity(
-                        opacity: _overlayVisible ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 250),
-                        child: IgnorePointer(
-                          ignoring: !_overlayVisible,
-                          child: IconButton(
-                            icon: Icon(
-                              _isFullscreen
-                                  ? Icons.fullscreen_exit
-                                  : Icons.fullscreen,
+          ? GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                _showOverlayTemporarily();
+                if (_isBackground) {
+                  _playPauseBg();
+                } else {
+                  _playPauseVideo();
+                }
+              },
+              child: Builder(
+                builder: (context) {
+                  final isPortrait =
+                      MediaQuery.of(context).orientation ==
+                          Orientation.portrait;
+                  return RotatedBox(
+                    quarterTurns: isPortrait ? 1 : 0,
+
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // 비디오를 화면 전체에 꽉 채우되, 비율은 유지하면서 잘라내기(BoxFit.cover)
+                        Positioned.fill(
+                          child: _isBackground
+                              ? Container(color: Colors.black)
+                              : Builder(
+                                  builder: (context) {
+
+
+                                    return FittedBox(
+                                      fit: BoxFit.cover,
+                                      child: SizedBox(
+                                        width: _controller.value.size.width,
+                                        height: _controller.value.size.height,
+                                        child: isPortrait
+                                            ? VideoPlayer(_controller)
+                                            : VideoPlayer(_controller),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                        if (_showSubs)
+                          PlainSubtitleOverlay(
+                            ja: _seg.original,
+                            pron: _seg.pron,
+                            ko: _seg.trans,
+                          ),
+                        Positioned(
+                          right: 12,
+                          bottom: 12,
+                          child: AnimatedOpacity(
+                            opacity: _overlayVisible ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 250),
+                            child: IgnorePointer(
+                              ignoring: !_overlayVisible,
+                              child: IconButton(
+                                icon: Icon(
+                                  _isFullscreen
+                                      ? Icons.fullscreen_exit
+                                      : Icons.fullscreen,
+                                ),
+                                color: Colors.white,
+                                onPressed: _toggleFullscreen,
+                              ),
                             ),
-                            color: Colors.white,
-                            onPressed: _toggleFullscreen,
                           ),
                         ),
-                      ),
+                        if (_isFullscreen)
+                          Positioned(
+                            right: 12,
+                            top: 12,
+                            child: AnimatedOpacity(
+                              opacity: _overlayVisible ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 250),
+                              child: IgnorePointer(
+                                ignoring: !_overlayVisible,
+                                child: Builder(
+                                  builder: (context) {
+                                    final isPortrait =
+                                        MediaQuery.of(context).orientation ==
+                                            Orientation.portrait;
+                                    return Transform.rotate(
+                                      angle: isPortrait ? math.pi / 2 : 0.0,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.close),
+                                        color: Colors.white,
+                                        onPressed: _toggleFullscreen,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                }
               ),
             )
           : isLandscape
@@ -675,7 +722,8 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                       bottom: 12,
                                       child: AnimatedOpacity(
                                         opacity: _overlayVisible ? 1.0 : 0.0,
-                                        duration: const Duration(milliseconds: 250),
+                                        duration:
+                                            const Duration(milliseconds: 250),
                                         child: IgnorePointer(
                                           ignoring: !_overlayVisible,
                                           child: IconButton(
@@ -696,7 +744,8 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                         top: 12,
                                         child: AnimatedOpacity(
                                           opacity: _overlayVisible ? 1.0 : 0.0,
-                                          duration: const Duration(milliseconds: 250),
+                                          duration:
+                                              const Duration(milliseconds: 250),
                                           child: IgnorePointer(
                                             ignoring: !_overlayVisible,
                                             child: IconButton(
@@ -753,8 +802,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                           ? Icons.pause_rounded
                                           : Icons.play_arrow_rounded,
                                       onTap: _playPauseBg,
-                                      tooltip:
-                                          _bgPlaying ? '일시정지' : '재생',
+                                      tooltip: _bgPlaying ? '일시정지' : '재생',
                                       emphasized: true,
                                       isLight: isLight,
                                       bg: Colors.transparent,
@@ -765,8 +813,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                           ? Icons.pause_rounded
                                           : Icons.play_arrow_rounded,
                                       onTap: _playPauseVideo,
-                                      tooltip:
-                                          _isPlaying ? '일시정지' : '재생',
+                                      tooltip: _isPlaying ? '일시정지' : '재생',
                                       emphasized: true,
                                       isLight: isLight,
                                       bg: Colors.transparent,
@@ -813,15 +860,16 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                                   await _controller.seekTo(st);
                                                 }
                                                 // 세그먼트 모드로 가면 컨트롤러 루프는 끈다
-                                                await _controller.setLooping(false);
+                                                await _controller
+                                                    .setLooping(false);
                                                 setState(() =>
                                                     _scope = PlayScope.segment);
                                               } else {
                                                 // 전체재생 모드로 전환: 컨트롤러 루프는 _loopSeg 설정을 따른다(전체 영상 반복)
                                                 await _controller
                                                     .setLooping(_loopSeg);
-                                                setState(
-                                                    () => _scope = PlayScope.full);
+                                                setState(() =>
+                                                    _scope = PlayScope.full);
                                               }
                                             },
                                             isLight: isLight,
@@ -903,8 +951,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                           child: SegmentList(
                             segments: _segments,
                             currentIndex: _segIndex,
-                            onTapItem: (i) =>
-                                _jumpToSegment(i, autoplay: true),
+                            onTapItem: (i) => _jumpToSegment(i, autoplay: true),
                           ),
                         ),
                       ),
@@ -1026,8 +1073,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                     ? Icons.pause_rounded
                                     : Icons.play_arrow_rounded,
                                 onTap: _playPauseBg,
-                                tooltip:
-                                    _bgPlaying ? '일시정지' : '재생',
+                                tooltip: _bgPlaying ? '일시정지' : '재생',
                                 emphasized: true,
                                 isLight: isLight,
                                 bg: Colors.transparent,
@@ -1038,8 +1084,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                     ? Icons.pause_rounded
                                     : Icons.play_arrow_rounded,
                                 onTap: _playPauseVideo,
-                                tooltip:
-                                    _isPlaying ? '일시정지' : '재생',
+                                tooltip: _isPlaying ? '일시정지' : '재생',
                                 emphasized: true,
                                 isLight: isLight,
                                 bg: Colors.transparent,
@@ -1066,8 +1111,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                 IgnorePointer(
                                   ignoring: _isBackground,
                                   child: Opacity(
-                                    opacity:
-                                        _isBackground ? 0.4 : 1.0,
+                                    opacity: _isBackground ? 0.4 : 1.0,
                                     child: TogglePill(
                                       icon: Icons.all_inclusive_rounded,
                                       label: _scope == PlayScope.segment
@@ -1076,33 +1120,26 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                       active: _scope == PlayScope.full,
                                       onTap: () async {
                                         // full → segment 전환 시, 현재 위치가 세그먼트 밖이면 세그 시작으로 정렬
-                                        if (_scope ==
-                                            PlayScope.full) {
-                                          final pos = _controller
-                                              .value.position;
+                                        if (_scope == PlayScope.full) {
+                                          final pos =
+                                              _controller.value.position;
                                           final st = Duration(
-                                              milliseconds:
-                                                  _seg.startMs);
+                                              milliseconds: _seg.startMs);
                                           final en = Duration(
-                                              milliseconds:
-                                                  _seg.endMs);
-                                          if (!(pos >= st &&
-                                              pos < en)) {
-                                            await _controller
-                                                .seekTo(st);
+                                              milliseconds: _seg.endMs);
+                                          if (!(pos >= st && pos < en)) {
+                                            await _controller.seekTo(st);
                                           }
                                           // 세그먼트 모드로 가면 컨트롤러 루프는 끈다
-                                          await _controller
-                                              .setLooping(false);
-                                          setState(() => _scope =
-                                              PlayScope.segment);
+                                          await _controller.setLooping(false);
+                                          setState(
+                                              () => _scope = PlayScope.segment);
                                         } else {
                                           // 전체재생 모드로 전환: 컨트롤러 루프는 _loopSeg 설정을 따른다(전체 영상 반복)
                                           await _controller
                                               .setLooping(_loopSeg);
-                                          setState(() =>
-                                              _scope =
-                                                  PlayScope.full);
+                                          setState(
+                                              () => _scope = PlayScope.full);
                                         }
                                       },
                                       isLight: isLight,
@@ -1113,8 +1150,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                 IgnorePointer(
                                   ignoring: _isBackground,
                                   child: Opacity(
-                                    opacity:
-                                        _isBackground ? 0.4 : 1.0,
+                                    opacity: _isBackground ? 0.4 : 1.0,
                                     child: TogglePill(
                                       icon: Icons.repeat_rounded,
                                       label: '반복',
@@ -1128,8 +1164,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                 IgnorePointer(
                                   ignoring: _isBackground,
                                   child: Opacity(
-                                    opacity:
-                                        _isBackground ? 0.4 : 1.0,
+                                    opacity: _isBackground ? 0.4 : 1.0,
                                     child: TogglePill(
                                       icon: Icons.subtitles_rounded,
                                       label: '자막',
@@ -1151,8 +1186,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                                 IgnorePointer(
                                   ignoring: _isBackground,
                                   child: Opacity(
-                                    opacity:
-                                        _isBackground ? 0.4 : 1.0,
+                                    opacity: _isBackground ? 0.4 : 1.0,
                                     child: SpeedMenu(
                                       value: _rate,
                                       onSelected: _setRate,
@@ -1176,11 +1210,9 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
                           child: SegmentList(
                             segments: _segments,
                             currentIndex: _segIndex,
-                            onTapItem: (i) =>
-                                _jumpToSegment(i, autoplay: true),
+                            onTapItem: (i) => _jumpToSegment(i, autoplay: true),
                           ),
                         ),
-
                       ),
                     ),
                   ],
