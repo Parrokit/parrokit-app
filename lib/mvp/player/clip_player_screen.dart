@@ -355,6 +355,21 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+
+    // 이 화면을 떠날 때(창 나갈 때), 백그라운드 오디오 모드였다면 오디오도 정리
+    if (_isBackground) {
+      // dispose는 async를 쓸 수 없으므로 fire-and-forget 방식으로 중단 처리
+      BgAudio.instance.ensureAudioHandler().then((h) async {
+        try {
+          await h.stop();
+        } catch (_) {
+          // 여기서 에러는 무시 (이미 정리된 경우 등)
+        }
+      });
+      _bgPlaying = false;
+      _isBackground = false;
+    }
+
     if (_initialized) {
       _controller.removeListener(_onTick);
       _controller.dispose();
@@ -478,6 +493,9 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
     final bg = isLight ? cs.surface : Colors.black;
     final fg = isLight ? cs.onSurface : Colors.white;
 
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     if (_loading) {
       return Scaffold(
         backgroundColor: bg,
@@ -516,218 +534,487 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
         foregroundColor: fg,
         title: Text(_appBarTitle),
       ),
-      body: Column(
-        children: [
-          // --- Video + Subs ---
-          AspectRatio(
-            aspectRatio: _controller.value.aspectRatio == 0
-                ? 16 / 9
-                : _controller.value.aspectRatio,
-            child: Stack(
-              alignment: Alignment.center,
+      body: isLandscape
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      if (_isBackground) {
-                        _playPauseBg();
-                      } else {
-                        _playPauseVideo();
-                      }
-                    },
-                    child: _isBackground
-                        ? Container(
-                            color: Colors.black,
-                          )
-                        : VideoPlayer(_controller),
-                  ),
-                ),
-                if (_showSubs)
-                  PlainSubtitleOverlay(
-                    ja: _seg.original,
-                    pron: _seg.pron,
-                    ko: _seg.trans,
-                  ),
-              ],
-            ),
-          ),
-          // --- Timeline ---
-          IgnorePointer(
-            ignoring: _isBackground,
-            child: SegmentTimeline(
-              controller: _controller,
-              start: Duration(milliseconds: _seg.startMs),
-              end: Duration(milliseconds: _seg.endMs),
-              onSeek: _onUserSeek,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // --- Controls ---
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              alignment: WrapAlignment.center,
-              children: [
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  IgnorePointer(
-                    ignoring: _isBackground,
-                    child: Opacity(
-                      opacity: _isBackground ? 0.4 : 1.0,
-                      child: CircleIconButton(
-                        icon: Icons.skip_previous_rounded,
-                        onTap: _prevSeg,
-                        tooltip: '이전 구간',
-                        isLight: isLight,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (_isBackground)
-                    CircleIconButton(
-                      icon: _bgPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      onTap: _playPauseBg,
-                      tooltip: _bgPlaying ? '일시정지' : '재생',
-                      emphasized: true,
-                      isLight: isLight,
-                      bg: Colors.transparent,
-                    ),
-                  if (!_isBackground)
-                    CircleIconButton(
-                      icon: _isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      onTap: _playPauseVideo,
-                      tooltip: _isPlaying ? '일시정지' : '재생',
-                      emphasized: true,
-                      isLight: isLight,
-                      bg: Colors.transparent,
-                    ),
-                  const SizedBox(width: 8),
-                  IgnorePointer(
-                    ignoring: _isBackground,
-                    child: Opacity(
-                      opacity: _isBackground ? 0.4 : 1.0,
-                      child: CircleIconButton(
-                        icon: Icons.skip_next_rounded,
-                        onTap: _nextSeg,
-                        tooltip: '다음 구간',
-                        isLight: isLight,
-                      ),
-                    ),
-                  ),
-                ]),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                // 왼쪽: 영상 + 타임라인 + 컨트롤
+                Expanded(
+                  child: Column(
                     children: [
-                      IgnorePointer(
-                        ignoring: _isBackground,
-                        child: Opacity(
-                          opacity: _isBackground ? 0.4 : 1.0,
-                          child: TogglePill(
-                            icon: Icons.all_inclusive_rounded,
-                            label: _scope == PlayScope.segment ? '구간' : '전체재생',
-                            active: _scope == PlayScope.full,
-                            onTap: () async {
-                              // full → segment 전환 시, 현재 위치가 세그먼트 밖이면 세그 시작으로 정렬
-                              if (_scope == PlayScope.full) {
-                                final pos = _controller.value.position;
-                                final st = Duration(milliseconds: _seg.startMs);
-                                final en = Duration(milliseconds: _seg.endMs);
-                                if (!(pos >= st && pos < en)) {
-                                  await _controller.seekTo(st);
-                                }
-                                // 세그먼트 모드로 가면 컨트롤러 루프는 끈다
-                                await _controller.setLooping(false);
-                                setState(() => _scope = PlayScope.segment);
-                              } else {
-                                // 전체재생 모드로 전환: 컨트롤러 루프는 _loopSeg 설정을 따른다(전체 영상 반복)
-                                await _controller.setLooping(_loopSeg);
-                                setState(() => _scope = PlayScope.full);
-                              }
-                            },
-                            isLight: isLight,
+                      // --- Video --- (화면 높이의 일부만 쓰도록 Flexible)
+                      Flexible(
+                        flex: 3,
+                        child: Center(
+                          child: AspectRatio(
+                            aspectRatio: _controller.value.aspectRatio == 0
+                                ? 16 / 9
+                                : _controller.value.aspectRatio,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Positioned.fill(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () {
+                                      if (_isBackground) {
+                                        _playPauseBg();
+                                      } else {
+                                        _playPauseVideo();
+                                      }
+                                    },
+                                    child: _isBackground
+                                        ? Container(
+                                            color: Colors.black,
+                                          )
+                                        : VideoPlayer(_controller),
+                                  ),
+                                ),
+                                if (_showSubs)
+                                  PlainSubtitleOverlay(
+                                    ja: _seg.original,
+                                    pron: _seg.pron,
+                                    ko: _seg.trans,
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: 8),
+                      // --- Timeline ---
                       IgnorePointer(
                         ignoring: _isBackground,
-                        child: Opacity(
-                          opacity: _isBackground ? 0.4 : 1.0,
-                          child: TogglePill(
-                            icon: Icons.repeat_rounded,
-                            label: '반복',
-                            active: _loopSeg,
-                            onTap: _toggleLoop,
-                            isLight: isLight,
-                          ),
+                        child: SegmentTimeline(
+                          controller: _controller,
+                          start: Duration(milliseconds: _seg.startMs),
+                          end: Duration(milliseconds: _seg.endMs),
+                          onSeek: _onUserSeek,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      IgnorePointer(
-                        ignoring: _isBackground,
-                        child: Opacity(
-                          opacity: _isBackground ? 0.4 : 1.0,
-                          child: TogglePill(
-                            icon: Icons.subtitles_rounded,
-                            label: '자막',
-                            active: _showSubs,
-                            onTap: _toggleSubs,
-                            isLight: isLight,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      TogglePill(
-                        icon: Icons.headphones_rounded,
-                        label: '백그라운드',
-                        active: _isBackground,
-                        onTap: _toggleAudioOnlyMode,
-                        isLight: isLight,
-                      ),
-                      const SizedBox(width: 8),
-                      IgnorePointer(
-                        ignoring: _isBackground,
-                        child: Opacity(
-                          opacity: _isBackground ? 0.4 : 1.0,
-                          child: SpeedMenu(
-                            value: _rate,
-                            onSelected: _setRate,
-                            isLight: isLight,
-                          ),
+                      const SizedBox(height: 8),
+                      // --- Controls ---
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            Row(mainAxisSize: MainAxisSize.min, children: [
+                              IgnorePointer(
+                                ignoring: _isBackground,
+                                child: Opacity(
+                                  opacity: _isBackground ? 0.4 : 1.0,
+                                  child: CircleIconButton(
+                                    icon: Icons.skip_previous_rounded,
+                                    onTap: _prevSeg,
+                                    tooltip: '이전 구간',
+                                    isLight: isLight,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (_isBackground)
+                                CircleIconButton(
+                                  icon: _bgPlaying
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  onTap: _playPauseBg,
+                                  tooltip:
+                                      _bgPlaying ? '일시정지' : '재생',
+                                  emphasized: true,
+                                  isLight: isLight,
+                                  bg: Colors.transparent,
+                                ),
+                              if (!_isBackground)
+                                CircleIconButton(
+                                  icon: _isPlaying
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  onTap: _playPauseVideo,
+                                  tooltip:
+                                      _isPlaying ? '일시정지' : '재생',
+                                  emphasized: true,
+                                  isLight: isLight,
+                                  bg: Colors.transparent,
+                                ),
+                              const SizedBox(width: 8),
+                              IgnorePointer(
+                                ignoring: _isBackground,
+                                child: Opacity(
+                                  opacity: _isBackground ? 0.4 : 1.0,
+                                  child: CircleIconButton(
+                                    icon: Icons.skip_next_rounded,
+                                    onTap: _nextSeg,
+                                    tooltip: '다음 구간',
+                                    isLight: isLight,
+                                  ),
+                                ),
+                              ),
+                            ]),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IgnorePointer(
+                                    ignoring: _isBackground,
+                                    child: Opacity(
+                                      opacity: _isBackground ? 0.4 : 1.0,
+                                      child: TogglePill(
+                                        icon: Icons.all_inclusive_rounded,
+                                        label: _scope == PlayScope.segment
+                                            ? '구간'
+                                            : '전체재생',
+                                        active: _scope == PlayScope.full,
+                                        onTap: () async {
+                                          // full → segment 전환 시, 현재 위치가 세그먼트 밖이면 세그 시작으로 정렬
+                                          if (_scope == PlayScope.full) {
+                                            final pos =
+                                                _controller.value.position;
+                                            final st = Duration(
+                                                milliseconds: _seg.startMs);
+                                            final en = Duration(
+                                                milliseconds: _seg.endMs);
+                                            if (!(pos >= st && pos < en)) {
+                                              await _controller.seekTo(st);
+                                            }
+                                            // 세그먼트 모드로 가면 컨트롤러 루프는 끈다
+                                            await _controller.setLooping(false);
+                                            setState(() =>
+                                                _scope = PlayScope.segment);
+                                          } else {
+                                            // 전체재생 모드로 전환: 컨트롤러 루프는 _loopSeg 설정을 따른다(전체 영상 반복)
+                                            await _controller
+                                                .setLooping(_loopSeg);
+                                            setState(
+                                                () => _scope = PlayScope.full);
+                                          }
+                                        },
+                                        isLight: isLight,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IgnorePointer(
+                                    ignoring: _isBackground,
+                                    child: Opacity(
+                                      opacity: _isBackground ? 0.4 : 1.0,
+                                      child: TogglePill(
+                                        icon: Icons.repeat_rounded,
+                                        label: '반복',
+                                        active: _loopSeg,
+                                        onTap: _toggleLoop,
+                                        isLight: isLight,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IgnorePointer(
+                                    ignoring: _isBackground,
+                                    child: Opacity(
+                                      opacity: _isBackground ? 0.4 : 1.0,
+                                      child: TogglePill(
+                                        icon: Icons.subtitles_rounded,
+                                        label: '자막',
+                                        active: _showSubs,
+                                        onTap: _toggleSubs,
+                                        isLight: isLight,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  TogglePill(
+                                    icon: Icons.headphones_rounded,
+                                    label: '백그라운드',
+                                    active: _isBackground,
+                                    onTap: _toggleAudioOnlyMode,
+                                    isLight: isLight,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IgnorePointer(
+                                    ignoring: _isBackground,
+                                    child: Opacity(
+                                      opacity: _isBackground ? 0.4 : 1.0,
+                                      child: SpeedMenu(
+                                        value: _rate,
+                                        onSelected: _setRate,
+                                        isLight: isLight,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+                // 오른쪽: 세그먼트 리스트(자막 역할)
+                Container(
+                  width: 400,
+                  decoration: BoxDecoration(
+                    color: bg,
+                    border: Border(
+                      left: BorderSide(
+                        color: cs.outline.withOpacity(0.2),
+                      ),
+                    ),
+                  ),
+                  child: IgnorePointer(
+                    ignoring: _isBackground,
+                    child: Opacity(
+                      opacity: _isBackground ? 0.4 : 1.0,
+                      child: SegmentList(
+                        segments: _segments,
+                        currentIndex: _segIndex,
+                        onTapItem: (i) =>
+                            _jumpToSegment(i, autoplay: true),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              children: [
+                // --- Video + Subs ---
+                AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio == 0
+                      ? 16 / 9
+                      : _controller.value.aspectRatio,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            if (_isBackground) {
+                              _playPauseBg();
+                            } else {
+                              _playPauseVideo();
+                            }
+                          },
+                          child: _isBackground
+                              ? Container(
+                                  color: Colors.black,
+                                )
+                              : VideoPlayer(_controller),
+                        ),
+                      ),
+                      if (_showSubs)
+                        PlainSubtitleOverlay(
+                          ja: _seg.original,
+                          pron: _seg.pron,
+                          ko: _seg.trans,
+                        ),
+                    ],
+                  ),
+                ),
+                // --- Timeline ---
+                IgnorePointer(
+                  ignoring: _isBackground,
+                  child: SegmentTimeline(
+                    controller: _controller,
+                    start: Duration(milliseconds: _seg.startMs),
+                    end: Duration(milliseconds: _seg.endMs),
+                    onSeek: _onUserSeek,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // --- Controls ---
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        IgnorePointer(
+                          ignoring: _isBackground,
+                          child: Opacity(
+                            opacity: _isBackground ? 0.4 : 1.0,
+                            child: CircleIconButton(
+                              icon: Icons.skip_previous_rounded,
+                              onTap: _prevSeg,
+                              tooltip: '이전 구간',
+                              isLight: isLight,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (_isBackground)
+                          CircleIconButton(
+                            icon: _bgPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            onTap: _playPauseBg,
+                            tooltip:
+                                _bgPlaying ? '일시정지' : '재생',
+                            emphasized: true,
+                            isLight: isLight,
+                            bg: Colors.transparent,
+                          ),
+                        if (!_isBackground)
+                          CircleIconButton(
+                            icon: _isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            onTap: _playPauseVideo,
+                            tooltip:
+                                _isPlaying ? '일시정지' : '재생',
+                            emphasized: true,
+                            isLight: isLight,
+                            bg: Colors.transparent,
+                          ),
+                        const SizedBox(width: 8),
+                        IgnorePointer(
+                          ignoring: _isBackground,
+                          child: Opacity(
+                            opacity: _isBackground ? 0.4 : 1.0,
+                            child: CircleIconButton(
+                              icon: Icons.skip_next_rounded,
+                              onTap: _nextSeg,
+                              tooltip: '다음 구간',
+                              isLight: isLight,
+                            ),
+                          ),
+                        ),
+                      ]),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IgnorePointer(
+                              ignoring: _isBackground,
+                              child: Opacity(
+                                opacity:
+                                    _isBackground ? 0.4 : 1.0,
+                                child: TogglePill(
+                                  icon: Icons.all_inclusive_rounded,
+                                  label: _scope == PlayScope.segment
+                                      ? '구간'
+                                      : '전체재생',
+                                  active: _scope == PlayScope.full,
+                                  onTap: () async {
+                                    // full → segment 전환 시, 현재 위치가 세그먼트 밖이면 세그 시작으로 정렬
+                                    if (_scope ==
+                                        PlayScope.full) {
+                                      final pos = _controller
+                                          .value.position;
+                                      final st = Duration(
+                                          milliseconds:
+                                              _seg.startMs);
+                                      final en = Duration(
+                                          milliseconds:
+                                              _seg.endMs);
+                                      if (!(pos >= st &&
+                                          pos < en)) {
+                                        await _controller
+                                            .seekTo(st);
+                                      }
+                                      // 세그먼트 모드로 가면 컨트롤러 루프는 끈다
+                                      await _controller
+                                          .setLooping(false);
+                                      setState(() => _scope =
+                                          PlayScope.segment);
+                                    } else {
+                                      // 전체재생 모드로 전환: 컨트롤러 루프는 _loopSeg 설정을 따른다(전체 영상 반복)
+                                      await _controller
+                                          .setLooping(_loopSeg);
+                                      setState(() =>
+                                          _scope =
+                                              PlayScope.full);
+                                    }
+                                  },
+                                  isLight: isLight,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IgnorePointer(
+                              ignoring: _isBackground,
+                              child: Opacity(
+                                opacity:
+                                    _isBackground ? 0.4 : 1.0,
+                                child: TogglePill(
+                                  icon: Icons.repeat_rounded,
+                                  label: '반복',
+                                  active: _loopSeg,
+                                  onTap: _toggleLoop,
+                                  isLight: isLight,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IgnorePointer(
+                              ignoring: _isBackground,
+                              child: Opacity(
+                                opacity:
+                                    _isBackground ? 0.4 : 1.0,
+                                child: TogglePill(
+                                  icon: Icons.subtitles_rounded,
+                                  label: '자막',
+                                  active: _showSubs,
+                                  onTap: _toggleSubs,
+                                  isLight: isLight,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            TogglePill(
+                              icon: Icons.headphones_rounded,
+                              label: '백그라운드',
+                              active: _isBackground,
+                              onTap: _toggleAudioOnlyMode,
+                              isLight: isLight,
+                            ),
+                            const SizedBox(width: 8),
+                            IgnorePointer(
+                              ignoring: _isBackground,
+                              child: Opacity(
+                                opacity:
+                                    _isBackground ? 0.4 : 1.0,
+                                child: SpeedMenu(
+                                  value: _rate,
+                                  onSelected: _setRate,
+                                  isLight: isLight,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // --- Segments List ---
+                Expanded(
+                  child: IgnorePointer(
+                    ignoring: _isBackground,
+                    child: Opacity(
+                      opacity: _isBackground ? 0.4 : 1.0,
+                      child: SegmentList(
+                        segments: _segments,
+                        currentIndex: _segIndex,
+                        onTapItem: (i) =>
+                            _jumpToSegment(i, autoplay: true),
+                      ),
+                    ),
+
+                  ),
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
-          // --- Segments List ---
-          Expanded(
-            child: IgnorePointer(
-              ignoring: _isBackground,
-              child: Opacity(
-                opacity: _isBackground ? 0.4 : 1.0,
-                child: SegmentList(
-                  segments: _segments,
-                  currentIndex: _segIndex,
-                  onTapItem: (i) => _jumpToSegment(i, autoplay: true),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
