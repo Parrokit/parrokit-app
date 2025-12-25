@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:parrokit/core/provider/dashboard_ui_provider.dart';
+import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:parrokit/features/player/clip_player_screen.dart';
 
 class RecentScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class _RecentScreenState extends State<RecentScreen> {
   late Future<List<(int, Uint8List?, String?, String?)>> _future;
 
   Future<List<(int, Uint8List?, String?, String?)>> _load({bool refreshThumb = false}) {
-    final dash = context.read<DashboardUiProvider>();
+    final dash = context.read<ClipActivityProvider>();
     return dash.fetchRecentClips(limit: 100, refreshThumb: refreshThumb);
   }
 

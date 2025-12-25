@@ -9,7 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:parrokit/core/config/onboarding_prefs.dart';
 import 'package:parrokit/core/config/pa_config.dart';
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
-import 'package:parrokit/core/provider/dashboard_ui_provider.dart';
+import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
 import 'package:parrokit/core/provider/shorts_provider.dart';
 import 'package:parrokit/core/provider/tag_filter_provider.dart';
@@ -76,9 +76,9 @@ void main() async {
         ChangeNotifierProvider(
           create: (c) => UserProvider(_userRepository)..init(),
         ),
-        ChangeNotifierProvider<DashboardUiProvider>(
+        ChangeNotifierProvider<ClipActivityProvider>(
           lazy: false,
-          create: (c) => DashboardUiProvider(c.read<PaDatabase>()),
+          create: (c) => ClipActivityProvider(c.read<PaDatabase>()),
         ),
         ChangeNotifierProvider<MediaProvider>(
           create: (c) => MediaProvider(c.read<PaDatabase>()),

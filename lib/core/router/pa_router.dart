@@ -7,7 +7,7 @@ import 'package:parrokit/features/payment/payment_screen.dart';
 import 'package:parrokit/features/recent/recent_screen.dart';
 import 'package:parrokit/features/recom/entities/recom_result_args.dart';
 import 'package:parrokit/features/recom/screens/recom_screen.dart';
-import 'package:parrokit/features/auth/auth_screen.dart';
+import 'package:parrokit/features/auth/presentation/auth_screen.dart';
 import 'package:parrokit/features/recom/screens/recommendation_result_screen.dart';
 
 import 'package:parrokit/features/shorts/shorts_screen.dart';
@@ -15,7 +15,7 @@ import 'package:parrokit/features/editor/clip_editor_screen.dart';
 import 'package:parrokit/features/library/library_screen.dart';
 import 'package:parrokit/features/navbar/paro_bottom_navbar.dart';
 
-import 'package:parrokit/features/dashboard/dashboard_screen.dart';
+import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/player/clip_player_screen.dart';
 import 'package:parrokit/features/more/more_screen.dart';
 
@@ -58,8 +58,6 @@ abstract class PaRoutes {
   static const paymentFailPath = '/payment/fail';
 }
 
-
-
 GoRouter buildPaRouter({required bool seenOnboarding}) {
   return GoRouter(
     debugLogDiagnostics: true,
@@ -77,8 +75,8 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
       // 1) PortOne(Iamport) 앱 스킴 처리
       // 예: parrokit:///?imp_success=true&imp_uid=...&merchant_uid=...
       if (uri.scheme == 'parrokit') {
-        final successParam =
-            uri.queryParameters['imp_success'] ?? uri.queryParameters['success'];
+        final successParam = uri.queryParameters['imp_success'] ??
+            uri.queryParameters['success'];
 
         if (successParam == 'true') {
           return PaRoutes.paymentSuccessPath;
@@ -101,7 +99,6 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
 
       return null; // 나머지는 그대로 둠
     },
-
     routes: [
       GoRoute(
         path: PaRoutes.onboardingPath,
@@ -118,22 +115,22 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
         ),
       ),
       GoRoute(
-         path: PaRoutes.paymentPath,
-         name: PaRoutes.payment,
-         builder: (context, state) {
-           final args = state.extra as PaymentArgs;
-           return PaymentScreen(
-             merchantUid: args.merchantUid,
-             amount: args.amount,
-             coins: args.coins,
-             productName: args.productName,
-             buyerEmail: args.buyerEmail,
-             onResult: (result) {
-               // TODO: 서버에 결제 상태 조회 요청 후, Navigator.pop 등 처리
-             },
-           );
-         },
-       ),
+        path: PaRoutes.paymentPath,
+        name: PaRoutes.payment,
+        builder: (context, state) {
+          final args = state.extra as PaymentArgs;
+          return PaymentScreen(
+            merchantUid: args.merchantUid,
+            amount: args.amount,
+            coins: args.coins,
+            productName: args.productName,
+            buyerEmail: args.buyerEmail,
+            onResult: (result) {
+              // TODO: 서버에 결제 상태 조회 요청 후, Navigator.pop 등 처리
+            },
+          );
+        },
+      ),
       GoRoute(
         path: PaRoutes.paymentSuccessPath,
         name: PaRoutes.paymentSuccess,

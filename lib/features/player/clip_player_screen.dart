@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/config/pa_config.dart';
-import 'package:parrokit/core/provider/dashboard_ui_provider.dart';
+import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -85,7 +85,7 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadFromDb());
 
     Future.microtask(() {
-      context.read<DashboardUiProvider>().logRecent(widget.clipId);
+      context.read<ClipActivityProvider>().logRecent(widget.clipId);
       // 처음 진입 시 오버레이를 잠깐 보여주고 자동으로 숨김
       _showOverlayTemporarily();
     });

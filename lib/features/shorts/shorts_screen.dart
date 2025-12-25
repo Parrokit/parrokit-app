@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/config/pa_config.dart';
 import 'package:parrokit/core/router/pa_router.dart';
 import 'package:parrokit/core/provider/ad_provider.dart';
-import 'package:parrokit/core/provider/dashboard_ui_provider.dart';
+import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
 import 'package:parrokit/core/services/ad_service.dart';
 import 'package:provider/provider.dart';
@@ -97,7 +97,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                 itemBuilder: (context, index) {
                   final item = shorts.shorts[index];
                   context
-                      .read<DashboardUiProvider>()
+                      .read<ClipActivityProvider>()
                       .logRecent(item.clip.id); // 최근 본 클립 기록
 
                   return ShortsWidgets.ShortsPage(

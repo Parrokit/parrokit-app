@@ -1,4 +1,25 @@
-// lib/provider/dashboard_ui_provider.dart
+// ============================================================================
+// lib/core/provider/clip_activity_provider.dart
+// ============================================================================
+//
+// [역할]
+// 클립 활동 관련 상태 관리 Provider.
+// - 클립 수 카운팅
+// - 최근 시청 기록 (recent6, logRecent)
+// - 컬렉션(작품) 목록
+// - 랜덤 자막/히어로 클립
+//
+// [레이어]
+// Core Layer > Provider
+// 앱 전역에서 사용되는 상태 관리.
+//
+// [사용처]
+// - DashboardScreen: 메인 대시보드 UI
+// - ClipPlayerScreen: 시청 기록 로깅
+// - ShortsScreen: 쇼츠 시청 기록
+// - RecentScreen: 최근 시청 화면
+// ============================================================================
+
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:drift/drift.dart';
@@ -9,21 +30,22 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:parrokit/data/local/pa_database.dart';
 
-class DashboardUiProvider extends ChangeNotifier {
+/// 클립 활동 관련 상태 관리 Provider.
+///
+/// 클립 수, 최근 시청, 컬렉션, 랜덤 자막 등을 관리.
+class ClipActivityProvider extends ChangeNotifier {
   final PaDatabase pdb;
 
-  DashboardUiProvider(this.pdb) {
+  ClipActivityProvider(this.pdb) {
     _initWatchers(); // ✅ 생성 시 한 번만 스트림 연결
   }
 
-  // ---------------- State ----------------
-  /// ⬇️ HeroCard용 상태
-  (
-    int,
-    Uint8List?,
-    String?,
-    String?
-  )? heroClip; // (clipId, imageBytes?, clipTitle?, titleName?)
+  // ─────────────────────────────────────────────────────────────────
+  // State
+  // ─────────────────────────────────────────────────────────────────
+
+  /// HeroCard용 상태 (clipId, imageBytes?, clipTitle?, titleName?)
+  (int, Uint8List?, String?, String?)? heroClip;
   bool loadingHero = false;
 
   /// 이어보기 (clipId, thumbnail, clipTitle, titleName)
@@ -43,6 +65,7 @@ class DashboardUiProvider extends ChangeNotifier {
   /// 헤더 인트로(애니) 노출 여부
   bool headerIntroShown = false;
 
+  /// 랜덤 자막
   List<Segment> randomSegments = const [];
   bool loadingRandom = false;
 
@@ -53,7 +76,10 @@ class DashboardUiProvider extends ChangeNotifier {
     }
   }
 
-  // ---------------- Public API ----------------
+  // ─────────────────────────────────────────────────────────────────
+  // Public API
+  // ─────────────────────────────────────────────────────────────────
+
   /// 최근 본 클립 기록 (watcher가 자동 반영)
   Future<void> logRecent(int clipId, {bool prune = false}) async {
     await pdb.transaction(() async {
@@ -66,7 +92,6 @@ class DashboardUiProvider extends ChangeNotifier {
         last_seq = COALESCE((SELECT MAX(last_seq)+1 FROM recent_clip_views), 1);
       ''',
         variables: [Variable.withInt(clipId)],
-        // 🔑 Drift에게 "이 테이블이 바뀌었어"라고 알려줌
         updates: {pdb.recentClipViews},
       );
 
@@ -89,7 +114,6 @@ class DashboardUiProvider extends ChangeNotifier {
         );
       }
     });
-    // 별도 refresh/notify 불필요: watch()들이 자동으로 재쿼리됨
   }
 
   /// 썸네일 캐시 무효화 (파일 경로 바꼈을 때 등)
@@ -97,7 +121,10 @@ class DashboardUiProvider extends ChangeNotifier {
     _thumbCache.remove(clipId);
   }
 
-  // ---------------- Internals: Streams ----------------
+  // ─────────────────────────────────────────────────────────────────
+  // Internals: Streams
+  // ─────────────────────────────────────────────────────────────────
+
   StreamSubscription<List<QueryRow>>? _countSub;
   StreamSubscription<List<QueryRow>>? _collectionsSub;
   StreamSubscription<List<QueryRow>>? _recentsSub;
@@ -229,10 +256,8 @@ LIMIT 6;
     }
   }
 
-  /// 프로바이더 관리 X
+  /// 랜덤 세그먼트 가져오기
   Future<List<Segment>> getRandomSegments() async {
-    // 1) 전체 개수 조회
-    final countExp = const CustomExpression<int>('COUNT(*)');
     final countRow = await pdb.customSelect(
       'SELECT COUNT(*) AS c FROM segments',
       readsFrom: {pdb.segments},
@@ -241,10 +266,8 @@ LIMIT 6;
     final total = countRow.data['c'] as int? ?? 0;
     if (total == 0) return [];
 
-    // 2) limit = min(10, total)
     final limit = total < 10 ? total : 10;
 
-    // 3) 랜덤으로 limit개 가져오기
     final q = (pdb.select(pdb.segments)
       ..orderBy([
         (tbl) => OrderingTerm(expression: const CustomExpression('RANDOM()')),
@@ -267,13 +290,10 @@ LIMIT 6;
     }
   }
 
-// 랜덤 클립 + 작품 제목 (episode → release → title)
-// segments가 1개 이상 존재하는 clip만 대상
-
+  /// 랜덤 클립 + 작품 제목 (episode → release → title)
   Future<List<(int, Uint8List?, String?, String?)>> _getRandomClipsWithTitle({
     int count = 10,
   }) async {
-    // 세그먼트가 있는 클립만 대상
     final countRow = await pdb.customSelect(
       '''
       SELECT COUNT(*) AS c
@@ -320,7 +340,7 @@ LIMIT 6;
     }).toList();
   }
 
-  // 랜덤 클립 + 타이틀 1개 뽑기
+  /// 랜덤 히어로 클립 1개 뽑기
   Future<void> refreshRandomHeroClip() async {
     if (loadingHero) return;
     loadingHero = true;
@@ -335,11 +355,11 @@ LIMIT 6;
     }
   }
 
+  /// 최근 클립 목록 가져오기 (limit 지정 가능)
   Future<List<(int, Uint8List?, String?, String?)>> fetchRecentClips({
     int limit = 100,
     bool refreshThumb = false,
   }) async {
-    // 1) recent_clip_views 기준으로 JOIN하여 메타 조회
     final rows = await pdb.customSelect(
       '''
     SELECT 
@@ -401,7 +421,10 @@ LIMIT 6;
     return result;
   }
 
-  // ---------------- Cleanup ----------------
+  // ─────────────────────────────────────────────────────────────────
+  // Cleanup
+  // ─────────────────────────────────────────────────────────────────
+
   @override
   void dispose() {
     _countSub?.cancel();

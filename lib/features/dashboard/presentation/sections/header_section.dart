@@ -1,31 +1,48 @@
+// ============================================================================
+// lib/features/dashboard/presentation/sections/header_section.dart
+// ============================================================================
+//
+// [역할]
+// 대시보드 상단 헤더 섹션.
+// 로고, 클립 수 카운터 애니메이션, 추가 버튼 표시.
+//
+// [레이어]
+// Presentation Layer > Sections
+// DashboardScreen에서만 사용하는 화면 전용 섹션.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/provider/dashboard_ui_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/provider/media_provider.dart';
-import 'logo_badge.dart';
+import 'package:parrokit/core/provider/clip_activity_provider.dart';
+import '../widgets/gradient_icon.dart';
 
-class Header extends StatefulWidget {
-  const Header({
-    super.key,
-    required this.textPrimary,
-    required this.textSecondary,
-  });
-
-  final Color textPrimary;
-  final Color textSecondary;
+/// 대시보드 상단 헤더 섹션.
+///
+/// - 로고 뱃지
+/// - 클립 수 카운터 (숨쉬기 애니메이션 + 숫자 트윈)
+/// - 추가 버튼
+class HeaderSection extends StatefulWidget {
+  const HeaderSection({super.key});
 
   @override
-  State<Header> createState() => _HeaderState();
+  State<HeaderSection> createState() => _HeaderSectionState();
 }
 
-class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse; // 로딩 중 숨쉬기 애니
+class _HeaderSectionState extends State<HeaderSection>
+    with SingleTickerProviderStateMixin {
+  // ─────────────────────────────────────────────────────────────────
+  // 애니메이션 컨트롤러
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 로딩 중 "숨쉬기" 애니메이션 컨트롤러
+  late final AnimationController _pulse;
   late final Animation<double> _scale;
   late final Animation<double> _fade;
 
-  int _prevFinal = 0; // 직전 최종 값(트윈 시작점 추정용)
-  int _target = 0; // 목표 값 (mp.clipCount 동기화용)
+  /// 트윈 애니메이션용 값 추적
+  int _prevFinal = 0;
+  int _target = 0;
 
   @override
   void initState() {
@@ -34,7 +51,7 @@ class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    // 1.0 ↔ 1.04 정도의 미세한 스케일로 ‘숨쉬기’ 느낌
+    // 1.0 ↔ 1.04 정도의 미세한 스케일로 '숨쉬기' 느낌
     _scale = Tween<double>(begin: 1.0, end: 1.04).animate(
       CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
     );
@@ -50,11 +67,18 @@ class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // Build
+  // ─────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    final dup = context.watch<DashboardUiProvider>();
-    final isLoading = dup.isCounting;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF111418);
 
+    final dup = context.watch<ClipActivityProvider>();
+    final isLoading = dup.isCounting;
     _target = dup.clipCount;
 
     // 로딩 상태에 따라 숨쉬기 애니 on/off
@@ -64,6 +88,7 @@ class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
       if (_pulse.isAnimating) _pulse.stop();
     }
 
+    // 그라데이션 숫자 스타일
     final gradientPaint = Paint()
       ..shader = const LinearGradient(
         colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)],
@@ -71,7 +96,6 @@ class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
         end: Alignment.bottomRight,
       ).createShader(const Rect.fromLTWH(0, 0, 200, 40));
 
-    // 숫자 스타일
     final numberStyle = TextStyle(
       fontSize: 20,
       fontWeight: FontWeight.bold,
@@ -79,7 +103,7 @@ class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
       height: 1.0,
     );
 
-    // 로딩 끝난 순간에만 트윈 시작점 갱신
+    // 트윈 시작/끝점
     final tweenBegin = _prevFinal;
     final tweenEnd = _target;
     if (!isLoading) _prevFinal = _target;
@@ -88,28 +112,26 @@ class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Row(
         children: [
-          const LogoBadge(),
+          // 로고 뱃지
+          const GradientIcon(),
           const SizedBox(width: 12),
+
+          // 클립 수 + 문구
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 숫자 + 문구 라인
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    // 로딩 중엔 숨쉬기(Scale/Opacity), 끝나면 Tween으로 자연스럽게 증가
+                    // 숫자 애니메이션
                     isLoading
                         ? ScaleTransition(
                             scale: _scale,
                             child: FadeTransition(
                               opacity: _fade,
-                              // 로딩 중엔 마지막으로 알고 있는 값 유지 (혹은 '--' 쓰고 싶으면 바꾸세요)
-                              child: Text(
-                                '$_prevFinal',
-                                style: numberStyle,
-                              ),
+                              child: Text('$_prevFinal', style: numberStyle),
                             ),
                           )
                         : TweenAnimationBuilder<double>(
@@ -128,11 +150,11 @@ class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
                     const SizedBox(width: 4),
                     Text(
                       '개의 클립을 모았어요 🎬',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: widget.textPrimary,
-                          ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: textPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -141,6 +163,8 @@ class _HeaderState extends State<Header> with SingleTickerProviderStateMixin {
               ],
             ),
           ),
+
+          // 추가 버튼
           IconButton(
             onPressed: () => context.push('/clips/create'),
             icon: const Icon(Icons.add_box_rounded, size: 28),
