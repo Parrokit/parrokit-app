@@ -1,0 +1,191 @@
+// ============================================================================
+// lib/features/_content/editor/presentation/clip_editor_screen.dart
+// ============================================================================
+//
+// [역할]
+// 클립 에디터 화면. ViewModel에서 상태와 로직을 가져옴.
+// sections 위젯을 사용하여 UI 구성.
+//
+// [레이어]
+// Presentation Layer > Screen
+// ============================================================================
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:parrokit/core/provider/media_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/data/local/app_database.dart' as db;
+
+import 'clip_editor_view_model.dart';
+import 'sections/sections.dart';
+
+/// 클립 에디터 화면.
+class ClipEditorScreen extends StatelessWidget {
+  const ClipEditorScreen({super.key, this.clipId});
+
+  final int? clipId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => ClipEditorViewModel(
+        mediaProvider: context.read<MediaProvider>(),
+        userProvider: context.read<UserProvider>(),
+        titlesDao: context.read<db.AppDatabase>().titlesDao,
+        clipId: clipId,
+      ),
+      child: const _ClipEditorBody(),
+    );
+  }
+}
+
+class _ClipEditorBody extends StatelessWidget {
+  const _ClipEditorBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.watch<ClipEditorViewModel>();
+    final userProvider = context.watch<UserProvider>();
+
+    // Toast 메시지 처리
+    if (vm.toastMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showToast(context, vm.toastMessage!);
+        vm.clearToast();
+      });
+    }
+
+    // 저장 후 닫기
+    if (vm.shouldClose) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pop(true);
+      });
+    }
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(
+        title: const Text('편집'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.monetization_on_rounded,
+                  color: Colors.amber,
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${userProvider.coins}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        ],
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Stepper(
+                    type: StepperType.horizontal,
+                    currentStep: vm.currentStep,
+                    onStepContinue: () => _handleStepContinue(context, vm),
+                    onStepCancel: () => _handleStepCancel(context, vm),
+                    onStepTapped: vm.goToStep,
+                    controlsBuilder: (context, details) =>
+                        const SizedBox.shrink(),
+                    steps: [
+                      _buildStep(0, vm, FileSection(vm: vm)),
+                      _buildStep(1, vm, WorkNameSection(vm: vm)),
+                      _buildStep(2, vm, TypeSection(vm: vm)),
+                      _buildStep(3, vm, SeasonEpisodeSection(vm: vm)),
+                      _buildStep(4, vm, TitlesSection(vm: vm)),
+                      _buildStep(5, vm, TagsSection(vm: vm)),
+                      _buildStep(6, vm, SegmentsSection(vm: vm)),
+                    ],
+                  ),
+                  if (vm.isSaving)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                16 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: _buildStepperControls(context, vm),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Step _buildStep(int index, ClipEditorViewModel vm, Widget content) {
+    return Step(
+      title: const SizedBox.shrink(),
+      isActive: vm.currentStep >= index,
+      state: vm.currentStep > index ? StepState.complete : StepState.indexed,
+      content: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+        child: content,
+      ),
+    );
+  }
+
+  void _handleStepContinue(BuildContext context, ClipEditorViewModel vm) {
+    if (vm.currentStep < 6) {
+      vm.nextStep();
+    } else {
+      vm.save();
+    }
+  }
+
+  void _handleStepCancel(BuildContext context, ClipEditorViewModel vm) {
+    if (vm.currentStep == 0) {
+      Navigator.of(context).maybePop();
+    } else {
+      vm.prevStep();
+    }
+  }
+
+  Widget _buildStepperControls(BuildContext context, ClipEditorViewModel vm) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed:
+                vm.isSaving ? null : () => _handleStepCancel(context, vm),
+            child: Text(vm.currentStep == 0 ? '취소' : '이전'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed:
+                vm.isSaving ? null : () => _handleStepContinue(context, vm),
+            child: Text(vm.currentStep == 6 ? '저장' : '다음'),
+          ),
+        ),
+      ],
+    );
+  }
+}

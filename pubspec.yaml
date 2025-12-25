@@ -122,6 +122,7 @@ flutter:
     - assets/icons/pa_icon.png
     - assets/logos/pa_logo.png
     - assets/intros/
+    - assets/prompts/
   fonts:
     - family: IBMPlexSansKR
       fonts:

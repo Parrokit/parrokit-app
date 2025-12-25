@@ -28,9 +28,9 @@ import 'package:parrokit/core/utils/audio_bg.dart';
 import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/features/_content/player/domain/player_state.dart';
 
-import 'mixins/playback_control_mixin.dart';
-import 'mixins/audio_mode_mixin.dart';
-import 'mixins/ui_control_mixin.dart';
+import 'view_model/playback_control_mixin.dart';
+import 'view_model/audio_mode_mixin.dart';
+import 'view_model/ui_control_mixin.dart';
 
 /// 클립 플레이어 ViewModel.
 ///

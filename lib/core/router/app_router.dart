@@ -21,7 +21,7 @@ import 'package:parrokit/features/_content/shorts/presentation/shorts_screen.dar
 import 'package:parrokit/features/_content/library/library_screen.dart';
 import 'package:parrokit/features/_settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/_discovery/recent/presentation/recent_screen.dart';
-import 'package:parrokit/features/editor/clip_editor_screen.dart';
+import 'package:parrokit/features/_content/editor/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/_content/player/presentation/clip_player_screen.dart';
 import 'package:parrokit/features/_discovery/recom/presentation/recom_screen.dart';
 import 'package:parrokit/features/_discovery/recom/presentation/recom_result_screen.dart';
