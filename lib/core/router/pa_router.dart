@@ -13,7 +13,7 @@ import 'package:parrokit/features/recom/screens/recommendation_result_screen.dar
 import 'package:parrokit/features/shorts/shorts_screen.dart';
 import 'package:parrokit/features/editor/clip_editor_screen.dart';
 import 'package:parrokit/features/library/library_screen.dart';
-import 'package:parrokit/features/navbar/paro_bottom_navbar.dart';
+import 'package:parrokit/core/navigation/paro_bottom_navbar.dart';
 
 import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/player/clip_player_screen.dart';

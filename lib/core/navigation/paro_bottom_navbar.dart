@@ -1,6 +1,22 @@
-// lib/mvp/navbar/paro_bottom_navbar.dart
+// ============================================================================
+// lib/core/navigation/paro_bottom_navbar.dart
+// ============================================================================
+//
+// [역할]
+// 앱 하단 네비게이션 바 위젯.
+// 홈, 탐색, 라이브러리, 애니 추천, 더보기 탭으로 구성.
+//
+// [레이어]
+// Core Layer > Navigation
+// 앱 전체 네비게이션 쉘 컴포넌트.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
+/// 앱 하단 네비게이션 바.
+///
+/// [currentIndex]: 현재 선택된 탭 인덱스
+/// [onTap]: 탭 선택 콜백
 class ParoBottomNavBar extends StatelessWidget {
   const ParoBottomNavBar({
     super.key,
