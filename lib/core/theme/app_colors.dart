@@ -1,7 +1,7 @@
 // lib/theme/app_colors.dart
 import 'package:flutter/material.dart';
 
-class PaColors {
+class AppColors {
   // === Base (Light) ===
   /// Flutter 3.18 이후로 들어간 머티리얼 디자인 3(Material 3)에서
   /// Background color는 Surface color로 대체 (onBackground는 onSurface로 대체)

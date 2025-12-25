@@ -20,13 +20,13 @@ class AppTheme {
   static ThemeData _buildTheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final cs = ColorScheme.fromSeed(
-      seedColor: PaColors.primary,
+      seedColor: AppColors.primary,
       brightness: brightness,
-      primary: PaColors.primary,
+      primary: AppColors.primary,
       onPrimary: Colors.white,
-      secondary: PaColors.primarySoft,
-      surface: isDark ? PaColors.surfaceDark : PaColors.surface,
-      onSurface: isDark ? PaColors.textPrimaryDark : PaColors.textPrimary,
+      secondary: AppColors.primarySoft,
+      surface: isDark ? AppColors.surfaceDark : AppColors.surface,
+      onSurface: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
       surfaceTint: Colors.transparent,
     );
 
@@ -58,7 +58,7 @@ class AppTheme {
       navigationBarTheme: paNavigationBar(cs, isDark: isDark),
 
       segmentedButtonTheme: paSegmentedButtonTheme(cs, isDark: isDark),
-      dividerColor: isDark ? PaColors.dividerDark : PaColors.divider,
+      dividerColor: isDark ? AppColors.dividerDark : AppColors.divider,
     );
   }
 }
