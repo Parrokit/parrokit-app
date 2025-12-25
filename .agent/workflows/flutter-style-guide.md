@@ -20,26 +20,61 @@ description: Flutter Clean Architecture 코드 스타일 가이드
 
 ```
 lib/
+├── main.dart                # 앱 진입점 (최소화: bootstrap 호출만)
+│
 ├── core/                    # 🔧 전역 공통 코드
+│   ├── app.dart             # App 루트 위젯 (MaterialApp 설정)
+│   ├── bootstrap.dart       # 앱 초기화 (Firebase, 광고, 인증 등)
+│   ├── di/                  # 의존성 주입
+│   │   └── providers.dart   # MultiProvider 목록
 │   ├── config/              # 앱 설정
+│   │   └── app_config.dart
 │   ├── provider/            # 전역 Provider (theme, auth, iap 등)
 │   ├── repositories/        # Repository 추상화/구현
 │   ├── services/            # 외부 서비스 (Firebase 등)
 │   ├── router/              # 라우팅 설정
+│   │   ├── app_router.dart  # GoRouter 빌더
+│   │   ├── app_routes.dart  # 라우트 상수
+│   │   └── app_shell.dart   # 네비바 쉘
+│   ├── navigation/          # 네비게이션 컴포넌트
+│   │   └── app_bottom_navbar.dart
 │   ├── theme/               # 디자인 시스템
+│   │   ├── app_theme.dart
+│   │   ├── app_colors.dart
+│   │   └── components/
 │   └── utils/               # 유틸리티 함수
 │
 ├── data/                    # 💾 데이터 레이어 (전역)
 │   ├── local/               # 로컬 DB (Drift)
+│   │   ├── app_database.dart
+│   │   └── prefs/           # SharedPreferences 래퍼
 │   ├── models/              # 공통 데이터 모델
 │   └── constants/           # 상수 정의
 │
 └── features/                # 🎯 기능별 모듈 (MVVM + Clean Architecture)
     ├── auth/
     ├── dashboard/
-    ├── library/
+    ├── intro/
+    ├── payment/
     └── ...
 ```
+
+### main.dart 구조
+
+```dart
+// main.dart (최소화된 진입점)
+import 'package:parrokit/core/bootstrap.dart';
+
+void main() => bootstrap();
+```
+
+**역할 분리:**
+| 파일 | 역할 |
+|------|------|
+| `main.dart` | 진입점 (bootstrap 호출만) |
+| `core/bootstrap.dart` | 앱 초기화 (Firebase, 광고, 인증 등) |
+| `core/app.dart` | App 위젯 (MaterialApp 설정) |
+| `core/di/providers.dart` | MultiProvider 목록 |
 
 ---
 

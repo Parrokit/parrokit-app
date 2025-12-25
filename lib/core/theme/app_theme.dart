@@ -13,7 +13,7 @@ import 'components/app_tabbar_theme.dart';
 import 'components/app_texts_theme.dart';
 import 'components/app_segmented_button_theme.dart';
 
-class PaTheme {
+class AppTheme {
   static ThemeData light = _buildTheme(Brightness.light);
   static ThemeData dark = _buildTheme(Brightness.dark);
 
