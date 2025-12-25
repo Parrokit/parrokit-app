@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'bookmark_tab.dart';
-import '../../../../data/constants/library_tab.dart';
+import '../../domain/library_mode.dart';
 
 class BookmarkTabs extends StatelessWidget {
   const BookmarkTabs({required this.value, required this.onChanged});
@@ -31,7 +31,7 @@ class BookmarkTabs extends StatelessWidget {
           children: [
             AnimatedAlign(
               alignment:
-              isFolder ? Alignment.centerLeft : Alignment.centerRight,
+                  isFolder ? Alignment.centerLeft : Alignment.centerRight,
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
               child: Container(
