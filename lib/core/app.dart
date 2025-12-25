@@ -30,7 +30,7 @@ class App extends StatelessWidget {
     final theme = context.watch<ThemeProvider>();
 
     return MaterialApp.router(
-      title: 'Parokit',
+      title: 'Parrokit',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: theme.themeMode,

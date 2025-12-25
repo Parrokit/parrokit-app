@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/core/provider/tag_filter_provider.dart';
+import 'package:parrokit/features/_content/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 import 'episode_thumb_nail.dart';
@@ -68,7 +68,8 @@ class ClipListFromProvider extends StatelessWidget {
     );
 
     if (ok == true) {
-      final ok2 = await context.read<MediaProvider>().deleteClipById(item.clip.id);
+      final ok2 =
+          await context.read<MediaProvider>().deleteClipById(item.clip.id);
 
       // ✅ showToast 사용
       showToast(
@@ -81,7 +82,8 @@ class ClipListFromProvider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tick = context.select<TagFilterProvider, int>((p) => p.resultsVersion);
+    final tick =
+        context.select<TagFilterProvider, int>((p) => p.resultsVersion);
     final loading = context.select<TagFilterProvider, bool>((p) => p.isLoading);
 
     return CustomScrollView(
@@ -93,15 +95,17 @@ class ClipListFromProvider extends StatelessWidget {
             child: Text(
               '클립',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+                    fontWeight: FontWeight.w800,
+                  ),
             ),
           ),
         ),
 
         // ✅ 로딩 시엔 스켈레톤만
-        if (loading) _skeletonSliver() else
-        // ✅ 데이터일 때만 리스트 렌더
+        if (loading)
+          _skeletonSliver()
+        else
+          // ✅ 데이터일 때만 리스트 렌더
           SliverList.separated(
             itemCount: items.length,
             itemBuilder: (ctx, i) {
@@ -164,11 +168,13 @@ class ClipListFromProvider extends StatelessWidget {
                   child: InkWell(
                     onTap: () => onOpen(item),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          EpisodeThumbnail(imageProvider: thumbProvider, duration: dur),
+                          EpisodeThumbnail(
+                              imageProvider: thumbProvider, duration: dur),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -179,7 +185,8 @@ class ClipListFromProvider extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.w800, fontSize: 16),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 16),
                                 ),
                                 const SizedBox(height: 6),
                                 Wrap(
@@ -195,7 +202,10 @@ class ClipListFromProvider extends StatelessWidget {
                           ),
                           Icon(
                             Icons.chevron_right_rounded,
-                            color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.4),
+                            color: Theme.of(ctx)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.4),
                           ),
                         ],
                       ),
@@ -267,6 +277,6 @@ class _LineSkeleton extends StatelessWidget {
 }
 
 Widget _skeletonSliver() => SliverList.builder(
-  itemCount: 8,
-  itemBuilder: (_, __) => const _LineSkeleton(),
-);
+      itemCount: 8,
+      itemBuilder: (_, __) => const _LineSkeleton(),
+    );

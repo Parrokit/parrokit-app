@@ -1,15 +1,13 @@
 // lib/provider/tag_filter_provider.dart
 import 'dart:async';
 import 'dart:collection';
-import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
+import 'package:parrokit/data/local/app_database.dart';
+import 'package:parrokit/data/models/clip_item.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
-
-import '../../data/local/app_database.dart';
-import '../../../data/models/clip_item.dart';
 
 class TagFilterProvider extends ChangeNotifier {
   final AppDatabase pdb;
@@ -30,7 +28,6 @@ class TagFilterProvider extends ChangeNotifier {
   final Set<int> _building = {};
   String? _docsPath;
 
-
   /// 화면에서 깜빡임 없이 그대로 쓸 데이터/상태
   List<ClipItem> _items = const [];
   bool _isLoading = false;
@@ -38,7 +35,6 @@ class TagFilterProvider extends ChangeNotifier {
   ///  결과 세트 버전 (UI 전환 키로 사용)
   int _resultsVersion = 0;
   int get resultsVersion => _resultsVersion;
-
 
   List<ClipItem> get items => _items;
   bool get isLoading => _isLoading;
@@ -93,13 +89,14 @@ class TagFilterProvider extends ChangeNotifier {
     _isLoading = v;
     notifyListeners();
   }
+
   /// DB 변경 감시 -> 필요한 캐시 무효화
   StreamSubscription? _clipsSub, _segmentsSub, _clipTagsSub;
 
   Future<void> showAll() async {
     // 모든 clip id 조회
     final rows = await (pdb.select(pdb.clips)
-      ..orderBy([(c) => OrderingTerm.asc(c.id)]))
+          ..orderBy([(c) => OrderingTerm.asc(c.id)]))
         .get();
     filteredClipIds = rows.map((c) => c.id).toList();
     await applyNow(); // 내부 items까지 채워서 깜빡임 최소화
@@ -115,8 +112,6 @@ class TagFilterProvider extends ChangeNotifier {
       _cache.removeWhere((k, _) => !ids.contains(k));
       notifyListeners(); // OK (1회)
     });
-
-
 
     _segmentsSub = (pdb.select(pdb.segments)).watch().listen((rows) {
       final dirty = <int>{};
@@ -223,7 +218,8 @@ class TagFilterProvider extends ChangeNotifier {
       out.add(await _getOrBuild(id));
     }
 
-    out.sort((a, b) => (order[a.clip.id] ?? 0).compareTo(order[b.clip.id] ?? 0));
+    out.sort(
+        (a, b) => (order[a.clip.id] ?? 0).compareTo(order[b.clip.id] ?? 0));
     return out;
   }
 
@@ -254,6 +250,7 @@ class TagFilterProvider extends ChangeNotifier {
       _touch(clipId);
       return hit;
     }
+
     /// 다른 스레드에서 이미 빌드 중인 경우 대기
     if (_building.contains(clipId)) {
       final start = DateTime.now();
@@ -266,38 +263,41 @@ class TagFilterProvider extends ChangeNotifier {
     }
 
     _building.add(clipId);
-    try{
+    try {
       // clip
       final clip = await (pdb.select(pdb.clips)
-      ..where((c) => c.id.equals(clipId))
-      ..limit(1))
+            ..where((c) => c.id.equals(clipId))
+            ..limit(1))
           .getSingleOrNull();
-      if (clip == null)  throw StateError('Clip not found: $clipId');
+      if (clip == null) throw StateError('Clip not found: $clipId');
 
       // segments
       final segments = await (pdb.select(pdb.segments)
-      ..where((s) => s.clipId.equals(clipId))
-      ..orderBy([(s) => OrderingTerm.asc(s.startMs)])).get();
+            ..where((s) => s.clipId.equals(clipId))
+            ..orderBy([(s) => OrderingTerm.asc(s.startMs)]))
+          .get();
 
       // tags
       final jt = pdb.clipTags;
-      final tagRows = await(pdb.select(pdb.tags).join([
+      final tagRows = await (pdb.select(pdb.tags).join([
         innerJoin(jt, jt.tagId.equalsExp(pdb.tags.id)),
-      ])..where(jt.clipId.equals(clipId))).get();
+      ])
+            ..where(jt.clipId.equals(clipId)))
+          .get();
       final tags = [for (final r in tagRows) r.readTable(pdb.tags)];
 
       // thumbnail
 
       Uint8List? thumb;
-      try{
-        final abs =await _absolutePathFor(clip.filePath);
+      try {
+        final abs = await _absolutePathFor(clip.filePath);
         thumb = await VideoThumbnail.thumbnailData(
           video: abs,
           imageFormat: ImageFormat.JPEG,
           quality: 70,
           timeMs: 0,
         );
-      } catch(_){
+      } catch (_) {
         thumb = null;
       }
 
@@ -313,7 +313,7 @@ class TagFilterProvider extends ChangeNotifier {
 
       _put(clipId, item);
       return item;
-    } finally{
+    } finally {
       _building.remove(clipId);
     }
   }

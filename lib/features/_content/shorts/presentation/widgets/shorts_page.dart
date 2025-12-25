@@ -1,3 +1,15 @@
+// ============================================================================
+// lib/features/_content/shorts/presentation/widgets/shorts_page.dart
+// ============================================================================
+//
+// [역할]
+// 쇼츠 화면 내 개별 비디오 페이지 위젯.
+//
+// [레이어]
+// Presentation Layer > Widgets
+//
+// ============================================================================
+
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -5,31 +17,62 @@ import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/data/local/app_database.dart'; // Segment 타입 사용
 import 'package:parrokit/features/_content/shorts/presentation/widgets/video_layer_placeholder.dart';
+import 'package:parrokit/features/_content/shorts/presentation/sections/shorts_page_subtitle_section.dart';
+import 'package:parrokit/features/_content/shorts/presentation/sections/shorts_page_control_section.dart';
 
 enum FitMode { cover, contain }
 
+/// [역할]
+/// 쇼츠 리스트의 개별 아이템(비디오)을 표시하는 위젯.
+///
+/// 화면에 보일 때([isActive])만 비디오를 초기화하고 재생하며,
+/// 화면에서 사라지면 리소스를 해제하여 메모리를 최적화합니다.
+///
+/// [기능]
+/// - 로컬 비디오 파일 재생 ([VideoPlayerController])
+/// - 제스처 제어 (탭하여 재생/일시정지)
+/// - 하위 섹션([ShortsPageSubtitleSection], [ShortsPageControlSection]) 관리
+/// - 오디오 루프 및 자동 넘김(AutoNext) 처리
 class ShortsPage extends StatefulWidget {
   const ShortsPage({
     super.key,
-    required this.filePath, // 절대 경로(Provider에서 보정해 전달)
-    required this.durationMs, // 길이 (ms)
-    required this.segments, // 자막 리스트 (Segments 테이블)
-    required this.onEnded, // 끝났을 때 콜백 (자동넘김 등)
-    required this.autoNextEnabled,
-    required this.isActive, // 현재 화면에 보이는 페이지 여부
-    required this.pauseSignal,
-    required this.showSubtilte,
-    this.fitMode = FitMode.contain,
+    required this.filePath, // 절대 경로
+    required this.durationMs, // 영상 길이 (ms)
+    required this.segments, // 자막 데이터 목록
+    required this.onEnded, // 영상 종료 시 콜백
+    required this.autoNextEnabled, // 자동 넘김 활성화 여부
+    required this.isActive, // 현재 화면 노출 여부
+    required this.pauseSignal, // 외부 일시정지 신호
+    required this.showSubtilte, // 자막 표시 여부
+    this.fitMode = FitMode.contain, // 영상 맞춤 모드
   });
 
+  /// 자동 넘김 활성화 여부. true일 경우 영상 종료 시 [onEnded] 호출.
   final bool autoNextEnabled;
+
+  /// 비디오 파일의 절대 경로.
   final String filePath;
+
+  /// 비디오 길이 (밀리초).
   final int durationMs;
+
+  /// 자막(세그먼트) 리스트.
   final List<Segment> segments;
+
+  /// 현재 이 페이지가 사용자에게 보이고 있는지 여부.
+  /// (PageView의 currentIndex와 비교하여 결정됨)
   final bool isActive;
+
+  /// 영상 종료 시 호출되는 콜백. (주로 다음 페이지로 이동)
   final VoidCallback onEnded;
+
+  /// 영상 비율 맞춤 설정 (contain/cover).
   final FitMode fitMode;
+
+  /// 광고 등 외부 요인에 의한 일시정지 신호.
   final ValueListenable<bool> pauseSignal;
+
+  /// 자막 표시 여부 스위치.
   final bool showSubtilte;
 
   @override
@@ -38,6 +81,9 @@ class ShortsPage extends StatefulWidget {
 
 class _ShortsPageState extends State<ShortsPage>
     with AutomaticKeepAliveClientMixin {
+  // ─────────────────────────────────────────────────────────────────
+  // State
+  // ─────────────────────────────────────────────────────────────────
   VideoPlayerController? _controller;
   bool _init = false;
   String? _error;
@@ -46,12 +92,14 @@ class _ShortsPageState extends State<ShortsPage>
   /// 동시에 여러 초기화가 겹칠 때를 막는 토큰 (세대 구분)
   int _loadGen = 0;
   bool _isDragging = false;
-  double? _dragProgress; // 0.0 ~ 1.0 (드래그 중 임시 표시)
   bool _wasPlayingBeforeDrag = false;
 
   @override
   bool get wantKeepAlive => true;
 
+  // ─────────────────────────────────────────────────────────────────
+  // Init & Dispose
+  // ─────────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -76,7 +124,11 @@ class _ShortsPageState extends State<ShortsPage>
     }
   }
 
-  /// 현재 보이는지/아닌지에 따라 재생/해제 정책
+  /// 페이지 활성/비활성 상태를 변경하고 리소스를 관리합니다.
+  ///
+  /// - [v] == true: 비디오 컨트롤러를 초기화하고 재생을 준비합니다.
+  /// - [v] == false: 재생을 중지하고 컨트롤러를 해제(dispose)하여 메모리를 확보합니다.
+  /// 상태 변경 시 [_loadGen](세대 토큰)을 증가시켜, 이전 비동기 작업이 현재 상태를 덮어쓰지 않도록 방어합니다.
   Future<void> setActive(bool v) async {
     if (_active == v) return;
     _active = v;
@@ -108,11 +160,19 @@ class _ShortsPageState extends State<ShortsPage>
       widget.pauseSignal.addListener(_onPauseSignalChanged);
     }
     // autoNext 토글 시 루프 설정 즉시 반영
-    if (oldWidget.autoNextEnabled != widget.autoNextEnabled && _controller != null) {
+    if (oldWidget.autoNextEnabled != widget.autoNextEnabled &&
+        _controller != null) {
       _controller!.setLooping(!widget.autoNextEnabled);
     }
   }
 
+  /// 비디오 컨트롤러를 생성하고 초기화합니다.
+  ///
+  /// 1. 파일 경로로부터 컨트롤러 생성
+  /// 2. [initialize] 호출
+  /// 3. 세대 토큰([_loadGen]) 검사로 초기화 중 상태 변경 감지
+  /// 4. 루프 설정 및 자동 재생 시작
+  /// 5. 리스너 등록 (재생 위치 모니터링, 자동 넘김 감지)
   Future<void> _initVideo() async {
     final myGen = ++_loadGen;
     try {
@@ -166,6 +226,10 @@ class _ShortsPageState extends State<ShortsPage>
     super.dispose();
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // Actions
+  // ─────────────────────────────────────────────────────────────────
+
   void _togglePlay() {
     final c = _controller;
     if (c == null) return;
@@ -183,22 +247,20 @@ class _ShortsPageState extends State<ShortsPage>
     await c.seekTo(Duration(milliseconds: targetMs.round()));
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // Build
+  // ─────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────
+  // Build
+  // ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
     final c = _controller;
     final pos = c?.value.position ?? Duration.zero;
-    final dur = c?.value.duration ?? Duration(milliseconds: widget.durationMs);
 
-    // ✅ 드래그 중이면 드래그 값 우선
-    final double liveProgress = dur.inMilliseconds == 0
-        ? 0.0
-        : (pos.inMilliseconds / dur.inMilliseconds).clamp(0.0, 1.0);
-    final double uiProgress = _isDragging && _dragProgress != null
-        ? _dragProgress!.clamp(0.0, 1.0)
-        : liveProgress;
-
+    // 비디오 에러/플레이스홀더/플레이어
     Widget videoLayer() {
       if (_error != null) {
         return Center(
@@ -219,7 +281,6 @@ class _ShortsPageState extends State<ShortsPage>
           ),
         );
       } else {
-        // contain: 레터박스 처리
         return Container(
           color: Colors.black,
           alignment: Alignment.center,
@@ -230,10 +291,6 @@ class _ShortsPageState extends State<ShortsPage>
         );
       }
     }
-
-    final progress = dur.inMilliseconds == 0
-        ? 0.0
-        : (pos.inMilliseconds / dur.inMilliseconds).clamp(0.0, 1.0);
 
     final currentSeg =
         c != null ? segmentForPosition(widget.segments, pos) : null;
@@ -247,85 +304,16 @@ class _ShortsPageState extends State<ShortsPage>
           // --- Video ---
           videoLayer(),
 
-          // --- Subtitles (jp / pron / trans) ---
+          // --- Subtitles Section ---
           if (currentSeg != null)
             Positioned(
               left: 16,
               right: 16,
               bottom: 90,
               child: IgnorePointer(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // 일본어 원문
-                    if (widget.showSubtilte && currentSeg != null)
-                      Text(
-                        currentSeg.original,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          height: 1.25,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 3,
-                              color: Colors.black54,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                      ),
-                    // 발음(옵션)
-                    if (widget.showSubtilte && currentSeg != null)
-                      if (currentSeg.pron != null &&
-                          currentSeg.pron!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            currentSeg.pron!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                              shadows: [
-                                Shadow(
-                                  blurRadius: 3,
-                                  color: Colors.black54,
-                                  offset: Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    // 번역(옵션)
-                    if (widget.showSubtilte && currentSeg != null)
-                      if (currentSeg.trans != null &&
-                          currentSeg.trans!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            currentSeg.trans!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                              shadows: [
-                                Shadow(
-                                  blurRadius: 3,
-                                  color: Colors.black54,
-                                  offset: Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                  ],
+                child: ShortsPageSubtitleSection(
+                  segment: currentSeg,
+                  showSubtitle: widget.showSubtilte,
                 ),
               ),
             ),
@@ -352,56 +340,29 @@ class _ShortsPageState extends State<ShortsPage>
               ),
             ),
 
-          // --- Progress Indicator ---
-          // (Stack 안) Progress 영역
+          // --- Control Section (Progress / Seek) ---
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque, // ✅ 이 영역을 넓은 히트박스로 사용
-              onTap: () {}, // 부모 onTap(재생/일시정지) 차단
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8), // 바닥과 간섭 줄이기
-                child: SizedBox(
-                  height: 48, // ✅ 히트 영역을 넓힘(추천: 40~56)
-                  child: Center( // 보기는 얇게
-                    child: SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 3,                           // 얇은 트랙
-                        activeTrackColor: Colors.white,
-                        inactiveTrackColor: Colors.white.withOpacity(0.3),
-                        thumbShape: SliderComponentShape.noThumb, // ✅ 점 제거
-                        overlayShape: SliderComponentShape.noOverlay,
-                      ),
-                      child: Slider(
-                        value: uiProgress.isNaN ? 0.0 : uiProgress,
-                        onChangeStart: (_) {
-                          final c = _controller;
-                          if (c == null) return;
-                          _wasPlayingBeforeDrag = c.value.isPlaying;
-                          c.pause();
-                          setState(() { _isDragging = true; });
-                        },
-                        onChanged: (v) {
-                          setState(() { _dragProgress = v; });
-                        },
-                        onChangeEnd: (v) async {
-                          await _seekToFraction(v);
-                          setState(() {
-                            _isDragging = false;
-                            _dragProgress = null;
-                          });
-                          final c = _controller;
-                          if (c != null && _wasPlayingBeforeDrag && _active) {
-                            c.play();
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            child: ShortsPageControlSection(
+              controller: c,
+              durationMs: widget.durationMs,
+              onSeek: _seekToFraction,
+              onDragStart: () {
+                final ctrl = _controller;
+                if (ctrl == null) return;
+                _wasPlayingBeforeDrag = ctrl.value.isPlaying;
+                ctrl.pause();
+                setState(() => _isDragging = true);
+              },
+              onDragEnd: () {
+                setState(() => _isDragging = false);
+                final ctrl = _controller;
+                if (ctrl != null && _wasPlayingBeforeDrag && _active) {
+                  ctrl.play();
+                }
+              },
             ),
           ),
         ],

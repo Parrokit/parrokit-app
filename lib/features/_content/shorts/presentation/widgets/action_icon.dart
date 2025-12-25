@@ -1,5 +1,28 @@
+// ============================================================================
+// lib/features/_content/shorts/presentation/widgets/action_icon.dart
+// ============================================================================
+//
+// [역할]
+// 쇼츠 화면 우측 액션 레일(ActionRail)에 사용되는 원형 아이콘 버튼입니다.
+//
+// [기능]
+// - [icon]: 표시할 아이콘 (IconData)
+// - [label]: 아이콘 아래에 표시될 텍스트 라벨
+// - [active]: 활성화 상태 여부 (색상 변경)
+// - [onTap]: 탭 이벤트 콜백
+//
+// [레이어]
+// Presentation Layer > Widgets
+//
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
+/// [역할]
+/// 쇼츠 우측 패널의 개별 액션 버튼 위젯.
+///
+/// 원형 배경의 아이콘과 하단 라벨로 구성됩니다.
+/// [active] 상태에 따라 아이콘과 라벨의 색상이 변경됩니다.
 class ActionIcon extends StatelessWidget {
   const ActionIcon({
     required this.icon,
@@ -25,7 +48,7 @@ class ActionIcon extends StatelessWidget {
         children: [
           DecoratedBox(
             decoration: BoxDecoration(
-              color: scheme.surfaceVariant.withOpacity(0.6),
+              color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
               shape: BoxShape.circle,
               border: Border.all(color: scheme.outlineVariant),
             ),
@@ -52,7 +75,10 @@ class ActionIcon extends StatelessWidget {
   }
 }
 
-
+/// [역할]
+/// 자동 넘김(Auto Next) 기능을 토글하는 버튼 위젯.
+///
+/// 상태([_enabled])를 내부적으로 관리하며, 변경 시 [onChanged] 콜백을 호출합니다.
 class AutoNextButton extends StatefulWidget {
   final bool initial;
   final ValueChanged<bool> onChanged;

@@ -7,7 +7,7 @@
 // 세로 스와이프로 클립을 넘기며 학습.
 //
 // [레이어]
-// Presentation Layer - View
+// Presentation Layer > Screen
 //
 // [구성 요소]
 // - ShortsPage: 개별 클립 페이지
@@ -22,10 +22,9 @@ import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/router/app_router.dart';
-import 'package:parrokit/core/provider/ad_provider.dart';
+import 'package:parrokit/features/_content/shorts/presentation/providers/ad_provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
-import 'package:parrokit/core/provider/iap_provider.dart';
-import 'package:parrokit/core/provider/shorts_provider.dart';
+import 'package:parrokit/features/_content/shorts/presentation/providers/shorts_provider.dart';
 import 'package:parrokit/core/services/ad_service.dart';
 
 import 'widgets/shorts_page.dart';
@@ -33,6 +32,14 @@ import 'widgets/progress_bar.dart';
 import 'widgets/action_rail.dart';
 import 'widgets/badge.dart' as shorts_badge;
 
+/// [역할]
+/// 쇼츠(Shorts) 기능을 제공하는 메인 화면.
+///
+/// TikTok이나 Reels와 유사한 세로 스크롤 UX를 제공합니다.
+/// - [PageView]를 사용하여 수직 스크롤 구현
+/// - [ShortsProvider]를 통해 데이터 로드 및 상태 관리
+/// - [AdProvider]를 통해 스와이프 횟수에 따른 광고 노출 제어
+/// - [ActionRail], [ProgressBar], [Badge] 등 하위 위젯 배치 및 상호작용
 class ShortsScreen extends StatefulWidget {
   const ShortsScreen({super.key});
 
@@ -41,11 +48,13 @@ class ShortsScreen extends StatefulWidget {
 }
 
 class _ShortsScreenScreenState extends State<ShortsScreen> {
+  // ─────────────────────────────────────────────────────────────────
+  // State
+  // ─────────────────────────────────────────────────────────────────
   final PageController _pageController = PageController();
   final ValueNotifier<bool> _pauseSignal = ValueNotifier<bool>(false);
   int _currentIndex = 0; // 현재 보는 클립 인덱스
   bool _showSubtitle = true;
-  int _advanceCount = 0;
   bool _initialized = false;
 
   @override
@@ -53,14 +62,17 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
     super.initState();
     _showSubtitle = AppConfig.shortsShowSubtitles;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       context.read<ShortsProvider>().setAutoNext(AppConfig.autoNext);
-    });
-    // ✅ Provider에서 랜덤 10개 로딩
-    Future.microtask(() {
       context.read<ShortsProvider>().loadInitial();
     });
   }
 
+  /// 페이지 이동 시 광고 노출 여부를 체크하고 실행하는 메소드.
+  ///
+  /// [oldIndex]와 [newIndex]의 차이를 계산하여 앞으로 이동한 경우([delta] > 0)에만 카운트합니다.
+  /// [AdProvider.incrementBy]가 true를 반환하면 광고를 노출합니다.
+  /// 광고 노출 전후로 [_pauseSignal]을 통해 비디오 재생을 일시 정지/재개합니다.
   void _maybeShowAdOnAdvance(BuildContext context, int oldIndex, int newIndex) {
     // 뒤로/같은 페이지는 무시, 앞으로 N칸 이동만 카운트
     final delta = newIndex - oldIndex;
@@ -83,11 +95,11 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
     super.dispose();
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // Build
+  // ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final iap = context.watch<IapProvider>();
-    final premium = iap.isPremium;
-
     return Consumer<ShortsProvider>(
       builder: (_, shorts, __) {
         if (shorts.loading && shorts.shorts.isEmpty) {

@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/router/app_router.dart';
-import 'package:parrokit/core/provider/tag_filter_provider.dart';
+import 'package:parrokit/features/_content/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:parrokit/data/local/app_database.dart';
 import '../widgets/clip_list_from_provider.dart';
