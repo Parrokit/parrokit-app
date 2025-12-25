@@ -14,22 +14,22 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // Features - Screens
-import 'package:parrokit/features/intro/presentation/intro_screen.dart';
-import 'package:parrokit/features/auth/presentation/auth_screen.dart';
-import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
-import 'package:parrokit/features/shorts/presentation/shorts_screen.dart';
-import 'package:parrokit/features/library/library_screen.dart';
-import 'package:parrokit/features/more/presentation/more_screen.dart';
-import 'package:parrokit/features/recent/presentation/recent_screen.dart';
+import 'package:parrokit/features/_entry/intro/presentation/intro_screen.dart';
+import 'package:parrokit/features/_entry/auth/presentation/auth_screen.dart';
+import 'package:parrokit/features/_entry/dashboard/presentation/dashboard_screen.dart';
+import 'package:parrokit/features/_content/shorts/presentation/shorts_screen.dart';
+import 'package:parrokit/features/_content/library/library_screen.dart';
+import 'package:parrokit/features/_settings/more/presentation/more_screen.dart';
+import 'package:parrokit/features/_discovery/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/editor/clip_editor_screen.dart';
-import 'package:parrokit/features/player/presentation/clip_player_screen.dart';
-import 'package:parrokit/features/recom/presentation/recom_screen.dart';
-import 'package:parrokit/features/recom/presentation/recom_result_screen.dart';
-import 'package:parrokit/features/recom/domain/recom_result_args.dart';
-import 'package:parrokit/features/payment/presentation/payment_screen.dart';
-import 'package:parrokit/features/payment/presentation/payment_success_screen.dart';
-import 'package:parrokit/features/payment/presentation/payment_fail_screen.dart';
-import 'package:parrokit/features/payment/domain/payment_args.dart';
+import 'package:parrokit/features/_content/player/presentation/clip_player_screen.dart';
+import 'package:parrokit/features/_discovery/recom/presentation/recom_screen.dart';
+import 'package:parrokit/features/_discovery/recom/presentation/recom_result_screen.dart';
+import 'package:parrokit/features/_discovery/recom/domain/recom_result_args.dart';
+import 'package:parrokit/features/_settings/payment/presentation/payment_screen.dart';
+import 'package:parrokit/features/_settings/payment/presentation/payment_success_screen.dart';
+import 'package:parrokit/features/_settings/payment/presentation/payment_fail_screen.dart';
+import 'package:parrokit/features/_settings/payment/domain/payment_args.dart';
 
 // Router 관련
 import 'app_routes.dart';
