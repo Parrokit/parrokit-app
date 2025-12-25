@@ -246,8 +246,9 @@ Future<void> _onAction() async {
   
   // ✅ async 후 mounted 체크
   // 위젯이 dispose된 경우 context 접근 방지
+  // core/utils/show_toast.dart
   if (!mounted) return;
-  _showToast('완료');
+  showToast('완료');
 }
 ```
 
