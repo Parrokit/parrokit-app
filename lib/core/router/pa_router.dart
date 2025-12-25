@@ -1,7 +1,7 @@
 // lib/pa_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/features/onboarding/onboarding_screen.dart';
+import 'package:parrokit/features/intro/presentation/intro_screen.dart';
 import 'package:parrokit/features/payment/payment_args.dart';
 import 'package:parrokit/features/payment/payment_screen.dart';
 import 'package:parrokit/features/recent/recent_screen.dart';
@@ -33,7 +33,7 @@ abstract class PaRoutes {
   static const clipsCreate = 'clips_create';
   static const clipsEdit = 'clips_edit';
   static const clipsPlay = 'clips_play';
-  static const onboarding = 'onboarding';
+  static const intro = 'intro';
   static const auth = 'auth';
   static const payment = 'payment';
   static const paymentSuccess = 'payment_success';
@@ -51,18 +51,18 @@ abstract class PaRoutes {
   static const clipsCreatePath = 'create';
   static const clipsEditPath = 'edit';
   static const clipsPlayPath = 'play';
-  static const onboardingPath = '/onboarding';
+  static const introPath = '/intro';
   static const authPath = '/auth';
   static const paymentPath = '/payment';
   static const paymentSuccessPath = '/payment/success';
   static const paymentFailPath = '/payment/fail';
 }
 
-GoRouter buildPaRouter({required bool seenOnboarding}) {
+GoRouter buildPaRouter({required bool seenIntro}) {
   return GoRouter(
     debugLogDiagnostics: true,
     initialLocation:
-        seenOnboarding ? PaRoutes.dashboardPath : PaRoutes.onboardingPath,
+        seenIntro ? PaRoutes.dashboardPath : PaRoutes.introPath,
     redirect: (context, state) {
       final uri = state.uri;
       final loc = uri.toString();
@@ -101,10 +101,10 @@ GoRouter buildPaRouter({required bool seenOnboarding}) {
     },
     routes: [
       GoRoute(
-        path: PaRoutes.onboardingPath,
-        name: PaRoutes.onboarding,
+        path: PaRoutes.introPath,
+        name: PaRoutes.intro,
         pageBuilder: (context, state) => const NoTransitionPage(
-          child: OnboardingScreen(),
+          child: IntroScreen(),
         ),
       ),
       GoRoute(

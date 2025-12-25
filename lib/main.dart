@@ -6,7 +6,7 @@ import 'package:parrokit/core/repositories/user_repository.dart';
 import 'package:parrokit/core/services/firebase_user_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:parrokit/core/config/onboarding_prefs.dart';
+import 'package:parrokit/data/local/prefs/intro_prefs.dart';
 import 'package:parrokit/core/config/pa_config.dart';
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
@@ -34,8 +34,8 @@ void main() async {
   );
   await dotenv.load(fileName: ".env");
   await BgAudio.instance.ensureAudioHandler();
-  final seen = await OnboardingPrefs.isOnboarded();
-  final paRouter = buildPaRouter(seenOnboarding: seen);
+  final seen = await IntroPrefs.hasSeen();
+  final paRouter = buildPaRouter(seenIntro: seen);
   // Config/Theme
   await PaConfig.loadFromPrefs();
   final theme = ThemeProvider();

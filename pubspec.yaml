@@ -121,7 +121,7 @@ flutter:
     - .env
     - assets/icons/pa_icon.png
     - assets/logos/pa_logo.png
-    - assets/onboardings/
+    - assets/intros/
   fonts:
     - family: IBMPlexSansKR
       fonts:

@@ -57,9 +57,7 @@ class _MoreScreenState extends State<MoreScreen> {
                           children: [
                             // 이름 / 이메일 / 게스트
                             Text(
-                              user?.displayName ??
-                                  user?.email ??
-                                  '게스트 사용자',
+                              user?.displayName ?? user?.email ?? '게스트 사용자',
                               style: t.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -221,9 +219,8 @@ class _MoreScreenState extends State<MoreScreen> {
                             onPressed: null, // 비활성
                             label: const Text('구매 완료'),
                             style: FilledButton.styleFrom(
-                              disabledBackgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceVariant,
+                              disabledBackgroundColor:
+                                  Theme.of(context).colorScheme.surfaceVariant,
                               disabledForegroundColor: Theme.of(context)
                                   .colorScheme
                                   .onSurface
@@ -244,7 +241,7 @@ class _MoreScreenState extends State<MoreScreen> {
                         return FilledButton(
                           style: FilledButton.styleFrom(
                             backgroundColor:
-                            Theme.of(context).colorScheme.primary,
+                                Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 12),
@@ -263,8 +260,7 @@ class _MoreScreenState extends State<MoreScreen> {
                             if (iap.loading) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content:
-                                  Text('결제 정보를 불러오는 중입니다… 잠시만요.'),
+                                  content: Text('결제 정보를 불러오는 중입니다… 잠시만요.'),
                                 ),
                               );
                               return;
@@ -295,15 +291,16 @@ class _MoreScreenState extends State<MoreScreen> {
                               price: iap.removeAdsProduct!.price,
                               onBuy: () =>
                                   context.read<IapProvider>().buyRemoveAds(),
-                              onRestore: () =>
-                                  context.read<IapProvider>().restorePurchases(),
+                              onRestore: () => context
+                                  .read<IapProvider>()
+                                  .restorePurchases(),
                             );
                           },
                           child: Text(
                             context
-                                .watch<IapProvider>()
-                                .removeAdsProduct
-                                ?.price ??
+                                    .watch<IapProvider>()
+                                    .removeAdsProduct
+                                    ?.price ??
                                 'US\$0.99',
                           ),
                         );
@@ -324,14 +321,14 @@ class _MoreScreenState extends State<MoreScreen> {
                     icon: Icons.privacy_tip_outlined,
                     title: '불러오기',
                     onTap: () async =>
-                    await BackupService.instance.restoreBackup(),
+                        await BackupService.instance.restoreBackup(),
                   ),
                   const HairlineDivider(),
                   NavTile(
                     icon: Icons.mail_outline,
                     title: '저장하기',
                     onTap: () async =>
-                    await BackupService.instance.createBackup(),
+                        await BackupService.instance.createBackup(),
                   ),
                 ],
               ),
@@ -354,7 +351,7 @@ class _MoreScreenState extends State<MoreScreen> {
                   NavTile(
                     icon: Icons.help_outline,
                     title: '도움말',
-                    onTap: () => context.go(PaRoutes.onboardingPath),
+                    onTap: () => context.go(PaRoutes.introPath),
                   ),
                   const HairlineDivider(),
                   NavTile(
@@ -486,11 +483,11 @@ class _WebDocumentScreenState extends State<WebDocumentScreen> {
 }
 
 Future<void> showPremiumDialog(
-    BuildContext context, {
-      String price = 'US\$0.99',
-      VoidCallback? onBuy, // 결제 시작 콜백
-      VoidCallback? onRestore, // (선택) 복원 콜백
-    }) {
+  BuildContext context, {
+  String price = 'US\$0.99',
+  VoidCallback? onBuy, // 결제 시작 콜백
+  VoidCallback? onRestore, // (선택) 복원 콜백
+}) {
   return showDialog(
     context: context,
     builder: (ctx) {
