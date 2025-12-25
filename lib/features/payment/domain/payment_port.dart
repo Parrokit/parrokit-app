@@ -1,17 +1,24 @@
+// ============================================================================
+// lib/features/payment/domain/payment_port.dart
+// ============================================================================
+//
+// [역할]
+// 결제 포트 인터페이스.
+// 결제 화면 빌더의 추상화 계층.
+//
+// [레이어]
+// Domain Layer - Port (Interface)
+// ============================================================================
 
 import 'package:flutter/cupertino.dart';
-import 'package:parrokit/features/payment/payment_adapter.dart';
-import 'package:parrokit/features/payment/payment_screen.dart';
+import '../data/payment_adapter.dart';
+import '../presentation/payment_screen.dart';
 
+/// 결제 포트 인터페이스.
+///
+/// 결제 화면 위젯 빌더 추상화.
 abstract class PaymentPort {
-  /// 결제 진행을 위한 화면 위젯을 만들어서 넘겨준다.
-  ///
-  /// - [merchantUid] : 서버에서 생성한 주문 번호
-  /// - [amount]      : 결제 금액
-  /// - [coins]       : 코인 개수
-  /// - [productName] : 상품명 (예: '코인 100개')
-  /// - [buyerEmail]  : 사용자 이메일
-  /// - [onResult]    : 결제 창이 닫힌 뒤 콜백 (성공/실패 여부는 서버에서 최종 판단)
+  /// 결제 화면 위젯 생성
   Widget buildPaymentScreen({
     required String merchantUid,
     required int amount,
@@ -22,6 +29,7 @@ abstract class PaymentPort {
   });
 }
 
+/// 아임포트 결제 포트 구현체.
 class IamportPaymentPort implements PaymentPort {
   const IamportPaymentPort();
 

@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/features/intro/presentation/intro_screen.dart';
-import 'package:parrokit/features/payment/payment_args.dart';
-import 'package:parrokit/features/payment/payment_screen.dart';
+import 'package:parrokit/features/payment/domain/payment_args.dart';
+import 'package:parrokit/features/payment/presentation/payment_screen.dart';
+import 'package:parrokit/features/payment/presentation/payment_success_screen.dart';
+import 'package:parrokit/features/payment/presentation/payment_fail_screen.dart';
 import 'package:parrokit/features/recent/recent_screen.dart';
 import 'package:parrokit/features/recom/entities/recom_result_args.dart';
 import 'package:parrokit/features/recom/screens/recom_screen.dart';
@@ -61,8 +63,7 @@ abstract class PaRoutes {
 GoRouter buildPaRouter({required bool seenIntro}) {
   return GoRouter(
     debugLogDiagnostics: true,
-    initialLocation:
-        seenIntro ? PaRoutes.dashboardPath : PaRoutes.introPath,
+    initialLocation: seenIntro ? PaRoutes.dashboardPath : PaRoutes.introPath,
     redirect: (context, state) {
       final uri = state.uri;
       final loc = uri.toString();

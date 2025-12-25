@@ -20,9 +20,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/features/payment/payment_args.dart';
 import 'package:parrokit/core/router/pa_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/features/payment/domain/payment_args.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 
