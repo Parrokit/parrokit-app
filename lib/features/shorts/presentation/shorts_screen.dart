@@ -1,15 +1,37 @@
+// ============================================================================
+// lib/features/shorts/presentation/shorts_screen.dart
+// ============================================================================
+//
+// [역할]
+// 쇼츠 화면 (TikTok/Reels 스타일).
+// 세로 스와이프로 클립을 넘기며 학습.
+//
+// [레이어]
+// Presentation Layer - View
+//
+// [구성 요소]
+// - ShortsPage: 개별 클립 페이지
+// - ProgressBar: 상단 진행 바
+// - ActionRail: 우측 액션 버튼들
+// - Badge: 태그 배지
+// ============================================================================
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/ad_provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
+import 'package:parrokit/core/provider/shorts_provider.dart';
 import 'package:parrokit/core/services/ad_service.dart';
-import 'package:provider/provider.dart';
-import 'package:parrokit/features/shorts/index.dart' as ShortsWidgets;
 
-import '../../core/provider/shorts_provider.dart';
-import 'package:go_router/go_router.dart';
+import 'widgets/shorts_page.dart';
+import 'widgets/progress_bar.dart';
+import 'widgets/action_rail.dart';
+import 'widgets/badge.dart' as shorts_badge;
 
 class ShortsScreen extends StatefulWidget {
   const ShortsScreen({super.key});
@@ -89,8 +111,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                   if (!_initialized) {
                     _initialized = true;
                   } else {
-                    _maybeShowAdOnAdvance(
-                        context, _currentIndex, i);
+                    _maybeShowAdOnAdvance(context, _currentIndex, i);
                   }
                   setState(() => _currentIndex = i);
                 },
@@ -100,7 +121,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                       .read<ClipActivityProvider>()
                       .logRecent(item.clip.id); // 최근 본 클립 기록
 
-                  return ShortsWidgets.ShortsPage(
+                  return ShortsPage(
                     key: ValueKey(item.clip.id),
                     isActive: index == _currentIndex,
                     filePath: item.clip.filePath,
@@ -134,7 +155,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                   bottom: false,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                    child: ShortsWidgets.ProgressBar(
+                    child: ProgressBar(
                       index: _currentIndex,
                       total: shorts.shorts.length,
                     ),
@@ -146,7 +167,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
               Positioned(
                 right: 12,
                 bottom: 110,
-                child: ShortsWidgets.ActionRail(
+                child: ActionRail(
                   autoNextEnabled: shorts.autoNext,
                   // Provider 상태
                   onAutoNextChanged: (enabled) {
@@ -183,7 +204,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                     for (final tag in shorts.shorts[_currentIndex].tags)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: ShortsWidgets.Badge(
+                        child: shorts_badge.Badge(
                           label: tag.name, // Drift Tag 모델의 name
                           icon: Icons
                               .star_border_rounded, // 적당한 아이콘, 원하면 tag마다 다르게

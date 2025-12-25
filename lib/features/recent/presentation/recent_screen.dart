@@ -20,7 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
-import 'package:parrokit/features/player/clip_player_screen.dart';
+import 'package:parrokit/features/player/presentation/clip_player_screen.dart';
 
 import 'widgets/recent_clip_card.dart';
 import 'widgets/recent_list_skeleton.dart';
@@ -78,8 +78,6 @@ class _RecentScreenState extends State<RecentScreen> {
         builder: (_) => ClipPlayerScreen(
           clipId: clipId,
           initialIndex: 0,
-          loopSegment: true,
-          showSubtitles: true,
         ),
       ),
     );
