@@ -1,4 +1,4 @@
-import 'package:parrokit/features/recom/entities/anime_meta_data.dart';
+import 'package:parrokit/features/recom/domain/anime_meta_data.dart';
 
 class RecomResultArgs {
   final List<AnimeMetadata> results;

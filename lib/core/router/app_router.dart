@@ -20,12 +20,12 @@ import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/shorts/shorts_screen.dart';
 import 'package:parrokit/features/library/library_screen.dart';
 import 'package:parrokit/features/more/more_screen.dart';
-import 'package:parrokit/features/recent/recent_screen.dart';
+import 'package:parrokit/features/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/editor/clip_editor_screen.dart';
 import 'package:parrokit/features/player/clip_player_screen.dart';
-import 'package:parrokit/features/recom/screens/recom_screen.dart';
-import 'package:parrokit/features/recom/screens/recommendation_result_screen.dart';
-import 'package:parrokit/features/recom/entities/recom_result_args.dart';
+import 'package:parrokit/features/recom/presentation/recom_screen.dart';
+import 'package:parrokit/features/recom/presentation/recom_result_screen.dart';
+import 'package:parrokit/features/recom/domain/recom_result_args.dart';
 import 'package:parrokit/features/payment/presentation/payment_screen.dart';
 import 'package:parrokit/features/payment/presentation/payment_success_screen.dart';
 import 'package:parrokit/features/payment/presentation/payment_fail_screen.dart';
@@ -210,7 +210,7 @@ ShellRoute get _shellRoute => ShellRoute(
           name: AppRoutes.recomResult,
           builder: (context, state) {
             final args = state.extra as RecomResultArgs;
-            return RecommendationResultScreen(
+            return RecomResultScreen(
               results: args.results,
               titles: args.titles,
               topK: args.topK,
