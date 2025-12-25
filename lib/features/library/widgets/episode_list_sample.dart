@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/data/local/pa_database.dart';
+import 'package:parrokit/data/local/app_database.dart';
 
 class EpisodeListSimple extends StatelessWidget {
   const EpisodeListSimple({

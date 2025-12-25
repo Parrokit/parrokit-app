@@ -1,4 +1,4 @@
-// lib/theme/components/pa_texts_theme.dart
+// lib/theme/components/app_texts_theme.dart
 import 'package:flutter/material.dart';
 
 TextTheme paTextTheme(ColorScheme cs, {required bool isDark}) {

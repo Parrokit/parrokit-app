@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/core/navigation/paro_bottom_navbar.dart
+// lib/core/navigation/app_bottom_navbar.dart
 // ============================================================================
 //
 // [역할]
@@ -17,8 +17,8 @@ import 'package:flutter/material.dart';
 ///
 /// [currentIndex]: 현재 선택된 탭 인덱스
 /// [onTap]: 탭 선택 콜백
-class ParoBottomNavBar extends StatelessWidget {
-  const ParoBottomNavBar({
+class AppBottomNavBar extends StatelessWidget {
+  const AppBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,

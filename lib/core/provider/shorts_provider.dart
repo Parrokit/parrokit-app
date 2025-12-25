@@ -9,10 +9,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:parrokit/data/models/clip_item.dart';
-import '../../data/local/pa_database.dart';
+import '../../data/local/app_database.dart';
 
 class ShortsProvider extends ChangeNotifier {
-  final PaDatabase pdb;
+  final AppDatabase pdb;
 
   ShortsProvider(this.pdb);
 

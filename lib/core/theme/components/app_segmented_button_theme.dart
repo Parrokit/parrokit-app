@@ -1,4 +1,4 @@
-// lib/theme/components/pa_segmented_button_theme.dart
+// lib/theme/components/app_segmented_button_theme.dart
 import 'package:flutter/material.dart';
 
 SegmentedButtonThemeData paSegmentedButtonTheme(ColorScheme cs, {required bool isDark}) {

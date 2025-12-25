@@ -11,7 +11,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 
 /// 결제 실패 화면.
 class PaymentFailScreen extends StatelessWidget {
@@ -23,7 +23,7 @@ class PaymentFailScreen extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(PaRoutes.authPath),
+          onPressed: () => context.go(AppRoutes.authPath),
         ),
         title: const Text('결제 실패'),
       ),

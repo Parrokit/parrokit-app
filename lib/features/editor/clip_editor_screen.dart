@@ -20,7 +20,7 @@ import 'package:parrokit/features/editor/clip_editor_presenter.dart';
 import 'package:parrokit/features/editor/clip_editor_view.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/data/local/pa_database.dart' as db;
+import 'package:parrokit/data/local/app_database.dart' as db;
 
 /// 위젯
 import 'widgets/file_hero_card.dart';
@@ -196,7 +196,7 @@ class _ClipEditorScreenState extends State<ClipEditorScreen>
       mediaProvider: context.read<MediaProvider>(),
       userProvider: context.read<UserProvider>(),
     );
-    _titlesDao = context.read<db.PaDatabase>().titlesDao;
+    _titlesDao = context.read<db.AppDatabase>().titlesDao;
     _loadTitleNames();
 
     if (widget.clipId != null) {

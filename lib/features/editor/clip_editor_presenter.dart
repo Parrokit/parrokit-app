@@ -20,7 +20,7 @@ import 'package:parrokit/features/editor/prompts/asr_to_segments_prompts.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:parrokit/data/local/pa_database.dart' as db;
+import 'package:parrokit/data/local/app_database.dart' as db;
 
 import 'package:parrokit/features/editor/services/audio_to_video.dart';
 

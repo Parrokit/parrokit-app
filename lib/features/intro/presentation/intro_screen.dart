@@ -18,7 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/local/prefs/intro_prefs.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 
 import 'sections/intro_page_section.dart';
 import 'sections/intro_controls_section.dart';
@@ -93,7 +93,7 @@ class _IntroScreenState extends State<IntroScreen> {
   Future<void> _completeIntro() async {
     await IntroPrefs.markAsSeen(true);
     if (mounted) {
-      context.go(PaRoutes.dashboardPath);
+      context.go(AppRoutes.dashboardPath);
     }
   }
 

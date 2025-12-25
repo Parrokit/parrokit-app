@@ -1,9 +1,9 @@
 // lib/mvp/library/library_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/data/local/pa_database.dart';
+import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/data/models/clip_item.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/tag_filter_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
@@ -196,7 +196,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         items: media.clipItems,
                         onOpen: (ci) {
                           context.push(
-                            '${PaRoutes.clipsPath}/${PaRoutes.clipsPlayPath}?clipId=${ci.clip.id}',
+                            '${AppRoutes.clipsPath}/${AppRoutes.clipsPlayPath}?clipId=${ci.clip.id}',
                           );
                         });
                   },
@@ -562,7 +562,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                                 items: items,
                                 onOpen: (ci) {
                                   context.push(
-                                    '${PaRoutes.clipsPath}/${PaRoutes.clipsPlayPath}?clipId=${ci.clip.id}',
+                                    '${AppRoutes.clipsPath}/${AppRoutes.clipsPlayPath}?clipId=${ci.clip.id}',
                                   );
                                 },
                               );

@@ -1,4 +1,4 @@
-// lib/theme/components/pa_buttons_theme.dart
+// lib/theme/components/app_buttons_theme.dart
 import 'package:flutter/material.dart';
 
 ButtonStyle _baseButton(ColorScheme cs, {required bool isDark}) {

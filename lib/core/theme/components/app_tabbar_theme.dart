@@ -1,4 +1,4 @@
-// lib/theme/components/pa_tabbar_theme.dart
+// lib/theme/components/app_tabbar_theme.dart
 import 'package:flutter/material.dart';
 
 TabBarThemeData paTabBarTheme(ColorScheme cs, {required bool isDark}) {

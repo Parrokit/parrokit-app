@@ -1,10 +1,10 @@
 // lib/mvp/more/more_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/core/config/pa_config.dart';
+import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/backup_service.dart';
@@ -113,42 +113,42 @@ class _MoreScreenState extends State<MoreScreen> {
                   SwitchTile(
                     icon: Icons.repeat,
                     title: '구간 재생',
-                    value: PaConfig.segmentLoop,
+                    value: AppConfig.segmentLoop,
                     onChanged: (v) async {
-                      setState(() => PaConfig.segmentLoop = v);
-                      await PaConfig.saveToPrefs();
+                      setState(() => AppConfig.segmentLoop = v);
+                      await AppConfig.saveToPrefs();
                     },
                   ),
                   const HairlineDivider(),
                   SwitchTile(
                     icon: Icons.loop,
                     title: '반복 재생',
-                    value: PaConfig.repeatAll,
+                    value: AppConfig.repeatAll,
                     onChanged: (v) async {
-                      setState(() => PaConfig.repeatAll = v);
-                      await PaConfig.saveToPrefs();
+                      setState(() => AppConfig.repeatAll = v);
+                      await AppConfig.saveToPrefs();
                     },
                   ),
                   const HairlineDivider(),
                   SwitchTile(
                     icon: Icons.subtitles_outlined,
                     title: '자막 표시',
-                    value: PaConfig.showSubtitles,
+                    value: AppConfig.showSubtitles,
                     onChanged: (v) async {
-                      setState(() => PaConfig.showSubtitles = v);
-                      await PaConfig.saveToPrefs();
+                      setState(() => AppConfig.showSubtitles = v);
+                      await AppConfig.saveToPrefs();
                     },
                   ),
                   const HairlineDivider(),
                   DropdownTile<double>(
                     icon: Icons.speed_outlined,
                     title: '기본 재생 속도',
-                    value: PaConfig.defaultPlaybackRate,
+                    value: AppConfig.defaultPlaybackRate,
                     display: (v) => '${v.toStringAsFixed(2)}x',
                     items: const [0.75, 1.0, 1.25, 1.5, 2.0],
                     onChanged: (v) async {
-                      setState(() => PaConfig.defaultPlaybackRate = v);
-                      await PaConfig.saveToPrefs();
+                      setState(() => AppConfig.defaultPlaybackRate = v);
+                      await AppConfig.saveToPrefs();
                     },
                   ),
                 ],
@@ -163,20 +163,20 @@ class _MoreScreenState extends State<MoreScreen> {
                   SwitchTile(
                     icon: Icons.play_circle_outline,
                     title: '자동 넘기기',
-                    value: PaConfig.autoNext,
+                    value: AppConfig.autoNext,
                     onChanged: (v) async {
-                      setState(() => PaConfig.autoNext = v);
-                      await PaConfig.saveToPrefs();
+                      setState(() => AppConfig.autoNext = v);
+                      await AppConfig.saveToPrefs();
                     },
                   ),
                   const HairlineDivider(),
                   SwitchTile(
                     icon: Icons.subtitles_outlined,
                     title: '자막 표시',
-                    value: PaConfig.shortsShowSubtitles,
+                    value: AppConfig.shortsShowSubtitles,
                     onChanged: (v) async {
-                      setState(() => PaConfig.shortsShowSubtitles = v);
-                      await PaConfig.saveToPrefs();
+                      setState(() => AppConfig.shortsShowSubtitles = v);
+                      await AppConfig.saveToPrefs();
                     },
                   ),
                 ],
@@ -351,7 +351,7 @@ class _MoreScreenState extends State<MoreScreen> {
                   NavTile(
                     icon: Icons.help_outline,
                     title: '도움말',
-                    onTap: () => context.go(PaRoutes.introPath),
+                    onTap: () => context.go(AppRoutes.introPath),
                   ),
                   const HairlineDivider(),
                   NavTile(

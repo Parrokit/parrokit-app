@@ -2,17 +2,17 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:parrokit/core/utils/pa_logger.dart';
+import 'package:parrokit/core/utils/app_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
-import '../../data/local/pa_database.dart';
+import '../../data/local/app_database.dart';
 import 'package:drift/drift.dart';
 import '../../data/models/clip_view.dart';
 import '../../../data/models/clip_item.dart';
 import 'dart:io' show File;
 
 class MediaProvider extends ChangeNotifier {
-  final PaDatabase pdb;
+  final AppDatabase pdb;
 
   MediaProvider(this.pdb);
 

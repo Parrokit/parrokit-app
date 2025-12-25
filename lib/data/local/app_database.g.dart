@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'pa_database.dart';
+part of 'app_database.dart';
 
 // ignore_for_file: type=lint
 class $TitlesTable extends Titles with TableInfo<$TitlesTable, Title> {
@@ -1968,9 +1968,9 @@ class RecentClipViewsCompanion extends UpdateCompanion<RecentClipView> {
   }
 }
 
-abstract class _$PaDatabase extends GeneratedDatabase {
-  _$PaDatabase(QueryExecutor e) : super(e);
-  $PaDatabaseManager get managers => $PaDatabaseManager(this);
+abstract class _$AppDatabase extends GeneratedDatabase {
+  _$AppDatabase(QueryExecutor e) : super(e);
+  $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $TitlesTable titles = $TitlesTable(this);
   late final $ReleasesTable releases = $ReleasesTable(this);
   late final $EpisodesTable episodes = $EpisodesTable(this);
@@ -1980,7 +1980,7 @@ abstract class _$PaDatabase extends GeneratedDatabase {
   late final $ClipTagsTable clipTags = $ClipTagsTable(this);
   late final $RecentClipViewsTable recentClipViews =
       $RecentClipViewsTable(this);
-  late final TitlesDao titlesDao = TitlesDao(this as PaDatabase);
+  late final TitlesDao titlesDao = TitlesDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2035,11 +2035,11 @@ typedef $$TitlesTableUpdateCompanionBuilder = TitlesCompanion Function({
 });
 
 final class $$TitlesTableReferences
-    extends BaseReferences<_$PaDatabase, $TitlesTable, Title> {
+    extends BaseReferences<_$AppDatabase, $TitlesTable, Title> {
   $$TitlesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$ReleasesTable, List<Release>> _releasesRefsTable(
-          _$PaDatabase db) =>
+          _$AppDatabase db) =>
       MultiTypedResultKey.fromTable(db.releases,
           aliasName: $_aliasNameGenerator(db.titles.id, db.releases.titleId));
 
@@ -2053,7 +2053,7 @@ final class $$TitlesTableReferences
   }
 }
 
-class $$TitlesTableFilterComposer extends Composer<_$PaDatabase, $TitlesTable> {
+class $$TitlesTableFilterComposer extends Composer<_$AppDatabase, $TitlesTable> {
   $$TitlesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -2093,7 +2093,7 @@ class $$TitlesTableFilterComposer extends Composer<_$PaDatabase, $TitlesTable> {
 }
 
 class $$TitlesTableOrderingComposer
-    extends Composer<_$PaDatabase, $TitlesTable> {
+    extends Composer<_$AppDatabase, $TitlesTable> {
   $$TitlesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -2112,7 +2112,7 @@ class $$TitlesTableOrderingComposer
 }
 
 class $$TitlesTableAnnotationComposer
-    extends Composer<_$PaDatabase, $TitlesTable> {
+    extends Composer<_$AppDatabase, $TitlesTable> {
   $$TitlesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -2152,7 +2152,7 @@ class $$TitlesTableAnnotationComposer
 }
 
 class $$TitlesTableTableManager extends RootTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $TitlesTable,
     Title,
     $$TitlesTableFilterComposer,
@@ -2163,7 +2163,7 @@ class $$TitlesTableTableManager extends RootTableManager<
     (Title, $$TitlesTableReferences),
     Title,
     PrefetchHooks Function({bool releasesRefs})> {
-  $$TitlesTableTableManager(_$PaDatabase db, $TitlesTable table)
+  $$TitlesTableTableManager(_$AppDatabase db, $TitlesTable table)
       : super(TableManagerState(
           db: db,
           table: table,
@@ -2223,7 +2223,7 @@ class $$TitlesTableTableManager extends RootTableManager<
 }
 
 typedef $$TitlesTableProcessedTableManager = ProcessedTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $TitlesTable,
     Title,
     $$TitlesTableFilterComposer,
@@ -2248,10 +2248,10 @@ typedef $$ReleasesTableUpdateCompanionBuilder = ReleasesCompanion Function({
 });
 
 final class $$ReleasesTableReferences
-    extends BaseReferences<_$PaDatabase, $ReleasesTable, Release> {
+    extends BaseReferences<_$AppDatabase, $ReleasesTable, Release> {
   $$ReleasesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $TitlesTable _titleIdTable(_$PaDatabase db) => db.titles
+  static $TitlesTable _titleIdTable(_$AppDatabase db) => db.titles
       .createAlias($_aliasNameGenerator(db.releases.titleId, db.titles.id));
 
   $$TitlesTableProcessedTableManager get titleId {
@@ -2266,7 +2266,7 @@ final class $$ReleasesTableReferences
   }
 
   static MultiTypedResultKey<$EpisodesTable, List<Episode>> _episodesRefsTable(
-          _$PaDatabase db) =>
+          _$AppDatabase db) =>
       MultiTypedResultKey.fromTable(db.episodes,
           aliasName:
               $_aliasNameGenerator(db.releases.id, db.episodes.releaseId));
@@ -2282,7 +2282,7 @@ final class $$ReleasesTableReferences
 }
 
 class $$ReleasesTableFilterComposer
-    extends Composer<_$PaDatabase, $ReleasesTable> {
+    extends Composer<_$AppDatabase, $ReleasesTable> {
   $$ReleasesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -2342,7 +2342,7 @@ class $$ReleasesTableFilterComposer
 }
 
 class $$ReleasesTableOrderingComposer
-    extends Composer<_$PaDatabase, $ReleasesTable> {
+    extends Composer<_$AppDatabase, $ReleasesTable> {
   $$ReleasesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -2381,7 +2381,7 @@ class $$ReleasesTableOrderingComposer
 }
 
 class $$ReleasesTableAnnotationComposer
-    extends Composer<_$PaDatabase, $ReleasesTable> {
+    extends Composer<_$AppDatabase, $ReleasesTable> {
   $$ReleasesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -2441,7 +2441,7 @@ class $$ReleasesTableAnnotationComposer
 }
 
 class $$ReleasesTableTableManager extends RootTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $ReleasesTable,
     Release,
     $$ReleasesTableFilterComposer,
@@ -2452,7 +2452,7 @@ class $$ReleasesTableTableManager extends RootTableManager<
     (Release, $$ReleasesTableReferences),
     Release,
     PrefetchHooks Function({bool titleId, bool episodesRefs})> {
-  $$ReleasesTableTableManager(_$PaDatabase db, $ReleasesTable table)
+  $$ReleasesTableTableManager(_$AppDatabase db, $ReleasesTable table)
       : super(TableManagerState(
           db: db,
           table: table,
@@ -2542,7 +2542,7 @@ class $$ReleasesTableTableManager extends RootTableManager<
 }
 
 typedef $$ReleasesTableProcessedTableManager = ProcessedTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $ReleasesTable,
     Release,
     $$ReleasesTableFilterComposer,
@@ -2567,10 +2567,10 @@ typedef $$EpisodesTableUpdateCompanionBuilder = EpisodesCompanion Function({
 });
 
 final class $$EpisodesTableReferences
-    extends BaseReferences<_$PaDatabase, $EpisodesTable, Episode> {
+    extends BaseReferences<_$AppDatabase, $EpisodesTable, Episode> {
   $$EpisodesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $ReleasesTable _releaseIdTable(_$PaDatabase db) => db.releases
+  static $ReleasesTable _releaseIdTable(_$AppDatabase db) => db.releases
       .createAlias($_aliasNameGenerator(db.episodes.releaseId, db.releases.id));
 
   $$ReleasesTableProcessedTableManager get releaseId {
@@ -2585,7 +2585,7 @@ final class $$EpisodesTableReferences
   }
 
   static MultiTypedResultKey<$ClipsTable, List<Clip>> _clipsRefsTable(
-          _$PaDatabase db) =>
+          _$AppDatabase db) =>
       MultiTypedResultKey.fromTable(db.clips,
           aliasName: $_aliasNameGenerator(db.episodes.id, db.clips.episodeId));
 
@@ -2600,7 +2600,7 @@ final class $$EpisodesTableReferences
 }
 
 class $$EpisodesTableFilterComposer
-    extends Composer<_$PaDatabase, $EpisodesTable> {
+    extends Composer<_$AppDatabase, $EpisodesTable> {
   $$EpisodesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -2660,7 +2660,7 @@ class $$EpisodesTableFilterComposer
 }
 
 class $$EpisodesTableOrderingComposer
-    extends Composer<_$PaDatabase, $EpisodesTable> {
+    extends Composer<_$AppDatabase, $EpisodesTable> {
   $$EpisodesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -2699,7 +2699,7 @@ class $$EpisodesTableOrderingComposer
 }
 
 class $$EpisodesTableAnnotationComposer
-    extends Composer<_$PaDatabase, $EpisodesTable> {
+    extends Composer<_$AppDatabase, $EpisodesTable> {
   $$EpisodesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -2759,7 +2759,7 @@ class $$EpisodesTableAnnotationComposer
 }
 
 class $$EpisodesTableTableManager extends RootTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $EpisodesTable,
     Episode,
     $$EpisodesTableFilterComposer,
@@ -2770,7 +2770,7 @@ class $$EpisodesTableTableManager extends RootTableManager<
     (Episode, $$EpisodesTableReferences),
     Episode,
     PrefetchHooks Function({bool releaseId, bool clipsRefs})> {
-  $$EpisodesTableTableManager(_$PaDatabase db, $EpisodesTable table)
+  $$EpisodesTableTableManager(_$AppDatabase db, $EpisodesTable table)
       : super(TableManagerState(
           db: db,
           table: table,
@@ -2859,7 +2859,7 @@ class $$EpisodesTableTableManager extends RootTableManager<
 }
 
 typedef $$EpisodesTableProcessedTableManager = ProcessedTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $EpisodesTable,
     Episode,
     $$EpisodesTableFilterComposer,
@@ -2886,10 +2886,10 @@ typedef $$ClipsTableUpdateCompanionBuilder = ClipsCompanion Function({
 });
 
 final class $$ClipsTableReferences
-    extends BaseReferences<_$PaDatabase, $ClipsTable, Clip> {
+    extends BaseReferences<_$AppDatabase, $ClipsTable, Clip> {
   $$ClipsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $EpisodesTable _episodeIdTable(_$PaDatabase db) => db.episodes
+  static $EpisodesTable _episodeIdTable(_$AppDatabase db) => db.episodes
       .createAlias($_aliasNameGenerator(db.clips.episodeId, db.episodes.id));
 
   $$EpisodesTableProcessedTableManager get episodeId {
@@ -2904,7 +2904,7 @@ final class $$ClipsTableReferences
   }
 
   static MultiTypedResultKey<$SegmentsTable, List<Segment>> _segmentsRefsTable(
-          _$PaDatabase db) =>
+          _$AppDatabase db) =>
       MultiTypedResultKey.fromTable(db.segments,
           aliasName: $_aliasNameGenerator(db.clips.id, db.segments.clipId));
 
@@ -2918,7 +2918,7 @@ final class $$ClipsTableReferences
   }
 
   static MultiTypedResultKey<$ClipTagsTable, List<ClipTag>> _clipTagsRefsTable(
-          _$PaDatabase db) =>
+          _$AppDatabase db) =>
       MultiTypedResultKey.fromTable(db.clipTags,
           aliasName: $_aliasNameGenerator(db.clips.id, db.clipTags.clipId));
 
@@ -2932,7 +2932,7 @@ final class $$ClipsTableReferences
   }
 
   static MultiTypedResultKey<$RecentClipViewsTable, List<RecentClipView>>
-      _recentClipViewsRefsTable(_$PaDatabase db) =>
+      _recentClipViewsRefsTable(_$AppDatabase db) =>
           MultiTypedResultKey.fromTable(db.recentClipViews,
               aliasName:
                   $_aliasNameGenerator(db.clips.id, db.recentClipViews.clipId));
@@ -2949,7 +2949,7 @@ final class $$ClipsTableReferences
   }
 }
 
-class $$ClipsTableFilterComposer extends Composer<_$PaDatabase, $ClipsTable> {
+class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
   $$ClipsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -3053,7 +3053,7 @@ class $$ClipsTableFilterComposer extends Composer<_$PaDatabase, $ClipsTable> {
   }
 }
 
-class $$ClipsTableOrderingComposer extends Composer<_$PaDatabase, $ClipsTable> {
+class $$ClipsTableOrderingComposer extends Composer<_$AppDatabase, $ClipsTable> {
   $$ClipsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -3095,7 +3095,7 @@ class $$ClipsTableOrderingComposer extends Composer<_$PaDatabase, $ClipsTable> {
 }
 
 class $$ClipsTableAnnotationComposer
-    extends Composer<_$PaDatabase, $ClipsTable> {
+    extends Composer<_$AppDatabase, $ClipsTable> {
   $$ClipsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -3200,7 +3200,7 @@ class $$ClipsTableAnnotationComposer
 }
 
 class $$ClipsTableTableManager extends RootTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $ClipsTable,
     Clip,
     $$ClipsTableFilterComposer,
@@ -3215,7 +3215,7 @@ class $$ClipsTableTableManager extends RootTableManager<
         bool segmentsRefs,
         bool clipTagsRefs,
         bool recentClipViewsRefs})> {
-  $$ClipsTableTableManager(_$PaDatabase db, $ClipsTable table)
+  $$ClipsTableTableManager(_$AppDatabase db, $ClipsTable table)
       : super(TableManagerState(
           db: db,
           table: table,
@@ -3339,7 +3339,7 @@ class $$ClipsTableTableManager extends RootTableManager<
 }
 
 typedef $$ClipsTableProcessedTableManager = ProcessedTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $ClipsTable,
     Clip,
     $$ClipsTableFilterComposer,
@@ -3374,10 +3374,10 @@ typedef $$SegmentsTableUpdateCompanionBuilder = SegmentsCompanion Function({
 });
 
 final class $$SegmentsTableReferences
-    extends BaseReferences<_$PaDatabase, $SegmentsTable, Segment> {
+    extends BaseReferences<_$AppDatabase, $SegmentsTable, Segment> {
   $$SegmentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $ClipsTable _clipIdTable(_$PaDatabase db) => db.clips
+  static $ClipsTable _clipIdTable(_$AppDatabase db) => db.clips
       .createAlias($_aliasNameGenerator(db.segments.clipId, db.clips.id));
 
   $$ClipsTableProcessedTableManager get clipId {
@@ -3393,7 +3393,7 @@ final class $$SegmentsTableReferences
 }
 
 class $$SegmentsTableFilterComposer
-    extends Composer<_$PaDatabase, $SegmentsTable> {
+    extends Composer<_$AppDatabase, $SegmentsTable> {
   $$SegmentsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -3441,7 +3441,7 @@ class $$SegmentsTableFilterComposer
 }
 
 class $$SegmentsTableOrderingComposer
-    extends Composer<_$PaDatabase, $SegmentsTable> {
+    extends Composer<_$AppDatabase, $SegmentsTable> {
   $$SegmentsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -3489,7 +3489,7 @@ class $$SegmentsTableOrderingComposer
 }
 
 class $$SegmentsTableAnnotationComposer
-    extends Composer<_$PaDatabase, $SegmentsTable> {
+    extends Composer<_$AppDatabase, $SegmentsTable> {
   $$SegmentsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -3537,7 +3537,7 @@ class $$SegmentsTableAnnotationComposer
 }
 
 class $$SegmentsTableTableManager extends RootTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $SegmentsTable,
     Segment,
     $$SegmentsTableFilterComposer,
@@ -3548,7 +3548,7 @@ class $$SegmentsTableTableManager extends RootTableManager<
     (Segment, $$SegmentsTableReferences),
     Segment,
     PrefetchHooks Function({bool clipId})> {
-  $$SegmentsTableTableManager(_$PaDatabase db, $SegmentsTable table)
+  $$SegmentsTableTableManager(_$AppDatabase db, $SegmentsTable table)
       : super(TableManagerState(
           db: db,
           table: table,
@@ -3636,7 +3636,7 @@ class $$SegmentsTableTableManager extends RootTableManager<
 }
 
 typedef $$SegmentsTableProcessedTableManager = ProcessedTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $SegmentsTable,
     Segment,
     $$SegmentsTableFilterComposer,
@@ -3657,11 +3657,11 @@ typedef $$TagsTableUpdateCompanionBuilder = TagsCompanion Function({
 });
 
 final class $$TagsTableReferences
-    extends BaseReferences<_$PaDatabase, $TagsTable, Tag> {
+    extends BaseReferences<_$AppDatabase, $TagsTable, Tag> {
   $$TagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$ClipTagsTable, List<ClipTag>> _clipTagsRefsTable(
-          _$PaDatabase db) =>
+          _$AppDatabase db) =>
       MultiTypedResultKey.fromTable(db.clipTags,
           aliasName: $_aliasNameGenerator(db.tags.id, db.clipTags.tagId));
 
@@ -3675,7 +3675,7 @@ final class $$TagsTableReferences
   }
 }
 
-class $$TagsTableFilterComposer extends Composer<_$PaDatabase, $TagsTable> {
+class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
   $$TagsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -3711,7 +3711,7 @@ class $$TagsTableFilterComposer extends Composer<_$PaDatabase, $TagsTable> {
   }
 }
 
-class $$TagsTableOrderingComposer extends Composer<_$PaDatabase, $TagsTable> {
+class $$TagsTableOrderingComposer extends Composer<_$AppDatabase, $TagsTable> {
   $$TagsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -3726,7 +3726,7 @@ class $$TagsTableOrderingComposer extends Composer<_$PaDatabase, $TagsTable> {
       column: $table.name, builder: (column) => ColumnOrderings(column));
 }
 
-class $$TagsTableAnnotationComposer extends Composer<_$PaDatabase, $TagsTable> {
+class $$TagsTableAnnotationComposer extends Composer<_$AppDatabase, $TagsTable> {
   $$TagsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -3763,7 +3763,7 @@ class $$TagsTableAnnotationComposer extends Composer<_$PaDatabase, $TagsTable> {
 }
 
 class $$TagsTableTableManager extends RootTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $TagsTable,
     Tag,
     $$TagsTableFilterComposer,
@@ -3774,7 +3774,7 @@ class $$TagsTableTableManager extends RootTableManager<
     (Tag, $$TagsTableReferences),
     Tag,
     PrefetchHooks Function({bool clipTagsRefs})> {
-  $$TagsTableTableManager(_$PaDatabase db, $TagsTable table)
+  $$TagsTableTableManager(_$AppDatabase db, $TagsTable table)
       : super(TableManagerState(
           db: db,
           table: table,
@@ -3830,7 +3830,7 @@ class $$TagsTableTableManager extends RootTableManager<
 }
 
 typedef $$TagsTableProcessedTableManager = ProcessedTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $TagsTable,
     Tag,
     $$TagsTableFilterComposer,
@@ -3853,10 +3853,10 @@ typedef $$ClipTagsTableUpdateCompanionBuilder = ClipTagsCompanion Function({
 });
 
 final class $$ClipTagsTableReferences
-    extends BaseReferences<_$PaDatabase, $ClipTagsTable, ClipTag> {
+    extends BaseReferences<_$AppDatabase, $ClipTagsTable, ClipTag> {
   $$ClipTagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $ClipsTable _clipIdTable(_$PaDatabase db) => db.clips
+  static $ClipsTable _clipIdTable(_$AppDatabase db) => db.clips
       .createAlias($_aliasNameGenerator(db.clipTags.clipId, db.clips.id));
 
   $$ClipsTableProcessedTableManager get clipId {
@@ -3870,7 +3870,7 @@ final class $$ClipTagsTableReferences
         manager.$state.copyWith(prefetchedData: [item]));
   }
 
-  static $TagsTable _tagIdTable(_$PaDatabase db) =>
+  static $TagsTable _tagIdTable(_$AppDatabase db) =>
       db.tags.createAlias($_aliasNameGenerator(db.clipTags.tagId, db.tags.id));
 
   $$TagsTableProcessedTableManager get tagId {
@@ -3886,7 +3886,7 @@ final class $$ClipTagsTableReferences
 }
 
 class $$ClipTagsTableFilterComposer
-    extends Composer<_$PaDatabase, $ClipTagsTable> {
+    extends Composer<_$AppDatabase, $ClipTagsTable> {
   $$ClipTagsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -3936,7 +3936,7 @@ class $$ClipTagsTableFilterComposer
 }
 
 class $$ClipTagsTableOrderingComposer
-    extends Composer<_$PaDatabase, $ClipTagsTable> {
+    extends Composer<_$AppDatabase, $ClipTagsTable> {
   $$ClipTagsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -3986,7 +3986,7 @@ class $$ClipTagsTableOrderingComposer
 }
 
 class $$ClipTagsTableAnnotationComposer
-    extends Composer<_$PaDatabase, $ClipTagsTable> {
+    extends Composer<_$AppDatabase, $ClipTagsTable> {
   $$ClipTagsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -4036,7 +4036,7 @@ class $$ClipTagsTableAnnotationComposer
 }
 
 class $$ClipTagsTableTableManager extends RootTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $ClipTagsTable,
     ClipTag,
     $$ClipTagsTableFilterComposer,
@@ -4047,7 +4047,7 @@ class $$ClipTagsTableTableManager extends RootTableManager<
     (ClipTag, $$ClipTagsTableReferences),
     ClipTag,
     PrefetchHooks Function({bool clipId, bool tagId})> {
-  $$ClipTagsTableTableManager(_$PaDatabase db, $ClipTagsTable table)
+  $$ClipTagsTableTableManager(_$AppDatabase db, $ClipTagsTable table)
       : super(TableManagerState(
           db: db,
           table: table,
@@ -4128,7 +4128,7 @@ class $$ClipTagsTableTableManager extends RootTableManager<
 }
 
 typedef $$ClipTagsTableProcessedTableManager = ProcessedTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $ClipTagsTable,
     ClipTag,
     $$ClipTagsTableFilterComposer,
@@ -4151,11 +4151,11 @@ typedef $$RecentClipViewsTableUpdateCompanionBuilder = RecentClipViewsCompanion
 });
 
 final class $$RecentClipViewsTableReferences extends BaseReferences<
-    _$PaDatabase, $RecentClipViewsTable, RecentClipView> {
+    _$AppDatabase, $RecentClipViewsTable, RecentClipView> {
   $$RecentClipViewsTableReferences(
       super.$_db, super.$_table, super.$_typedResult);
 
-  static $ClipsTable _clipIdTable(_$PaDatabase db) => db.clips.createAlias(
+  static $ClipsTable _clipIdTable(_$AppDatabase db) => db.clips.createAlias(
       $_aliasNameGenerator(db.recentClipViews.clipId, db.clips.id));
 
   $$ClipsTableProcessedTableManager get clipId {
@@ -4171,7 +4171,7 @@ final class $$RecentClipViewsTableReferences extends BaseReferences<
 }
 
 class $$RecentClipViewsTableFilterComposer
-    extends Composer<_$PaDatabase, $RecentClipViewsTable> {
+    extends Composer<_$AppDatabase, $RecentClipViewsTable> {
   $$RecentClipViewsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -4204,7 +4204,7 @@ class $$RecentClipViewsTableFilterComposer
 }
 
 class $$RecentClipViewsTableOrderingComposer
-    extends Composer<_$PaDatabase, $RecentClipViewsTable> {
+    extends Composer<_$AppDatabase, $RecentClipViewsTable> {
   $$RecentClipViewsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -4237,7 +4237,7 @@ class $$RecentClipViewsTableOrderingComposer
 }
 
 class $$RecentClipViewsTableAnnotationComposer
-    extends Composer<_$PaDatabase, $RecentClipViewsTable> {
+    extends Composer<_$AppDatabase, $RecentClipViewsTable> {
   $$RecentClipViewsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -4270,7 +4270,7 @@ class $$RecentClipViewsTableAnnotationComposer
 }
 
 class $$RecentClipViewsTableTableManager extends RootTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $RecentClipViewsTable,
     RecentClipView,
     $$RecentClipViewsTableFilterComposer,
@@ -4282,7 +4282,7 @@ class $$RecentClipViewsTableTableManager extends RootTableManager<
     RecentClipView,
     PrefetchHooks Function({bool clipId})> {
   $$RecentClipViewsTableTableManager(
-      _$PaDatabase db, $RecentClipViewsTable table)
+      _$AppDatabase db, $RecentClipViewsTable table)
       : super(TableManagerState(
           db: db,
           table: table,
@@ -4353,7 +4353,7 @@ class $$RecentClipViewsTableTableManager extends RootTableManager<
 }
 
 typedef $$RecentClipViewsTableProcessedTableManager = ProcessedTableManager<
-    _$PaDatabase,
+    _$AppDatabase,
     $RecentClipViewsTable,
     RecentClipView,
     $$RecentClipViewsTableFilterComposer,
@@ -4365,9 +4365,9 @@ typedef $$RecentClipViewsTableProcessedTableManager = ProcessedTableManager<
     RecentClipView,
     PrefetchHooks Function({bool clipId})>;
 
-class $PaDatabaseManager {
-  final _$PaDatabase _db;
-  $PaDatabaseManager(this._db);
+class $AppDatabaseManager {
+  final _$AppDatabase _db;
+  $AppDatabaseManager(this._db);
   $$TitlesTableTableManager get titles =>
       $$TitlesTableTableManager(_db, _db.titles);
   $$ReleasesTableTableManager get releases =>

@@ -1,4 +1,4 @@
-// lib/theme/components/pa_icon_theme.dart
+// lib/theme/components/app_icon_theme.dart
 import 'package:flutter/material.dart';
 
 IconThemeData paIconTheme(ColorScheme cs, {required bool isDark}) {

@@ -1,4 +1,4 @@
-// lib/theme/components/pa_card_theme.dart
+// lib/theme/components/app_card_theme.dart
 import 'package:flutter/material.dart';
 
 CardThemeData paCardTheme(ColorScheme cs, {required bool isDark}) {

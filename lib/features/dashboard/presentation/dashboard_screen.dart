@@ -21,7 +21,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
 
@@ -132,10 +132,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onTapAdd: () => context.push('/clips/create'),
                   onTapLibrary: () => context.go('/library'),
                   onTapSearch: () => context.replaceNamed(
-                    PaRoutes.library,
+                    AppRoutes.library,
                     queryParameters: {'tab': '1'},
                   ),
-                  onTapSettings: () => context.replaceNamed(PaRoutes.more),
+                  onTapSettings: () => context.replaceNamed(AppRoutes.more),
                 ),
               ),
             ),
@@ -147,10 +147,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: ContinueWatchingSection(
                 items: ui.recent6,
                 onTapItem: (clipId) => context.pushNamed(
-                  PaRoutes.clipsPlay,
+                  AppRoutes.clipsPlay,
                   queryParameters: {'clipId': clipId.toString()},
                 ),
-                onTapMore: () => context.push(PaRoutes.recentsPath),
+                onTapMore: () => context.push(AppRoutes.recentsPath),
                 onTapLibrary: () => context.go('/library'),
               ),
             ),
@@ -183,11 +183,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (hero != null) {
       final (clipId, _thumbnail, _clipTitle, _titleName) = hero;
       context.pushNamed(
-        PaRoutes.clipsPlay,
+        AppRoutes.clipsPlay,
         queryParameters: {'clipId': clipId.toString()},
       );
     } else {
-      context.go(PaRoutes.libraryPath);
+      context.go(AppRoutes.libraryPath);
     }
   }
 }

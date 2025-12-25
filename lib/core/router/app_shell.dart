@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/core/router/paro_shell.dart
+// lib/core/router/app_shell.dart
 // ============================================================================
 //
 // [역할]
@@ -13,24 +13,24 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/navigation/paro_bottom_navbar.dart';
-import 'pa_routes.dart';
+import 'package:parrokit/core/navigation/app_bottom_navbar.dart';
+import 'app_routes.dart';
 
 /// 앱 메인 쉘 위젯.
 ///
 /// 바텀 네비게이션 바를 포함한 레이아웃.
 /// 특정 경로(`/clips/...`, `/recents`)에서는 네비바 숨김.
-class ParoShell extends StatelessWidget {
-  const ParoShell({super.key, required this.child});
+class AppShell extends StatelessWidget {
+  const AppShell({super.key, required this.child});
 
   final Widget child;
 
   /// 현재 경로에서 탭 인덱스 계산
   int _indexFromLocation(String location) {
-    if (location.startsWith(PaRoutes.explorePath)) return 1;
-    if (location.startsWith(PaRoutes.libraryPath)) return 2;
-    if (location.startsWith(PaRoutes.recomPath)) return 3;
-    if (location.startsWith(PaRoutes.morePath)) return 4;
+    if (location.startsWith(AppRoutes.explorePath)) return 1;
+    if (location.startsWith(AppRoutes.libraryPath)) return 2;
+    if (location.startsWith(AppRoutes.recomPath)) return 3;
+    if (location.startsWith(AppRoutes.morePath)) return 4;
     return 0; // dashboard
   }
 
@@ -41,13 +41,13 @@ class ParoShell extends StatelessWidget {
 
     // 네비바 숨김 조건
     final hideNav =
-        location.startsWith('/clips/') || location == PaRoutes.recentsPath;
+        location.startsWith('/clips/') || location == AppRoutes.recentsPath;
 
     return Scaffold(
       body: child,
       bottomNavigationBar: hideNav
           ? null
-          : ParoBottomNavBar(
+          : AppBottomNavBar(
               currentIndex: currentIndex,
               onTap: (i) => _onTabTap(context, i),
             ),
@@ -58,19 +58,19 @@ class ParoShell extends StatelessWidget {
   void _onTabTap(BuildContext context, int index) {
     switch (index) {
       case 0:
-        context.go(PaRoutes.dashboardPath);
+        context.go(AppRoutes.dashboardPath);
         break;
       case 1:
-        context.go(PaRoutes.explorePath);
+        context.go(AppRoutes.explorePath);
         break;
       case 2:
-        context.go(PaRoutes.libraryPath);
+        context.go(AppRoutes.libraryPath);
         break;
       case 3:
-        context.go(PaRoutes.recomPath);
+        context.go(AppRoutes.recomPath);
         break;
       case 4:
-        context.go(PaRoutes.morePath);
+        context.go(AppRoutes.morePath);
         break;
     }
   }

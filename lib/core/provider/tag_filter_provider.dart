@@ -8,11 +8,11 @@ import 'package:drift/drift.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../data/local/pa_database.dart';
+import '../../data/local/app_database.dart';
 import '../../../data/models/clip_item.dart';
 
 class TagFilterProvider extends ChangeNotifier {
-  final PaDatabase pdb;
+  final AppDatabase pdb;
 
   TagFilterProvider(this.pdb);
 

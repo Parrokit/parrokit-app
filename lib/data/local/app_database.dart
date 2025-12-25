@@ -1,6 +1,6 @@
 // Drift DB 엔진 & schemaVersion
 
-// lib/data/local/pa_database.dart
+// lib/data/local/app_database.dart
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -17,7 +17,7 @@ import 'tables/recent_clip_views.dart';
 
 import 'dao/titles_dao.dart';
 
-part 'pa_database.g.dart';
+part 'app_database.g.dart';
 
 @DriftDatabase(
   tables: [
@@ -34,8 +34,8 @@ part 'pa_database.g.dart';
     TitlesDao,
   ],
 )
-class PaDatabase extends _$PaDatabase {
-  PaDatabase() : super(_open());
+class AppDatabase extends _$AppDatabase {
+  AppDatabase() : super(_open());
 
   @override
   int get schemaVersion => 1;

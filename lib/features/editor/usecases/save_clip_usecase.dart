@@ -2,7 +2,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:parrokit/features/editor/services/file_staging_service.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/data/local/pa_database.dart' as db;
+import 'package:parrokit/data/local/app_database.dart' as db;
 
 class SaveClipUseCase {
   final MediaProvider repo;

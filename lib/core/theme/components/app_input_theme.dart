@@ -1,4 +1,4 @@
-// lib/theme/components/pa_input_theme.dart
+// lib/theme/components/app_input_theme.dart
 import 'package:flutter/material.dart';
 
 InputDecorationTheme paInputDecorationTheme(ColorScheme cs, {required bool isDark}) {

@@ -16,7 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import '../data/payment_adapter.dart';
 
@@ -67,9 +67,9 @@ class PaymentScreen extends StatelessWidget {
           if (isSuccess) {
             await userProvider.addCoins(coins);
             if (!context.mounted) return;
-            context.go(PaRoutes.paymentSuccessPath);
+            context.go(AppRoutes.paymentSuccessPath);
           } else {
-            context.go(PaRoutes.paymentFailPath);
+            context.go(AppRoutes.paymentFailPath);
           }
         },
       ),

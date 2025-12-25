@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/models/clip_item.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/tag_filter_provider.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
@@ -128,7 +128,7 @@ class ClipListFromProvider extends StatelessWidget {
                         child: InkWell(
                           onTap: () async {
                             final ok = await context.push<bool>(
-                              '${PaRoutes.clipsPath}/${PaRoutes.clipsEditPath}?clipId=${clip.id}',
+                              '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}',
                             );
                             if (ok == true) {
                               final media = context.read<MediaProvider>();

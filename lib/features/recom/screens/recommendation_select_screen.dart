@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/data/local/pa_database.dart';
+import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/features/recom/entities/recom_result_args.dart';
 import 'package:parrokit/features/recom/recom_presenter.dart';
 import 'package:parrokit/features/recom/recom_view.dart';
 import 'package:parrokit/features/recom/screens/recommendation_progress_sheet.dart';
 import 'package:parrokit/features/recom/screens/recommendation_result_screen.dart';
 import 'package:parrokit/features/recom/services/recommendation_service.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/cupertino.dart';
@@ -24,7 +24,7 @@ class RecommendationSelectScreen extends StatefulWidget {
 
 class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
     implements RecomView {
-  late final PaDatabase _db;
+  late final AppDatabase _db;
 
   final TextEditingController _search = TextEditingController();
   final TextEditingController _custom = TextEditingController();
@@ -106,7 +106,7 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
   @override
   void initState() {
     super.initState();
-    _db = context.read<PaDatabase>();
+    _db = context.read<AppDatabase>();
     _loadCandidates();
   }
 
@@ -147,7 +147,7 @@ class _RecommendationSelectScreenState extends State<RecommendationSelectScreen>
     if (!mounted) return;
     if (result != null) {
       context.pushNamed(
-        PaRoutes.recomResult,
+        AppRoutes.recomResult,
         extra: RecomResultArgs(
           results: result,
           titles: List<String>.from(_selected),

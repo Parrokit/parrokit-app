@@ -28,13 +28,13 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
-import 'package:parrokit/data/local/pa_database.dart';
+import 'package:parrokit/data/local/app_database.dart';
 
 /// 클립 활동 관련 상태 관리 Provider.
 ///
 /// 클립 수, 최근 시청, 컬렉션, 랜덤 자막 등을 관리.
 class ClipActivityProvider extends ChangeNotifier {
-  final PaDatabase pdb;
+  final AppDatabase pdb;
 
   ClipActivityProvider(this.pdb) {
     _initWatchers(); // ✅ 생성 시 한 번만 스트림 연결

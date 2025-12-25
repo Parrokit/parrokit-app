@@ -1,4 +1,4 @@
-// lib/theme/components/pa_navigation_bar_theme.dart
+// lib/theme/components/app_navigation_bar_theme.dart
 import 'package:flutter/material.dart';
 
 BottomNavigationBarThemeData paBottomNavigationBar(ColorScheme cs, {required bool isDark}) {

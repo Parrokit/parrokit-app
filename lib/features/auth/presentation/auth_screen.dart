@@ -20,7 +20,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:parrokit/features/payment/domain/payment_args.dart';
 import 'package:provider/provider.dart';
@@ -230,7 +230,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     // 결제 화면으로 이동 (PaymentArgs 전달)
     context.push(
-      PaRoutes.paymentPath,
+      AppRoutes.paymentPath,
       extra: PaymentArgs(
         merchantUid: 'pay_${DateTime.now().millisecondsSinceEpoch}',
         amount: pkg.price,
@@ -264,7 +264,7 @@ class _AuthScreenState extends State<AuthScreen> {
         title: const Text('계정'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(PaRoutes.morePath),
+          onPressed: () => context.go(AppRoutes.morePath),
         ),
       ),
       body: SafeArea(

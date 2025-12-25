@@ -1,4 +1,4 @@
-// lib/theme/components/pa_chip_theme.dart
+// lib/theme/components/app_chip_theme.dart
 import 'package:flutter/material.dart';
 
 ChipThemeData paChipTheme(ColorScheme cs, {required bool isDark}) {

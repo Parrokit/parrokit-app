@@ -13,7 +13,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import '../widgets/section_header.dart';
 import '../widgets/collection_card.dart';
 import '../widgets/empty_card.dart';
@@ -113,7 +113,7 @@ class CollectionsSection extends StatelessWidget {
                 textPrimary: textPrimary,
                 textSecondary: textSecondary,
                 onTap: () => context.replaceNamed(
-                  PaRoutes.library,
+                  AppRoutes.library,
                   queryParameters: {'titleId': id.toString()},
                 ),
               );

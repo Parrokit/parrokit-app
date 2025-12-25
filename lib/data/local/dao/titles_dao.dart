@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:parrokit/data/local/pa_database.dart';
+import 'package:parrokit/data/local/app_database.dart';
 import '../tables/titles.dart';
 import '../tables/releases.dart';
 import '../tables/episodes.dart';
@@ -8,8 +8,8 @@ import '../tables/clips.dart';
 part 'titles_dao.g.dart';
 
 @DriftAccessor(tables: [Titles, Releases, Episodes, Clips])
-class TitlesDao extends DatabaseAccessor<PaDatabase> with _$TitlesDaoMixin {
-  TitlesDao(PaDatabase db) : super(db);
+class TitlesDao extends DatabaseAccessor<AppDatabase> with _$TitlesDaoMixin {
+  TitlesDao(AppDatabase db) : super(db);
 
   /// name만 쭉 가져오기 (필터/정렬 포함)
   Future<List<String>> fetchAllTitleNames() async {

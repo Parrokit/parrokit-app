@@ -1,4 +1,4 @@
-// lib/theme/components/pa_dropdown_theme.dart
+// lib/theme/components/app_dropdown_theme.dart
 import 'package:flutter/material.dart';
 
 DropdownMenuThemeData paDropdownMenuTheme(ColorScheme cs, {required bool isDark}) {

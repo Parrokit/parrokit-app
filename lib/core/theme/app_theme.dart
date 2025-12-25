@@ -1,17 +1,17 @@
-// lib/theme/pa_theme.dart
+// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/components/pa_navigation_bar_theme.dart';
-import 'pa_colors.dart';
-import 'components/pa_appbar_theme.dart';
-import 'components/pa_buttons_theme.dart';
-import 'components/pa_card_theme.dart';
-import 'components/pa_chip_theme.dart';
-import 'components/pa_dropdown_theme.dart';
-import 'components/pa_icon_theme.dart';
-import 'components/pa_input_theme.dart';
-import 'components/pa_tabbar_theme.dart';
-import 'components/pa_texts_theme.dart';
-import 'components/pa_segmented_button_theme.dart';
+import 'package:parrokit/core/theme/components/app_navigation_bar_theme.dart';
+import 'app_colors.dart';
+import 'components/app_appbar_theme.dart';
+import 'components/app_buttons_theme.dart';
+import 'components/app_card_theme.dart';
+import 'components/app_chip_theme.dart';
+import 'components/app_dropdown_theme.dart';
+import 'components/app_icon_theme.dart';
+import 'components/app_input_theme.dart';
+import 'components/app_tabbar_theme.dart';
+import 'components/app_texts_theme.dart';
+import 'components/app_segmented_button_theme.dart';
 
 class PaTheme {
   static ThemeData light = _buildTheme(Brightness.light);

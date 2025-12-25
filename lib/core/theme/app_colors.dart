@@ -1,4 +1,4 @@
-// lib/theme/pa_colors.dart
+// lib/theme/app_colors.dart
 import 'package:flutter/material.dart';
 
 class PaColors {

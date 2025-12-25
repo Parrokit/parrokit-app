@@ -1,4 +1,4 @@
-// lib/theme/components/pa_appbar_theme.dart
+// lib/theme/components/app_appbar_theme.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

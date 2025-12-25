@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/config/pa_config.dart';
+import 'package:parrokit/core/config/app_config.dart';
 import 'action_icon.dart'; // ✅ 방금 주신 ActionIcon 불러옴
 
 

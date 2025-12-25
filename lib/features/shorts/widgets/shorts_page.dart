@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-import 'package:parrokit/data/local/pa_database.dart'; // Segment 타입 사용
+import 'package:parrokit/data/local/app_database.dart'; // Segment 타입 사용
 import 'package:parrokit/features/shorts/widgets/video_layer_placeholder.dart';
 
 enum FitMode { cover, contain }

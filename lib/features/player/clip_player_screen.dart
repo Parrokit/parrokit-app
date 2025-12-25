@@ -4,13 +4,13 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/config/pa_config.dart';
+import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/data/local/pa_database.dart'; // Clip, Segment
+import 'package:parrokit/data/local/app_database.dart'; // Clip, Segment
 import 'index.dart';
 import 'package:parrokit/core/utils/audio_bg.dart';
 
@@ -77,10 +77,10 @@ class _ClipPlayerScreenState extends State<ClipPlayerScreen>
     WidgetsBinding.instance.addObserver(this);
 
     _segIndex = widget.initialIndex;
-    _scope = PaConfig.segmentLoop ? PlayScope.full : PlayScope.segment;
-    _loopSeg = PaConfig.repeatAll;
-    _showSubs = PaConfig.showSubtitles;
-    _rate = PaConfig.defaultPlaybackRate;
+    _scope = AppConfig.segmentLoop ? PlayScope.full : PlayScope.segment;
+    _loopSeg = AppConfig.repeatAll;
+    _showSubs = AppConfig.showSubtitles;
+    _rate = AppConfig.defaultPlaybackRate;
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadFromDb());
 

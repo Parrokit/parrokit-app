@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/core/router/pa_router.dart
+// lib/core/router/app_router.dart
 // ============================================================================
 //
 // [역할]
@@ -32,19 +32,19 @@ import 'package:parrokit/features/payment/presentation/payment_fail_screen.dart'
 import 'package:parrokit/features/payment/domain/payment_args.dart';
 
 // Router 관련
-import 'pa_routes.dart';
-import 'paro_shell.dart';
+import 'app_routes.dart';
+import 'app_shell.dart';
 
 // Re-export for convenience
-export 'pa_routes.dart';
+export 'app_routes.dart';
 
 /// GoRouter 빌더.
 ///
 /// [seenIntro]: 인트로를 봤는지 여부에 따라 초기 경로 결정.
-GoRouter buildPaRouter({required bool seenIntro}) {
+GoRouter buildAppRouter({required bool seenIntro}) {
   return GoRouter(
     debugLogDiagnostics: true,
-    initialLocation: seenIntro ? PaRoutes.dashboardPath : PaRoutes.introPath,
+    initialLocation: seenIntro ? AppRoutes.dashboardPath : AppRoutes.introPath,
     redirect: _handleRedirect,
     routes: [
       // ─────────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
 
   // 0) 앱 루트('/') → 대시보드로
   if (loc == '/') {
-    return PaRoutes.dashboardPath;
+    return AppRoutes.dashboardPath;
   }
 
   // 1) PortOne(Iamport) 앱 스킴 처리
@@ -83,21 +83,21 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
         uri.queryParameters['imp_success'] ?? uri.queryParameters['success'];
 
     if (successParam == 'true') {
-      return PaRoutes.paymentSuccessPath;
+      return AppRoutes.paymentSuccessPath;
     }
     if (successParam == 'false') {
-      return PaRoutes.paymentFailPath;
+      return AppRoutes.paymentFailPath;
     }
 
     // 옛날 방식 지원
     if (loc.startsWith('parrokit://payment/success')) {
-      return PaRoutes.paymentSuccessPath;
+      return AppRoutes.paymentSuccessPath;
     }
     if (loc.startsWith('parrokit://payment/fail')) {
-      return PaRoutes.paymentFailPath;
+      return AppRoutes.paymentFailPath;
     }
 
-    return PaRoutes.dashboardPath;
+    return AppRoutes.dashboardPath;
   }
 
   return null;
@@ -108,24 +108,24 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 GoRoute get _introRoute => GoRoute(
-      path: PaRoutes.introPath,
-      name: PaRoutes.intro,
+      path: AppRoutes.introPath,
+      name: AppRoutes.intro,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: IntroScreen(),
       ),
     );
 
 GoRoute get _authRoute => GoRoute(
-      path: PaRoutes.authPath,
-      name: PaRoutes.auth,
+      path: AppRoutes.authPath,
+      name: AppRoutes.auth,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: AuthScreen(),
       ),
     );
 
 GoRoute get _paymentRoute => GoRoute(
-      path: PaRoutes.paymentPath,
-      name: PaRoutes.payment,
+      path: AppRoutes.paymentPath,
+      name: AppRoutes.payment,
       builder: (context, state) {
         final args = state.extra as PaymentArgs;
         return PaymentScreen(
@@ -142,14 +142,14 @@ GoRoute get _paymentRoute => GoRoute(
     );
 
 GoRoute get _paymentSuccessRoute => GoRoute(
-      path: PaRoutes.paymentSuccessPath,
-      name: PaRoutes.paymentSuccess,
+      path: AppRoutes.paymentSuccessPath,
+      name: AppRoutes.paymentSuccess,
       builder: (context, state) => const PaymentSuccessScreen(),
     );
 
 GoRoute get _paymentFailRoute => GoRoute(
-      path: PaRoutes.paymentFailPath,
-      name: PaRoutes.paymentFail,
+      path: AppRoutes.paymentFailPath,
+      name: AppRoutes.paymentFail,
       builder: (context, state) => const PaymentFailScreen(),
     );
 
@@ -158,12 +158,12 @@ GoRoute get _paymentFailRoute => GoRoute(
 // ─────────────────────────────────────────────────────────────────────────────
 
 ShellRoute get _shellRoute => ShellRoute(
-      builder: (context, state, child) => ParoShell(child: child),
+      builder: (context, state, child) => AppShell(child: child),
       routes: [
         // Dashboard
         GoRoute(
-          path: PaRoutes.dashboardPath,
-          name: PaRoutes.dashboard,
+          path: AppRoutes.dashboardPath,
+          name: AppRoutes.dashboard,
           pageBuilder: (context, state) => NoTransitionPage(
             child: DashboardScreen(),
           ),
@@ -171,8 +171,8 @@ ShellRoute get _shellRoute => ShellRoute(
 
         // Explore (Shorts)
         GoRoute(
-          path: PaRoutes.explorePath,
-          name: PaRoutes.explore,
+          path: AppRoutes.explorePath,
+          name: AppRoutes.explore,
           pageBuilder: (context, state) => const NoTransitionPage(
             child: ShortsScreen(),
           ),
@@ -180,8 +180,8 @@ ShellRoute get _shellRoute => ShellRoute(
 
         // Library
         GoRoute(
-          path: PaRoutes.libraryPath,
-          name: PaRoutes.library,
+          path: AppRoutes.libraryPath,
+          name: AppRoutes.library,
           pageBuilder: (context, state) => NoTransitionPage(
             child: LibraryScreen(
               initialTitleId:
@@ -197,8 +197,8 @@ ShellRoute get _shellRoute => ShellRoute(
 
         // Recommendation
         GoRoute(
-          path: PaRoutes.recomPath,
-          name: PaRoutes.recom,
+          path: AppRoutes.recomPath,
+          name: AppRoutes.recom,
           pageBuilder: (context, state) => const NoTransitionPage(
             child: RecomScreen(),
           ),
@@ -206,8 +206,8 @@ ShellRoute get _shellRoute => ShellRoute(
 
         // Recommendation Result
         GoRoute(
-          path: PaRoutes.recomResultPath,
-          name: PaRoutes.recomResult,
+          path: AppRoutes.recomResultPath,
+          name: AppRoutes.recomResult,
           builder: (context, state) {
             final args = state.extra as RecomResultArgs;
             return RecommendationResultScreen(
@@ -222,8 +222,8 @@ ShellRoute get _shellRoute => ShellRoute(
 
         // More
         GoRoute(
-          path: PaRoutes.morePath,
-          name: PaRoutes.more,
+          path: AppRoutes.morePath,
+          name: AppRoutes.more,
           pageBuilder: (context, state) => const NoTransitionPage(
             child: MoreScreen(),
           ),
@@ -231,8 +231,8 @@ ShellRoute get _shellRoute => ShellRoute(
 
         // Recents
         GoRoute(
-          path: PaRoutes.recentsPath,
-          name: PaRoutes.recents,
+          path: AppRoutes.recentsPath,
+          name: AppRoutes.recents,
           pageBuilder: (context, state) => const NoTransitionPage(
             child: RecentScreen(),
           ),
@@ -240,18 +240,18 @@ ShellRoute get _shellRoute => ShellRoute(
 
         // Clips (with nested routes)
         GoRoute(
-          path: PaRoutes.clipsPath,
-          name: PaRoutes.clips,
+          path: AppRoutes.clipsPath,
+          name: AppRoutes.clips,
           builder: (context, state) => const SizedBox.shrink(),
           routes: [
             GoRoute(
-              path: PaRoutes.clipsCreatePath,
-              name: PaRoutes.clipsCreate,
+              path: AppRoutes.clipsCreatePath,
+              name: AppRoutes.clipsCreate,
               builder: (context, state) => ClipEditorScreen(),
             ),
             GoRoute(
-              path: PaRoutes.clipsEditPath,
-              name: PaRoutes.clipsEdit,
+              path: AppRoutes.clipsEditPath,
+              name: AppRoutes.clipsEdit,
               builder: (context, state) {
                 final clipIdStr = state.uri.queryParameters['clipId'];
                 final clipId = int.tryParse(clipIdStr ?? '');
@@ -259,8 +259,8 @@ ShellRoute get _shellRoute => ShellRoute(
               },
             ),
             GoRoute(
-              path: PaRoutes.clipsPlayPath,
-              name: PaRoutes.clipsPlay,
+              path: AppRoutes.clipsPlayPath,
+              name: AppRoutes.clipsPlay,
               builder: (context, state) {
                 final clipIdStr = state.uri.queryParameters['clipId'];
                 final clipId = int.tryParse(clipIdStr ?? '');

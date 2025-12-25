@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class PaConfig {
+class AppConfig {
   /// 플레이어
   static bool segmentLoop = false; // 구간 재생
   static bool repeatAll = false; // 반복 재생(전체)

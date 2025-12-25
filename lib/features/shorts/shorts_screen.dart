@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/config/pa_config.dart';
-import 'package:parrokit/core/router/pa_router.dart';
+import 'package:parrokit/core/config/app_config.dart';
+import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/ad_provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
@@ -29,9 +29,9 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
   @override
   void initState() {
     super.initState();
-    _showSubtitle = PaConfig.shortsShowSubtitles;
+    _showSubtitle = AppConfig.shortsShowSubtitles;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      context.read<ShortsProvider>().setAutoNext(PaConfig.autoNext);
+      context.read<ShortsProvider>().setAutoNext(AppConfig.autoNext);
     });
     // ✅ Provider에서 랜덤 10개 로딩
     Future.microtask(() {
@@ -159,7 +159,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                     _pauseSignal.value = true; // 모두 멈춰/해제
 
                     context.pushNamed(
-                      PaRoutes.clipsPlay,
+                      AppRoutes.clipsPlay,
                       queryParameters: {'clipId': clipId.toString()},
                     ).then((_) {
                       _pauseSignal.value = false;

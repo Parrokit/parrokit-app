@@ -7,7 +7,7 @@ import 'package:parrokit/core/services/firebase_user_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:parrokit/data/local/prefs/intro_prefs.dart';
-import 'package:parrokit/core/config/pa_config.dart';
+import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
@@ -19,9 +19,9 @@ import 'package:parrokit/core/services/ad_service.dart';
 import 'package:parrokit/core/services/firebase_auth_service.dart';
 import 'package:parrokit/core/utils/audio_bg.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/theme/pa_theme.dart';
-import 'package:parrokit/core/router/pa_router.dart';
-import 'package:parrokit/data/local/pa_database.dart';
+import 'package:parrokit/core/theme/app_theme.dart';
+import 'package:parrokit/core/router/app_router.dart';
+import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/ad_provider.dart';
 import 'package:parrokit/firebase_options.dart';
@@ -35,9 +35,9 @@ void main() async {
   await dotenv.load(fileName: ".env");
   await BgAudio.instance.ensureAudioHandler();
   final seen = await IntroPrefs.hasSeen();
-  final paRouter = buildPaRouter(seenIntro: seen);
+  final paRouter = buildAppRouter(seenIntro: seen);
   // Config/Theme
-  await PaConfig.loadFromPrefs();
+  await AppConfig.loadFromPrefs();
   final theme = ThemeProvider();
   await theme.loadTheme();
 
@@ -69,8 +69,8 @@ void main() async {
         ChangeNotifierProvider<ThemeProvider>.value(value: theme),
         ChangeNotifierProvider<IapProvider>.value(value: iap),
         ChangeNotifierProvider<AdProvider>.value(value: adProvider),
-        Provider<PaDatabase>(
-          create: (_) => PaDatabase(),
+        Provider<AppDatabase>(
+          create: (_) => AppDatabase(),
           dispose: (_, db) => db.close(),
         ),
         ChangeNotifierProvider(
@@ -78,27 +78,27 @@ void main() async {
         ),
         ChangeNotifierProvider<ClipActivityProvider>(
           lazy: false,
-          create: (c) => ClipActivityProvider(c.read<PaDatabase>()),
+          create: (c) => ClipActivityProvider(c.read<AppDatabase>()),
         ),
         ChangeNotifierProvider<MediaProvider>(
-          create: (c) => MediaProvider(c.read<PaDatabase>()),
+          create: (c) => MediaProvider(c.read<AppDatabase>()),
         ),
         ChangeNotifierProvider<ShortsProvider>(
-          create: (c) => ShortsProvider(c.read<PaDatabase>()),
+          create: (c) => ShortsProvider(c.read<AppDatabase>()),
         ),
         ChangeNotifierProvider<TagFilterProvider>(
-          create: (c) => TagFilterProvider(c.read<PaDatabase>()),
+          create: (c) => TagFilterProvider(c.read<AppDatabase>()),
         ),
       ],
-      child: ParoAnime(
+      child: Parrokit(
         paRouter: paRouter,
       ),
     ),
   );
 }
 
-class ParoAnime extends StatelessWidget {
-  const ParoAnime({super.key, required this.paRouter});
+class Parrokit extends StatelessWidget {
+  const Parrokit({super.key, required this.paRouter});
 
   final GoRouter paRouter;
 
