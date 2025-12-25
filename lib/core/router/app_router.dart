@@ -19,7 +19,7 @@ import 'package:parrokit/features/auth/presentation/auth_screen.dart';
 import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/library/library_screen.dart';
-import 'package:parrokit/features/more/more_screen.dart';
+import 'package:parrokit/features/more/presentation/more_screen.dart';
 import 'package:parrokit/features/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/editor/clip_editor_screen.dart';
 import 'package:parrokit/features/player/presentation/clip_player_screen.dart';
