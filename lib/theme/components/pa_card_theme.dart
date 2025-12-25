@@ -1,8 +1,8 @@
 // lib/theme/components/pa_card_theme.dart
 import 'package:flutter/material.dart';
 
-CardTheme paCardTheme(ColorScheme cs, {required bool isDark}) {
-  return CardTheme(
+CardThemeData paCardTheme(ColorScheme cs, {required bool isDark}) {
+  return CardThemeData(
     color: cs.surface,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
@@ -16,3 +16,4 @@ CardTheme paCardTheme(ColorScheme cs, {required bool isDark}) {
     margin: EdgeInsets.zero,
   );
 }
+ㅎ
