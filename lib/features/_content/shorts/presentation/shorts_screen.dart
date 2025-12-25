@@ -119,13 +119,39 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                 scrollDirection: Axis.vertical,
                 itemCount: shorts.shorts.length,
                 onPageChanged: (i) {
-                  // 초기 호출 한 번은 무시 (PageView가 첫 빌드 때도 불릴 수 있음)
+                  // 초기 호출 한 번은 무시
                   if (!_initialized) {
                     _initialized = true;
                   } else {
                     _maybeShowAdOnAdvance(context, _currentIndex, i);
                   }
-                  setState(() => _currentIndex = i);
+
+                  // 1. 다음 배치 미리 로드 (Ex. 8번째 쯤 왔을 때)
+                  // 현재 10개만 있고, i가 8이면(9번째) → loadMore() 호출 → 20개 됨
+                  final total = shorts.shorts.length;
+                  if (i >= total - 2 && !shorts.loading) {
+                    context.read<ShortsProvider>().loadMore();
+                  }
+
+                  // 2. 10번째(인덱스 10) 이상으로 넘어갔을 때 → Cycle Refresh
+                  // 0~9(10개)가 지나고 10(11번째, 다음 배치의 첫 번째)에 도달하면
+                  // 앞의 10개를 지우고 인덱스를 0으로 점프시킴.
+                  const batchSize = ShortsProvider.pageSize;
+                  if (i >= batchSize) {
+                    // (1) 데이터 정리: 앞의 10개 삭제
+                    shorts.removeItems(batchSize);
+
+                    // (2) 화면 점프: 현재 i에서 10을 뺀 위치로 이동 (i=10 -> 0)
+                    // jumpToPage는 즉시 반영되므로 끊김 없이 보임
+                    final newIndex = i - batchSize;
+                    _pageController.jumpToPage(newIndex);
+
+                    // (3) 상태 업데이트
+                    setState(() => _currentIndex = newIndex);
+                  } else {
+                    // 평범한 이동
+                    setState(() => _currentIndex = i);
+                  }
                 },
                 itemBuilder: (context, index) {
                   final item = shorts.shorts[index];
@@ -168,8 +194,9 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                     child: ProgressBar(
-                      index: _currentIndex,
-                      total: shorts.shorts.length,
+                      // 항상 10개를 기준으로 보여줌 (20개가 있어도 UI는 10개 사이클)
+                      index: _currentIndex % ShortsProvider.pageSize,
+                      total: ShortsProvider.pageSize,
                     ),
                   ),
                 ),

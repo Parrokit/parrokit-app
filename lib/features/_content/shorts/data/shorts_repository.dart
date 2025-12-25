@@ -65,8 +65,14 @@ class ShortsRepository {
     final result = <ClipItem>[];
 
     // 3. ClipItem 조립 (썸네일 생성 포함)
+    // 최적화: 문서 디렉토리는 루프 밖에서 한 번만 조회
+    final docsDir = await getApplicationDocumentsDirectory();
+    final docsPath = docsDir.path;
+
     for (final c in clips) {
-      final absPath = await _absolutePathFor(c.filePath);
+      final absPath =
+          c.filePath.startsWith('/') ? c.filePath : '$docsPath/${c.filePath}';
+
       final clipWithAbs = c.copyWith(filePath: absPath);
 
       final segments = await (pdb.select(pdb.segments)
@@ -95,12 +101,5 @@ class ShortsRepository {
     }
 
     return result;
-  }
-
-  /// 파일 경로를 절대 경로로 변환합니다.
-  Future<String> _absolutePathFor(String pathFromClip) async {
-    if (pathFromClip.startsWith('/')) return pathFromClip;
-    final dir = await getApplicationDocumentsDirectory();
-    return '${dir.path}/$pathFromClip';
   }
 }

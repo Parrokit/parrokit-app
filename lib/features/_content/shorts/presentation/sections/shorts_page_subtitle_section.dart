@@ -40,19 +40,7 @@ class ShortsPageSubtitleSection extends StatelessWidget {
         Text(
           segment.original,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            height: 1.25,
-            shadows: [
-              Shadow(
-                blurRadius: 3,
-                color: Colors.black54,
-                offset: Offset(0, 1),
-              ),
-            ],
-          ),
+          style: _originalStyle,
         ),
 
         // 발음 (옵션)
@@ -62,19 +50,7 @@ class ShortsPageSubtitleSection extends StatelessWidget {
             child: Text(
               segment.pron,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1.25,
-                shadows: [
-                  Shadow(
-                    blurRadius: 3,
-                    color: Colors.black54,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
+              style: _pronStyle,
             ),
           ),
 
@@ -85,22 +61,46 @@ class ShortsPageSubtitleSection extends StatelessWidget {
             child: Text(
               segment.trans,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                height: 1.25,
-                shadows: [
-                  Shadow(
-                    blurRadius: 3,
-                    color: Colors.black54,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
+              style: _transStyle,
             ),
           ),
       ],
     );
   }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Styles
+  // ─────────────────────────────────────────────────────────────────
+
+  static const _shadows = [
+    Shadow(
+      blurRadius: 3,
+      color: Colors.black54,
+      offset: Offset(0, 1),
+    ),
+  ];
+
+  static const _originalStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: FontWeight.w800,
+    height: 1.25,
+    shadows: _shadows,
+  );
+
+  static const _pronStyle = TextStyle(
+    color: Colors.white70,
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    height: 1.25,
+    shadows: _shadows,
+  );
+
+  static const _transStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    height: 1.25,
+    shadows: _shadows,
+  );
 }
