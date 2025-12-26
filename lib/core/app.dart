@@ -16,6 +16,9 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import 'package:parrokit/core/theme/app_theme.dart';
 
+/// 글로벌 ScaffoldMessenger 키 (전역 토스트/스낵바용)
+final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 /// 앱 루트 위젯.
 ///
 /// MaterialApp.router를 사용하여 GoRouter 기반 라우팅.
@@ -31,6 +34,7 @@ class App extends StatelessWidget {
 
     return MaterialApp.router(
       title: 'Parrokit',
+      scaffoldMessengerKey: scaffoldMessengerKey,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: theme.themeMode,
