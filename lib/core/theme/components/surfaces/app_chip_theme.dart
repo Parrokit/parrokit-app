@@ -1,7 +1,7 @@
 // lib/theme/components/app_chip_theme.dart
 import 'package:flutter/material.dart';
 
-ChipThemeData paChipTheme(ColorScheme cs, {required bool isDark}) {
+ChipThemeData appChipTheme(ColorScheme cs, {required bool isDark}) {
   return ChipThemeData(
     backgroundColor: cs.surface,
     side: BorderSide(color: cs.outlineVariant, width: 1),

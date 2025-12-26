@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-AppBarTheme paAppBarTheme(ColorScheme cs, {required bool isDark}) {
+AppBarTheme appAppBarTheme(ColorScheme cs, {required bool isDark}) {
   // 상태바(상단 시스템 영역) 아이콘 대비 설정
   final overlay = isDark
       ? SystemUiOverlayStyle.light   // 어두운 배경 → 밝은 아이콘

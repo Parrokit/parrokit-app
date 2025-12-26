@@ -1,7 +1,7 @@
 // lib/theme/components/app_texts_theme.dart
 import 'package:flutter/material.dart';
 
-TextTheme paTextTheme(ColorScheme cs, {required bool isDark}) {
+TextTheme appTextTheme(ColorScheme cs, {required bool isDark}) {
   final cPrimary = cs.onSurface;
   final cSecondary = cs.onSurface.withValues(alpha: 0.74);
   final cTertiary = cs.onSurface.withValues(alpha: 0.56);
@@ -22,7 +22,7 @@ TextTheme paTextTheme(ColorScheme cs, {required bool isDark}) {
   );
 }
 
-TextSelectionThemeData paTextSelectionTheme(ColorScheme cs,
+TextSelectionThemeData appTextSelectionTheme(ColorScheme cs,
     {required bool isDark}) {
   return TextSelectionThemeData(
     cursorColor: cs.primary,

@@ -1,7 +1,7 @@
 // lib/theme/components/app_tabbar_theme.dart
 import 'package:flutter/material.dart';
 
-TabBarThemeData paTabBarTheme(ColorScheme cs, {required bool isDark}) {
+TabBarThemeData appTabBarTheme(ColorScheme cs, {required bool isDark}) {
   return TabBarThemeData(
     indicatorSize: TabBarIndicatorSize.label,
 

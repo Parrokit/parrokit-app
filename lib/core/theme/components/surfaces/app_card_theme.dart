@@ -1,7 +1,7 @@
 // lib/theme/components/app_card_theme.dart
 import 'package:flutter/material.dart';
 
-CardThemeData paCardTheme(ColorScheme cs, {required bool isDark}) {
+CardThemeData appCardTheme(ColorScheme cs, {required bool isDark}) {
   return CardThemeData(
     color: cs.surface,
     surfaceTintColor: Colors.transparent,

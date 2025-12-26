@@ -1,7 +1,7 @@
 // lib/theme/components/app_input_theme.dart
 import 'package:flutter/material.dart';
 
-InputDecorationTheme paInputDecorationTheme(ColorScheme cs,
+InputDecorationTheme appInputDecorationTheme(ColorScheme cs,
     {required bool isDark}) {
   OutlineInputBorder baseBorder(Color color, {double width = 1}) {
     return OutlineInputBorder(

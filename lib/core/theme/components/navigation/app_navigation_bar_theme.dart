@@ -1,7 +1,7 @@
 // lib/theme/components/app_navigation_bar_theme.dart
 import 'package:flutter/material.dart';
 
-BottomNavigationBarThemeData paBottomNavigationBar(ColorScheme cs,
+BottomNavigationBarThemeData appBottomNavigationBar(ColorScheme cs,
     {required bool isDark}) {
   return BottomNavigationBarThemeData(
     type: BottomNavigationBarType.fixed,
@@ -14,7 +14,7 @@ BottomNavigationBarThemeData paBottomNavigationBar(ColorScheme cs,
   );
 }
 
-NavigationBarThemeData paNavigationBar(ColorScheme cs, {required bool isDark}) {
+NavigationBarThemeData appNavigationBar(ColorScheme cs, {required bool isDark}) {
   return NavigationBarThemeData(
     backgroundColor: cs.surface,
     elevation: 0,

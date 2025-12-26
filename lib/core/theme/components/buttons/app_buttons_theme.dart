@@ -10,7 +10,7 @@ ButtonStyle _baseButton(ColorScheme cs, {required bool isDark}) {
   );
 }
 
-ElevatedButtonThemeData paElevatedButtonTheme(ColorScheme cs, {required bool isDark}) {
+ElevatedButtonThemeData appElevatedButtonTheme(ColorScheme cs, {required bool isDark}) {
   return ElevatedButtonThemeData(
     style: _baseButton(cs, isDark: isDark).copyWith(
       backgroundColor: WidgetStateProperty.resolveWith((states) {
@@ -44,7 +44,7 @@ ElevatedButtonThemeData paElevatedButtonTheme(ColorScheme cs, {required bool isD
   );
 }
 
-OutlinedButtonThemeData paOutlinedButtonTheme(ColorScheme cs, {required bool isDark}) {
+OutlinedButtonThemeData appOutlinedButtonTheme(ColorScheme cs, {required bool isDark}) {
   return OutlinedButtonThemeData(
     style: _baseButton(cs, isDark: isDark).copyWith(
       foregroundColor: WidgetStateProperty.resolveWith((states) {
@@ -75,7 +75,7 @@ OutlinedButtonThemeData paOutlinedButtonTheme(ColorScheme cs, {required bool isD
   );
 }
 
-TextButtonThemeData paTextButtonTheme(ColorScheme cs, {required bool isDark}) {
+TextButtonThemeData appTextButtonTheme(ColorScheme cs, {required bool isDark}) {
   return TextButtonThemeData(
     style: _baseButton(cs, isDark: isDark).copyWith(
       padding: const WidgetStatePropertyAll(
@@ -107,7 +107,7 @@ TextButtonThemeData paTextButtonTheme(ColorScheme cs, {required bool isDark}) {
   );
 }
 
-ToggleButtonsThemeData paToggleButtonsTheme(ColorScheme cs, {required bool isDark}) {
+ToggleButtonsThemeData appToggleButtonsTheme(ColorScheme cs, {required bool isDark}) {
   return ToggleButtonsThemeData(
     borderRadius: BorderRadius.circular(999),
     borderWidth: 1,
@@ -119,7 +119,7 @@ ToggleButtonsThemeData paToggleButtonsTheme(ColorScheme cs, {required bool isDar
   );
 }
 
-FilledButtonThemeData paFilledButtonTheme(ColorScheme cs, {required bool isDark}) {
+FilledButtonThemeData appFilledButtonTheme(ColorScheme cs, {required bool isDark}) {
   return FilledButtonThemeData(
     style: _baseButton(cs, isDark: isDark).copyWith(
 

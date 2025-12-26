@@ -1,17 +1,39 @@
 // lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/components/app_navigation_bar_theme.dart';
 import 'app_colors.dart';
-import 'components/app_appbar_theme.dart';
-import 'components/app_buttons_theme.dart';
-import 'components/app_card_theme.dart';
-import 'components/app_chip_theme.dart';
-import 'components/app_dropdown_theme.dart';
-import 'components/app_icon_theme.dart';
-import 'components/app_input_theme.dart';
-import 'components/app_tabbar_theme.dart';
-import 'components/app_texts_theme.dart';
-import 'components/app_segmented_button_theme.dart';
+
+// Navigation
+import 'components/navigation/app_appbar_theme.dart';
+import 'components/navigation/app_tabbar_theme.dart';
+import 'components/navigation/app_navigation_bar_theme.dart';
+
+// Typography & Icons
+import 'components/typography/app_texts_theme.dart';
+import 'components/typography/app_icon_theme.dart';
+
+// Buttons
+import 'components/buttons/app_buttons_theme.dart';
+import 'components/buttons/app_fab_theme.dart';
+
+// Inputs
+import 'components/inputs/app_input_theme.dart';
+import 'components/inputs/app_switch_theme.dart';
+import 'components/inputs/app_checkbox_theme.dart';
+import 'components/inputs/app_slider_theme.dart';
+
+// Surfaces & Containers
+import 'components/surfaces/app_card_theme.dart';
+import 'components/surfaces/app_chip_theme.dart';
+import 'components/surfaces/app_dropdown_theme.dart';
+import 'components/surfaces/app_popup_menu_theme.dart';
+import 'components/surfaces/app_list_tile_theme.dart';
+import 'components/surfaces/app_segmented_button_theme.dart';
+
+// Feedback
+import 'components/feedback/app_dialog_theme.dart';
+import 'components/feedback/app_bottom_sheet_theme.dart';
+import 'components/feedback/app_snackbar_theme.dart';
+import 'components/feedback/app_progress_theme.dart';
 
 class AppTheme {
   static ThemeData light = _buildTheme(Brightness.light);
@@ -37,27 +59,60 @@ class AppTheme {
       colorScheme: cs,
       scaffoldBackgroundColor: cs.surface,
 
-      appBarTheme: paAppBarTheme(cs, isDark: isDark),
-      tabBarTheme: paTabBarTheme(cs, isDark: isDark),
-      textTheme: paTextTheme(cs, isDark: isDark),
-      textSelectionTheme: paTextSelectionTheme(cs, isDark: isDark),
-      iconTheme: paIconTheme(cs, isDark: isDark),
-      cardTheme: paCardTheme(cs, isDark: isDark),
+      // ─────────────────────────────────────────────────────────────────
+      // Navigation
+      // ─────────────────────────────────────────────────────────────────
+      appBarTheme: appAppBarTheme(cs, isDark: isDark),
+      tabBarTheme: appTabBarTheme(cs, isDark: isDark),
+      bottomNavigationBarTheme: appBottomNavigationBar(cs, isDark: isDark),
+      navigationBarTheme: appNavigationBar(cs, isDark: isDark),
 
-      elevatedButtonTheme: paElevatedButtonTheme(cs, isDark: isDark),
-      outlinedButtonTheme: paOutlinedButtonTheme(cs, isDark: isDark),
-      textButtonTheme:     paTextButtonTheme(cs, isDark: isDark),
-      toggleButtonsTheme:  paToggleButtonsTheme(cs, isDark: isDark),
-      filledButtonTheme:  paFilledButtonTheme(cs,isDark: isDark),
+      // ─────────────────────────────────────────────────────────────────
+      // Typography & Icons
+      // ─────────────────────────────────────────────────────────────────
+      textTheme: appTextTheme(cs, isDark: isDark),
+      textSelectionTheme: appTextSelectionTheme(cs, isDark: isDark),
+      iconTheme: appIconTheme(cs, isDark: isDark),
 
-      inputDecorationTheme: paInputDecorationTheme(cs, isDark: isDark),
-      chipTheme: paChipTheme(cs, isDark: isDark),
-      dropdownMenuTheme: paDropdownMenuTheme(cs, isDark: isDark),
+      // ─────────────────────────────────────────────────────────────────
+      // Buttons
+      // ─────────────────────────────────────────────────────────────────
+      elevatedButtonTheme: appElevatedButtonTheme(cs, isDark: isDark),
+      outlinedButtonTheme: appOutlinedButtonTheme(cs, isDark: isDark),
+      textButtonTheme: appTextButtonTheme(cs, isDark: isDark),
+      toggleButtonsTheme: appToggleButtonsTheme(cs, isDark: isDark),
+      filledButtonTheme: appFilledButtonTheme(cs, isDark: isDark),
+      floatingActionButtonTheme: appFabTheme(cs, isDark: isDark),
 
-      bottomNavigationBarTheme: paBottomNavigationBar(cs, isDark: isDark),
-      navigationBarTheme: paNavigationBar(cs, isDark: isDark),
+      // ─────────────────────────────────────────────────────────────────
+      // Inputs
+      // ─────────────────────────────────────────────────────────────────
+      inputDecorationTheme: appInputDecorationTheme(cs, isDark: isDark),
+      switchTheme: appSwitchTheme(cs, isDark: isDark),
+      checkboxTheme: appCheckboxTheme(cs, isDark: isDark),
+      sliderTheme: appSliderTheme(cs, isDark: isDark),
 
-      segmentedButtonTheme: paSegmentedButtonTheme(cs, isDark: isDark),
+      // ─────────────────────────────────────────────────────────────────
+      // Surfaces & Containers
+      // ─────────────────────────────────────────────────────────────────
+      cardTheme: appCardTheme(cs, isDark: isDark),
+      chipTheme: appChipTheme(cs, isDark: isDark),
+      dropdownMenuTheme: appDropdownMenuTheme(cs, isDark: isDark),
+      popupMenuTheme: appPopupMenuTheme(cs, isDark: isDark),
+      listTileTheme: appListTileTheme(cs, isDark: isDark),
+      segmentedButtonTheme: appSegmentedButtonTheme(cs, isDark: isDark),
+
+      // ─────────────────────────────────────────────────────────────────
+      // Feedback
+      // ─────────────────────────────────────────────────────────────────
+      dialogTheme: appDialogTheme(cs, isDark: isDark),
+      bottomSheetTheme: appBottomSheetTheme(cs, isDark: isDark),
+      snackBarTheme: appSnackBarTheme(cs, isDark: isDark),
+      progressIndicatorTheme: appProgressIndicatorTheme(cs, isDark: isDark),
+
+      // ─────────────────────────────────────────────────────────────────
+      // Misc
+      // ─────────────────────────────────────────────────────────────────
       dividerColor: isDark ? AppColors.dividerDark : AppColors.divider,
     );
   }
