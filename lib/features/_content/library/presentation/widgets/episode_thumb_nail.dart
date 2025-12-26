@@ -1,14 +1,17 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
+
+/// [역할]
+/// 에피소드 썸네일 표시 위젯.
+///
+/// [imageProvider]가 없으면 플레이스홀더를 표시합니다.
+/// 하단에 [duration]을 표시합니다.
 class EpisodeThumbnail extends StatelessWidget {
   const EpisodeThumbnail({
+    super.key,
     required this.imageProvider,
     required this.duration,
     this.width = 64,
     this.height = 48,
-    super.key,
   });
 
   final ImageProvider? imageProvider;
@@ -24,7 +27,7 @@ class EpisodeThumbnail extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: cs.surfaceVariant.withOpacity(0.3),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: cs.outlineVariant, width: 0.8),
       ),
@@ -34,16 +37,16 @@ class EpisodeThumbnail extends StatelessWidget {
     final thumb = (imageProvider == null)
         ? placeholder
         : ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image(
-        image: imageProvider!,
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-        gaplessPlayback: true, // ✅ 깜빡임 줄이기
-        filterQuality: FilterQuality.medium,
-      ),
-    );
+            borderRadius: BorderRadius.circular(8),
+            child: Image(
+              image: imageProvider!,
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              gaplessPlayback: true, // ✅ 깜빡임 줄이기
+              filterQuality: FilterQuality.medium,
+            ),
+          );
 
     return Column(
       children: [
@@ -77,7 +80,7 @@ class EpisodeThumbnail extends StatelessWidget {
             duration!,
             style: TextStyle(
               fontSize: 10,
-              color: cs.onSurface.withOpacity(0.7),
+              color: cs.onSurface.withValues(alpha: 0.7),
               fontWeight: FontWeight.w600,
             ),
           ),

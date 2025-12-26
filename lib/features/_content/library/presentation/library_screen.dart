@@ -21,10 +21,16 @@ import 'sections/library_folder_section.dart';
 import 'sections/library_tag_section.dart';
 import 'widgets/bookmark_tabs.dart';
 
-/// Toss-ish Library Screen
-/// - 상단 "책갈피" 탭: [유형별 보기] | [태그로 보기]
-/// - 유형별: BreadCrumb + 폴더/클립 리스트
-/// - 태그로 보기: 카테고리 칩 + 결과 리스트
+/// [역할]
+/// 라이브러리 메인 화면.
+///
+/// '폴더(Title/Season/Episode)별 보기'와 '태그별 보기' 두 가지 모드를 제공합니다.
+/// 상단 [BookmarkTabs]를 통해 모드를 전환할 수 있습니다.
+///
+/// [기능]
+/// - [LibraryTab.folder]: [LibraryFolderSection] 표시 (계층 구조 탐색)
+/// - [LibraryTab.tag]: [LibraryTagSection] 표시 (태그 기반 필터링 및 검색)
+/// - 초기 진입 시 특정 Title/Release/Episode로 바로 이동 가능 ([initialTitleId] 등)
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({
     super.key,
@@ -34,21 +40,26 @@ class LibraryScreen extends StatefulWidget {
     this.initialTab,
   });
 
+  /// 초기 선택할 Title ID (옵션)
   final int? initialTitleId;
+
+  /// 초기 선택할 Release ID (옵션)
   final int? initialReleaseId;
+
+  /// 초기 선택할 Episode ID (옵션)
   final int? initialEpisodeId;
+
+  /// 초기 활성화할 탭 인덱스 (0: Folder, 1: Tag)
   final int? initialTab;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen>
-    with SingleTickerProviderStateMixin {
+class _LibraryScreenState extends State<LibraryScreen> {
   LibraryTab tab = LibraryTab.folder;
 
-  // Tag Tab State
-  final Set<String> _selectedTags = {};
+  // Tag Tab State는 Provider(TagFilterProvider)로 이관됨.
 
   @override
   void initState() {
@@ -75,53 +86,35 @@ class _LibraryScreenState extends State<LibraryScreen>
     });
   }
 
-  // --- Tag Logic ---
+  // --- Tag Logic (Provider 위임) ---
 
   void _onTagSelected(Tag t) {
-    setState(() {
-      _selectedTags.add(t.name);
-    });
-    _applyTagFilter();
+    context.read<TagFilterProvider>().addTag(t.name);
   }
 
   void _onTagDeleted(String name) {
-    setState(() {
-      _selectedTags.remove(name);
-    });
-    _applyTagFilter();
+    context.read<TagFilterProvider>().removeTag(name);
   }
 
-  void _onClearAllTags() {
+  void _onSelectAllTags() {
     final media = context.read<MediaProvider>();
     if (media.distinctTags.isEmpty) return;
 
-    setState(() {
-      _selectedTags
-        ..clear()
-        ..addAll(media.distinctTags.map((t) => t.name));
-    });
-    _applyTagFilter();
+    // 현재 있는 모든 태그를 선택 상태로 만듦
+    context.read<TagFilterProvider>().setTags(
+          media.distinctTags.map((t) => t.name),
+        );
   }
 
   void _onClearResult() {
-    setState(() => _selectedTags.clear());
-    context.read<TagFilterProvider>().scheduleApply(() {
-      context.read<TagFilterProvider>().applyOrByTagNames(const []);
-    });
-  }
-
-  void _applyTagFilter() {
-    context.read<TagFilterProvider>().scheduleApply(() {
-      context
-          .read<TagFilterProvider>()
-          .applyOrByTagNames(_selectedTags.toList());
-    });
+    context.read<TagFilterProvider>().clearTags();
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final media = context.watch<MediaProvider>();
+    final tagProv = context.watch<TagFilterProvider>(); // 태그 상태 구독
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -139,10 +132,10 @@ class _LibraryScreenState extends State<LibraryScreen>
                   ? const LibraryFolderSection()
                   : LibraryTagSection(
                       allTags: media.distinctTags,
-                      selectedTags: _selectedTags,
+                      selectedTags: tagProv.activeTagNames.toSet(),
                       onTagSelected: _onTagSelected,
                       onTagDeleted: _onTagDeleted,
-                      onClearAll: _onClearAllTags,
+                      onSelectAll: _onSelectAllTags,
                       onClearResult: _onClearResult,
                     ),
             ),

@@ -20,6 +20,17 @@ import '../widgets/grid_section.dart';
 import '../widgets/episode_list_sample.dart';
 import '../widgets/clip_list_from_provider.dart';
 
+/// [역할]
+/// 라이브러리의 '폴더' 탭 UI 섹션.
+///
+/// 계층 구조([MediaProvider]의 상태)에 따라 브레드크럼([BreadcrumbBar])과
+/// 현재 레벨의 아이템 목록(Grid/List)을 표시합니다.
+///
+/// [계층 구조]
+/// 1. Titles (작품)
+/// 2. Releases (시즌/영화)
+/// 3. Episodes (에피소드)
+/// 4. Clips (클립)
 class LibraryFolderSection extends StatelessWidget {
   const LibraryFolderSection({super.key});
 

@@ -25,16 +25,17 @@ class _SwipeActionTileState extends State<SwipeActionTile>
   late final AnimationController _ctrl = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 180));
   late final Animation<double> _offset =
-  Tween<double>(begin: 0, end: -widget.actionWidth).animate(_ctrl);
+      Tween<double>(begin: 0, end: -widget.actionWidth).animate(_ctrl);
 
   bool _open = false;
 
   void _snap(bool open) {
     setState(() => _open = open);
-    if (open)
+    if (open) {
       _ctrl.forward();
-    else
+    } else {
       _ctrl.reverse();
+    }
     widget.onOpenChanged?.call(open);
   }
 

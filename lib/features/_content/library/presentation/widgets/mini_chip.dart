@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class MiniChip extends StatelessWidget {
-  const MiniChip({required this.label});
+  const MiniChip({super.key, required this.label});
 
   final String label;
 
@@ -9,17 +9,19 @@ class MiniChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outlineVariant, width: 0.8),
+        color: cs.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11,
-              color: cs.onSurface.withOpacity(0.8),
-              fontWeight: FontWeight.w700)),
+      child: Text(
+        '#$label',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: cs.onSecondaryContainer.withValues(alpha: 0.8),
+        ),
+      ),
     );
   }
 }

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+/// [역할]
+/// 라이브러리 폴더 뷰의 폴더 카드 아이템.
+///
+/// 계층 구조 탐색 시 폴더(Title, Season 등) 하나를 표시합니다.
 class FolderCard extends StatelessWidget {
-  const FolderCard({required this.name, required this.onTap});
+  const FolderCard({super.key, required this.name, required this.onTap});
 
   final String name;
   final VoidCallback onTap;
@@ -23,7 +27,7 @@ class FolderCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.folder_rounded,
-                size: 28, color: cs.onSurface.withOpacity(0.7)),
+                size: 28, color: cs.onSurface.withValues(alpha: 0.7)),
             const SizedBox(height: 8),
             Text(name,
                 maxLines: 1,

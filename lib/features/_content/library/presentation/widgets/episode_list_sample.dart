@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/data/local/app_database.dart';
 
+/// [역할]
+/// 에피소드 목록을 간단히 보여주는 리스트 위젯.
+///
+/// 폴더 뷰에서 에피소드 레벨로 진입했을 때 사용됩니다.
 class EpisodeListSimple extends StatelessWidget {
   const EpisodeListSimple({
+    super.key,
     required this.episodes,
     required this.onOpen,
   });
@@ -20,8 +25,8 @@ class EpisodeListSimple extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
             child: Text('에피소드',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                )),
+                      fontWeight: FontWeight.w800,
+                    )),
           ),
         ),
         SliverList.separated(
@@ -33,7 +38,7 @@ class EpisodeListSimple extends StatelessWidget {
               onTap: () => onOpen(ep),
               leading: CircleAvatar(
                 radius: 16,
-                backgroundColor: cs.surfaceVariant,
+                backgroundColor: cs.surfaceContainerHighest,
                 child: Text(epNo ?? '•',
                     style: const TextStyle(fontWeight: FontWeight.w800)),
               ),
@@ -42,11 +47,11 @@ class EpisodeListSimple extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w800)),
               trailing: Icon(Icons.chevron_right_rounded,
-                  color: cs.onSurface.withOpacity(0.4)),
+                  color: cs.onSurface.withValues(alpha: 0.4)),
             );
           },
-          separatorBuilder: (_, __) =>
-              Divider(height: 1, color: cs.outlineVariant.withOpacity(0.6)),
+          separatorBuilder: (_, __) => Divider(
+              height: 1, color: cs.outlineVariant.withValues(alpha: 0.6)),
           itemCount: episodes.length,
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),

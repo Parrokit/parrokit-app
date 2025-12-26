@@ -3,6 +3,7 @@ import 'folder_card.dart';
 
 class GridSection extends StatelessWidget {
   const GridSection({
+    super.key,
     required this.sectionTitle,
     required this.items,
     required this.onTap,
@@ -14,7 +15,6 @@ class GridSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -37,7 +37,7 @@ class GridSection extends StatelessWidget {
               childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate(
-                  (ctx, i) => FolderCard(
+              (ctx, i) => FolderCard(
                 name: items[i],
                 onTap: () => onTap(i),
               ),

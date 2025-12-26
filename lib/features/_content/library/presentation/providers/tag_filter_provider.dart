@@ -1,63 +1,125 @@
-// lib/provider/tag_filter_provider.dart
 import 'dart:async';
-import 'dart:collection';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
+
+import 'package:flutter/widgets.dart'; // ChangeNotifier
 import 'package:drift/drift.dart';
 import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// [역할]
+/// 라이브러리 탭의 '태그로 보기' 기능 상태 및 데이터 필터링 관리.
+///
+/// 사용자가 선택한 태그([activeTagNames])에 해당하는 클립들을 필터링하여 제공합니다.
+/// - 태그 선택/해제 상태 관리
+/// - OR 조건 필터링 로직 수행
+/// - 필터링된 결과 데이터([filteredClipIds]) 및 캐싱 관리
 class TagFilterProvider extends ChangeNotifier {
   final AppDatabase pdb;
 
   TagFilterProvider(this.pdb);
 
-  /// tagId -> clipIds (OR 집합 계산용 인덱스)
+  // ─────────────────────────────────────────────────────────────────
+  // State
+  // ─────────────────────────────────────────────────────────────────
+
+  /// tagId -> clipIds (OR 집합 계산용 역색인)
   final Map<int, Set<int>> _tagToClipIds = {};
 
-  /// ClipItem 풀 캐시 (LRU)
-  final _cache = LinkedHashMap<int, ClipItem>();
+  /// ClipItem 풀 캐시 (LRU 방식).
+  /// DB 조회를 최소화하기 위해 사용됩니다.
+  final _cache = <int, ClipItem>{};
   static const int _maxCacheSize = 400;
 
-  /// 현재 필터 결과 clipIds
+  /// 현재 필터링된 결과 클립 ID 목록
   List<int> filteredClipIds = [];
 
-  /// 중복 방지
+  /// 현재 선택된 태그 이름 목록
+  final Set<String> _activeTagNames = {};
+  List<String> get activeTagNames => _activeTagNames.toList();
+
+  /// 중복 빌드 방지용 셋
   final Set<int> _building = {};
   String? _docsPath;
 
-  /// 화면에서 깜빡임 없이 그대로 쓸 데이터/상태
+  /// 화면 렌더링용 최종 데이터 리스트 (깜빡임 방지)
   List<ClipItem> _items = const [];
-  bool _isLoading = false;
+  List<ClipItem> get items => _items;
 
-  ///  결과 세트 버전 (UI 전환 키로 사용)
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  /// 결과 변경 감지용 버전 토큰 (UI 갱신 트리거)
   int _resultsVersion = 0;
   int get resultsVersion => _resultsVersion;
 
-  List<ClipItem> get items => _items;
-  bool get isLoading => _isLoading;
-
-  final Set<String> _activeTagNames = {};
-
-  List<String> get activeTagNames => _activeTagNames.toList();
-
   final Map<int, ImageProvider> _thumbProviders = {}; // clipId -> provider
-
   ImageProvider? imageProviderFor(int clipId) => _thumbProviders[clipId];
 
-  /// 디바운스
+  /// 디바운스 타이머
   Timer? _debounce;
 
-  // scheduleApply에서 디바운스 끝나면 applyNow 호출하도록
-  void scheduleApply(VoidCallback mutateFilter) {
-    mutateFilter();
+  // ─────────────────────────────────────────────────────────────────
+  // Actions
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 태그 하나를 토글(추가/삭제)합니다.
+  void toggleTag(String tagName) {
+    if (_activeTagNames.contains(tagName)) {
+      _activeTagNames.remove(tagName);
+    } else {
+      _activeTagNames.add(tagName);
+    }
+    notifyListeners();
+    _scheduleApply();
+  }
+
+  /// 태그 하나를 추가합니다.
+  void addTag(String tagName) {
+    if (_activeTagNames.add(tagName)) {
+      notifyListeners();
+      _scheduleApply();
+    }
+  }
+
+  /// 태그 하나를 삭제합니다.
+  void removeTag(String tagName) {
+    if (_activeTagNames.remove(tagName)) {
+      notifyListeners();
+      _scheduleApply();
+    }
+  }
+
+  /// 모든 태그 선택을 해제합니다.
+  void clearTags() {
+    if (_activeTagNames.isNotEmpty) {
+      _activeTagNames.clear();
+      notifyListeners();
+      _scheduleApply();
+    }
+  }
+
+  /// 주어진 태그 목록으로 현재 선택을 대체합니다.
+  void setTags(Iterable<String> tags) {
+    _activeTagNames.clear();
+    _activeTagNames.addAll(tags);
+    notifyListeners();
+    _scheduleApply();
+  }
+
+  /// 필터 적용을 예약합니다 (디바운스 처리).
+  ///
+  /// 연속적인 태그 변경 시 매번 DB를 조회하지 않고,
+  /// 마지막 변경 후 300ms가 지나면 [applyNow]를 호출합니다.
+  void _scheduleApply() {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
-      applyNow(); // ✅ 여기서 결과까지 계산해서 보관
+      applyOrByTagNames(_activeTagNames.toList()).then((_) => applyNow());
     });
   }
+
+  // Legacy method support if needed, or remove scheduleApply(callback)
+  // For refactoring, we replace the old scheduleApply with internal _scheduleApply
 
   bool _sameIds(List<ClipItem> a, List<ClipItem> b) {
     if (a.length != b.length) return false;
@@ -67,6 +129,9 @@ class TagFilterProvider extends ChangeNotifier {
     return true;
   }
 
+  /// 현재 필터 설정([activeTagNames])에 맞춰 데이터를 즉시 로드하고 상태를 갱신합니다.
+  ///
+  /// 캐싱된 데이터가 있다면 활용하고, 없다면 새로 로드([fetchItemsForCurrentFilter])합니다.
   Future<void> applyNow() async {
     _setLoading(true);
     try {
@@ -102,6 +167,7 @@ class TagFilterProvider extends ChangeNotifier {
     await applyNow(); // 내부 items까지 채워서 깜빡임 최소화
   }
 
+  /// DB 변경 사항을 감시하여 캐시를 무효화하고 UI를 갱신합니다.
   Future<void> startWatching() async {
     await _clipsSub?.cancel();
     await _segmentsSub?.cancel();
@@ -110,7 +176,7 @@ class TagFilterProvider extends ChangeNotifier {
     _clipsSub = (pdb.select(pdb.clips)).watch().listen((rows) {
       final ids = rows.map((e) => e.id).toSet();
       _cache.removeWhere((k, _) => !ids.contains(k));
-      notifyListeners(); // OK (1회)
+      notifyListeners();
     });
 
     _segmentsSub = (pdb.select(pdb.segments)).watch().listen((rows) {
@@ -142,8 +208,13 @@ class TagFilterProvider extends ChangeNotifier {
     }
   }
 
-  void clearOnDispose() {
-    // 메모리 커지는 대신 재빌드 비용 줄일려면 주석 처리
+  @override
+  void dispose() {
+    _clearOnDispose();
+    super.dispose();
+  }
+
+  void _clearOnDispose() {
     _cache.clear();
     _building.clear();
     _tagToClipIds.clear();
@@ -157,12 +228,6 @@ class TagFilterProvider extends ChangeNotifier {
     filteredClipIds = [];
     _thumbProviders.clear();
     _resultsVersion = 0;
-  }
-
-  @override
-  void dispose() {
-    clearOnDispose();
-    super.dispose();
   }
 
   /// ======== 공개 API ========

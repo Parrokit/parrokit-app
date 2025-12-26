@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+/// [역할]
+/// BookmarkTabs 내의 개별 탭 버튼.
 class BookmarkTab extends StatelessWidget {
   const BookmarkTab({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,

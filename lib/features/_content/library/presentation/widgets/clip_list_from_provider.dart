@@ -39,7 +39,7 @@ class ClipListFromProvider extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          item.clip.title ?? '클립',
+          item.clip.title, // Non-nullable according to lint
           style: const TextStyle(color: Colors.black87, fontSize: 15),
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -68,9 +68,11 @@ class ClipListFromProvider extends StatelessWidget {
     );
 
     if (ok == true) {
+      if (!context.mounted) return;
       final ok2 =
           await context.read<MediaProvider>().deleteClipById(item.clip.id);
 
+      if (!context.mounted) return;
       // ✅ showToast 사용
       showToast(
         context,
@@ -81,7 +83,7 @@ class ClipListFromProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    // Remove unused cs
     final tick =
         context.select<TagFilterProvider, int>((p) => p.resultsVersion);
     final loading = context.select<TagFilterProvider, bool>((p) => p.isLoading);
@@ -103,7 +105,7 @@ class ClipListFromProvider extends StatelessWidget {
 
         // ✅ 로딩 시엔 스켈레톤만
         if (loading)
-          _skeletonSliver()
+          const _SkeletonSliver()
         else
           // ✅ 데이터일 때만 리스트 렌더
           SliverList.separated(
@@ -134,7 +136,7 @@ class ClipListFromProvider extends StatelessWidget {
                             final ok = await context.push<bool>(
                               '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}',
                             );
-                            if (ok == true) {
+                            if (ok == true && context.mounted) {
                               final media = context.read<MediaProvider>();
                               media.backToTitles();
                               media.loadTitles();
@@ -181,7 +183,7 @@ class ClipListFromProvider extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  clip.title ?? 'Clip',
+                                  clip.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -205,7 +207,7 @@ class ClipListFromProvider extends StatelessWidget {
                             color: Theme.of(ctx)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.4),
+                                .withValues(alpha: 0.4),
                           ),
                         ],
                       ),
@@ -214,9 +216,12 @@ class ClipListFromProvider extends StatelessWidget {
                 ),
               );
             },
-            separatorBuilder: (_, __) => Divider(
+            separatorBuilder: (ctx, __) => Divider(
               height: 1,
-              color: Theme.of(_).colorScheme.outlineVariant.withOpacity(0.6),
+              color: Theme.of(ctx)
+                  .colorScheme
+                  .outlineVariant
+                  .withValues(alpha: 0.6),
             ),
           ),
 
@@ -231,20 +236,17 @@ class _FadeSlideIn extends StatelessWidget {
     required this.child,
     required this.index,
     required this.version, // 태그 결과 버전 (변경될 때만 애니 트리거)
-    this.baseDelayMs = 60,
-    this.stepMs = 28,
   });
 
   final Widget child;
   final int index;
   final int version;
-  final int baseDelayMs;
-  final int stepMs;
 
   @override
   Widget build(BuildContext context) {
     // version 이 바뀌면 Key가 달라져서 새 애니메이션 시작
     return TweenAnimationBuilder<double>(
+      key: ValueKey('ani_${version}_$index'),
       tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 340),
       curve: Curves.easeOutCubic,
@@ -260,13 +262,12 @@ class _FadeSlideIn extends StatelessWidget {
 }
 
 class _LineSkeleton extends StatelessWidget {
-  const _LineSkeleton({this.h = 16});
-  final double h;
+  const _LineSkeleton();
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme.onSurface.withOpacity(.08);
+    final c = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08);
     return Container(
-      height: h,
+      height: 16,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: c,
@@ -276,7 +277,14 @@ class _LineSkeleton extends StatelessWidget {
   }
 }
 
-Widget _skeletonSliver() => SliverList.builder(
+class _SkeletonSliver extends StatelessWidget {
+  const _SkeletonSliver();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverList.builder(
       itemCount: 8,
       itemBuilder: (_, __) => const _LineSkeleton(),
     );
+  }
+}

@@ -26,7 +26,7 @@ class LibraryTagSection extends StatelessWidget {
     required this.selectedTags,
     required this.onTagSelected,
     required this.onTagDeleted,
-    required this.onClearAll,
+    required this.onSelectAll,
     required this.onClearResult,
   });
 
@@ -34,7 +34,7 @@ class LibraryTagSection extends StatelessWidget {
   final Set<String> selectedTags;
   final ValueChanged<Tag> onTagSelected;
   final ValueChanged<String> onTagDeleted;
-  final VoidCallback onClearAll;
+  final VoidCallback onSelectAll;
   final VoidCallback onClearResult;
 
   Iterable<Tag> _optionsFor(String query) {
@@ -170,7 +170,7 @@ class LibraryTagSection extends StatelessWidget {
                 height: 48,
                 width: 48,
                 child: OutlinedButton(
-                  onPressed: onClearAll,
+                  onPressed: onSelectAll,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     shape: RoundedRectangleBorder(
@@ -221,7 +221,7 @@ class LibraryTagSection extends StatelessWidget {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                           ),
                     ),
                   )
@@ -247,8 +247,9 @@ class LibraryTagSection extends StatelessWidget {
                             ),
                             selected: true,
                             onSelected: (_) {},
-                            backgroundColor:
-                                Theme.of(context).colorScheme.surfaceVariant,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             selectedColor:
                                 Theme.of(context).colorScheme.primary,
                             checkmarkColor: Colors.white,
