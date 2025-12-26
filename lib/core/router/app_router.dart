@@ -23,9 +23,9 @@ import 'package:parrokit/features/_settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/_discovery/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/_content/clip_editor/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/_content/player/presentation/clip_player_screen.dart';
-import 'package:parrokit/features/_discovery/recom/presentation/recom_screen.dart';
-import 'package:parrokit/features/_discovery/recom/presentation/recom_result_screen.dart';
-import 'package:parrokit/features/_discovery/recom/domain/recom_result_args.dart';
+// import 'package:parrokit/features/_discovery/recom/presentation/recom_screen.dart';
+// import 'package:parrokit/features/_discovery/recom/presentation/recom_result_screen.dart';
+// import 'package:parrokit/features/_discovery/recom/domain/recom_result_args.dart';
 import 'package:parrokit/features/_settings/payment/presentation/payment_screen.dart';
 import 'package:parrokit/features/_settings/payment/presentation/payment_success_screen.dart';
 import 'package:parrokit/features/_settings/payment/presentation/payment_fail_screen.dart';
@@ -200,29 +200,29 @@ ShellRoute get _shellRoute => ShellRoute(
         ),
 
         // Recommendation
-        GoRoute(
-          path: AppRoutes.recomPath,
-          name: AppRoutes.recom,
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: RecomScreen(),
-          ),
-        ),
+        // GoRoute(
+        //   path: AppRoutes.recomPath,
+        //   name: AppRoutes.recom,
+        //   pageBuilder: (context, state) => const NoTransitionPage(
+        //     child: RecomScreen(),
+        //   ),
+        // ),
 
-        // Recommendation Result
-        GoRoute(
-          path: AppRoutes.recomResultPath,
-          name: AppRoutes.recomResult,
-          builder: (context, state) {
-            final args = state.extra as RecomResultArgs;
-            return RecomResultScreen(
-              results: args.results,
-              titles: args.titles,
-              topK: args.topK,
-              cutoff: args.cutoff,
-              excludeWatched: args.excludeWatched,
-            );
-          },
-        ),
+        // // Recommendation Result
+        // GoRoute(
+        //   path: AppRoutes.recomResultPath,
+        //   name: AppRoutes.recomResult,
+        //   builder: (context, state) {
+        //     final args = state.extra as RecomResultArgs;
+        //     return RecomResultScreen(
+        //       results: args.results,
+        //       titles: args.titles,
+        //       topK: args.topK,
+        //       cutoff: args.cutoff,
+        //       excludeWatched: args.excludeWatched,
+        //     );
+        //   },
+        // ),
 
         // More
         GoRoute(
