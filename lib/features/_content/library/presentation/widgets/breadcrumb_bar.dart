@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// [역할]
 /// 라이브러리 폴더 계층 구조를 나타내는 브레드크럼 네비게이션 바.
@@ -19,15 +21,16 @@ class BreadcrumbBar extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
         children: [
           for (int i = 0; i < path.length; i++) ...[
             InkWell(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               onTap: () => onTapCrumb(i),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
                 child: Text(
                   path[i],
                   style: TextStyle(

@@ -11,8 +11,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/provider/user_provider.dart';
-import '../../widgets/card_container.dart';
-import '../../widgets/section_title.dart';
+import '../widgets/card_container.dart';
+import '../widgets/section_title.dart';
 
 /// 계정 섹션.
 class AccountSection extends StatelessWidget {

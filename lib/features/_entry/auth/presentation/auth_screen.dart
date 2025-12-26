@@ -19,6 +19,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
@@ -265,7 +266,7 @@ class _AuthScreenState extends State<AuthScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               // 로그인 상태에 따라 다른 섹션 표시
               child: _isLoggedIn
                   ? LoggedInSection(

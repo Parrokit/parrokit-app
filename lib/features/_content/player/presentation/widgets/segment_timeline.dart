@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:video_player/video_player.dart';
 import 'seek_gesture_layer.dart';
 
@@ -50,7 +51,7 @@ class SegmentTimeline extends StatelessWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           color: track,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                       ),
                     ),
@@ -71,7 +72,8 @@ class SegmentTimeline extends StatelessWidget {
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: prog,
-                                    borderRadius: BorderRadius.circular(999),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.full),
                                   ),
                                 ),
                               ),

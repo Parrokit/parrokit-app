@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 /// 그라데이션 아이콘 위젯.
 ///
@@ -22,8 +23,8 @@ class GradientIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ShaderMask(
-      shaderCallback: (bounds) => const LinearGradient(
-        colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)], // 파랑-민트 그라디언트
+      shaderCallback: (bounds) => LinearGradient(
+        colors: [AppColors.gradientStart, AppColors.gradientEnd],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ).createShader(bounds),

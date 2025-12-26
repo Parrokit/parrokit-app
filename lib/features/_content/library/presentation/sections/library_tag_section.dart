@@ -11,9 +11,12 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/router/app_router.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/features/_content/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:parrokit/data/local/app_database.dart';
@@ -92,10 +95,13 @@ class LibraryTagSection extends StatelessWidget {
                         filled: true,
                         isDense: true,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing
+                              .sm, // 12, 8? original was 12, 8 at line 99?
+                        ),
                       ),
                       // suffixIcon 갱신을 위해 setState 필요할 수 있으나,
                       // 여기서는 controller listener가 없으므로 타이핑 시 아이콘 갱신이 즉시 안 될 수 있음.
@@ -114,7 +120,8 @@ class LibraryTagSection extends StatelessWidget {
                             constraints: const BoxConstraints(
                                 maxHeight: 280, minWidth: 240),
                             child: ListView.separated(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.sm),
                               shrinkWrap: true,
                               itemCount: options.length,
                               separatorBuilder: (_, __) =>
@@ -125,7 +132,8 @@ class LibraryTagSection extends StatelessWidget {
                                   onTap: () => onSelected(t),
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 10),
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.md),
                                     child: Row(
                                       children: [
                                         const Icon(Icons.auto_awesome,
@@ -172,9 +180,10 @@ class LibraryTagSection extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: onSelectAll,
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                   child: Text(
@@ -256,15 +265,16 @@ class LibraryTagSection extends StatelessWidget {
                             showCheckmark: false,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
-                              side: const BorderSide(
-                                  color: Color(0xFF0066FF), width: 1),
+                              side: BorderSide(
+                                  color: AppColors.primary, width: 1),
                             ),
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                             visualDensity: const VisualDensity(
                                 horizontal: -2, vertical: -2),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.sm),
                             deleteIcon: const Icon(Icons.close,
                                 size: 16, color: Colors.white),
                             onDeleted: () => onTagDeleted(name),

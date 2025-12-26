@@ -13,6 +13,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/data/models/user.dart';
 
 /// 사용자 정보 카드 섹션.
@@ -61,11 +63,11 @@ class UserInfoCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         // 반투명 배경
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(

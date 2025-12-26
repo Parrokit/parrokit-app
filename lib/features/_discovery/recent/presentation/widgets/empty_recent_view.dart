@@ -10,6 +10,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 
 /// 최근 본 클립 빈 상태 뷰.
 class EmptyRecentView extends StatelessWidget {
@@ -22,7 +23,7 @@ class EmptyRecentView extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.sectionGap),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

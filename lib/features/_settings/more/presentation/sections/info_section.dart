@@ -10,10 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:parrokit/core/router/app_router.dart';
-import '../../widgets/card_container.dart';
-import '../../widgets/hairline_divider.dart';
-import '../../widgets/nav_tile.dart';
-import '../../widgets/section_title.dart';
+import '../widgets/card_container.dart';
+import '../widgets/hairline_divider.dart';
+import '../widgets/nav_tile.dart';
+import '../widgets/section_title.dart';
 import '../web_document_screen.dart';
 
 /// 정보 섹션.

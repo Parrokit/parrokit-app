@@ -10,6 +10,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// 프리미엄 구매 다이얼로그 표시.
 Future<void> showPremiumDialog(
@@ -31,7 +33,7 @@ Future<void> showPremiumDialog(
 
       return AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         backgroundColor: cs.surface,
         title: Text(
@@ -137,7 +139,7 @@ class _Bullet extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'leading_icon.dart';
 
 // lib/widgets/nav_tile.dart
 class NavTile extends StatelessWidget {
-  const NavTile({super.key, 
+  const NavTile({
+    super.key,
     required this.icon,
     required this.title,
     this.subtitle,
     this.onTap,
     this.danger = false,
     this.showArrow = true,
-    this.trailing,                 // 👈 추가
+    this.trailing,
   });
 
   final IconData icon;
@@ -19,7 +22,7 @@ class NavTile extends StatelessWidget {
   final VoidCallback? onTap;
   final bool danger;
   final bool showArrow;
-  final Widget? trailing;          // 👈 추가
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +31,10 @@ class NavTile extends StatelessWidget {
     final textColor = danger ? Colors.red : cs.onSurface;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Row(
           children: [
             LeadingIcon(icon: icon, danger: danger),
@@ -47,7 +50,7 @@ class NavTile extends StatelessWidget {
                       )),
                   if (subtitle != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 2),
+                      padding: const EdgeInsets.only(top: AppSpacing.xs),
                       child: Text(
                         subtitle!,
                         style: tt.bodySmall?.copyWith(
@@ -59,7 +62,8 @@ class NavTile extends StatelessWidget {
               ),
             ),
             // 👉 우측 구성: trailing 우선, 없으면 화살표
-            if (trailing != null) trailing!
+            if (trailing != null)
+              trailing!
             else if (showArrow)
               Icon(Icons.chevron_right_rounded,
                   color: cs.onSurface.withValues(alpha: 0.35)),

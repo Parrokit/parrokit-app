@@ -15,6 +15,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 
 /// [역할]
 /// 현재 재생 중인 클립의 순서를 상단에 표시하는 위젯.
@@ -35,7 +36,7 @@ class ProgressBar extends StatelessWidget {
         return Expanded(
           child: Container(
             height: 3,
-            margin: EdgeInsets.only(right: i == total - 1 ? 0 : 4),
+            margin: EdgeInsets.only(right: i == total - 1 ? 0 : AppSpacing.xs),
             decoration: BoxDecoration(
               color: active
                   ? scheme.onSecondary

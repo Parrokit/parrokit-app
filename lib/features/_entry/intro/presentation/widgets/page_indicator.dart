@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// 페이지 인디케이터 위젯.
 ///
@@ -43,7 +44,7 @@ class PageIndicator extends StatelessWidget {
           width: isActive ? 18 : 6,
           decoration: BoxDecoration(
             color: isActive ? activeColor : inactiveColor,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
         );
       }),

@@ -12,6 +12,8 @@
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// 클립 썸네일 카드 위젯.
 ///
@@ -67,7 +69,7 @@ class ClipThumbnailCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     titleName!,
@@ -144,9 +146,9 @@ class ClipThumbnailCard extends StatelessWidget {
 
   Widget _thumbPlaceholder() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF0f172a), Color(0xFF1f2937)],
+          colors: [AppColors.thumbGradientStart, AppColors.thumbGradientEnd],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

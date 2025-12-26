@@ -11,6 +11,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// "더 보러가기" 또는 빈 상태 카드 위젯.
 class MoreCard extends StatelessWidget {
@@ -30,7 +32,7 @@ class MoreCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF15181C) : Colors.white;
+    final cardBg = isDark ? AppColors.surfaceContainerDark : AppColors.surface;
 
     // 빈 상태
     if (isEmpty) {
@@ -38,7 +40,7 @@ class MoreCard extends StatelessWidget {
         width: 220,
         decoration: BoxDecoration(
           color: cardBg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: subtle),
         ),
         child: Center(
@@ -60,7 +62,7 @@ class MoreCard extends StatelessWidget {
       child: Container(
         width: 220,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: subtle),
           color: cardBg,
         ),
@@ -93,7 +95,7 @@ class MoreCard extends StatelessWidget {
                       height: 52,
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(color: subtle),
                       ),
                       child: Icon(

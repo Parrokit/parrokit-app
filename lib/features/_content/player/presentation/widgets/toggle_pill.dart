@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
+
 class TogglePill extends StatelessWidget {
-  const TogglePill({super.key, 
+  const TogglePill({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,
@@ -13,7 +17,6 @@ class TogglePill extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
   final bool isLight;
-
 
   @override
   Widget build(BuildContext context) {
@@ -30,13 +33,14 @@ class TogglePill extends StatelessWidget {
         : null; // 비활성일 때는 테두리 없음
 
     return InkWell(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AppRadius.full),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.full),
           border: border != null ? Border.all(color: border, width: 0.8) : null,
         ),
         child: Row(
@@ -44,8 +48,8 @@ class TogglePill extends StatelessWidget {
             Icon(icon, color: fg, size: 18),
             const SizedBox(width: 6),
             Text(label,
-                style:
-                TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
           ],
         ),
       ),

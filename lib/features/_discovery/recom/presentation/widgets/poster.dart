@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// A simple rounded-corner network image used for posters.
 class Poster extends StatelessWidget {
@@ -9,7 +10,7 @@ class Poster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Image.network(
         url,
         width: 56,
@@ -25,4 +26,3 @@ class Poster extends StatelessWidget {
     );
   }
 }
-

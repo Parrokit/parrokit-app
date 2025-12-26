@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 class TimeTripletField extends StatefulWidget {
   const TimeTripletField({
@@ -102,7 +103,8 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
         isDense: true,
         labelText: label,
         hintText: hint,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       );
 

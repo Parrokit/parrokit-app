@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// 모음집 카드 위젯.
 ///
@@ -45,12 +46,12 @@ class CollectionCard extends StatelessWidget {
       width: 180,
       height: 130,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap: onTap,
         child: Ink(
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: subtle),
           ),
           child: Padding(

@@ -17,6 +17,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 
 /// [역할]
 /// 쇼츠 우측 패널의 개별 액션 버튼 위젯.
@@ -53,7 +54,7 @@ class ActionIcon extends StatelessWidget {
               border: Border.all(color: scheme.outlineVariant),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               child: Icon(
                 icon,
                 size: 26,

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/features/_content/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:provider/provider.dart';
@@ -56,7 +59,8 @@ class ClipListFromProvider extends StatelessWidget {
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -144,7 +148,7 @@ class ClipListFromProvider extends StatelessWidget {
                           },
                           child: Container(
                             height: double.infinity,
-                            color: const Color(0xFF1E66F5),
+                            color: AppColors.info,
                             alignment: Alignment.center,
                             child: const Icon(Icons.edit_rounded,
                                 color: Colors.white, size: 22),
@@ -158,7 +162,7 @@ class ClipListFromProvider extends StatelessWidget {
                           onTap: () => _confirmDeleteClip(context, item),
                           child: Container(
                             height: double.infinity,
-                            color: const Color(0xFFE53935),
+                            color: AppColors.danger,
                             alignment: Alignment.center,
                             child: const Icon(Icons.delete_rounded,
                                 color: Colors.white, size: 22),
@@ -271,7 +275,7 @@ class _LineSkeleton extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: c,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
     );
   }

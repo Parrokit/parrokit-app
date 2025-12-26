@@ -12,6 +12,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:video_player/video_player.dart';
 
 /// [역할]
@@ -63,7 +64,7 @@ class _ShortsPageControlSectionState extends State<ShortsPageControlSection> {
       behavior: HitTestBehavior.opaque, // 터치 영역 확보
       onTap: () {}, // 부모 탭(재생/일시정지) 방지
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: SizedBox(
           height: 48,
           child: Center(

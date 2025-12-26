@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:flutter/services.dart';
 
 class LabeledTextField extends StatelessWidget {
@@ -32,7 +33,7 @@ class LabeledTextField extends StatelessWidget {
 
     OutlineInputBorder borderStyle(Color c, [double w = 0.8]) =>
         OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: c, width: w),
         );
 

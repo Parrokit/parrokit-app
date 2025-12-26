@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 
 /// 검색 입력 섹션.
 class SearchSection extends StatelessWidget {
@@ -37,7 +38,7 @@ class SearchSection extends StatelessWidget {
       children: [
         // 검색 필드
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: TextField(
             controller: controller,
             textInputAction: TextInputAction.search,

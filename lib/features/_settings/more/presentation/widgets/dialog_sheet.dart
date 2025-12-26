@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 class DialogSheet extends StatelessWidget {
-  const DialogSheet({super.key, 
+  const DialogSheet({
+    super.key,
     required this.title,
     required this.body,
     required this.primaryText,
@@ -27,7 +29,8 @@ class DialogSheet extends StatelessWidget {
     return AlertDialog(
       backgroundColor: cs.surface,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       title: Text(title,
           style:
               t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),

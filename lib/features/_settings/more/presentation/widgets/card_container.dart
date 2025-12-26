@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 class CardContainer extends StatelessWidget {
   const CardContainer(
       {super.key,
       required this.child,
-      this.padding = const EdgeInsets.all(12)});
+      this.padding = const EdgeInsets.all(AppSpacing.cardPadding)});
 
   final Widget child;
   final EdgeInsets padding;
@@ -13,11 +15,11 @@ class CardContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.only(bottom: 2),
+      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
       padding: padding,
       decoration: BoxDecoration(
         color: t.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: t.colorScheme.outlineVariant, width: 0.8),
         boxShadow: [
           BoxShadow(

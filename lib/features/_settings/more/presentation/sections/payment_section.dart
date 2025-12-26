@@ -8,11 +8,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
-import '../../widgets/card_container.dart';
-import '../../widgets/nav_tile.dart';
-import '../../widgets/section_title.dart';
+import '../widgets/card_container.dart';
+import '../widgets/nav_tile.dart';
+import '../widgets/section_title.dart';
 import '../premium_dialog.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 
@@ -55,9 +56,10 @@ class PaymentSection extends StatelessWidget {
         style: FilledButton.styleFrom(
           disabledBackgroundColor: cs.surfaceContainerHighest,
           disabledForegroundColor: cs.onSurface.withValues(alpha: 0.6),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           textStyle: const TextStyle(
             fontSize: 12,
@@ -72,9 +74,10 @@ class PaymentSection extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: cs.primary,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl, vertical: AppSpacing.md),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         textStyle: const TextStyle(
           fontSize: 12,

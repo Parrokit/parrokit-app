@@ -15,6 +15,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 
 /// [역할]
 /// 클립의 태그 정보를 아이콘과 함께 표시하는 배지 위젯.
@@ -30,7 +31,8 @@ class Badge extends StatelessWidget {
     const Color fixedColor = Colors.white; // 필요시 Colors.white 등으로 변경
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: fixedColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),

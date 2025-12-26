@@ -155,11 +155,11 @@ class _ToastCardState extends State<_ToastCard> {
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
                           blurRadius: 8,
                           offset: Offset(0, 4),
-                          color: Color(0x33000000),
+                          color: Colors.black.withValues(alpha: 0.2),
                         ),
                       ],
                     ),

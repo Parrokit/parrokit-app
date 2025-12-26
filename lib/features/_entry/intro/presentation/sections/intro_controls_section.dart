@@ -13,6 +13,8 @@
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import '../widgets/page_indicator.dart';
 
 /// 온보딩 하단 컨트롤 섹션.
@@ -40,15 +42,16 @@ class IntroControlsSection extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.06),
             border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -78,8 +81,8 @@ class IntroControlsSection extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
                       ),
                     ),
                     onPressed: onSkip,
@@ -94,8 +97,8 @@ class IntroControlsSection extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
                       ),
                     ),
                     onPressed: onNext,

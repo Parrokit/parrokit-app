@@ -130,6 +130,22 @@ abstract final class AppColors {
   /// 라이트 오버레이 (드롭다운 등)
   static const Color overlayLight = Color(0x1A000000);
 
+  // ─────────────────────────────────────────────────────────────────
+  // Gradient (그라디언트)
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 그라디언트 시작색 (블루)
+  static const Color gradientStart = Color(0xFF3B82F6);
+
+  /// 그라디언트 끝색 (민트)
+  static const Color gradientEnd = Color(0xFF06B6D4);
+
+  /// 썸네일 다크 그라디언트 시작
+  static const Color thumbGradientStart = Color(0xFF0f172a);
+
+  /// 썸네일 다크 그라디언트 끝
+  static const Color thumbGradientEnd = Color(0xFF1f2937);
+
   // ═══════════════════════════════════════════════════════════════════
   // Dark Mode
   // ═══════════════════════════════════════════════════════════════════

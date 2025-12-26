@@ -15,6 +15,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/features/_discovery/recom/domain/anime_meta_data.dart';
 import 'package:parrokit/features/_discovery/recom/presentation/widgets/poster.dart';
 import 'package:parrokit/features/_discovery/recom/presentation/widgets/anime_detail_dialog.dart';
@@ -110,10 +112,10 @@ class _RecomResultScreenState extends State<RecomResultScreen> {
 
     return Material(
       elevation: 0,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       color: theme.colorScheme.surface,
       child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
+        contentPadding: const EdgeInsets.all(AppSpacing.md),
         leading: Poster(url: anime.imageUrl),
         title: Text(
           anime.nameKo,

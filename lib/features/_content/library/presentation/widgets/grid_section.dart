@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'folder_card.dart';
 
 class GridSection extends StatelessWidget {
@@ -28,7 +29,7 @@ class GridSection extends StatelessWidget {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,

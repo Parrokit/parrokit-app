@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 class LeadingIcon extends StatelessWidget {
   const LeadingIcon({super.key, required this.icon, this.danger = false});
@@ -9,8 +10,9 @@ class LeadingIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final bg =
-        danger ? Colors.red.withValues(alpha: 0.08) : cs.onSurface.withValues(alpha: 0.06);
+    final bg = danger
+        ? Colors.red.withValues(alpha: 0.08)
+        : cs.onSurface.withValues(alpha: 0.06);
     final fg = danger ? Colors.red : cs.onSurface.withValues(alpha: 0.75);
 
     return Container(
@@ -18,7 +20,7 @@ class LeadingIcon extends StatelessWidget {
       height: 36,
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: cs.outlineVariant, width: 0.8),
       ),
       child: Icon(icon, size: 18, color: fg),

@@ -11,6 +11,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// 히어로 카드 위젯.
 ///
@@ -42,10 +44,10 @@ class HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: subtle),
       ),
       child: Row(
@@ -56,7 +58,7 @@ class HeroCard extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child:
                 Icon(Icons.play_circle_fill_rounded, color: accent, size: 28),

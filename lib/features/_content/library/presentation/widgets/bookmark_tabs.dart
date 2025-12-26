@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'bookmark_tab.dart';
 import '../../domain/library_mode.dart';
 
@@ -23,7 +25,7 @@ class BookmarkTabs extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: [
             BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
@@ -32,7 +34,7 @@ class BookmarkTabs extends StatelessWidget {
           ],
           border: Border.all(color: cs.outlineVariant, width: 0.8),
         ),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Stack(
           children: [
             AnimatedAlign(

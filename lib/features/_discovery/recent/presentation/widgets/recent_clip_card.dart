@@ -12,6 +12,9 @@
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// 최근 본 클립 카드.
 class RecentClipCard extends StatelessWidget {
@@ -39,17 +42,17 @@ class RecentClipCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Ink(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: cs.outlineVariant.withValues(alpha: isDark ? .5 : .7),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [
               // 썸네일
@@ -134,13 +137,13 @@ class _Thumbnail extends StatelessWidget {
             ? Image.memory(thumb!, fit: BoxFit.cover)
             : Container(
                 color: isDark
-                    ? const Color(0xFF1B1F24)
+                    ? AppColors.surfaceContainerHighDark
                     : cs.surfaceContainerHighest,
                 child: Center(
                   child: Icon(
                     Icons.video_library_outlined,
                     size: 28,
-                    color: isDark ? const Color(0xFF8A96A8) : cs.outline,
+                    color: isDark ? AppColors.textTertiaryDark : cs.outline,
                   ),
                 ),
               ),

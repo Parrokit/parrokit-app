@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 class CardContainer extends StatelessWidget {
   const CardContainer({super.key, required this.child, this.padding});
@@ -16,7 +17,7 @@ class CardContainer extends StatelessWidget {
             .colorScheme
             .surfaceContainerHighest
             .withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: t.colorScheme.outlineVariant, width: 0.8),
         boxShadow: [
           BoxShadow(

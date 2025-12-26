@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 
 /// [역할]
 /// 라이브러리 폴더 뷰의 폴더 카드 아이템.
@@ -22,7 +23,7 @@ class FolderCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: cs.outlineVariant, width: 0.8),
         ),
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

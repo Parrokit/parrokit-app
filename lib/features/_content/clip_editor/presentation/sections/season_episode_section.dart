@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:flutter/services.dart';
 
 import '../../domain/editor_state.dart';
@@ -37,7 +38,7 @@ class SeasonEpisodeSection extends StatelessWidget {
         ],
         if (vm.contentType == ContentType.movie)
           Padding(
-            padding: const EdgeInsets.only(top: 4.0),
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
             child: Text(
               '영화 타입은 시즌/회차 정보가 필요하지 않습니다.',
               style: Theme.of(context)

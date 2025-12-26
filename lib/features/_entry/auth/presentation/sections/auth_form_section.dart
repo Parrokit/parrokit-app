@@ -18,6 +18,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import '../../domain/auth_mode.dart';
 import '../widgets/auth_tab.dart';
 
@@ -162,10 +164,10 @@ class AuthFormSection extends StatelessWidget {
   /// 이메일/비밀번호 입력 필드 컨테이너
   Widget _buildFormFields(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(

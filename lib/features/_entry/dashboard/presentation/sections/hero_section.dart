@@ -12,6 +12,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 import '../widgets/hero_card.dart';
 
 /// 대시보드 히어로 카드 섹션.
@@ -49,13 +50,14 @@ class HeroSection extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final cs = theme.colorScheme;
 
-    final cardBg = isDark ? const Color(0xFF15181C) : Colors.white;
+    final cardBg = isDark ? AppColors.surfaceContainerDark : AppColors.surface;
     final subtle = isDark
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.black.withValues(alpha: 0.06);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF111418);
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
     final textSecondary =
-        isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF556070);
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
     return HeroCard(
       cardBg: cardBg,

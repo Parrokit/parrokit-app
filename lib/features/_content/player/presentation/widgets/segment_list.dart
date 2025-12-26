@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:parrokit/data/local/app_database.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 class SegmentList extends StatelessWidget {
-  const SegmentList({super.key, 
+  const SegmentList({
+    super.key,
     required this.segments,
     required this.currentIndex,
     required this.onTapItem,
@@ -40,13 +43,14 @@ class SegmentList extends StatelessWidget {
             color: active
                 ? cs.primary.withValues(alpha: 0.12)
                 : cs.surfaceContainerHighest.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Text('#${i + 1}  ${fmtMs(seg.startMs)} ~ ${fmtMs(seg.endMs)}',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: active ? cs.primary : cs.onSurface.withValues(alpha: 0.7),
+                color:
+                    active ? cs.primary : cs.onSurface.withValues(alpha: 0.7),
               )),
         );
 
@@ -55,7 +59,7 @@ class SegmentList extends StatelessWidget {
           onTap: () => onTapItem(i),
           title: Row(children: [chip]),
           subtitle: Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -63,7 +67,8 @@ class SegmentList extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 2),
                 Text(seg.pron,
-                    style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7))),
+                    style:
+                        TextStyle(color: cs.onSurface.withValues(alpha: 0.7))),
                 const SizedBox(height: 2),
                 Text(seg.trans),
               ],
