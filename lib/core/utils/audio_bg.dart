@@ -36,7 +36,6 @@ class BgAudio {
   }
 }
 
-
 class _BgAudioHandler extends BaseAudioHandler with SeekHandler {
   // 싱글톤 인스턴스
   static final _BgAudioHandler instance = _BgAudioHandler._internal();
@@ -136,6 +135,7 @@ class _BgAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> setLoop(bool on) =>
       _player.setLoopMode(on ? LoopMode.one : LoopMode.off);
 
+  @override
   Future<void> setSpeed(double s) => _player.setSpeed(s);
 
   @override

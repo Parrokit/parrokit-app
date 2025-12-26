@@ -25,7 +25,7 @@ class FileStagingService {
   /// 업로드 시 임시 동영상 저장 경로
   Future<Directory> _ensureStagingDir() async {
     final base = await getTemporaryDirectory();
-    final dir = Directory('${base.path}/${_stagingDirName}');
+    final dir = Directory('${base.path}/$_stagingDirName');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

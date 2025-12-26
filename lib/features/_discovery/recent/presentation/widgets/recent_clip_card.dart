@@ -45,7 +45,7 @@ class RecentClipCard extends StatelessWidget {
           color: cs.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: cs.outlineVariant.withOpacity(isDark ? .5 : .7),
+            color: cs.outlineVariant.withValues(alpha: isDark ? .5 : .7),
           ),
         ),
         child: Padding(
@@ -75,7 +75,7 @@ class RecentClipCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: tt.bodySmall?.copyWith(
-                        color: cs.onSurface.withOpacity(0.6),
+                        color: cs.onSurface.withValues(alpha: 0.6),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -133,7 +133,9 @@ class _Thumbnail extends StatelessWidget {
         child: thumb != null
             ? Image.memory(thumb!, fit: BoxFit.cover)
             : Container(
-                color: isDark ? const Color(0xFF1B1F24) : cs.surfaceVariant,
+                color: isDark
+                    ? const Color(0xFF1B1F24)
+                    : cs.surfaceContainerHighest,
                 child: Center(
                   child: Icon(
                     Icons.video_library_outlined,

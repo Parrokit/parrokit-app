@@ -10,8 +10,8 @@ ChipThemeData paChipTheme(ColorScheme cs, {required bool isDark}) {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
 
     // 선택 시 은은한 primary 채움
-    selectedColor: cs.primary.withOpacity(isDark ? 0.20 : 0.12),
-    secondarySelectedColor: cs.primary.withOpacity(isDark ? 0.20 : 0.12),
+    selectedColor: cs.primary.withValues(alpha: isDark ? 0.20 : 0.12),
+    secondarySelectedColor: cs.primary.withValues(alpha: isDark ? 0.20 : 0.12),
     checkmarkColor: cs.onPrimary,
   );
 }

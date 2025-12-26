@@ -1,7 +1,8 @@
 // lib/theme/components/app_input_theme.dart
 import 'package:flutter/material.dart';
 
-InputDecorationTheme paInputDecorationTheme(ColorScheme cs, {required bool isDark}) {
+InputDecorationTheme paInputDecorationTheme(ColorScheme cs,
+    {required bool isDark}) {
   OutlineInputBorder baseBorder(Color color, {double width = 1}) {
     return OutlineInputBorder(
       borderSide: BorderSide(color: color, width: width),
@@ -16,7 +17,7 @@ InputDecorationTheme paInputDecorationTheme(ColorScheme cs, {required bool isDar
 
     // 힌트 텍스트 색상 → onSurface의 투명도 조절
     hintStyle: TextStyle(
-      color: cs.onSurface.withOpacity(isDark ? 0.56 : 0.45),
+      color: cs.onSurface.withValues(alpha: isDark ? 0.56 : 0.45),
       fontWeight: FontWeight.w600,
     ),
 
@@ -33,7 +34,7 @@ InputDecorationTheme paInputDecorationTheme(ColorScheme cs, {required bool isDar
 
     // 라벨 스타일 (선택사항)
     labelStyle: TextStyle(
-      color: cs.onSurface.withOpacity(0.74),
+      color: cs.onSurface.withValues(alpha: 0.74),
       fontWeight: FontWeight.w600,
     ),
   );

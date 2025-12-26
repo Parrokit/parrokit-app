@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// A simple rounded-corner network image used for posters.
 class Poster extends StatelessWidget {
-  const Poster({required this.url});
+  const Poster({super.key, required this.url});
 
   final String url;
 
@@ -18,7 +18,7 @@ class Poster extends StatelessWidget {
         errorBuilder: (_, __, ___) => Container(
           width: 56,
           height: 56,
-          color: Theme.of(context).colorScheme.surfaceVariant,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: const Icon(Icons.image_not_supported),
         ),
       ),

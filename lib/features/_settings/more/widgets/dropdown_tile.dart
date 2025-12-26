@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'leading_icon.dart';
 
 class DropdownTile<T> extends StatelessWidget {
-  const DropdownTile({
+  const DropdownTile({super.key, 
     required this.icon,
     required this.title,
     required this.value,

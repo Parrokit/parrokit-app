@@ -2,7 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:parrokit/core/utils/app_logger.dart';
+// app_logger not used here
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../data/local/app_database.dart';
@@ -267,7 +267,7 @@ class MediaProvider extends ChangeNotifier {
       final dir = await getApplicationDocumentsDirectory();
       final absPath =
           c.filePath.startsWith('/') ? c.filePath : '${dir.path}/${c.filePath}';
-      final clipAbs = c.copyWith(filePath: absPath);
+      // clipAbs removed - absPath used directly below
 
       Uint8List? thumbBytes;
       try {
@@ -366,18 +366,18 @@ class MediaProvider extends ChangeNotifier {
 
     // 없으면 생성
     return pdb.into(pdb.releases).insert(
-      isMovie
-          ? ReleasesCompanion.insert(
-        titleId: titleId,
-        type: 'movie',
-        number: const Value(0),
-      )
-          : ReleasesCompanion.insert(
-        titleId: titleId,
-        type: 'season',
-        number: Value(seasonNumber!),
-      ),
-    );
+          isMovie
+              ? ReleasesCompanion.insert(
+                  titleId: titleId,
+                  type: 'movie',
+                  number: const Value(0),
+                )
+              : ReleasesCompanion.insert(
+                  titleId: titleId,
+                  type: 'season',
+                  number: Value(seasonNumber!),
+                ),
+        );
   }
 
   Future<int> _ensureEpisode({
@@ -680,7 +680,9 @@ class MediaProvider extends ChangeNotifier {
       return q.watch().map((rows) {
         final all = rows.map((r) => r.readTable(pdb.tags)).toList();
         final map = <String, Tag>{};
-        for (final t in all) map.putIfAbsent(t.name, () => t);
+        for (final t in all) {
+          map.putIfAbsent(t.name, () => t);
+        }
         final list = map.values.toList()
           ..sort((a, b) => a.name.compareTo(b.name));
         return list;
@@ -690,7 +692,9 @@ class MediaProvider extends ChangeNotifier {
           .watch()
           .map((all) {
         final map = <String, Tag>{};
-        for (final t in all) map.putIfAbsent(t.name, () => t);
+        for (final t in all) {
+          map.putIfAbsent(t.name, () => t);
+        }
         final list = map.values.toList()
           ..sort((a, b) => a.name.compareTo(b.name));
         return list;

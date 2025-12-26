@@ -7,32 +7,33 @@ class SegmentTimeline extends StatelessWidget {
     super.key,
     required this.controller,
     required this.start, // ⬅️ 호출부 호환용 (미사용)
-    required this.end,   // ⬅️ 호출부 호환용 (미사용)
+    required this.end, // ⬅️ 호출부 호환용 (미사용)
     required this.onSeek,
   });
 
   final VideoPlayerController controller;
   final Duration start; // 미사용
-  final Duration end;   // 미사용
+  final Duration end; // 미사용
   final ValueChanged<Duration> onSeek;
 
   @override
   Widget build(BuildContext context) {
-    final pos   = controller.value.position;
+    final pos = controller.value.position;
     final total = controller.value.duration;
 
     double frac(double v, double max) =>
         (max <= 0 ? 0.0 : (v / max).clamp(0.0, 1.0));
 
-    final posFrac = frac(pos.inMilliseconds.toDouble(),
-        total.inMilliseconds.toDouble());
+    final posFrac =
+        frac(pos.inMilliseconds.toDouble(), total.inMilliseconds.toDouble());
 
     final cs = Theme.of(context).colorScheme;
     final isLight = Theme.of(context).brightness == Brightness.light;
 
-
-    final track = isLight ? cs.outlineVariant.withOpacity(0.5) : Colors.white10; // 회색 트랙
-    final prog  = isLight ? cs.inversePrimary : Colors.white;                            // 채워지는 진행색
+    final track = isLight
+        ? cs.outlineVariant.withValues(alpha: 0.5)
+        : Colors.white10; // 회색 트랙
+    final prog = isLight ? cs.inversePrimary : Colors.white; // 채워지는 진행색
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -42,9 +43,6 @@ class SegmentTimeline extends StatelessWidget {
             height: 22,
             child: LayoutBuilder(
               builder: (context, c) {
-                final w = c.maxWidth;
-                final progW = w * posFrac;
-
                 return Stack(
                   children: [
                     // 전체 회색 트랙
@@ -62,12 +60,14 @@ class SegmentTimeline extends StatelessWidget {
                         alignment: Alignment.centerLeft,
                         child: TweenAnimationBuilder<double>(
                           tween: Tween<double>(end: posFrac),
-                          duration: const Duration(milliseconds: 100), // 부드러움 정도
+                          duration:
+                              const Duration(milliseconds: 100), // 부드러움 정도
                           builder: (context, animatedFrac, _) {
                             return FractionallySizedBox(
                               alignment: Alignment.centerLeft,
                               widthFactor: animatedFrac.clamp(0.0, 1.0),
-                              child: RepaintBoundary( // 불필요한 리페인트 줄이기(선택)
+                              child: RepaintBoundary(
+                                // 불필요한 리페인트 줄이기(선택)
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: prog,
@@ -87,8 +87,7 @@ class SegmentTimeline extends StatelessWidget {
                         onSeek: (dx, width) {
                           final f = (dx / width).clamp(0.0, 1.0);
                           onSeek(Duration(
-                            milliseconds:
-                            (total.inMilliseconds * f).round(),
+                            milliseconds: (total.inMilliseconds * f).round(),
                           ));
                         },
                       ),
@@ -115,12 +114,12 @@ class SegmentTimeline extends StatelessWidget {
   }
 
   Widget _timeLabel(Duration d, bool isLight) => Text(
-    _fmt(d),
-    style: TextStyle(
-      color: isLight ? Colors.black54 : Colors.white70,
-      fontSize: 12,
-    ),
-  );
+        _fmt(d),
+        style: TextStyle(
+          color: isLight ? Colors.black54 : Colors.white70,
+          fontSize: 12,
+        ),
+      );
   String _fmt(Duration d) {
     final totalMs = d.inMilliseconds;
     final mm = ((totalMs ~/ 1000) ~/ 60).toString().padLeft(2, '0');

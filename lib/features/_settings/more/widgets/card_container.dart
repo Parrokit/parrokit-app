@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 class CardContainer extends StatelessWidget {
   const CardContainer(
-      {required this.child, this.padding = const EdgeInsets.all(12)});
+      {super.key,
+      required this.child,
+      this.padding = const EdgeInsets.all(12)});
 
   final Widget child;
   final EdgeInsets padding;
@@ -19,7 +21,7 @@ class CardContainer extends StatelessWidget {
         border: Border.all(color: t.colorScheme.outlineVariant, width: 0.8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

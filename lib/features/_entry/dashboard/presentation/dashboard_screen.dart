@@ -181,7 +181,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// 히어로 클립 탭 시 네비게이션
   void _navigateToHeroClip((int, dynamic, String?, String?)? hero) {
     if (hero != null) {
-      final (clipId, _thumbnail, _clipTitle, _titleName) = hero;
+      final (clipId, thumbnail, clipTitle, titleName) = hero;
       context.pushNamed(
         AppRoutes.clipsPlay,
         queryParameters: {'clipId': clipId.toString()},

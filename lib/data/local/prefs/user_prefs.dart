@@ -3,7 +3,7 @@
 // lib/data/local/prefs/user_prefs.dart
 
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:parrokit/data/models/clip_item.dart';
+// clip_item not used here
 import 'package:parrokit/data/models/user.dart';
 
 /// 앱 로컬에 "현재 유저"의 최소 정보를 저장/로드하는 헬퍼.

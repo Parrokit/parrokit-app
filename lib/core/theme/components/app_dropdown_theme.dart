@@ -1,7 +1,8 @@
 // lib/theme/components/app_dropdown_theme.dart
 import 'package:flutter/material.dart';
 
-DropdownMenuThemeData paDropdownMenuTheme(ColorScheme cs, {required bool isDark}) {
+DropdownMenuThemeData paDropdownMenuTheme(ColorScheme cs,
+    {required bool isDark}) {
   return DropdownMenuThemeData(
     menuStyle: MenuStyle(
       backgroundColor: WidgetStatePropertyAll(cs.surface),
@@ -40,7 +41,7 @@ DropdownMenuThemeData paDropdownMenuTheme(ColorScheme cs, {required bool isDark}
         borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
       hintStyle: TextStyle(
-        color: cs.onSurface.withOpacity(isDark ? 0.56 : 0.45),
+        color: cs.onSurface.withValues(alpha: isDark ? 0.56 : 0.45),
         fontWeight: FontWeight.w600,
       ),
     ),

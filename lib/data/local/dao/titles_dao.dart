@@ -9,12 +9,12 @@ part 'titles_dao.g.dart';
 
 @DriftAccessor(tables: [Titles, Releases, Episodes, Clips])
 class TitlesDao extends DatabaseAccessor<AppDatabase> with _$TitlesDaoMixin {
-  TitlesDao(AppDatabase db) : super(db);
+  TitlesDao(super.db);
 
   /// name만 쭉 가져오기 (필터/정렬 포함)
   Future<List<String>> fetchAllTitleNames() async {
     final rows = await (select(titles)
-      ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+          ..orderBy([(t) => OrderingTerm.asc(t.name)]))
         .get();
 
     return rows.map((e) => e.name).toList();
@@ -51,8 +51,7 @@ class TitlesDao extends DatabaseAccessor<AppDatabase> with _$TitlesDaoMixin {
       ),
     ])
       ..where(
-        titles.name.equals(titleName) &
-        releases.type.equals('season'),
+        titles.name.equals(titleName) & releases.type.equals('season'),
       );
 
     final rows = await q.get();
@@ -60,7 +59,7 @@ class TitlesDao extends DatabaseAccessor<AppDatabase> with _$TitlesDaoMixin {
     final seasonNumbers = rows
         .map((row) => row.readTable(releases).number)
         .whereType<int>() // null 제거
-        .toSet()          // 중복 제거
+        .toSet() // 중복 제거
         .toList()
       ..sort();
 
@@ -84,8 +83,8 @@ class TitlesDao extends DatabaseAccessor<AppDatabase> with _$TitlesDaoMixin {
     ])
       ..where(
         titles.name.equals(titleName) &
-        releases.type.equals('season') &
-        releases.number.equals(seasonNumber),
+            releases.type.equals('season') &
+            releases.number.equals(seasonNumber),
       );
 
     final rows = await q.get();
@@ -118,9 +117,9 @@ class TitlesDao extends DatabaseAccessor<AppDatabase> with _$TitlesDaoMixin {
     ])
       ..where(
         titles.name.equals(titleName) &
-        releases.type.equals('season') &
-        releases.number.equals(seasonNumber) &
-        episodes.number.equals(episodeNumber),
+            releases.type.equals('season') &
+            releases.number.equals(seasonNumber) &
+            episodes.number.equals(episodeNumber),
       )
       ..limit(1);
 
@@ -149,9 +148,9 @@ class TitlesDao extends DatabaseAccessor<AppDatabase> with _$TitlesDaoMixin {
     ])
       ..where(
         titles.name.equals(titleName) &
-        releases.type.equals('season') &
-        releases.number.equals(seasonNumber) &
-        episodes.number.equals(episodeNumber),
+            releases.type.equals('season') &
+            releases.number.equals(seasonNumber) &
+            episodes.number.equals(episodeNumber),
       )
       ..limit(1);
 
@@ -162,7 +161,7 @@ class TitlesDao extends DatabaseAccessor<AppDatabase> with _$TitlesDaoMixin {
 
     // 그 episodeId에 속한 클립 제목들 가져오기
     final clipRows = await (select(clips)
-      ..where((c) => c.episodeId.equals(episode.id)))
+          ..where((c) => c.episodeId.equals(episode.id)))
         .get();
 
     return clipRows.map((c) => c.title).toList();

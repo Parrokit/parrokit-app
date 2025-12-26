@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+// dart:io Platform not used currently
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,10 +11,10 @@ class IapProvider extends ChangeNotifier {
 
   final InAppPurchase _iap = InAppPurchase.instance;
 
-  bool available = false;               // 스토어 가용 여부
-  bool isPremium = false;               // 프리미엄 소유 상태
-  bool loading = true;                  // 초기 로딩/쿼리 중
-  bool purchasing = false;              // 결제 진행중 (버튼 디스에이블 등)
+  bool available = false; // 스토어 가용 여부
+  bool isPremium = false; // 프리미엄 소유 상태
+  bool loading = true; // 초기 로딩/쿼리 중
+  bool purchasing = false; // 결제 진행중 (버튼 디스에이블 등)
   List<ProductDetails> products = const [];
 
   StreamSubscription<List<PurchaseDetails>>? _sub;
@@ -121,7 +121,7 @@ class IapProvider extends ChangeNotifier {
 
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-        // TODO: 프로덕션에서는 서버 영수증 검증 권장(특히 Android)
+          // TODO: 프로덕션에서는 서버 영수증 검증 권장(특히 Android)
           if (pd.productID == kRemoveAdsId) {
             await _grantPremium();
           }
@@ -143,14 +143,6 @@ class IapProvider extends ChangeNotifier {
     isPremium = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefsKeyPremium, true);
-    notifyListeners();
-  }
-
-  /// (테스트용) 로컬 프리미엄 리셋
-  Future<void> _revokePremiumForTest() async {
-    isPremium = false;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_prefsKeyPremium);
     notifyListeners();
   }
 

@@ -1,4 +1,4 @@
-import 'dart:ffi';
+// Remove unused import
 
 import 'package:drift/drift.dart';
 import 'titles.dart';
@@ -11,6 +11,6 @@ class Releases extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    { titleId, type, number }, // 같은 (titleId, type, number) 조합은 유일
-  ];
+        {titleId, type, number}, // 같은 (titleId, type, number) 조합은 유일
+      ];
 }

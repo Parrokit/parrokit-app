@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/data/local/app_database.dart';
 
 class SegmentList extends StatelessWidget {
-  const SegmentList({
+  const SegmentList({super.key, 
     required this.segments,
     required this.currentIndex,
     required this.onTapItem,
@@ -29,7 +29,7 @@ class SegmentList extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       itemCount: segments.length,
       separatorBuilder: (_, __) =>
-          Divider(height: 1, color: cs.outlineVariant.withOpacity(0.6)),
+          Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.6)),
       itemBuilder: (ctx, i) {
         final seg = segments[i];
         final active = i == currentIndex;
@@ -38,15 +38,15 @@ class SegmentList extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: active
-                ? cs.primary.withOpacity(0.12)
-                : cs.surfaceVariant.withOpacity(0.4),
+                ? cs.primary.withValues(alpha: 0.12)
+                : cs.surfaceContainerHighest.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text('#${i + 1}  ${fmtMs(seg.startMs)} ~ ${fmtMs(seg.endMs)}',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: active ? cs.primary : cs.onSurface.withOpacity(0.7),
+                color: active ? cs.primary : cs.onSurface.withValues(alpha: 0.7),
               )),
         );
 
@@ -63,7 +63,7 @@ class SegmentList extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 2),
                 Text(seg.pron,
-                    style: TextStyle(color: cs.onSurface.withOpacity(0.7))),
+                    style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7))),
                 const SizedBox(height: 2),
                 Text(seg.trans),
               ],

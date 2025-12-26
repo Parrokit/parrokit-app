@@ -19,7 +19,7 @@ class RecentListSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final base = cs.surfaceVariant.withOpacity(.65);
+    final base = cs.surfaceContainerHighest.withValues(alpha: .65);
     final hilite = cs.surface;
 
     return ListView.separated(
@@ -28,7 +28,7 @@ class RecentListSkeleton extends StatelessWidget {
       separatorBuilder: (_, __) => Divider(
         height: 8,
         thickness: 0.5,
-        color: cs.outlineVariant.withOpacity(.6),
+        color: cs.outlineVariant.withValues(alpha: .6),
       ),
       itemCount: 8,
     );

@@ -3,7 +3,7 @@ import 'leading_icon.dart';
 
 // lib/widgets/nav_tile.dart
 class NavTile extends StatelessWidget {
-  const NavTile({
+  const NavTile({super.key, 
     required this.icon,
     required this.title,
     this.subtitle,
@@ -51,7 +51,7 @@ class NavTile extends StatelessWidget {
                       child: Text(
                         subtitle!,
                         style: tt.bodySmall?.copyWith(
-                          color: cs.onSurface.withOpacity(0.6),
+                          color: cs.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ),
@@ -62,7 +62,7 @@ class NavTile extends StatelessWidget {
             if (trailing != null) trailing!
             else if (showArrow)
               Icon(Icons.chevron_right_rounded,
-                  color: cs.onSurface.withOpacity(0.35)),
+                  color: cs.onSurface.withValues(alpha: 0.35)),
           ],
         ),
       ),

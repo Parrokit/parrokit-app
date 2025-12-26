@@ -40,7 +40,7 @@ class EmptyRecentView extends StatelessWidget {
             Text(
               '플레이어에서 시청하면 자동으로 여기에 쌓입니다.',
               style: tt.bodyMedium?.copyWith(
-                color: cs.onSurface.withOpacity(0.7),
+                color: cs.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],

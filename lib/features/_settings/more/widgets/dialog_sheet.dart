@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DialogSheet extends StatelessWidget {
-  const DialogSheet({
+  const DialogSheet({super.key, 
     required this.title,
     required this.body,
     required this.primaryText,
@@ -33,7 +33,7 @@ class DialogSheet extends StatelessWidget {
               t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
       content: Text(body,
           style: t.textTheme.bodyMedium
-              ?.copyWith(color: cs.onSurface.withOpacity(0.8))),
+              ?.copyWith(color: cs.onSurface.withValues(alpha: 0.8))),
       actions: [
         if (secondaryText != null)
           TextButton(
@@ -44,7 +44,7 @@ class DialogSheet extends StatelessWidget {
           style: ButtonStyle(
             backgroundColor: WidgetStatePropertyAll(
               primaryIsDanger
-                  ? Colors.red.withOpacity(0.12)
+                  ? Colors.red.withValues(alpha: 0.12)
                   : cs.primaryContainer,
             ),
             foregroundColor: WidgetStatePropertyAll(

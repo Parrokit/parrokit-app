@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class LeadingIcon extends StatelessWidget {
-  const LeadingIcon({required this.icon, this.danger = false});
+  const LeadingIcon({super.key, required this.icon, this.danger = false});
 
   final IconData icon;
   final bool danger;
@@ -10,8 +10,8 @@ class LeadingIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final bg =
-        danger ? Colors.red.withOpacity(0.08) : cs.onSurface.withOpacity(0.06);
-    final fg = danger ? Colors.red : cs.onSurface.withOpacity(0.75);
+        danger ? Colors.red.withValues(alpha: 0.08) : cs.onSurface.withValues(alpha: 0.06);
+    final fg = danger ? Colors.red : cs.onSurface.withValues(alpha: 0.75);
 
     return Container(
       width: 36,

@@ -131,7 +131,7 @@ class _RecentScreenState extends State<RecentScreen> {
               separatorBuilder: (_, __) => Divider(
                 height: 8,
                 thickness: 0.5,
-                color: cs.outlineVariant.withOpacity(.6),
+                color: cs.outlineVariant.withValues(alpha: .6),
               ),
               itemBuilder: (context, index) {
                 final (clipId, thumb, clipTitle, titleName) = items[index];

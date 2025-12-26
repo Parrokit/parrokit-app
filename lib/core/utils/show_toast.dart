@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+// foundation.dart provided by material.dart
 import 'package:parrokit/core/app.dart';
 
 OverlayEntry? _toastEntry;
@@ -153,7 +153,7 @@ class _ToastCardState extends State<_ToastCard> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.85),
+                      color: Colors.black.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: const [
                         BoxShadow(

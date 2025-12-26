@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 class TogglePill extends StatelessWidget {
-  const TogglePill({
+  const TogglePill({super.key, 
     required this.icon,
     required this.label,
     required this.active,
@@ -20,13 +20,13 @@ class TogglePill extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     final Color bg = active
-        ? (isLight ? cs.primary.withOpacity(0.14) : Colors.white24)
-        : (isLight ? cs.surface.withOpacity(0.9) : Colors.white12);
+        ? (isLight ? cs.primary.withValues(alpha: 0.14) : Colors.white24)
+        : (isLight ? cs.surface.withValues(alpha: 0.9) : Colors.white12);
     final Color fg = active
         ? (isLight ? cs.primary : Colors.white)
         : (isLight ? cs.onSurface : Colors.white70);
     final Color? border = active
-        ? (isLight ? cs.primary.withOpacity(0.6) : Colors.white30)
+        ? (isLight ? cs.primary.withValues(alpha: 0.6) : Colors.white30)
         : null; // 비활성일 때는 테두리 없음
 
     return InkWell(

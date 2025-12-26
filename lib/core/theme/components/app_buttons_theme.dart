@@ -15,28 +15,28 @@ ElevatedButtonThemeData paElevatedButtonTheme(ColorScheme cs, {required bool isD
     style: _baseButton(cs, isDark: isDark).copyWith(
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          return cs.onSurface.withOpacity(0.12); // disabled container
+          return cs.onSurface.withValues(alpha: 0.12); // disabled container
         }
         if (states.contains(WidgetState.pressed)) {
-          return cs.primary.withOpacity(0.85);
+          return cs.primary.withValues(alpha: 0.85);
         }
         if (states.contains(WidgetState.hovered)) {
-          return cs.primary.withOpacity(0.92);
+          return cs.primary.withValues(alpha: 0.92);
         }
         return cs.primary;
       }),
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          return cs.onSurface.withOpacity(0.38); // disabled content
+          return cs.onSurface.withValues(alpha: 0.38); // disabled content
         }
         return cs.onPrimary;
       }),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.pressed)) {
-          return cs.onPrimary.withOpacity(0.16);
+          return cs.onPrimary.withValues(alpha: 0.16);
         }
         if (states.contains(WidgetState.hovered)) {
-          return cs.onPrimary.withOpacity(0.10);
+          return cs.onPrimary.withValues(alpha: 0.10);
         }
         return null;
       }),
@@ -49,25 +49,25 @@ OutlinedButtonThemeData paOutlinedButtonTheme(ColorScheme cs, {required bool isD
     style: _baseButton(cs, isDark: isDark).copyWith(
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          return cs.onSurface.withOpacity(0.38);
+          return cs.onSurface.withValues(alpha: 0.38);
         }
         return cs.primary;
       }),
       side: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          return BorderSide(color: cs.outlineVariant.withOpacity(0.3));
+          return BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3));
         }
         if (states.contains(WidgetState.pressed) || states.contains(WidgetState.hovered)) {
-          return BorderSide(color: cs.primary.withOpacity(0.75));
+          return BorderSide(color: cs.primary.withValues(alpha: 0.75));
         }
-        return BorderSide(color: cs.outlineVariant.withOpacity(0.6));
+        return BorderSide(color: cs.outlineVariant.withValues(alpha: 0.6));
       }),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.pressed)) {
-          return cs.primary.withOpacity(0.08);
+          return cs.primary.withValues(alpha: 0.08);
         }
         if (states.contains(WidgetState.hovered)) {
-          return cs.primary.withOpacity(0.04);
+          return cs.primary.withValues(alpha: 0.04);
         }
         return null;
       }),
@@ -86,20 +86,20 @@ TextButtonThemeData paTextButtonTheme(ColorScheme cs, {required bool isDark}) {
       ),
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          return cs.surface.withOpacity(0.38);
+          return cs.surface.withValues(alpha: 0.38);
         }
         if (states.contains(WidgetState.pressed)) {
-          return cs.primary.withOpacity(0.90);
+          return cs.primary.withValues(alpha: 0.90);
         }
         return cs.primary;
       }),
       backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.pressed)) {
-          return cs.primary.withOpacity(0.10);
+          return cs.primary.withValues(alpha: 0.10);
         }
         if (states.contains(WidgetState.hovered)) {
-          return cs.primary.withOpacity(0.05);
+          return cs.primary.withValues(alpha: 0.05);
         }
         return null;
       }),
@@ -111,11 +111,11 @@ ToggleButtonsThemeData paToggleButtonsTheme(ColorScheme cs, {required bool isDar
   return ToggleButtonsThemeData(
     borderRadius: BorderRadius.circular(999),
     borderWidth: 1,
-    borderColor: cs.outlineVariant.withOpacity(0.6),
+    borderColor: cs.outlineVariant.withValues(alpha: 0.6),
     selectedBorderColor: cs.primary,
-    color: cs.onSurface.withOpacity(0.74), // 기본 텍스트/아이콘
+    color: cs.onSurface.withValues(alpha: 0.74), // 기본 텍스트/아이콘
     selectedColor: cs.primary,            // 선택 시 파란색 텍스트/아이콘
-    fillColor: cs.primary.withOpacity(0.08), // 아주 옅은 파란 배경
+    fillColor: cs.primary.withValues(alpha: 0.08), // 아주 옅은 파란 배경
   );
 }
 
@@ -125,28 +125,28 @@ FilledButtonThemeData paFilledButtonTheme(ColorScheme cs, {required bool isDark}
 
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          return cs.primary.withOpacity(0.06); // 약한 disabled 배경
+          return cs.primary.withValues(alpha: 0.06); // 약한 disabled 배경
         }
         if (states.contains(WidgetState.pressed)) {
-          return cs.primary.withOpacity(0.14);
+          return cs.primary.withValues(alpha: 0.14);
         }
         if (states.contains(WidgetState.hovered)) {
-          return cs.primary.withOpacity(0.10);
+          return cs.primary.withValues(alpha: 0.10);
         }
         return cs.primary;
       }),
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) {
-          return cs.onSurface.withOpacity(0.38);
+          return cs.onSurface.withValues(alpha: 0.38);
         }
         return cs.onPrimary;
       }),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.pressed)) {
-          return cs.primary.withOpacity(0.10);
+          return cs.primary.withValues(alpha: 0.10);
         }
         if (states.contains(WidgetState.hovered)) {
-          return cs.primary.withOpacity(0.06);
+          return cs.primary.withValues(alpha: 0.06);
         }
         return null;
       }),

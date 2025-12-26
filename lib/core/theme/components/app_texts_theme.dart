@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 
 TextTheme paTextTheme(ColorScheme cs, {required bool isDark}) {
   final cPrimary = cs.onSurface;
-  final cSecondary = cs.onSurface.withOpacity(0.74);
-  final cTertiary = cs.onSurface.withOpacity(0.56);
+  final cSecondary = cs.onSurface.withValues(alpha: 0.74);
+  final cTertiary = cs.onSurface.withValues(alpha: 0.56);
 
   return TextTheme(
     headlineSmall:
@@ -26,7 +26,7 @@ TextSelectionThemeData paTextSelectionTheme(ColorScheme cs,
     {required bool isDark}) {
   return TextSelectionThemeData(
     cursorColor: cs.primary,
-    selectionColor: cs.primary.withOpacity(0.16),
+    selectionColor: cs.primary.withValues(alpha: 0.16),
     selectionHandleColor: cs.primary,
   );
 }

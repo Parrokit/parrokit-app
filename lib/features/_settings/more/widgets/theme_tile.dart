@@ -30,7 +30,7 @@ class ThemeTile extends StatelessWidget {
         onSelected: (_) => onChanged(m),
         showCheckmark: false,
         selectedColor: color,
-        backgroundColor: cs.surfaceVariant,
+        backgroundColor: cs.surfaceContainerHighest,
         side: BorderSide(color: selected ? color : cs.outlineVariant),
       );
     }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'leading_icon.dart';
 
 class SwitchTile extends StatelessWidget {
-  const SwitchTile({
+  const SwitchTile({super.key, 
     required this.icon,
     required this.title,
     required this.value,
@@ -36,7 +36,7 @@ class SwitchTile extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(subtitle!,
                       style: tt.bodySmall
-                          ?.copyWith(color: cs.onSurface.withOpacity(0.6))),
+                          ?.copyWith(color: cs.onSurface.withValues(alpha: 0.6))),
                 ),
             ],
           ),

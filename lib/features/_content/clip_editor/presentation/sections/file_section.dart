@@ -108,7 +108,7 @@ class _FileSectionState extends State<FileSection> {
       });
       await _vp!.play();
     } catch (e) {
-      showToast(context, '재생 초기화 실패: $e');
+      if (mounted) showToast(context, '재생 초기화 실패: $e');
     }
   }
 

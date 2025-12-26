@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'dart:convert';
-import 'dart:typed_data';
+// dart:typed_data provided by flutter/foundation.dart
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:parrokit/features/_content/clip_editor/data/ports/asr_port.dart';
@@ -56,8 +56,8 @@ class OpenAIWhisperAdapter implements ASRPort {
     try {
       final tmpDir = await getTemporaryDirectory();
       final base = DateTime.now().millisecondsSinceEpoch;
-      final m4aOut = '${tmpDir.path}/stt_${base}.m4a';
-      final wavOut = '${tmpDir.path}/stt_${base}.wav';
+      final m4aOut = '${tmpDir.path}/stt_$base.m4a';
+      final wavOut = '${tmpDir.path}/stt_$base.wav';
 
       // 1) Try AAC(M4A) 16kHz mono
       final m4aCmd =
@@ -107,12 +107,12 @@ class OpenAIWhisperAdapter implements ASRPort {
     final req = http.MultipartRequest('POST', Uri.parse(_endpoint));
 
     // Sanitize API key: trim, strip smart quotes and surrounding quotes
-    final _cleanKey =
+    final cleanKey =
         apiKey.trim().replaceAll('\u201C', '').replaceAll('\u201D', '');
-    if (_cleanKey.isEmpty) {
+    if (cleanKey.isEmpty) {
       throw ArgumentError('OPENAI_API_KEY is empty after sanitization.');
     }
-    req.headers['Authorization'] = 'Bearer $_cleanKey';
+    req.headers['Authorization'] = 'Bearer $cleanKey';
 
     final chosenModel = model ?? defaultModel;
     req.fields['model'] = chosenModel;

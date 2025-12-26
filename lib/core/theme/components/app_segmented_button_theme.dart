@@ -1,7 +1,8 @@
 // lib/theme/components/app_segmented_button_theme.dart
 import 'package:flutter/material.dart';
 
-SegmentedButtonThemeData paSegmentedButtonTheme(ColorScheme cs, {required bool isDark}) {
+SegmentedButtonThemeData paSegmentedButtonTheme(ColorScheme cs,
+    {required bool isDark}) {
   return SegmentedButtonThemeData(
     style: ButtonStyle(
       shape: WidgetStatePropertyAll(
@@ -14,8 +15,7 @@ SegmentedButtonThemeData paSegmentedButtonTheme(ColorScheme cs, {required bool i
       // 배경: 선택 시 은은한 채움, 비선택은 surface
       backgroundColor: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
-        final selOpacity = isDark ? 0.16 : 0.12;
-        return selected ? cs.primary: cs.surface;
+        return selected ? cs.primary : cs.surface;
       }),
 
       // 글자/아이콘: 선택 시 primary, 평소엔 onSurface
@@ -27,10 +27,10 @@ SegmentedButtonThemeData paSegmentedButtonTheme(ColorScheme cs, {required bool i
       // hover/pressed 효과: onSurface 기반 투명도
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.pressed)) {
-          return cs.onSurface.withOpacity(isDark ? 0.10 : 0.06);
+          return cs.onSurface.withValues(alpha: isDark ? 0.10 : 0.06);
         }
         if (states.contains(WidgetState.hovered)) {
-          return cs.onSurface.withOpacity(isDark ? 0.08 : 0.04);
+          return cs.onSurface.withValues(alpha: isDark ? 0.08 : 0.04);
         }
         return null;
       }),

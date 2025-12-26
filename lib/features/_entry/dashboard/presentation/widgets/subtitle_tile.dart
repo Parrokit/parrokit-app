@@ -107,14 +107,12 @@ class SubtitleTile extends StatelessWidget {
 /// 스켈레톤 타일 (private)
 class _SubtitleTileSkeleton extends SubtitleTile {
   _SubtitleTileSkeleton({
-    required Color cardBg,
-    required Color subtle,
+    required super.cardBg,
+    required super.subtle,
   }) : super(
           original: '',
           pron: null,
           trans: null,
-          cardBg: cardBg,
-          subtle: subtle,
           textPrimary: Colors.transparent,
           primaryColor: Colors.transparent,
           tertiaryColor: Colors.transparent,
