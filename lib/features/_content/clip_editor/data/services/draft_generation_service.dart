@@ -1,0 +1,130 @@
+// ============================================================================
+// lib/features/_content/clip_editor/data/services/draft_generation_service.dart
+// ============================================================================
+//
+// [역할]
+// STT + LLM 초안 생성 서비스.
+//
+// [레이어]
+// Data Layer > Services
+// ============================================================================
+
+import 'dart:convert';
+
+import '../../domain/clip_form_data.dart';
+import '../adapters/openai_adapter.dart';
+import '../prompts/prompt_loader.dart';
+import 'time_code_service.dart';
+import '../usecases/transcribe_usecase.dart';
+
+/// 초안 생성 결과.
+class DraftResult {
+  final List<SegmentInput> segments;
+  final int coinCost;
+
+  const DraftResult({
+    required this.segments,
+    required this.coinCost,
+  });
+}
+
+/// STT + LLM 초안 생성 서비스.
+class DraftGenerationService {
+  final TranscribeUseCase transcribe;
+  final OpenAIAdapter llm;
+  final TimecodeService _timecode = TimecodeService();
+
+  DraftGenerationService({
+    required this.transcribe,
+    required this.llm,
+  });
+
+  /// 영상 파일에서 STT를 수행하고 번역/발음 초안을 생성합니다.
+  Future<DraftResult> generate({
+    required String filePath,
+    required int durationMs,
+    String language = 'ja',
+  }) async {
+    // 1) STT 수행
+    final asr = await transcribe(
+      filePath: filePath,
+      language: language,
+      withSegments: true,
+    );
+
+    if (asr.segments.isEmpty) {
+      return const DraftResult(segments: [], coinCost: 0);
+    }
+
+    // 2) LLM으로 번역/발음 생성
+    final allDraftSegments = <SegmentInput>[];
+    const batchSize = 5;
+    final sys = await PromptLoader.loadSttDraftSystem();
+    final userPrefix = await PromptLoader.loadSttDraftUser();
+
+    for (int offset = 0; offset < asr.segments.length; offset += batchSize) {
+      final batch = asr.segments.sublist(
+        offset,
+        (offset + batchSize > asr.segments.length)
+            ? asr.segments.length
+            : offset + batchSize,
+      );
+
+      final asrArray = batch
+          .map((s) => {
+                'start_ms': s.startMs,
+                'end_ms': s.endMs,
+                'text': s.text,
+              })
+          .toList();
+
+      final userPrompt = '$userPrefix${jsonEncode(asrArray)}';
+
+      final jsonStr = await llm.complete(
+        systemPrompt: sys,
+        userPrompt: userPrompt,
+        model: 'gpt-4o-mini',
+        timeout: const Duration(seconds: 60),
+      );
+
+      final map = jsonDecode(jsonStr);
+      final segs = (map is Map && map['segments'] is List)
+          ? (map['segments'] as List)
+          : const [];
+
+      final count = segs.length < batch.length ? segs.length : batch.length;
+      for (int i = 0; i < count; i++) {
+        final e = segs[i];
+        final asrSeg = batch[i];
+        if (e is Map) {
+          allDraftSegments.add(SegmentInput(
+            start: _timecode.msToMMSSmmm(asrSeg.startMs),
+            end: _timecode.msToMMSSmmm(asrSeg.endMs),
+            original: (e['orig'] ?? '').toString(),
+            pron: (e['pron'] ?? '').toString(),
+            ko: (e['ko'] ?? '').toString(),
+          ));
+        } else {
+          allDraftSegments.add(SegmentInput(
+            start: _timecode.msToMMSSmmm(asrSeg.startMs),
+            end: _timecode.msToMMSSmmm(asrSeg.endMs),
+          ));
+        }
+      }
+    }
+
+    // 3) 코인 비용 계산
+    final coinCost = _calculateCoinCost(durationMs);
+
+    return DraftResult(
+      segments: allDraftSegments,
+      coinCost: coinCost,
+    );
+  }
+
+  int _calculateCoinCost(int durationMs) {
+    final seconds = (durationMs / 1000).ceil();
+    if (seconds <= 0) return 0;
+    return ((seconds + 29) ~/ 30);
+  }
+}

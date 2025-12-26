@@ -3,7 +3,7 @@
 // lib/data/local/prefs/user_prefs.dart
 
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:parrokit/data/models/clip_item.dart';
+// clip_item not used here
 import 'package:parrokit/data/models/user.dart';
 
 /// 앱 로컬에 "현재 유저"의 최소 정보를 저장/로드하는 헬퍼.
@@ -20,6 +20,7 @@ class UserPrefs {
   static const _keyUserId = 'user.id';
   static const _keyDisplayName = 'user.displayName';
   static const _keyEmail = 'user.email';
+  static const _keyPhotoUrl = 'user.photoUrl';
   static const _keyCoins = 'user.coins';
 
   final SharedPreferences _prefs;
@@ -36,12 +37,14 @@ class UserPrefs {
 
     final displayName = _prefs.getString(_keyDisplayName);
     final email = _prefs.getString(_keyEmail);
+    final photoUrl = _prefs.getString(_keyPhotoUrl);
     final coins = _prefs.getInt(_keyCoins) ?? 0;
 
     return PaUser(
       id: id,
       displayName: displayName,
       email: email,
+      photoUrl: photoUrl,
       coins: coins,
     );
   }
@@ -59,6 +62,12 @@ class UserPrefs {
       await _prefs.setString(_keyEmail, user.email!);
     } else {
       await _prefs.remove(_keyEmail);
+    }
+
+    if (user.photoUrl != null) {
+      await _prefs.setString(_keyPhotoUrl, user.photoUrl!);
+    } else {
+      await _prefs.remove(_keyPhotoUrl);
     }
 
     await _prefs.setInt(_keyCoins, user.coins);
@@ -84,6 +93,7 @@ class UserPrefs {
       _prefs.remove(_keyUserId),
       _prefs.remove(_keyDisplayName),
       _prefs.remove(_keyEmail),
+      _prefs.remove(_keyPhotoUrl),
       _prefs.remove(_keyCoins),
     ]);
   }
