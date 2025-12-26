@@ -17,7 +17,7 @@ import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/grid_section.dart';
-import '../widgets/episode_list_sample.dart';
+import '../widgets/episode_list_simple.dart';
 import '../widgets/clip_list_from_provider.dart';
 
 /// [역할]
