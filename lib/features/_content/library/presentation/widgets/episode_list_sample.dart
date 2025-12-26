@@ -40,12 +40,17 @@ class EpisodeListSimple extends StatelessWidget {
                 radius: 16,
                 backgroundColor: cs.surfaceContainerHighest,
                 child: Text(epNo ?? '•',
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: cs.onSurface,
+                        )),
               ),
               title: Text(epTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800)),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      )),
               trailing: Icon(Icons.chevron_right_rounded,
                   color: cs.onSurface.withValues(alpha: 0.4)),
             );
