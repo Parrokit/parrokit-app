@@ -47,26 +47,17 @@ Parokit은 애니메이션 영상 클립과 자막 세그먼트를 활용한 언
 ```
 lib/
 ├── main.dart              # 앱 진입점
-├── core/                  # 전역 공통 코드
-│   ├── app.dart           # App 위젯
-│   ├── bootstrap.dart     # 앱 초기화
-│   ├── di/                # 의존성 주입
-│   ├── config/            # 설정 (Firebase, 앱 설정)
-│   ├── provider/          # 전역 상태 관리
-│   ├── router/            # 라우팅 (GoRouter)
-│   ├── theme/             # 디자인 시스템
-│   └── services/          # 외부 서비스 연동
-├── data/                  # 데이터 레이어
-│   └── local/             # Drift 로컬 DB
-└── features/              # 기능별 모듈
-    ├── auth/              # 인증
-    ├── dashboard/         # 대시보드 (홈)
-    ├── shorts/            # 쇼츠 학습
-    ├── editor/            # 클립 에디터
-    ├── player/            # 클립 플레이어
-    ├── library/           # 라이브러리
-    ├── recom/             # 추천
-    └── payment/           # 결제
+├── core/                  # 전역 공통 코드 (DI, Config, Theme, Utils)
+├── data/                  # 공통 데이터 레이어 (Local DB, SharedPrefs)
+└── features/              # 기능별 모듈 (Domain-driven)
+    ├── _entry/            # 진입점 (Auth, Splash)
+    ├── _content/          # 핵심 콘텐츠 기능
+    │   ├── shorts/        # 쇼츠 학습
+    │   ├── clip_editor/   # 클립 에디터 (영상 편집)
+    │   ├── player/        # 클립 플레이어
+    │   └── library/       # 라이브러리 & 보관함
+    ├── _discovery/        # 탐색 및 추천
+    └── _settings/         # 설정 및 결제
 ```
 
 ### 기술 스택
@@ -135,9 +126,13 @@ features/{feature}/
 
 ---
 
-## 📝 라이선스
+## 🛡️ 라이선스 및 지적재산권 (License & IP)
 
-Private project - All rights reserved.
+**Copyright © 2025 Chun-Bae. All Rights Reserved.**
+
+본 프로젝트의 모든 소스 코드, 디자인, 및 알고리즘에 대한 권리는 원작자인 **Chun-Bae**에게 있습니다.  
+이 소프트웨어의 무단 복제, 배포, 수정, 및 상업적 이용을 엄격히 금지합니다.  
+본 소프트웨어에 포함된 핵심 기능 및 기술적 메커니즘은 특허 출원 준비 중이거나 출원된 상태일 수 있으며, 지적재산권 법에 의해 보호받습니다.
 
 ---
 
