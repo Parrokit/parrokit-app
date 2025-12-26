@@ -1,11 +1,10 @@
 // lib/data/models/user.dart
 
-// lib/data/models/user.dart
-
 /// 대표적인 앱 사용자 모델.
 /// - id          : 유저를 구분하는 고유 ID (예: Firebase UID, 로컬 UUID 등)
 /// - displayName : 화면에 표시할 이름
 /// - email       : 로그인 이메일 (없을 수도 있음)
+/// - photoUrl    : 프로필 이미지 URL (없을 수도 있음)
 /// - coins       : 유저가 보유한 코인 수 (기본값 0)
 /// - createdAt   : 계정이 처음 생성된 시각 (없으면 null)
 /// - updatedAt   : 마지막으로 정보가 갱신된 시각 (없으면 null)
@@ -13,6 +12,7 @@ class PaUser {
   final String id;
   final String? displayName;
   final String? email;
+  final String? photoUrl;
   final int coins;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -21,6 +21,7 @@ class PaUser {
     required this.id,
     this.displayName,
     this.email,
+    this.photoUrl,
     this.coins = 20,
     this.createdAt,
     this.updatedAt,
@@ -35,15 +36,19 @@ class PaUser {
   PaUser copyWith({
     String? id,
     String? displayName,
+    bool clearDisplayName = false,
     String? email,
+    String? photoUrl,
+    bool clearPhotoUrl = false,
     int? coins,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return PaUser(
       id: id ?? this.id,
-      displayName: displayName ?? this.displayName,
+      displayName: clearDisplayName ? null : (displayName ?? this.displayName),
       email: email ?? this.email,
+      photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
       coins: coins ?? this.coins,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -57,6 +62,7 @@ class PaUser {
       id: json['id'] as String,
       displayName: json['displayName'] as String?,
       email: json['email'] as String?,
+      photoUrl: json['photoUrl'] as String?,
       coins: (json['coins'] as num?)?.toInt() ?? 0,
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
@@ -69,6 +75,7 @@ class PaUser {
       'id': id,
       'displayName': displayName,
       'email': email,
+      'photoUrl': photoUrl,
       'coins': coins,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -94,7 +101,7 @@ class PaUser {
 
   @override
   String toString() {
-    return 'PaUser(id: $id, displayName: $displayName, email: $email, coins: $coins)';
+    return 'PaUser(id: $id, displayName: $displayName, email: $email, photoUrl: $photoUrl, coins: $coins)';
   }
 
   @override
@@ -104,6 +111,7 @@ class PaUser {
         other.id == id &&
         other.displayName == displayName &&
         other.email == email &&
+        other.photoUrl == photoUrl &&
         other.coins == coins &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
@@ -115,6 +123,7 @@ class PaUser {
       id,
       displayName,
       email,
+      photoUrl,
       coins,
       createdAt,
       updatedAt,

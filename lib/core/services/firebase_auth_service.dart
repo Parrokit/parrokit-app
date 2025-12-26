@@ -44,5 +44,9 @@ class FirebaseAuthService {
     }
   }
 
+  Future<void> updatePhotoUrl(String? photoUrl) async {
+    await _auth.currentUser?.updatePhotoURL(photoUrl);
+  }
+
   Future<void> signOut() => _auth.signOut();
 }

@@ -50,6 +50,7 @@ class UserRepository {
           serverUser?.displayName ??
           localUser?.displayName,
       email: fbUser.email ?? serverUser?.email ?? localUser?.email,
+      photoUrl: fbUser.photoURL ?? serverUser?.photoUrl ?? localUser?.photoUrl,
       coins: serverUser?.coins ?? localUser?.coins ?? 0,
       createdAt: serverUser?.createdAt ?? localUser?.createdAt,
       updatedAt: DateTime.now(),
@@ -137,6 +138,8 @@ class UserRepository {
           serverUser?.displayName ??
           existingLocal?.displayName,
       email: fbUser.email ?? serverUser?.email ?? existingLocal?.email,
+      photoUrl:
+          fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
@@ -191,6 +194,8 @@ class UserRepository {
           serverUser?.displayName ??
           existingLocal?.displayName,
       email: refreshed.email ?? serverUser?.email ?? existingLocal?.email,
+      photoUrl:
+          refreshed.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
@@ -251,6 +256,37 @@ class UserRepository {
     );
 
     return updated;
+  }
+
+  /// 프로필 이미지를 업데이트합니다.
+  /// - Firebase Auth 업데이트 (updatePhotoURL)
+  /// - Firestore 업데이트 (photoUrl 필드)
+  /// - 로컬 캐시 업데이트
+  Future<void> updatePhotoUrl(String? photoUrl) async {
+    // 1. Firebase Auth 업데이트
+    await _authService.updatePhotoUrl(photoUrl);
+
+    // 2. Firestore 업데이트
+    final user = _authService.currentUser;
+    if (user != null) {
+      await _firebaseUserService.updateUserPhoto(
+        uid: user.uid,
+        photoUrl: photoUrl,
+      );
+    }
+
+    // 3. 로컬 캐시 업데이트
+    // getCurrentUser()는 Firebase 인증 유저만 반환하므로,
+    // 게스트 유저(로컬 전용)인 경우 _userPrefs.loadUser()로 조회해야 함.
+    final current = await getCurrentUser() ?? _userPrefs.loadUser();
+    if (current != null) {
+      final updated = current.copyWith(
+        photoUrl: photoUrl,
+        clearPhotoUrl: photoUrl == null,
+        updatedAt: DateTime.now(),
+      );
+      await _userPrefs.saveUser(updated);
+    }
   }
 
   /// 로그아웃/유저 초기화.

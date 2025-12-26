@@ -13,9 +13,11 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/data/models/user.dart';
+import '../../presentation/widgets/avatar_selection_sheet.dart';
 
 /// 사용자 정보 카드 섹션.
 ///
@@ -61,105 +63,223 @@ class UserInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         // 반투명 배경
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: cs.outlineVariant),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─────────────────────────────────────────────────────────
-          // 프로필 아바타
-          // ─────────────────────────────────────────────────────────
-          CircleAvatar(
-            radius: 24,
-            child: Icon(
-              Icons.person_outline,
-              color: theme.colorScheme.onPrimary,
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // ─────────────────────────────────────────────────────────
-          // 사용자 정보 (이름, 이메일, 코인, 인증 뱃지)
-          // ─────────────────────────────────────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 이름 또는 이메일
-                Text(
-                  user?.displayName ?? user?.email ?? '로그인된 사용자',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-
-                // 이메일 (있는 경우만)
-                if (user?.email != null)
-                  Text(
-                    user!.email!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                const SizedBox(height: 4),
-
-                // 보유 코인 수
-                Text(
-                  '코인 $coins개',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 6),
-
-                // 이메일 인증 완료 뱃지
-                if (isEmailVerified)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.verified,
-                        size: 16,
-                        color: theme.colorScheme.primary,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ─────────────────────────────────────────────────────────
+              // 프리미엄 프로필 아바타
+              // ─────────────────────────────────────────────────────────
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (context) => const AvatarSelectionSheet(),
+                    showDragHandle: true,
+                  );
+                },
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: cs.surfaceContainerHighest,
+                        border: Border.all(
+                          color: cs.outlineVariant,
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
+                      child: ClipOval(
+                        child: _buildAvatar(user?.photoUrl, cs),
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: cs.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: cs.surface, width: 2),
+                        ),
+                        child: Icon(
+                          Icons.edit_rounded,
+                          size: 12,
+                          color: cs.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // ─────────────────────────────────────────────────────────
+              // 사용자 정보 (이름, 이메일) + 로그아웃
+              // ─────────────────────────────────────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user?.displayName ?? user?.email ?? '로그인된 사용자',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // 로그아웃 버튼 (아이콘 스타일)
+                        IconButton(
+                          onPressed: isLoading ? null : onLogout,
+                          icon: const Icon(Icons.logout_rounded, size: 20),
+                          tooltip: '로그아웃',
+                          style: IconButton.styleFrom(
+                            foregroundColor: cs.error,
+                            backgroundColor:
+                                cs.errorContainer.withValues(alpha: 0.1),
+                            padding: const EdgeInsets.all(8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (user?.email != null) ...[
+                      const SizedBox(height: 2),
                       Text(
-                        '이메일 인증됨',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                        user!.email!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
+          const SizedBox(height: 16),
 
           // ─────────────────────────────────────────────────────────
-          // 로그아웃 버튼
+          // 상태 배지 (코인, 인증)
           // ─────────────────────────────────────────────────────────
-          TextButton(
-            onPressed: isLoading ? null : onLogout,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              '로그아웃',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              // Coin Badge
+              _StatusBadge(
+                icon: Icons.monetization_on_rounded,
+                label: '$coins 코인',
+                color: cs.primary,
+                backgroundColor: cs.primary.withValues(alpha: 0.1),
               ),
+              // Verification Badge
+              if (isEmailVerified)
+                _StatusBadge(
+                  icon: Icons.verified_rounded,
+                  label: '인증됨',
+                  color: Colors.blue,
+                  backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                )
+              else
+                _StatusBadge(
+                  icon: Icons.error_outline_rounded,
+                  label: '미인증',
+                  color: cs.error,
+                  backgroundColor: cs.error.withValues(alpha: 0.1),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(String? photoUrl, ColorScheme cs) {
+    if (photoUrl == null) {
+      return Center(
+        child: Icon(
+          Icons.person_outline,
+          size: 40,
+          color: cs.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return SvgPicture.network(
+      photoUrl,
+      fit: BoxFit.cover,
+      width: 72,
+      height: 72,
+      placeholderBuilder: (context) => const Center(
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color backgroundColor;
+
+  const _StatusBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
         ],
