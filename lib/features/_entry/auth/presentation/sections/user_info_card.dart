@@ -14,6 +14,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/data/models/user.dart';
@@ -147,14 +149,34 @@ class UserInfoCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(
-                            user?.displayName ?? user?.email ?? '로그인된 사용자',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
+                          child: GestureDetector(
+                            onTap: () => _showEditNicknameDialog(
+                                context, user?.displayName),
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    user?.displayName ??
+                                        user?.email ??
+                                        '로그인된 사용자',
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 18,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.edit_rounded,
+                                  size: 16,
+                                  color: cs.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                                ),
+                              ],
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         // 로그아웃 버튼 (아이콘 스타일)
@@ -243,6 +265,43 @@ class UserInfoCard extends StatelessWidget {
       height: 72,
       placeholderBuilder: (context) => const Center(
         child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
+
+  void _showEditNicknameDialog(BuildContext context, String? currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('닉네임 변경'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: '닉네임을 입력하세요',
+            filled: true,
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                context.read<UserProvider>().updateDisplayName(newName);
+              } else if (currentName != null) {
+                // 이름 삭제 (null)
+                context.read<UserProvider>().updateDisplayName(null);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('저장'),
+          ),
+        ],
       ),
     );
   }

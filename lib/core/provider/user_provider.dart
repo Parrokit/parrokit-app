@@ -182,6 +182,29 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// 닉네임(DisplayName) 업데이트
+  Future<void> updateDisplayName(String? displayName) async {
+    debugPrint('[UserProvider] updateDisplayName requested: $displayName');
+
+    // 1. Optimistic Update
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(
+        displayName: displayName,
+        clearDisplayName: displayName == null,
+      );
+      notifyListeners();
+    }
+
+    _setLoading(true);
+    try {
+      await _userRepository.updateDisplayName(displayName);
+    } catch (e) {
+      debugPrint('[UserProvider] Update failed, error: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 로그아웃/초기화.
   /// 로컬 저장소를 비우고 메모리에 있는 유저도 제거합니다.
   Future<void> signOut() async {

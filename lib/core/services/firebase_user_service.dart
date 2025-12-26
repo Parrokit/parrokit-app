@@ -51,6 +51,16 @@ class FirebaseUserService {
     });
   }
 
+  Future<void> updateUserDisplayName({
+    required String uid,
+    required String? displayName,
+  }) async {
+    await _firestore.collection('users').doc(uid).update({
+      'displayName': displayName,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<PaUser?> loadUserDocument({required String uid}) async {
     final snap = await _firestore.collection('users').doc(uid).get();
     if (!snap.exists) {

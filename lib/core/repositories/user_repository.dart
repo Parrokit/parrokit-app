@@ -289,6 +289,32 @@ class UserRepository {
     }
   }
 
+  /// 닉네임(DisplayName)을 업데이트합니다.
+  Future<void> updateDisplayName(String? displayName) async {
+    // 1. Firebase Auth 업데이트
+    await _authService.updateDisplayName(displayName);
+
+    // 2. Firestore 업데이트
+    final user = _authService.currentUser;
+    if (user != null) {
+      await _firebaseUserService.updateUserDisplayName(
+        uid: user.uid,
+        displayName: displayName,
+      );
+    }
+
+    // 3. 로컬 캐시 업데이트
+    final current = await getCurrentUser() ?? _userPrefs.loadUser();
+    if (current != null) {
+      final updated = current.copyWith(
+        displayName: displayName,
+        clearDisplayName: displayName == null,
+        updatedAt: DateTime.now(),
+      );
+      await _userPrefs.saveUser(updated);
+    }
+  }
+
   /// 로그아웃/유저 초기화.
   /// - Firebase 에서 로그아웃
   /// - 로컬에 저장된 유저 정보를 모두 삭제합니다.
