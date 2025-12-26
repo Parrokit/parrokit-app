@@ -22,6 +22,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_router.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
 
@@ -84,7 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     // 테마 색상
-    final bg = isDark ? const Color(0xFF0D0F12) : const Color(0xFFF7F8FA);
+    final bg = isDark ? AppColors.surfaceDark : AppColors.surfaceContainer;
 
     // Provider 구독
     final ui = context.watch<ClipActivityProvider>();
@@ -181,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// 히어로 클립 탭 시 네비게이션
   void _navigateToHeroClip((int, dynamic, String?, String?)? hero) {
     if (hero != null) {
-      final (clipId, _thumbnail, _clipTitle, _titleName) = hero;
+      final (clipId, thumbnail, clipTitle, titleName) = hero;
       context.pushNamed(
         AppRoutes.clipsPlay,
         queryParameters: {'clipId': clipId.toString()},

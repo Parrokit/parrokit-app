@@ -9,11 +9,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:parrokit/core/config/app_config.dart';
-import '../../widgets/card_container.dart';
-import '../../widgets/dropdown_tile.dart';
-import '../../widgets/hairline_divider.dart';
-import '../../widgets/section_title.dart';
-import '../../widgets/switch_tile.dart';
+import '../widgets/card_container.dart';
+import '../widgets/dropdown_tile.dart';
+import '../widgets/hairline_divider.dart';
+import '../widgets/section_title.dart';
+import '../widgets/switch_tile.dart';
 
 /// 플레이어 설정 섹션.
 class PlayerSettingsSection extends StatefulWidget {

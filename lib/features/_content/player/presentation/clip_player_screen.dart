@@ -78,6 +78,7 @@ class _ClipPlayerViewState extends State<_ClipPlayerView>
 
     // 최근 본 클립 기록
     Future.microtask(() {
+      if (!mounted) return;
       context.read<ClipActivityProvider>().logRecent(widget.clipId);
     });
   }
@@ -100,10 +101,10 @@ class _ClipPlayerViewState extends State<_ClipPlayerView>
     final t = Theme.of(context);
     final cs = t.colorScheme;
 
-    // 테마 색상 (항상 light 모드로 고정, PlayerTone 제거됨)
+    // 테마 색상 (항상 light 모드로 고정)
     const isLight = true;
-    final bg = isLight ? cs.surface : Colors.black;
-    final fg = isLight ? cs.onSurface : Colors.white;
+    final bg = cs.surface;
+    final fg = cs.onSurface;
 
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
@@ -121,7 +122,7 @@ class _ClipPlayerViewState extends State<_ClipPlayerView>
         ),
         body: Center(
           child: CircularProgressIndicator(
-            color: isLight ? cs.primary : Colors.white,
+            color: cs.primary,
           ),
         ),
       );

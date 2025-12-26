@@ -1,16 +1,67 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+// foundation.dart provided by material.dart
+import 'package:parrokit/core/app.dart';
 
 OverlayEntry? _toastEntry;
 Timer? _toastRemoveTimer;
 
 /// iOS 스타일 토스트 (Fade In/Out)
 /// 기존 showToast(context, "msg") 호출 그대로 사용 가능
+///
+/// Overlay가 없는 경우 SnackBar로 fallback 합니다.
 void showToast(BuildContext context, String msg, {String? devMsg = ''}) {
-  final overlay = Overlay.of(context);
-  if (overlay == null) return;
+  // mounted 체크 - context가 유효한지 확인
+  if (!context.mounted) {
+    // context가 없으면 global scaffoldMessengerKey 사용 시도
+    _showWithScaffoldMessenger(msg, devMsg);
+    return;
+  }
 
+  // Overlay 찾기 - maybeOf 사용하여 null 안전하게 처리
+  final overlay = Overlay.maybeOf(context);
+  if (overlay == null) {
+    // Overlay가 없으면 SnackBar로 fallback
+    _showWithScaffoldMessenger(msg, devMsg);
+    return;
+  }
+
+  _showWithOverlay(overlay, context, msg, devMsg);
+}
+
+/// Context 없이 전역으로 토스트 표시
+void showToastGlobal(String msg, {String? devMsg = ''}) {
+  _showWithScaffoldMessenger(msg, devMsg);
+}
+
+/// ScaffoldMessenger를 통한 SnackBar 표시
+void _showWithScaffoldMessenger(String msg, String? devMsg) {
+  final messenger = scaffoldMessengerKey.currentState;
+  if (messenger == null) {
+    debugPrint('🍞 Toast (no messenger): $msg');
+    return;
+  }
+
+  messenger.hideCurrentSnackBar();
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(msg),
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(milliseconds: 2500),
+      margin: const EdgeInsets.fromLTRB(32, 0, 32, 80),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+  );
+
+  debugPrint('🍞 Toast (snackbar): $msg');
+  if (devMsg != null && devMsg.isNotEmpty) {
+    debugPrint('🍞 Toast (dev): $devMsg');
+  }
+}
+
+/// Overlay를 통한 커스텀 토스트 표시
+void _showWithOverlay(
+    OverlayState overlay, BuildContext context, String msg, String? devMsg) {
   // 기존 토스트가 떠있으면 제거
   _toastRemoveTimer?.cancel();
   _toastEntry?.remove();
@@ -34,7 +85,7 @@ void showToast(BuildContext context, String msg, {String? devMsg = ''}) {
 
   overlay.insert(_toastEntry!);
   debugPrint('🍞 Toast: $msg');
-  if (devMsg != '') {
+  if (devMsg != null && devMsg.isNotEmpty) {
     debugPrint('🍞 Toast (dev): $devMsg');
   }
   // 총 지속시간 뒤 안전 제거
@@ -102,13 +153,13 @@ class _ToastCardState extends State<_ToastCard> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.85),
+                      color: Colors.black.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
                           blurRadius: 8,
                           offset: Offset(0, 4),
-                          color: Color(0x33000000),
+                          color: Colors.black.withValues(alpha: 0.2),
                         ),
                       ],
                     ),

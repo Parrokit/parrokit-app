@@ -1,4 +1,24 @@
+// ============================================================================
+// lib/features/_content/shorts/presentation/widgets/badge.dart
+// ============================================================================
+//
+// [역할]
+// 쇼츠 화면 하단 설명 영역에 표시되는 태그(Tag) 배지.
+//
+// [기능]
+// - 둥근 모서리의 반투명 배경
+// - 아이콘과 텍스트 라벨 표시
+//
+// [레이어]
+// Presentation Layer > Widgets
+//
+// ============================================================================
+
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+
+/// [역할]
+/// 클립의 태그 정보를 아이콘과 함께 표시하는 배지 위젯.
 class Badge extends StatelessWidget {
   const Badge({required this.label, required this.icon, super.key});
 
@@ -11,11 +31,12 @@ class Badge extends StatelessWidget {
     const Color fixedColor = Colors.white; // 필요시 Colors.white 등으로 변경
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: fixedColor.withOpacity(0.05),
+        color: fixedColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: fixedColor.withOpacity(0.2)),
+        border: Border.all(color: fixedColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [

@@ -17,12 +17,13 @@ import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/core/repositories/user_repository.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
-import 'package:parrokit/core/provider/ad_provider.dart';
+import 'package:parrokit/features/_content/shorts/presentation/providers/ad_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/core/provider/shorts_provider.dart';
-import 'package:parrokit/core/provider/tag_filter_provider.dart';
+import 'package:parrokit/features/_content/shorts/presentation/providers/shorts_provider.dart';
+import 'package:parrokit/features/_content/shorts/data/shorts_repository.dart';
+import 'package:parrokit/features/_content/library/presentation/providers/tag_filter_provider.dart';
 
 /// Provider 목록 생성.
 ///
@@ -67,7 +68,7 @@ List<SingleChildWidget> buildProviders({
       create: (c) => MediaProvider(c.read<AppDatabase>()),
     ),
     ChangeNotifierProvider<ShortsProvider>(
-      create: (c) => ShortsProvider(c.read<AppDatabase>()),
+      create: (c) => ShortsProvider(ShortsRepository(c.read<AppDatabase>())),
     ),
     ChangeNotifierProvider<TagFilterProvider>(
       create: (c) => TagFilterProvider(c.read<AppDatabase>()),

@@ -19,6 +19,7 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
@@ -137,13 +138,13 @@ class _AuthScreenState extends State<AuthScreen> {
       // 성공 토스트 표시
       switch (_mode) {
         case AuthMode.signIn:
-          _showToast('로그인에 성공했습니다.');
+          showToast(context, '로그인에 성공했습니다.');
           break;
         case AuthMode.signUp:
-          _showToast('회원가입이 완료되었습니다. 이메일로 전송된 인증 메일을 확인해 주세요.');
+          showToast(context, '회원가입이 완료되었습니다. 이메일로 전송된 인증 메일을 확인해 주세요.');
           break;
         case AuthMode.resetPassword:
-          _showToast('비밀번호 재설정 메일을 전송했습니다.');
+          showToast(context, '비밀번호 재설정 메일을 전송했습니다.');
           break;
       }
     } on FirebaseAuthException catch (e) {
@@ -152,13 +153,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
       // 세션 만료 등 특수 에러 처리
       if (e.code == 'invalid-credential') {
-        _showToast('세션이 만료되었어요. 다시 로그인해 주세요.',
+        showToast(context, '세션이 만료되었어요. 다시 로그인해 주세요.',
             devMsg:
                 '🔥 FirebaseAuthException: code=${e.code}, message=${e.message}');
         await userProvider.signOut();
         return;
       }
-      _showToast('오류가 발생했습니다: ${e.message}');
+      showToast(context, '오류가 발생했습니다: ${e.message}');
     }
   }
 
@@ -175,10 +176,11 @@ class _AuthScreenState extends State<AuthScreen> {
       final verified = await userProvider.isEmailVerified();
 
       if (!mounted) return;
-      _showToast(verified ? '이메일 인증이 완료되었습니다.' : '아직 이메일 인증이 완료되지 않았습니다.');
+      showToast(
+          context, verified ? '이메일 인증이 완료되었습니다.' : '아직 이메일 인증이 완료되지 않았습니다.');
     } catch (e) {
       if (!mounted) return;
-      _showToast('이메일 인증 상태 확인 중 오류가 발생했습니다: $e');
+      showToast(context, '이메일 인증 상태 확인 중 오류가 발생했습니다: $e');
     }
   }
 
@@ -190,10 +192,10 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await userProvider.sendEmailVerification();
       if (!mounted) return;
-      _showToast('이메일 인증 메일을 다시 전송했습니다.');
+      showToast(context, '이메일 인증 메일을 다시 전송했습니다.');
     } catch (e) {
       if (!mounted) return;
-      _showToast('인증 메일 재전송 중 오류가 발생했습니다: $e');
+      showToast(context, '인증 메일 재전송 중 오류가 발생했습니다: $e');
     }
   }
 
@@ -205,10 +207,10 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await userProvider.signOut();
       if (!mounted) return;
-      _showToast('로그아웃되었습니다.');
+      showToast(context, '로그아웃되었습니다.');
     } catch (e) {
       if (!mounted) return;
-      _showToast('로그아웃 중 오류가 발생했습니다: $e');
+      showToast(context, '로그아웃 중 오류가 발생했습니다: $e');
     }
   }
 
@@ -225,7 +227,7 @@ class _AuthScreenState extends State<AuthScreen> {
     // 현재 유저 정보 (이메일 등)
     final user = context.read<UserProvider>().currentUser;
 
-    _showToast(
+    showToast(context,
         '₩${pkg.price} 결제로 코인 ${pkg.totalCoins}개를 충전할게요. (+${pkg.bonusCoins} 보너스)');
 
     // 결제 화면으로 이동 (PaymentArgs 전달)
@@ -239,15 +241,6 @@ class _AuthScreenState extends State<AuthScreen> {
         buyerEmail: user?.email ?? '',
       ),
     );
-  }
-
-  /// 토스트 메시지 표시 헬퍼
-  ///
-  /// [message] 사용자에게 보여줄 메시지
-  /// [devMsg] 개발 모드에서만 표시할 디버그 메시지
-  void _showToast(String message, {String? devMsg = ''}) {
-    if (!mounted) return; // 위젯이 dispose된 경우 무시
-    showToast(context, message, devMsg: devMsg);
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -273,7 +266,7 @@ class _AuthScreenState extends State<AuthScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               // 로그인 상태에 따라 다른 섹션 표시
               child: _isLoggedIn
                   ? LoggedInSection(

@@ -61,7 +61,7 @@ class BackupService {
     }
 
     final name =
-        'backup_${ts.year}${_2(ts.month)}${_2(ts.day)}_${_2(ts.hour)}${_2(ts.minute)}${_2(ts.second)}.zip';
+        'backup_${ts.year}${pad2(ts.month)}${pad2(ts.day)}_${pad2(ts.hour)}${pad2(ts.minute)}${pad2(ts.second)}.zip';
     final backupZip = File(p.join(appDir.path, name));
 
     final encoder = ZipFileEncoder();
@@ -243,7 +243,7 @@ class BackupService {
     }
 
     // 4) manifest.json 로드 (루트 우선, 실패 시 유연 탐색)
-    Future<File?> _findManifestIn(Directory root) async {
+    Future<File?> findManifestIn(Directory root) async {
       final exact = File(p.join(root.path, 'manifest.json'));
       if (await exact.exists()) return exact;
       await for (final ent in root.list(recursive: true, followLinks: false)) {
@@ -255,7 +255,7 @@ class BackupService {
       return null;
     }
 
-    final tmpManifest = await _findManifestIn(tmpDir);
+    final tmpManifest = await findManifestIn(tmpDir);
     if (tmpManifest == null) {
       try {
         await _deleteDir(tmpDir);
@@ -358,10 +358,13 @@ class BackupService {
       final dbSrc = File(p.join(tmpDir.path, dbRel));
       final dbDst = File(p.join(appDir.path, dbRel));
       if (!await dbSrc.exists()) {
-        ArchiveFile? dbEntry = archive.files.firstWhere(
-              (f) => f.isFile && f.name.replaceAll('\\', '/') == dbRel,
-          orElse: () => null as ArchiveFile, // 강제 캐스팅
-        );
+        ArchiveFile? dbEntry;
+        for (final f in archive.files) {
+          if (f.isFile && f.name.replaceAll('\\', '/') == dbRel) {
+            dbEntry = f;
+            break;
+          }
+        }
 
         if (dbEntry != null) {
           await dbDst.parent.create(recursive: true);
@@ -387,5 +390,5 @@ class BackupService {
     }
   }
 
-  String _2(int n) => n.toString().padLeft(2, '0');
+  String pad2(int n) => n.toString().padLeft(2, '0');
 }

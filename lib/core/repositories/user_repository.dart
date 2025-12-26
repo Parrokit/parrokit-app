@@ -1,11 +1,10 @@
 // lib/services/auth_repository.dart (지금은 한 파일 안에 두고, 나중에 분리해도 됨)
 
-import 'package:firebase_auth/firebase_auth.dart' as fb;
+// firebase_auth accessed via FirebaseAuthService
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
 import 'package:parrokit/data/models/user.dart';
 import 'package:parrokit/core/services/firebase_auth_service.dart';
 import 'package:parrokit/core/services/firebase_user_service.dart';
-
 
 /// 앱 도메인 기준의 인증/유저 레포지토리.
 ///
@@ -18,10 +17,10 @@ class UserRepository {
   final FirebaseAuthService _authService;
   final FirebaseUserService _firebaseUserService;
   const UserRepository(
-      this._userPrefs,
-      this._authService,
-      this._firebaseUserService,
-      );
+    this._userPrefs,
+    this._authService,
+    this._firebaseUserService,
+  );
 
   /// 현재 로컬에 저장된 유저를 반환합니다.
   /// 저장된 유저가 없으면 null을 반환합니다.
@@ -39,7 +38,7 @@ class UserRepository {
 
     // 2. Firestore 기준 유저 문서 조회
     final serverUser =
-    await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+        await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
 
     // 3. 로컬 캐시(SharedPreferences)에 저장된 유저 (폴백용)
     final localUser = _userPrefs.loadUser();
@@ -51,6 +50,7 @@ class UserRepository {
           serverUser?.displayName ??
           localUser?.displayName,
       email: fbUser.email ?? serverUser?.email ?? localUser?.email,
+      photoUrl: fbUser.photoURL ?? serverUser?.photoUrl ?? localUser?.photoUrl,
       coins: serverUser?.coins ?? localUser?.coins ?? 0,
       createdAt: serverUser?.createdAt ?? localUser?.createdAt,
       updatedAt: DateTime.now(),
@@ -126,16 +126,20 @@ class UserRepository {
     // 1) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
     // FirebaseUserService 쪽에 uid로 유저 문서를 로드하는 메서드가 있다고 가정합니다.
     // 예: Future<PaUser?> loadUserDocument({required String uid});
-    final serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    final serverUser =
+        await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
 
     // 2) 로컬에 저장된 유저는 캐시/폴백 용도로만 사용
-    final existingLocal = await _userPrefs.loadUser();
+    final existingLocal = _userPrefs.loadUser();
 
     final user = PaUser(
       id: fbUser.uid,
-      displayName:
-          fbUser.displayName ?? serverUser?.displayName ?? existingLocal?.displayName,
+      displayName: fbUser.displayName ??
+          serverUser?.displayName ??
+          existingLocal?.displayName,
       email: fbUser.email ?? serverUser?.email ?? existingLocal?.email,
+      photoUrl:
+          fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
@@ -180,14 +184,18 @@ class UserRepository {
     }
 
     // 서버의 유저 문서를 먼저 조회해서 coins 등을 동기화
-    final serverUser = await _firebaseUserService.loadUserDocument(uid: refreshed.uid);
+    final serverUser =
+        await _firebaseUserService.loadUserDocument(uid: refreshed.uid);
 
-    final existingLocal = await _userPrefs.loadUser();
+    final existingLocal = _userPrefs.loadUser();
     final user = PaUser(
       id: refreshed.uid,
-      displayName:
-          refreshed.displayName ?? serverUser?.displayName ?? existingLocal?.displayName,
+      displayName: refreshed.displayName ??
+          serverUser?.displayName ??
+          existingLocal?.displayName,
       email: refreshed.email ?? serverUser?.email ?? existingLocal?.email,
+      photoUrl:
+          refreshed.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
@@ -201,7 +209,7 @@ class UserRepository {
   /// - 이미 로컬에 유저가 있으면 그대로 반환.
   /// - 없으면 새 guest 유저를 만들고 저장한 뒤 반환.
   Future<PaUser> signInAsGuest() async {
-    final existing = await _userPrefs.loadUser();
+    final existing = _userPrefs.loadUser();
     if (existing != null) {
       return existing;
     }
@@ -231,14 +239,12 @@ class UserRepository {
   /// - delta는 음수도 허용됩니다.
   /// - 유저가 없으면 null을 반환합니다.
   Future<PaUser?> addCoins(int delta) async {
-    final current = await _userPrefs.loadUser();
+    final current = _userPrefs.loadUser();
     if (current == null) {
       return null;
     }
 
-    final updated = current
-        .addCoins(delta)
-        .copyWith(updatedAt: DateTime.now());
+    final updated = current.addCoins(delta).copyWith(updatedAt: DateTime.now());
 
     // 1) 로컬 저장
     await _userPrefs.saveUser(updated);
@@ -250,6 +256,63 @@ class UserRepository {
     );
 
     return updated;
+  }
+
+  /// 프로필 이미지를 업데이트합니다.
+  /// - Firebase Auth 업데이트 (updatePhotoURL)
+  /// - Firestore 업데이트 (photoUrl 필드)
+  /// - 로컬 캐시 업데이트
+  Future<void> updatePhotoUrl(String? photoUrl) async {
+    // 1. Firebase Auth 업데이트
+    await _authService.updatePhotoUrl(photoUrl);
+
+    // 2. Firestore 업데이트
+    final user = _authService.currentUser;
+    if (user != null) {
+      await _firebaseUserService.updateUserPhoto(
+        uid: user.uid,
+        photoUrl: photoUrl,
+      );
+    }
+
+    // 3. 로컬 캐시 업데이트
+    // getCurrentUser()는 Firebase 인증 유저만 반환하므로,
+    // 게스트 유저(로컬 전용)인 경우 _userPrefs.loadUser()로 조회해야 함.
+    final current = await getCurrentUser() ?? _userPrefs.loadUser();
+    if (current != null) {
+      final updated = current.copyWith(
+        photoUrl: photoUrl,
+        clearPhotoUrl: photoUrl == null,
+        updatedAt: DateTime.now(),
+      );
+      await _userPrefs.saveUser(updated);
+    }
+  }
+
+  /// 닉네임(DisplayName)을 업데이트합니다.
+  Future<void> updateDisplayName(String? displayName) async {
+    // 1. Firebase Auth 업데이트
+    await _authService.updateDisplayName(displayName);
+
+    // 2. Firestore 업데이트
+    final user = _authService.currentUser;
+    if (user != null) {
+      await _firebaseUserService.updateUserDisplayName(
+        uid: user.uid,
+        displayName: displayName,
+      );
+    }
+
+    // 3. 로컬 캐시 업데이트
+    final current = await getCurrentUser() ?? _userPrefs.loadUser();
+    if (current != null) {
+      final updated = current.copyWith(
+        displayName: displayName,
+        clearDisplayName: displayName == null,
+        updatedAt: DateTime.now(),
+      );
+      await _userPrefs.saveUser(updated);
+    }
   }
 
   /// 로그아웃/유저 초기화.

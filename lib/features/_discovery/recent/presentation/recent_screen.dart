@@ -17,6 +17,7 @@
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
@@ -109,7 +110,7 @@ class _RecentScreenState extends State<RecentScreen> {
             if (snap.hasError) {
               return Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(AppSpacing.sectionGap),
                   child: Text(
                     '최근 목록을 불러오는 중 오류가 발생했어요.\n${snap.error}',
                     textAlign: TextAlign.center,
@@ -131,7 +132,7 @@ class _RecentScreenState extends State<RecentScreen> {
               separatorBuilder: (_, __) => Divider(
                 height: 8,
                 thickness: 0.5,
-                color: cs.outlineVariant.withOpacity(.6),
+                color: cs.outlineVariant.withValues(alpha: .6),
               ),
               itemBuilder: (context, index) {
                 final (clipId, thumb, clipTitle, titleName) = items[index];

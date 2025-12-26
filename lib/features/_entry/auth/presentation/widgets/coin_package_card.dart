@@ -14,6 +14,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import '../../domain/coin_package.dart';
 
 /// 코인 패키지 카드 위젯.
@@ -63,7 +64,7 @@ class CoinPackageCard extends StatelessWidget {
 
     return Card(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         side: BorderSide(
           color: theme.colorScheme.outlineVariant,
         ),

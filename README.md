@@ -1,4 +1,4 @@
-# 🦜 Parokit
+# 🦜 Parrokit
 
 **애니메이션 클립으로 일본어/언어 학습하는 Flutter 앱**
 

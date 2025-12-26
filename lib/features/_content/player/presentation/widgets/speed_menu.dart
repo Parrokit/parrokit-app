@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 class SpeedMenu extends StatelessWidget {
   const SpeedMenu(
-      {required this.value, required this.onSelected, this.isLight = true});
+      {super.key,
+      required this.value,
+      required this.onSelected,
+      this.isLight = true});
 
   final double value;
   final ValueChanged<double> onSelected;
@@ -24,10 +29,11 @@ class SpeedMenu extends StatelessWidget {
           ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: isLight ? cs.surface.withOpacity(0.9) : Colors.white12,
-          borderRadius: BorderRadius.circular(999),
+          color: isLight ? cs.surface.withValues(alpha: 0.9) : Colors.white12,
+          borderRadius: BorderRadius.circular(AppRadius.full),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

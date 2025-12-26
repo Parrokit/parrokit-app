@@ -28,7 +28,7 @@ class CircleIconButton extends StatelessWidget {
     final background = bg ??
         (emphasized
             ? Colors.white
-            : (isLight ? cs.surface.withOpacity(0.9) : Colors.white12));
+            : (isLight ? cs.surface.withValues(alpha: 0.9) : Colors.white12));
     final foreground = fg ??
         (emphasized ? Colors.black : (isLight ? cs.onSurface : Colors.white));
 

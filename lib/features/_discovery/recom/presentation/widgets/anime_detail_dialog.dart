@@ -11,6 +11,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/features/_discovery/recom/domain/anime_meta_data.dart';
 
 /// 애니메이션 상세 다이얼로그 표시.
@@ -33,7 +35,7 @@ class _AnimeDetailDialog extends StatelessWidget {
 
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: ConstrainedBox(
@@ -42,7 +44,7 @@ class _AnimeDetailDialog extends StatelessWidget {
           maxHeight: size.height * 0.70,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.max,
             children: [
@@ -77,7 +79,7 @@ class _AnimeDetailDialog extends StatelessWidget {
         Flexible(
           flex: 3,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: AspectRatio(
               aspectRatio: 3 / 4,
               child: Image.network(

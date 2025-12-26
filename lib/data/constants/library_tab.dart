@@ -1,1 +1,0 @@
-enum LibraryTab { folder, tag }

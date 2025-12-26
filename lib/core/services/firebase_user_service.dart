@@ -12,11 +12,13 @@ class FirebaseUserService {
   Future<void> initUserDocument({
     required String uid,
     required String email,
+    String? photoUrl,
   }) async {
     final docRef = _firestore.collection('users').doc(uid);
 
     await docRef.set({
       'email': email,
+      if (photoUrl != null) 'photoUrl': photoUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'coins': 0,
       'isPremium': false,
@@ -39,6 +41,26 @@ class FirebaseUserService {
     });
   }
 
+  Future<void> updateUserPhoto({
+    required String uid,
+    required String? photoUrl,
+  }) async {
+    await _firestore.collection('users').doc(uid).update({
+      'photoUrl': photoUrl,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updateUserDisplayName({
+    required String uid,
+    required String? displayName,
+  }) async {
+    await _firestore.collection('users').doc(uid).update({
+      'displayName': displayName,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<PaUser?> loadUserDocument({required String uid}) async {
     final snap = await _firestore.collection('users').doc(uid).get();
     if (!snap.exists) {
@@ -50,6 +72,7 @@ class FirebaseUserService {
       id: uid,
       displayName: data['displayName'],
       email: data['email'],
+      photoUrl: data['photoUrl'],
       coins: data['coins'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: DateTime.now(),

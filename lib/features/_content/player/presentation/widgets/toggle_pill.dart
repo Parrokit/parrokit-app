@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
+
 class TogglePill extends StatelessWidget {
   const TogglePill({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,
@@ -14,29 +18,29 @@ class TogglePill extends StatelessWidget {
   final VoidCallback onTap;
   final bool isLight;
 
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     final Color bg = active
-        ? (isLight ? cs.primary.withOpacity(0.14) : Colors.white24)
-        : (isLight ? cs.surface.withOpacity(0.9) : Colors.white12);
+        ? (isLight ? cs.primary.withValues(alpha: 0.14) : Colors.white24)
+        : (isLight ? cs.surface.withValues(alpha: 0.9) : Colors.white12);
     final Color fg = active
         ? (isLight ? cs.primary : Colors.white)
         : (isLight ? cs.onSurface : Colors.white70);
     final Color? border = active
-        ? (isLight ? cs.primary.withOpacity(0.6) : Colors.white30)
+        ? (isLight ? cs.primary.withValues(alpha: 0.6) : Colors.white30)
         : null; // 비활성일 때는 테두리 없음
 
     return InkWell(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AppRadius.full),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.full),
           border: border != null ? Border.all(color: border, width: 0.8) : null,
         ),
         child: Row(
@@ -44,8 +48,8 @@ class TogglePill extends StatelessWidget {
             Icon(icon, color: fg, size: 18),
             const SizedBox(width: 6),
             Text(label,
-                style:
-                TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
           ],
         ),
       ),

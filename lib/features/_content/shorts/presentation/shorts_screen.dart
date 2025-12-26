@@ -7,7 +7,7 @@
 // 세로 스와이프로 클립을 넘기며 학습.
 //
 // [레이어]
-// Presentation Layer - View
+// Presentation Layer > Screen
 //
 // [구성 요소]
 // - ShortsPage: 개별 클립 페이지
@@ -17,15 +17,15 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/router/app_router.dart';
-import 'package:parrokit/core/provider/ad_provider.dart';
+import 'package:parrokit/features/_content/shorts/presentation/providers/ad_provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
-import 'package:parrokit/core/provider/iap_provider.dart';
-import 'package:parrokit/core/provider/shorts_provider.dart';
+import 'package:parrokit/features/_content/shorts/presentation/providers/shorts_provider.dart';
 import 'package:parrokit/core/services/ad_service.dart';
 
 import 'widgets/shorts_page.dart';
@@ -33,6 +33,14 @@ import 'widgets/progress_bar.dart';
 import 'widgets/action_rail.dart';
 import 'widgets/badge.dart' as shorts_badge;
 
+/// [역할]
+/// 쇼츠(Shorts) 기능을 제공하는 메인 화면.
+///
+/// TikTok이나 Reels와 유사한 세로 스크롤 UX를 제공합니다.
+/// - [PageView]를 사용하여 수직 스크롤 구현
+/// - [ShortsProvider]를 통해 데이터 로드 및 상태 관리
+/// - [AdProvider]를 통해 스와이프 횟수에 따른 광고 노출 제어
+/// - [ActionRail], [ProgressBar], [Badge] 등 하위 위젯 배치 및 상호작용
 class ShortsScreen extends StatefulWidget {
   const ShortsScreen({super.key});
 
@@ -41,11 +49,13 @@ class ShortsScreen extends StatefulWidget {
 }
 
 class _ShortsScreenScreenState extends State<ShortsScreen> {
+  // ─────────────────────────────────────────────────────────────────
+  // State
+  // ─────────────────────────────────────────────────────────────────
   final PageController _pageController = PageController();
   final ValueNotifier<bool> _pauseSignal = ValueNotifier<bool>(false);
   int _currentIndex = 0; // 현재 보는 클립 인덱스
   bool _showSubtitle = true;
-  int _advanceCount = 0;
   bool _initialized = false;
 
   @override
@@ -53,14 +63,17 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
     super.initState();
     _showSubtitle = AppConfig.shortsShowSubtitles;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       context.read<ShortsProvider>().setAutoNext(AppConfig.autoNext);
-    });
-    // ✅ Provider에서 랜덤 10개 로딩
-    Future.microtask(() {
       context.read<ShortsProvider>().loadInitial();
     });
   }
 
+  /// 페이지 이동 시 광고 노출 여부를 체크하고 실행하는 메소드.
+  ///
+  /// [oldIndex]와 [newIndex]의 차이를 계산하여 앞으로 이동한 경우([delta] > 0)에만 카운트합니다.
+  /// [AdProvider.incrementBy]가 true를 반환하면 광고를 노출합니다.
+  /// 광고 노출 전후로 [_pauseSignal]을 통해 비디오 재생을 일시 정지/재개합니다.
   void _maybeShowAdOnAdvance(BuildContext context, int oldIndex, int newIndex) {
     // 뒤로/같은 페이지는 무시, 앞으로 N칸 이동만 카운트
     final delta = newIndex - oldIndex;
@@ -83,11 +96,11 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
     super.dispose();
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // Build
+  // ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final iap = context.watch<IapProvider>();
-    final premium = iap.isPremium;
-
     return Consumer<ShortsProvider>(
       builder: (_, shorts, __) {
         if (shorts.loading && shorts.shorts.isEmpty) {
@@ -107,13 +120,39 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                 scrollDirection: Axis.vertical,
                 itemCount: shorts.shorts.length,
                 onPageChanged: (i) {
-                  // 초기 호출 한 번은 무시 (PageView가 첫 빌드 때도 불릴 수 있음)
+                  // 초기 호출 한 번은 무시
                   if (!_initialized) {
                     _initialized = true;
                   } else {
                     _maybeShowAdOnAdvance(context, _currentIndex, i);
                   }
-                  setState(() => _currentIndex = i);
+
+                  // 1. 다음 배치 미리 로드 (Ex. 8번째 쯤 왔을 때)
+                  // 현재 10개만 있고, i가 8이면(9번째) → loadMore() 호출 → 20개 됨
+                  final total = shorts.shorts.length;
+                  if (i >= total - 2 && !shorts.loading) {
+                    context.read<ShortsProvider>().loadMore();
+                  }
+
+                  // 2. 10번째(인덱스 10) 이상으로 넘어갔을 때 → Cycle Refresh
+                  // 0~9(10개)가 지나고 10(11번째, 다음 배치의 첫 번째)에 도달하면
+                  // 앞의 10개를 지우고 인덱스를 0으로 점프시킴.
+                  const batchSize = ShortsProvider.pageSize;
+                  if (i >= batchSize) {
+                    // (1) 데이터 정리: 앞의 10개 삭제
+                    shorts.removeItems(batchSize);
+
+                    // (2) 화면 점프: 현재 i에서 10을 뺀 위치로 이동 (i=10 -> 0)
+                    // jumpToPage는 즉시 반영되므로 끊김 없이 보임
+                    final newIndex = i - batchSize;
+                    _pageController.jumpToPage(newIndex);
+
+                    // (3) 상태 업데이트
+                    setState(() => _currentIndex = newIndex);
+                  } else {
+                    // 평범한 이동
+                    setState(() => _currentIndex = i);
+                  }
                 },
                 itemBuilder: (context, index) {
                   final item = shorts.shorts[index];
@@ -156,8 +195,9 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                     child: ProgressBar(
-                      index: _currentIndex,
-                      total: shorts.shorts.length,
+                      // 항상 10개를 기준으로 보여줌 (20개가 있어도 UI는 10개 사이클)
+                      index: _currentIndex % ShortsProvider.pageSize,
+                      total: ShortsProvider.pageSize,
                     ),
                   ),
                 ),
@@ -203,7 +243,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                   children: [
                     for (final tag in shorts.shorts[_currentIndex].tags)
                       Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: AppSpacing.sm),
                         child: shorts_badge.Badge(
                           label: tag.name, // Drift Tag 모델의 name
                           icon: Icons

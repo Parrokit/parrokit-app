@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 import '../widgets/gradient_icon.dart';
 
 /// 대시보드 상단 헤더 섹션.
@@ -75,7 +76,8 @@ class _HeaderSectionState extends State<HeaderSection>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF111418);
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
 
     final dup = context.watch<ClipActivityProvider>();
     final isLoading = dup.isCounting;
@@ -90,8 +92,8 @@ class _HeaderSectionState extends State<HeaderSection>
 
     // 그라데이션 숫자 스타일
     final gradientPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)],
+      ..shader = LinearGradient(
+        colors: [AppColors.gradientStart, AppColors.gradientEnd],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ).createShader(const Rect.fromLTWH(0, 0, 200, 40));

@@ -1,9 +1,27 @@
+// ============================================================================
+// lib/features/_content/shorts/presentation/widgets/action_rail.dart
+// ============================================================================
+//
+// [역할]
+// 쇼츠 화면 우측에 배치되는 액션 버튼들의 모음(Rail).
+//
+// [기능]
+// - 자동 넘김(Auto Next) 토글
+// - 자막(Subtitle) 표시 토글
+// - 외부 플레이어(Player) 열기
+//
+// [레이어]
+// Presentation Layer > Widgets
+//
+// ============================================================================
+
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/config/app_config.dart';
-import 'action_icon.dart'; // ✅ 방금 주신 ActionIcon 불러옴
+import 'action_icon.dart';
 
-
-
+/// [역할]
+/// 쇼츠 화면 우측 사이드바(액션 레일).
+///
+/// 여러 개의 [ActionIcon]을 세로로 배치하여 주요 기능을 제공합니다.
 class ActionRail extends StatelessWidget {
   final bool autoNextEnabled;
   final void Function(bool enabled) onAutoNextChanged;
@@ -11,8 +29,6 @@ class ActionRail extends StatelessWidget {
 
   final bool showSubtitle;
   final void Function(bool enabled) onSubtitleChanged;
-
-
 
   const ActionRail({
     super.key,

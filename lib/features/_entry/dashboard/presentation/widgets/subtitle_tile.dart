@@ -11,6 +11,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// 자막 타일 위젯.
 ///
@@ -53,10 +55,10 @@ class SubtitleTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: cardBg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: subtle),
         ),
         child: Column(
@@ -107,14 +109,12 @@ class SubtitleTile extends StatelessWidget {
 /// 스켈레톤 타일 (private)
 class _SubtitleTileSkeleton extends SubtitleTile {
   _SubtitleTileSkeleton({
-    required Color cardBg,
-    required Color subtle,
+    required super.cardBg,
+    required super.subtle,
   }) : super(
           original: '',
           pron: null,
           trans: null,
-          cardBg: cardBg,
-          subtle: subtle,
           textPrimary: Colors.transparent,
           primaryColor: Colors.transparent,
           tertiaryColor: Colors.transparent,
@@ -127,11 +127,11 @@ class _SubtitleTileSkeleton extends SubtitleTile {
       height: 80,
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: subtle),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -140,7 +140,7 @@ class _SubtitleTileSkeleton extends SubtitleTile {
               height: 16,
               decoration: BoxDecoration(
                 color: subtle,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
             const SizedBox(height: 8),
@@ -149,7 +149,7 @@ class _SubtitleTileSkeleton extends SubtitleTile {
               height: 12,
               decoration: BoxDecoration(
                 color: subtle,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
           ],

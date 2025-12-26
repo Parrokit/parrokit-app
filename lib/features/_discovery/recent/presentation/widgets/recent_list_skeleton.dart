@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 /// 최근 본 클립 목록 로딩 스켈레톤.
 class RecentListSkeleton extends StatelessWidget {
@@ -19,7 +20,7 @@ class RecentListSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final base = cs.surfaceVariant.withOpacity(.65);
+    final base = cs.surfaceContainerHighest.withValues(alpha: .65);
     final hilite = cs.surface;
 
     return ListView.separated(
@@ -28,7 +29,7 @@ class RecentListSkeleton extends StatelessWidget {
       separatorBuilder: (_, __) => Divider(
         height: 8,
         thickness: 0.5,
-        color: cs.outlineVariant.withOpacity(.6),
+        color: cs.outlineVariant.withValues(alpha: .6),
       ),
       itemCount: 8,
     );
@@ -73,7 +74,7 @@ class _ShimmerTileState extends State<_ShimmerTile>
         return Container(
           height: 92,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: border),
             gradient: LinearGradient(
               begin: Alignment.centerLeft,

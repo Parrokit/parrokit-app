@@ -17,6 +17,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 import '../../domain/coin_package.dart';
 import 'coin_package_card.dart';
 
@@ -73,7 +74,7 @@ class CoinStoreSection extends StatelessWidget {
           children: CoinPackage.packages
               .map(
                 (pkg) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: CoinPackageCard(
                     package: pkg,
                     onTap: () => onPackageSelected?.call(pkg),

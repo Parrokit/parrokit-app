@@ -150,6 +150,61 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// 프로필 아바타(사진) URL 업데이트
+  Future<void> updatePhotoUrl(String? photoUrl) async {
+    debugPrint('[UserProvider] updatePhotoUrl requested: $photoUrl');
+
+    // 1. Optimistic Update (즉시 UI 반영)
+    if (_currentUser != null) {
+      debugPrint('[UserProvider] Applying optimistic update');
+      _currentUser = _currentUser!.copyWith(
+        photoUrl: photoUrl,
+        clearPhotoUrl: photoUrl == null,
+      );
+      notifyListeners();
+    }
+
+    _setLoading(true);
+    try {
+      await _userRepository.updatePhotoUrl(photoUrl);
+      debugPrint('[UserProvider] Repository update complete');
+
+      // ⚠️ 주의: reloadFirebaseUser()를 바로 호출하면
+      // Firestore의 Eventual Consistency로 인해 아직 갱신되지 않은 과거 데이터를
+      // 받아와서 UI가 롤백되는 현상이 발생할 수 있음.
+      // 이미 로컬 state와 repo/storage를 갱신했으므로 재조회 불필요.
+      // await reloadFirebaseUser();
+    } catch (e) {
+      debugPrint('[UserProvider] Update failed, error: $e');
+      // 에러 발생 시 롤백 로직이 필요할 수 있으나, 일단 로그만 출력
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// 닉네임(DisplayName) 업데이트
+  Future<void> updateDisplayName(String? displayName) async {
+    debugPrint('[UserProvider] updateDisplayName requested: $displayName');
+
+    // 1. Optimistic Update
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(
+        displayName: displayName,
+        clearDisplayName: displayName == null,
+      );
+      notifyListeners();
+    }
+
+    _setLoading(true);
+    try {
+      await _userRepository.updateDisplayName(displayName);
+    } catch (e) {
+      debugPrint('[UserProvider] Update failed, error: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 로그아웃/초기화.
   /// 로컬 저장소를 비우고 메모리에 있는 유저도 제거합니다.
   Future<void> signOut() async {

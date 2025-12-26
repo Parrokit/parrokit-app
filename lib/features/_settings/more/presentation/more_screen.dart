@@ -19,6 +19,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
 
 import 'sections/account_section.dart';
 import 'sections/app_settings_section.dart';
@@ -40,33 +41,36 @@ class MoreScreen extends StatelessWidget {
       backgroundColor: t.colorScheme.surface,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ).copyWith(bottom: AppSpacing.xxl),
           children: const [
-            SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
 
             // 계정
             AccountSection(),
-            SizedBox(height: 20),
+            SizedBox(height: AppSpacing.sectionGap),
 
             // 플레이어 설정
             PlayerSettingsSection(),
-            SizedBox(height: 20),
+            SizedBox(height: AppSpacing.sectionGap),
 
             // 쇼츠 설정
             ShortsSettingsSection(),
-            SizedBox(height: 20),
+            SizedBox(height: AppSpacing.sectionGap),
 
             // 앱 설정
             AppSettingsSection(),
-            SizedBox(height: 20),
+            SizedBox(height: AppSpacing.sectionGap),
 
             // 결제
             PaymentSection(),
-            SizedBox(height: 20),
+            SizedBox(height: AppSpacing.sectionGap),
 
             // 백업
             BackupSection(),
-            SizedBox(height: 20),
+            SizedBox(height: AppSpacing.sectionGap),
 
             // 정보
             InfoSection(),

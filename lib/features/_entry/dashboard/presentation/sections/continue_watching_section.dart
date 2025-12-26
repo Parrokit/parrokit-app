@@ -13,6 +13,7 @@
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 import '../widgets/section_header.dart';
 import '../widgets/clip_thumbnail_card.dart';
 import '../widgets/more_card.dart';
@@ -55,13 +56,14 @@ class ContinueWatchingSection extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final cardBg = isDark ? const Color(0xFF15181C) : Colors.white;
+    final cardBg = isDark ? AppColors.surfaceContainerDark : AppColors.surface;
     final subtle = isDark
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.black.withValues(alpha: 0.06);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF111418);
+    final textPrimary =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
     final textSecondary =
-        isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF556070);
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
     final showGuide = items.isEmpty || items.length < 6;
     final itemCount = items.isEmpty ? 1 : items.length + (showGuide ? 1 : 0);

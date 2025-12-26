@@ -52,8 +52,11 @@ mixin AudioModeMixin on ChangeNotifier {
 
   /// 오디오 전용 모드 진입.
   Future<void> enterAudioOnlyMode() async {
-    if (isBackground || controller?.value.isInitialized != true || clip == null)
+    if (isBackground ||
+        controller?.value.isInitialized != true ||
+        clip == null) {
       return;
+    }
 
     mutableIsBackground = true;
     mutableBgPlaying = false;
@@ -82,7 +85,7 @@ mixin AudioModeMixin on ChangeNotifier {
         clipBegin: clipBegin,
         clipEnd: clipEnd,
         loop: loopSegment,
-        title: clip?.title?.isNotEmpty == true ? clip!.title! : '클립',
+        title: (clip?.title ?? '').isNotEmpty ? clip!.title : '클립',
         artUri: artUri,
       );
       await h.seek(pos);

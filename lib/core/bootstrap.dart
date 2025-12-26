@@ -29,7 +29,8 @@ import 'package:parrokit/core/services/ad_service.dart';
 import 'package:parrokit/core/utils/audio_bg.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
-import 'package:parrokit/core/provider/ad_provider.dart';
+import 'package:parrokit/features/_content/shorts/presentation/providers/ad_provider.dart';
+import 'package:parrokit/features/_content/shorts/data/shorts_ad_repository.dart';
 
 import 'app.dart';
 import 'di/providers.dart';
@@ -82,7 +83,11 @@ Future<void> bootstrap() async {
   // ─────────────────────────────────────────────────────────────────
   final iapProvider = IapProvider();
   await iapProvider.init();
-  final adProvider = AdProvider(initialPremium: iapProvider.isPremium);
+  final adRepository = ShortsAdRepository();
+  final adProvider = AdProvider(
+    repository: adRepository,
+    initialPremium: iapProvider.isPremium,
+  );
 
   // ─────────────────────────────────────────────────────────────────
   // 7. 앱 실행

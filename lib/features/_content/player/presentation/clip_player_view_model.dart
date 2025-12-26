@@ -180,7 +180,7 @@ class ClipPlayerViewModel extends ChangeNotifier
 
     _isLoading = false;
     _isInitialized = true;
-    _appBarTitle = _clip?.title?.isNotEmpty == true ? _clip!.title! : '재생';
+    _appBarTitle = (_clip?.title ?? '').isNotEmpty ? _clip!.title : '재생';
     notifyListeners();
   }
 

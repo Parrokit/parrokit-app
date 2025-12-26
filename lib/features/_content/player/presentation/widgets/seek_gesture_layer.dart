@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SeekGestureLayer extends StatelessWidget {
-  const SeekGestureLayer({required this.onSeek});
+  const SeekGestureLayer({super.key, required this.onSeek});
   final void Function(double dx, double width) onSeek;
 
   @override
