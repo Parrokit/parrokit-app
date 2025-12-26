@@ -34,9 +34,9 @@ import 'package:parrokit/data/local/app_database.dart';
 ///
 /// 클립 수, 최근 시청, 컬렉션, 랜덤 자막 등을 관리.
 class ClipActivityProvider extends ChangeNotifier {
-  final AppDatabase pdb;
+  final AppDatabase db;
 
-  ClipActivityProvider(this.pdb) {
+  ClipActivityProvider(this.db) {
     _initWatchers(); // ✅ 생성 시 한 번만 스트림 연결
   }
 
@@ -82,9 +82,9 @@ class ClipActivityProvider extends ChangeNotifier {
 
   /// 최근 본 클립 기록 (watcher가 자동 반영)
   Future<void> logRecent(int clipId, {bool prune = false}) async {
-    await pdb.transaction(() async {
+    await db.transaction(() async {
       // 1) UPSERT: 최근 시청 순서 증가
-      await pdb.customUpdate(
+      await db.customUpdate(
         '''
       INSERT INTO recent_clip_views(clip_id, last_seq)
       VALUES(?, COALESCE((SELECT MAX(last_seq)+1 FROM recent_clip_views), 1))
@@ -92,12 +92,12 @@ class ClipActivityProvider extends ChangeNotifier {
         last_seq = COALESCE((SELECT MAX(last_seq)+1 FROM recent_clip_views), 1);
       ''',
         variables: [Variable.withInt(clipId)],
-        updates: {pdb.recentClipViews},
+        updates: {db.recentClipViews},
       );
 
       // 2) (옵션) 오래된 로그 정리
       if (prune) {
-        await pdb.customUpdate(
+        await db.customUpdate(
           '''
         DELETE FROM recent_clip_views
         WHERE last_seq < (
@@ -110,7 +110,7 @@ class ClipActivityProvider extends ChangeNotifier {
         )
         AND (SELECT COUNT(*) FROM recent_clip_views) > 100;
         ''',
-          updates: {pdb.recentClipViews},
+          updates: {db.recentClipViews},
         );
       }
     });
@@ -141,10 +141,10 @@ class ClipActivityProvider extends ChangeNotifier {
 
   void _initWatchers() {
     // 1) clipCount 자동 갱신
-    _countSub = pdb
+    _countSub = db
         .customSelect(
           'SELECT COUNT(*) AS cnt FROM clips;',
-          readsFrom: {pdb.clips},
+          readsFrom: {db.clips},
         )
         .watch()
         .listen((rows) {
@@ -156,7 +156,7 @@ class ClipActivityProvider extends ChangeNotifier {
         });
 
     // 2) collections 자동 갱신 (titles 기준 집계)
-    _collectionsSub = pdb
+    _collectionsSub = db
         .customSelect(r'''
 SELECT 
   t.id              AS tid,
@@ -169,7 +169,7 @@ LEFT JOIN episodes e ON e.release_id = r.id
 LEFT JOIN clips    c ON c.episode_id = e.id
 GROUP BY t.id
 ORDER BY t.name;
-''', readsFrom: {pdb.titles, pdb.releases, pdb.episodes, pdb.clips})
+''', readsFrom: {db.titles, db.releases, db.episodes, db.clips})
         .watch()
         .listen((rows) {
           collections = rows
@@ -185,7 +185,7 @@ ORDER BY t.name;
         });
 
     // 3) recent6 자동 갱신 (N+1 제거한 JOIN)
-    _recentsSub = pdb
+    _recentsSub = db
         .customSelect(r'''
 SELECT 
   rc.clip_id   AS clipId,
@@ -200,11 +200,11 @@ LEFT JOIN titles   t ON t.id = r.title_id
 ORDER BY rc.last_seq DESC
 LIMIT 6;
 ''', readsFrom: {
-          pdb.recentClipViews,
-          pdb.clips,
-          pdb.episodes,
-          pdb.releases,
-          pdb.titles,
+          db.recentClipViews,
+          db.clips,
+          db.episodes,
+          db.releases,
+          db.titles,
         })
         .watch()
         .listen((rows) {
@@ -258,9 +258,9 @@ LIMIT 6;
 
   /// 랜덤 세그먼트 가져오기
   Future<List<Segment>> getRandomSegments() async {
-    final countRow = await pdb.customSelect(
+    final countRow = await db.customSelect(
       'SELECT COUNT(*) AS c FROM segments',
-      readsFrom: {pdb.segments},
+      readsFrom: {db.segments},
     ).getSingle();
 
     final total = countRow.data['c'] as int? ?? 0;
@@ -268,7 +268,7 @@ LIMIT 6;
 
     final limit = total < 10 ? total : 10;
 
-    final q = (pdb.select(pdb.segments)
+    final q = (db.select(db.segments)
       ..orderBy([
         (tbl) => OrderingTerm(expression: const CustomExpression('RANDOM()')),
       ])
@@ -294,13 +294,13 @@ LIMIT 6;
   Future<List<(int, Uint8List?, String?, String?)>> _getRandomClipsWithTitle({
     int count = 10,
   }) async {
-    final countRow = await pdb.customSelect(
+    final countRow = await db.customSelect(
       '''
       SELECT COUNT(*) AS c
       FROM clips c
       WHERE EXISTS (SELECT 1 FROM segments s WHERE s.clip_id = c.id)
       ''',
-      readsFrom: {pdb.clips, pdb.segments},
+      readsFrom: {db.clips, db.segments},
     ).getSingle();
 
     final total = (countRow.data['c'] as int?) ?? 0;
@@ -308,7 +308,7 @@ LIMIT 6;
 
     final limit = total < count ? total : count;
 
-    final rows = await pdb.customSelect(
+    final rows = await db.customSelect(
       '''
       SELECT
         c.id     AS clip_id,
@@ -323,13 +323,7 @@ LIMIT 6;
       LIMIT ?
       ''',
       variables: [Variable<int>(limit)],
-      readsFrom: {
-        pdb.clips,
-        pdb.episodes,
-        pdb.releases,
-        pdb.titles,
-        pdb.segments
-      },
+      readsFrom: {db.clips, db.episodes, db.releases, db.titles, db.segments},
     ).get();
 
     return rows.map<(int, Uint8List?, String?, String?)>((r) {
@@ -360,7 +354,7 @@ LIMIT 6;
     int limit = 100,
     bool refreshThumb = false,
   }) async {
-    final rows = await pdb.customSelect(
+    final rows = await db.customSelect(
       '''
     SELECT 
       rc.clip_id   AS clipId,
@@ -377,11 +371,11 @@ LIMIT 6;
     ''',
       variables: [Variable<int>(limit)],
       readsFrom: {
-        pdb.recentClipViews,
-        pdb.clips,
-        pdb.episodes,
-        pdb.releases,
-        pdb.titles,
+        db.recentClipViews,
+        db.clips,
+        db.episodes,
+        db.releases,
+        db.titles,
       },
     ).get();
 
