@@ -16,7 +16,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/local/dao/titles_dao.dart';
-import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart' as utils;
 
 import '../data/adapters/openai_llm_adapter.dart';
@@ -147,11 +146,7 @@ class ClipEditorViewModel extends ChangeNotifier
   // 초기화
   // ─────────────────────────────────────────────────────────────────
 
-  void showToast(String msg) {
-    if (rootNavigatorKey.currentContext != null) {
-      utils.showToast(rootNavigatorKey.currentContext!, msg);
-    }
-  }
+  void showToast(String msg) => utils.showToast(msg);
 
   void _init() {
     staging = FileStagingService();

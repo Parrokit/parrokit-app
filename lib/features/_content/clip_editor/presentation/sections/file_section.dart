@@ -85,7 +85,7 @@ class _FileSectionState extends State<FileSection> {
   Future<void> _playInline() async {
     final path = widget.vm.picked?.path;
     if (path == null) {
-      showToast(context, '재생할 파일 경로가 없습니다.');
+      showToast('재생할 파일 경로가 없습니다.');
       return;
     }
     try {
@@ -108,7 +108,7 @@ class _FileSectionState extends State<FileSection> {
       });
       await _vp!.play();
     } catch (e) {
-      if (mounted) showToast(context, '재생 초기화 실패: $e');
+      if (mounted) showToast('재생 초기화 실패: $e');
     }
   }
 

@@ -78,10 +78,7 @@ class ClipListFromProvider extends StatelessWidget {
 
       if (!context.mounted) return;
       // ✅ showToast 사용
-      showToast(
-        context,
-        ok2 ? '삭제되었습니다' : '삭제에 실패했습니다',
-      );
+      showToast(ok2 ? '삭제되었습니다' : '삭제에 실패했습니다');
     }
   }
 

@@ -11,7 +11,6 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:parrokit/data/local/dao/titles_dao.dart';
 
@@ -46,9 +45,7 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
       allTitleNames = names;
       notifyListeners();
     } catch (e) {
-      if (rootNavigatorKey.currentContext != null) {
-        showToast(rootNavigatorKey.currentContext!, '작품 목록 로드 오류: $e');
-      }
+      showToast('작품 목록 로드 오류: $e');
     }
   }
 
@@ -60,9 +57,7 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
       seasonNumbers = nums;
       notifyListeners();
     } catch (e) {
-      if (rootNavigatorKey.currentContext != null) {
-        showToast(rootNavigatorKey.currentContext!, '시즌 정보 로드 오류: $e');
-      }
+      showToast('시즌 정보 로드 오류: $e');
     }
   }
 
@@ -86,9 +81,7 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
       episodeNumbers = nums;
       notifyListeners();
     } catch (e) {
-      if (rootNavigatorKey.currentContext != null) {
-        showToast(rootNavigatorKey.currentContext!, '회차 정보 로드 오류: $e');
-      }
+      showToast('회차 정보 로드 오류: $e');
     }
   }
 

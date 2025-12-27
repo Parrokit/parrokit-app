@@ -89,18 +89,18 @@ class PaymentSection extends StatelessWidget {
         final iap = context.read<IapProvider>();
 
         if (iap.loading) {
-          showToast(context, '결제 정보를 불러오는 중입니다… 잠시만요.');
+          showToast('결제 정보를 불러오는 중입니다… 잠시만요.');
           return;
         }
         if (!iap.available) {
-          showToast(context, '스토어에 연결할 수 없습니다.');
+          showToast('스토어에 연결할 수 없습니다.');
           return;
         }
         if (iap.removeAdsProduct == null) {
           await iap.init();
           if (!context.mounted) return;
           if (iap.removeAdsProduct == null) {
-            showToast(context, '상품 정보를 찾을 수 없습니다.');
+            showToast('상품 정보를 찾을 수 없습니다.');
             return;
           }
         }

@@ -13,7 +13,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 
 import '../../data/adapters/video_picker_files.dart';
@@ -78,9 +77,7 @@ mixin EditorFileMixin on ChangeNotifier {
     try {
       effectivePath = await audioToVideo.ensureMp4(path);
     } catch (e) {
-      if (rootNavigatorKey.currentContext != null) {
-        showToast(rootNavigatorKey.currentContext!, '오디오를 영상으로 변환 중 오류: $e');
-      }
+      showToast('오디오를 영상으로 변환 중 오류: $e');
       return;
     }
 
