@@ -37,13 +37,18 @@ class ClipListFromProvider extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           '삭제할까요?',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: Theme.of(dialogContext)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          item.clip.title, // Non-nullable according to lint
-          style: const TextStyle(color: Colors.black87, fontSize: 15),
+          item.clip.title,
+          style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+                color: Colors.black87,
+              ),
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         actions: [
@@ -187,9 +192,10 @@ class ClipListFromProvider extends StatelessWidget {
                                   clip.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 16),
+                                  style: Theme.of(ctx)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w800),
                                 ),
                                 const SizedBox(height: 6),
                                 Wrap(

@@ -32,7 +32,10 @@ class BookmarkTab extends StatelessWidget {
             Icon(icon, size: 18, color: fg),
             const SizedBox(width: 6),
             Text(label,
-                style: TextStyle(color: fg, fontWeight: FontWeight.w800)),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: fg, fontWeight: FontWeight.w800)),
           ],
         ),
       ),

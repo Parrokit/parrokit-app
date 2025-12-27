@@ -46,11 +46,10 @@ class MoreCard extends StatelessWidget {
         child: Center(
           child: Text(
             '아직 등록된 클립이 없어요',
-            style: TextStyle(
-              color: textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ),
       );
@@ -107,11 +106,10 @@ class MoreCard extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       '더 보러가기',
-                      style: TextStyle(
-                        color: textSecondary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: textSecondary,
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -119,11 +117,10 @@ class MoreCard extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: textSecondary.withValues(alpha: 0.8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: textSecondary.withValues(alpha: 0.8),
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                   ],
                 ),

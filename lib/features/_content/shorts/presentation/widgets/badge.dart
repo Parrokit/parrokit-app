@@ -44,10 +44,10 @@ class Badge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
-              color: fixedColor,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: fixedColor,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),

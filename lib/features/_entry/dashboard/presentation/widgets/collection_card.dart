@@ -62,21 +62,20 @@ class CollectionCard extends StatelessWidget {
                 // 한국어 이름
                 Text(
                   nameKo,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: textPrimary,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: textPrimary,
+                      ),
                 ),
                 const SizedBox(height: 4),
 
                 // 일본어 이름
                 Text(
                   nameJa ?? '-',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: textSecondary,
-                  ),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: textSecondary,
+                      ),
                 ),
                 const Spacer(),
 
@@ -87,11 +86,10 @@ class CollectionCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       '클립 $clipCount',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: textSecondary,
-                      ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: textSecondary,
+                          ),
                     ),
                   ],
                 ),

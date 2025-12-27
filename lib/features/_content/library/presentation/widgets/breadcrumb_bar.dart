@@ -33,14 +33,14 @@ class BreadcrumbBar extends StatelessWidget {
                     horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
                 child: Text(
                   path[i],
-                  style: TextStyle(
-                    color: i == path.length - 1
-                        ? cs.primary
-                        : cs.onSurface.withValues(alpha: 0.75),
-                    fontWeight: i == path.length - 1
-                        ? FontWeight.w800
-                        : FontWeight.w600,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: i == path.length - 1
+                            ? cs.primary
+                            : cs.onSurface.withValues(alpha: 0.75),
+                        fontWeight: i == path.length - 1
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                      ),
                 ),
               ),
             ),

@@ -80,11 +80,10 @@ class EpisodeThumbnail extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             duration!,
-            style: TextStyle(
-              fontSize: 10,
-              color: cs.onSurface.withValues(alpha: 0.7),
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ],

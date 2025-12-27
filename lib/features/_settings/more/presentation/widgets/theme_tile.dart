@@ -21,7 +21,7 @@ class ThemeTile extends StatelessWidget {
       return ChoiceChip(
         label: Text(
           label,
-          style: TextStyle(
+          style: tt.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: selected ? cs.onPrimary : cs.onSurfaceVariant,
           ),

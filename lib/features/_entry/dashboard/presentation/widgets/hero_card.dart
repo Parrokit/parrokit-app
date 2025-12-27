@@ -74,11 +74,10 @@ class HeroCard extends StatelessWidget {
                   children: [
                     Text(
                       title ?? '오늘의 학습',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: textSecondary,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: textSecondary,
+                          ),
                     ),
                     const SizedBox(width: 8),
                     if (loading)
@@ -97,11 +96,10 @@ class HeroCard extends StatelessWidget {
                   clipTitle ?? '영상을 시청해보세요',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: textPrimary,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: textPrimary,
+                      ),
                 ),
               ],
             ),

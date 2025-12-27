@@ -41,7 +41,7 @@ class SpeedMenu extends StatelessWidget {
             const Icon(Icons.speed_rounded, size: 18),
             const SizedBox(width: 6),
             Text('${value.toStringAsFixed(2)}x',
-                style: TextStyle(
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: isLight ? cs.onSurface : Colors.white)),
             const SizedBox(width: 4),

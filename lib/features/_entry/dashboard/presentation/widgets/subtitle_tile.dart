@@ -67,11 +67,10 @@ class SubtitleTile extends StatelessWidget {
             // 원문
             Text(
               original,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: textPrimary,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary,
+                  ),
             ),
 
             // 발음
@@ -79,11 +78,10 @@ class SubtitleTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 pron!,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: primaryColor,
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: primaryColor,
+                    ),
               ),
             ],
 
@@ -92,11 +90,10 @@ class SubtitleTile extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 trans!,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: tertiaryColor,
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: tertiaryColor,
+                    ),
               ),
             ],
           ],

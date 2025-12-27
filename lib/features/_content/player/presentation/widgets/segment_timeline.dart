@@ -115,13 +115,17 @@ class SegmentTimeline extends StatelessWidget {
     );
   }
 
-  Widget _timeLabel(Duration d, bool isLight) => Text(
+  Widget _timeLabel(Duration d, bool isLight) {
+    return Builder(
+      builder: (context) => Text(
         _fmt(d),
-        style: TextStyle(
-          color: isLight ? Colors.black54 : Colors.white70,
-          fontSize: 12,
-        ),
-      );
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: isLight ? Colors.black54 : Colors.white70,
+            ),
+      ),
+    );
+  }
+
   String _fmt(Duration d) {
     final totalMs = d.inMilliseconds;
     final mm = ((totalMs ~/ 1000) ~/ 60).toString().padLeft(2, '0');

@@ -264,7 +264,11 @@ class _ShortsPageState extends State<ShortsPage>
     Widget videoLayer() {
       if (_error != null) {
         return Center(
-          child: Text(_error!, style: const TextStyle(color: Colors.white)),
+          child: Text(_error!,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.white)),
         );
       }
       if (!_init || c == null) return const VideoLayerPlaceholder();

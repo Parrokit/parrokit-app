@@ -44,11 +44,10 @@ class EmptyCard extends StatelessWidget {
       child: Center(
         child: Text(
           '아직 등록된 $noun이 없어요',
-          style: TextStyle(
-            color: textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
         ),
       ),
     );

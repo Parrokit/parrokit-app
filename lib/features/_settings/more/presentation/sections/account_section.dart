@@ -143,7 +143,10 @@ class AccountSection extends StatelessWidget {
                   icon: const Icon(Icons.manage_accounts_rounded, size: 20),
                   label: Text(
                     user?.email == null ? '로그인 / 계정 만들기' : '계정 관리',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -205,11 +208,10 @@ class _StatusBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
           ),
         ],
       ),

@@ -107,8 +107,12 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (shorts.shorts.isEmpty) {
-          return const Center(
-              child: Text("영상이 없습니다", style: TextStyle(color: Colors.white)));
+          return Center(
+              child: Text("영상이 없습니다",
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: Colors.white)));
         }
 
         return Scaffold(

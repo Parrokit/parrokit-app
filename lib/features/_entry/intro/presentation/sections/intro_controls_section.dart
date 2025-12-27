@@ -86,9 +86,10 @@ class IntroControlsSection extends StatelessWidget {
                       ),
                     ),
                     onPressed: onSkip,
-                    child: const Text(
+                    child: Text(
                       '건너뛰기',
-                      style: TextStyle(decoration: TextDecoration.underline),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(decoration: TextDecoration.underline),
                     ),
                   ),
 
