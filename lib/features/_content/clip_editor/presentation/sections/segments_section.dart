@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import '../../data/editor_strings.dart';
 import '../../domain/editor_state.dart';
 import '../widgets/section_title.dart';
+import '../widgets/stt_progress_card.dart';
 import '../widgets/cards/segment_card.dart';
 import '../clip_editor_view_model.dart';
 
@@ -36,7 +37,11 @@ class SegmentsSection extends StatelessWidget {
 
         // STT 진행 상황 표시
         if (vm.isSttProcessing) ...[
-          _buildSttProgressCard(context),
+          SttProgressCard(
+            sttState: vm.sttState,
+            sttProgress: vm.sttProgress,
+            sttTotal: vm.sttTotal,
+          ),
           const SizedBox(height: 12),
         ],
 
@@ -70,94 +75,6 @@ class SegmentsSection extends StatelessWidget {
         const SizedBox(height: 12),
         _buildSegmentsList(),
       ],
-    );
-  }
-
-  Widget _buildSttProgressCard(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    // 번역 중일 때 배치 진행률 표시
-    final translatingLabel =
-        vm.sttTotal > 0 && vm.sttState == SttProcessState.translating
-            ? '번역 중 (${vm.sttProgress}/${vm.sttTotal})'
-            : '번역 중';
-
-    final steps = [
-      (SttProcessState.extracting, '오디오 추출', Icons.music_note_rounded),
-      (SttProcessState.transcribing, '음성 인식 (STT)', Icons.hearing_rounded),
-      (SttProcessState.translating, translatingLabel, Icons.translate_rounded),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome, color: cs.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'AI 자막 생성 중...',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...steps.map((step) {
-            final (state, label, icon) = step;
-            final isActive = vm.sttState == state;
-            final isCompleted = vm.sttState.index > state.index;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  if (isCompleted)
-                    Icon(Icons.check_circle, color: cs.primary, size: 20)
-                  else if (isActive)
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: cs.primary,
-                      ),
-                    )
-                  else
-                    Icon(Icons.circle_outlined,
-                        color: cs.onSurface.withValues(alpha: 0.3), size: 20),
-                  const SizedBox(width: 12),
-                  Icon(icon,
-                      size: 18,
-                      color: isActive || isCompleted
-                          ? cs.primary
-                          : cs.onSurface.withValues(alpha: 0.4)),
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontWeight:
-                          isActive ? FontWeight.bold : FontWeight.normal,
-                      color: isActive || isCompleted
-                          ? cs.onSurface
-                          : cs.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
     );
   }
 

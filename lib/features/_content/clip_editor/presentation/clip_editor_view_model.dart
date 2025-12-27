@@ -353,7 +353,7 @@ class ClipEditorViewModel extends ChangeNotifier
         // 코인 차감
         if (result.coinCost > 0) {
           userProvider.addCoins(-result.coinCost);
-          showToast('STT/초안 생성에 코인 ${result.coinCost}개 사용');
+          showToast('🪙 자막 생성 완료! (${result.coinCost}코인 사용)');
         }
       }
 
