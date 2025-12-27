@@ -30,7 +30,7 @@ class CircleIconButton extends StatelessWidget {
             ? Colors.white
             : (isLight ? cs.surface.withValues(alpha: 0.9) : Colors.white12));
     final foreground = fg ??
-        (emphasized ? Colors.black : (isLight ? cs.onSurface : Colors.white));
+        (emphasized ? cs.primary : (isLight ? cs.onSurface : Colors.white));
 
     final btn = InkWell(
       customBorder: const CircleBorder(),
