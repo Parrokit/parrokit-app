@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class PlainSubtitleOverlay extends StatelessWidget {
-  const PlainSubtitleOverlay({
+class SubtitleOverlay extends StatelessWidget {
+  const SubtitleOverlay({
     super.key,
     required this.ja,
     required this.pron,

@@ -12,7 +12,7 @@ import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
 import '../widgets/card_container.dart';
-import '../widgets/nav_tile.dart';
+import '../widgets/tiles/nav_tile.dart';
 import '../widgets/section_title.dart';
 import '../premium_dialog.dart';
 import 'package:parrokit/core/utils/show_toast.dart';

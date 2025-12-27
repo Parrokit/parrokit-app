@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'leading_icon.dart';
+import '../leading_icon.dart';
 
 class DropdownTile<T> extends StatelessWidget {
-  const DropdownTile({super.key, 
+  const DropdownTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.value,
@@ -38,9 +39,9 @@ class DropdownTile<T> extends StatelessWidget {
           style: tt.bodyMedium?.copyWith(color: cs.onSurface),
           items: items
               .map((e) => DropdownMenuItem<T>(
-            value: e,
-            child: Text(display?.call(e) ?? e.toString()),
-          ))
+                    value: e,
+                    child: Text(display?.call(e) ?? e.toString()),
+                  ))
               .toList(),
           onChanged: (v) {
             if (v != null) onChanged(v);

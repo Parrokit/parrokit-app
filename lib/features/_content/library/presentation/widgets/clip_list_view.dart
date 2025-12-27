@@ -9,12 +9,12 @@ import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/features/_content/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:provider/provider.dart';
-import 'episode_thumb_nail.dart';
+import 'episode_thumbnail.dart';
 import 'swipe_action_tile.dart';
 import 'mini_chip.dart';
 
-class ClipListFromProvider extends StatelessWidget {
-  const ClipListFromProvider({
+class ClipListView extends StatelessWidget {
+  const ClipListView({
     super.key,
     required this.items,
     required this.onOpen,

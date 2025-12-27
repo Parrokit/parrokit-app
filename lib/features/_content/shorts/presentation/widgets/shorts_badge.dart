@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/_content/shorts/presentation/widgets/badge.dart
+// lib/features/_content/shorts/presentation/widgets/shorts_badge.dart
 // ============================================================================
 //
 // [역할]
@@ -18,9 +18,9 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 
 /// [역할]
-/// 클립의 태그 정보를 아이콘과 함께 표시하는 배지 위젯.
-class Badge extends StatelessWidget {
-  const Badge({required this.label, required this.icon, super.key});
+/// 쇼츠 화면에서 클립의 태그 정보를 아이콘과 함께 표시하는 배지 위젯.
+class ShortsBadge extends StatelessWidget {
+  const ShortsBadge({required this.label, required this.icon, super.key});
 
   final String label;
   final IconData icon;

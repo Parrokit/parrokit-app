@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/editor_strings.dart';
 import '../widgets/section_title.dart';
-import '../widgets/segment_card.dart';
+import '../widgets/cards/segment_card.dart';
 import '../clip_editor_view_model.dart';
 
 /// 자막 세그먼트 섹션.

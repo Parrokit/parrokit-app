@@ -18,7 +18,7 @@ import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/core/utils/show_toast.dart';
 
-import '../widgets/file_hero_card.dart';
+import '../widgets/cards/file_hero_card.dart';
 import '../widgets/section_title.dart';
 import '../clip_editor_view_model.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'empty_state.dart';
-import 'picked_state.dart';
-import 'card_container.dart';
+import '../empty_state.dart';
+import '../picked_state.dart';
+import '../card_container.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';

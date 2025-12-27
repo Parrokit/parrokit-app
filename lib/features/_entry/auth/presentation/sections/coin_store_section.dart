@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/auth/presentation/widgets/coin_store_section.dart
+// lib/features/auth/presentation/sections/coin_store_section.dart
 // ============================================================================
 //
 // [역할]
@@ -19,7 +19,7 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import '../../domain/coin_package.dart';
-import 'coin_package_card.dart';
+import '../widgets/coin_package_card.dart';
 
 /// 코인 충전 섹션 위젯.
 ///

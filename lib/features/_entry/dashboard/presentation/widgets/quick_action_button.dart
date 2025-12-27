@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/dashboard/presentation/widgets/qa_button.dart
+// lib/features/dashboard/presentation/widgets/quick_action_button.dart
 // ============================================================================
 //
 // [역할]
@@ -17,7 +17,7 @@ import 'package:parrokit/core/theme/app_radius.dart';
 /// 퀵 액션 버튼 위젯.
 ///
 /// 가로 스크롤 액션 바에서 사용하는 칩 스타일 버튼.
-class QAButton extends StatelessWidget {
+class QuickActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color cardBg;
@@ -26,7 +26,7 @@ class QAButton extends StatelessWidget {
   final Color textSecondary;
   final VoidCallback onTap;
 
-  const QAButton({
+  const QuickActionButton({
     super.key,
     required this.label,
     required this.icon,

@@ -5,8 +5,8 @@ import 'package:parrokit/data/local/app_database.dart';
 /// 에피소드 목록을 간단히 보여주는 리스트 위젯.
 ///
 /// 폴더 뷰에서 에피소드 레벨로 진입했을 때 사용됩니다.
-class EpisodeListSimple extends StatelessWidget {
-  const EpisodeListSimple({
+class EpisodeList extends StatelessWidget {
+  const EpisodeList({
     super.key,
     required this.episodes,
     required this.onOpen,

@@ -20,7 +20,7 @@ import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/features/_content/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:parrokit/data/local/app_database.dart';
-import '../widgets/clip_list_from_provider.dart';
+import '../widgets/clip_list_view.dart';
 
 class LibraryTagSection extends StatelessWidget {
   const LibraryTagSection({
@@ -299,7 +299,7 @@ class LibraryTagSection extends StatelessWidget {
               return false;
             },
             builder: (_, items, __) {
-              return ClipListFromProvider(
+              return ClipListView(
                 key: const PageStorageKey('tag_results_list'),
                 items: items,
                 onOpen: (ci) {

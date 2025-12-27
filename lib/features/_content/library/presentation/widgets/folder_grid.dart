@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import 'folder_card.dart';
 
-class GridSection extends StatelessWidget {
-  const GridSection({
+class FolderGrid extends StatelessWidget {
+  const FolderGrid({
     super.key,
     required this.sectionTitle,
     required this.items,

@@ -20,7 +20,7 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/data/models/user.dart';
 import '../../domain/coin_package.dart';
-import '../widgets/coin_store_section.dart';
+import 'coin_store_section.dart';
 import 'user_info_card.dart';
 import 'email_verification_section.dart';
 

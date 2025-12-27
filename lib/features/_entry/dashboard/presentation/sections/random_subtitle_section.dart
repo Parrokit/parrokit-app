@@ -19,7 +19,7 @@ import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 import '../widgets/section_header.dart';
 import '../widgets/subtitle_tile.dart';
-import '../widgets/empty_card.dart';
+import '../widgets/cards/empty_card.dart';
 
 /// 대시보드 랜덤 자막 섹션.
 ///

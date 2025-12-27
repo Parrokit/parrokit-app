@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../data/editor_strings.dart';
-import 'time_triplet_field.dart';
-import 'card_container.dart';
-import 'labeled_text_field.dart';
+import '../../../data/editor_strings.dart';
+import '../time_triplet_field.dart';
+import '../card_container.dart';
+import '../labeled_text_field.dart';
 
 class SegmentCard extends StatelessWidget {
   const SegmentCard({

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:parrokit/core/theme/app_radius.dart';
-import 'leading_icon.dart';
+import '../leading_icon.dart';
 
 // lib/widgets/nav_tile.dart
 class NavTile extends StatelessWidget {

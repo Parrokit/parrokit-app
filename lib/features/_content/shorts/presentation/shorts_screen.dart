@@ -31,7 +31,7 @@ import 'package:parrokit/core/services/ad_service.dart';
 import 'widgets/shorts_page.dart';
 import 'widgets/progress_bar.dart';
 import 'widgets/action_rail.dart';
-import 'widgets/badge.dart' as shorts_badge;
+import 'widgets/shorts_badge.dart';
 
 /// [역할]
 /// 쇼츠(Shorts) 기능을 제공하는 메인 화면.
@@ -248,10 +248,9 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                     for (final tag in shorts.shorts[_currentIndex].tags)
                       Padding(
                         padding: const EdgeInsets.only(right: AppSpacing.sm),
-                        child: shorts_badge.Badge(
-                          label: tag.name, // Drift Tag 모델의 name
-                          icon: Icons
-                              .star_border_rounded, // 적당한 아이콘, 원하면 tag마다 다르게
+                        child: ShortsBadge(
+                          label: tag.name,
+                          icon: Icons.star_border_rounded,
                         ),
                       ),
                   ],
