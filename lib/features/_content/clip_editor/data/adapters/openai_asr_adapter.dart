@@ -16,12 +16,13 @@ import 'dart:io';
 
 // package
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:parrokit/core/utils/app_logger.dart';
 
 // relative
 import '../constants/openai_constants.dart';
@@ -107,13 +108,13 @@ class OpenAIAsrAdapter implements ASRPort {
 
       // 변환 실패 시 원본 반환 (Whisper가 일부 포맷 지원)
       final logs = await session.getAllLogsAsString();
-      debugPrint('FFmpeg 변환 실패. rc=${rc?.getValue()}\n$logs');
+      AppLogger.e('FFmpeg 변환 실패. rc=${rc?.getValue()}\n$logs');
       return normalized;
     } on MissingPluginException catch (e) {
-      debugPrint('FFmpeg 플러그인 없음. 원본 사용. $e');
+      AppLogger.w('FFmpeg 플러그인 없음. 원본 사용. $e');
       return normalized;
     } catch (e) {
-      debugPrint('FFmpeg 예외. 원본 사용. $e');
+      AppLogger.e('FFmpeg 예외. 원본 사용. $e');
       return normalized;
     }
   }
@@ -161,7 +162,7 @@ class OpenAIAsrAdapter implements ASRPort {
       final uploadPath = await _ensureWav(filePath);
       final filename = p.basename(uploadPath);
 
-      debugPrint('STT 업로드: $uploadPath');
+      AppLogger.d('STT 업로드: $uploadPath');
 
       req.files.add(await http.MultipartFile.fromPath(
         'file',
@@ -190,7 +191,7 @@ class OpenAIAsrAdapter implements ASRPort {
 
     // 응답 파싱
     final map = jsonDecode(res.body) as Map<String, dynamic>;
-    debugPrint('ASR 응답: ${res.body}');
+    AppLogger.d('ASR 응답: ${res.body}');
 
     return _parseResult(map, withSegments);
   }

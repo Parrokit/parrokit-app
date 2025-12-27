@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:parrokit/core/utils/app_logger.dart';
 
 class IapProvider extends ChangeNotifier {
   // 🔁 App Store Connect / Play Console에 등록한 Product ID와 반드시 동일
@@ -44,10 +45,10 @@ class IapProvider extends ChangeNotifier {
     if (available) {
       final response = await _iap.queryProductDetails({kRemoveAdsId});
       if (response.error != null) {
-        debugPrint('[IAP] queryProductDetails error: ${response.error}');
+        AppLogger.e('[IAP] queryProductDetails error: ${response.error}');
       }
       if (response.notFoundIDs.isNotEmpty) {
-        debugPrint('[IAP] notFoundIDs: ${response.notFoundIDs} '
+        AppLogger.w('[IAP] notFoundIDs: ${response.notFoundIDs} '
             '(Product ID가 콘솔과 다르거나, 아직 전파/승인 전일 수 있음)');
       }
       products = response.productDetails;
@@ -58,7 +59,7 @@ class IapProvider extends ChangeNotifier {
       _onPurchaseUpdated,
       onDone: () => _sub?.cancel(),
       onError: (e, st) {
-        debugPrint('[IAP] purchaseStream error: $e');
+        AppLogger.e('[IAP] purchaseStream error: $e');
         purchasing = false;
         notifyListeners();
       },
@@ -70,14 +71,14 @@ class IapProvider extends ChangeNotifier {
 
   Future<void> buyRemoveAds() async {
     if (!available) {
-      debugPrint('[IAP] Store not available');
+      AppLogger.w('[IAP] Store not available');
       return;
     }
     if (purchasing) return; // 중복 클릭 방지
 
     final pd = removeAdsProduct;
     if (pd == null) {
-      debugPrint('[IAP] Product not loaded: $kRemoveAdsId');
+      AppLogger.w('[IAP] Product not loaded: $kRemoveAdsId');
       return;
     }
 
@@ -100,7 +101,7 @@ class IapProvider extends ChangeNotifier {
 
   Future<void> _onPurchaseUpdated(List<PurchaseDetails> detailsList) async {
     for (final pd in detailsList) {
-      debugPrint('[IAP] update: id=${pd.productID}, status=${pd.status}');
+      AppLogger.i('[IAP] update: id=${pd.productID}, status=${pd.status}');
 
       switch (pd.status) {
         case PurchaseStatus.pending:
@@ -109,7 +110,7 @@ class IapProvider extends ChangeNotifier {
           break;
 
         case PurchaseStatus.error:
-          debugPrint('[IAP] purchase error: ${pd.error}');
+          AppLogger.e('[IAP] purchase error: ${pd.error}');
           purchasing = false;
           notifyListeners();
           break;
@@ -129,7 +130,7 @@ class IapProvider extends ChangeNotifier {
             try {
               await _iap.completePurchase(pd);
             } catch (e) {
-              debugPrint('[IAP] completePurchase error: $e');
+              AppLogger.e('[IAP] completePurchase error: $e');
             }
           }
           purchasing = false;

@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/app.dart';
+import 'app_logger.dart';
 
 /// 토스트 메시지 표시.
 ///
@@ -20,7 +21,7 @@ import 'package:parrokit/core/app.dart';
 void showToast(String msg) {
   final messenger = scaffoldMessengerKey.currentState;
   if (messenger == null) {
-    debugPrint('🍞 Toast (no messenger): $msg');
+    AppLogger.w('🍞 Toast (no messenger): $msg');
     return;
   }
   messenger
@@ -33,5 +34,5 @@ void showToast(String msg) {
       ),
     );
 
-  debugPrint('🍞 Toast: $msg');
+  AppLogger.d('🍞 Toast: $msg');
 }

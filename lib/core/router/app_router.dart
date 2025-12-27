@@ -31,6 +31,7 @@ import 'package:parrokit/features/_settings/payment/domain/payment_args.dart';
 // Router 관련
 import 'app_routes.dart';
 import 'app_shell.dart';
+import 'package:parrokit/core/utils/app_logger.dart';
 
 // Re-export for convenience
 export 'app_routes.dart';
@@ -45,6 +46,7 @@ GoRouter buildAppRouter({required bool seenIntro}) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
+    observers: [ParrokitRouteObserver()],
     initialLocation: seenIntro ? AppRoutes.dashboardPath : AppRoutes.introPath,
     redirect: _handleRedirect,
     routes: [
@@ -111,16 +113,18 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
 GoRoute get _introRoute => GoRoute(
       path: AppRoutes.introPath,
       name: AppRoutes.intro,
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: IntroScreen(),
+      pageBuilder: (context, state) => NoTransitionPage(
+        name: AppRoutes.intro,
+        child: const IntroScreen(),
       ),
     );
 
 GoRoute get _authRoute => GoRoute(
       path: AppRoutes.authPath,
       name: AppRoutes.auth,
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: AuthScreen(),
+      pageBuilder: (context, state) => NoTransitionPage(
+        name: AppRoutes.auth,
+        child: const AuthScreen(),
       ),
     );
 
@@ -166,6 +170,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.dashboardPath,
           name: AppRoutes.dashboard,
           pageBuilder: (context, state) => NoTransitionPage(
+            name: AppRoutes.dashboard,
             child: DashboardScreen(),
           ),
         ),
@@ -175,6 +180,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.explorePath,
           name: AppRoutes.explore,
           pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.explore,
             child: ShortsScreen(),
           ),
         ),
@@ -184,6 +190,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.libraryPath,
           name: AppRoutes.library,
           pageBuilder: (context, state) => NoTransitionPage(
+            name: AppRoutes.library,
             child: LibraryScreen(
               initialTitleId:
                   int.tryParse(state.uri.queryParameters['titleId'] ?? ''),
@@ -201,6 +208,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.morePath,
           name: AppRoutes.more,
           pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.more,
             child: MoreScreen(),
           ),
         ),
@@ -210,6 +218,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.recentsPath,
           name: AppRoutes.recents,
           pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.recents,
             child: RecentScreen(),
           ),
         ),
@@ -254,3 +263,29 @@ ShellRoute get _shellRoute => ShellRoute(
         ),
       ],
     );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Route Observer
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ParrokitRouteObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    final name = route.settings.name ?? 'unnamed';
+    final args = route.settings.arguments;
+    AppLogger.r('🛫 Push: $name ${args != null ? '($args)' : ''}');
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    final name = route.settings.name ?? 'unnamed';
+    AppLogger.r('🛬 Pop: $name');
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    final newName = newRoute?.settings.name ?? 'unnamed';
+    final oldName = oldRoute?.settings.name ?? 'unnamed';
+    AppLogger.r('🔀 Replace: $oldName -> $newName');
+  }
+}
