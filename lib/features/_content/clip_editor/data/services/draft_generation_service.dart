@@ -12,7 +12,7 @@
 import 'dart:convert';
 
 import '../../domain/clip_form_data.dart';
-import '../adapters/openai_adapter.dart';
+import '../ports/llm_port.dart';
 import '../prompts/prompt_loader.dart';
 import 'time_code_service.dart';
 import '../usecases/transcribe_usecase.dart';
@@ -31,7 +31,7 @@ class DraftResult {
 /// STT + LLM 초안 생성 서비스.
 class DraftGenerationService {
   final TranscribeUseCase transcribe;
-  final OpenAIAdapter llm;
+  final LLMPort llm;
   final TimecodeService _timecode = TimecodeService();
 
   DraftGenerationService({
@@ -83,7 +83,6 @@ class DraftGenerationService {
       final jsonStr = await llm.complete(
         systemPrompt: sys,
         userPrompt: userPrompt,
-        model: 'gpt-4o-mini',
         timeout: const Duration(seconds: 60),
       );
 

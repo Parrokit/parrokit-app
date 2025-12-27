@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/_content/editor/data/adapters/openai_whisper_adapter.dart
+// lib/features/_content/clip_editor/data/adapters/openai_asr_adapter.dart
 // ============================================================================
 //
 // [역할]
@@ -23,16 +23,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-class OpenAIWhisperAdapter implements ASRPort {
+import '../constants/openai_constants.dart';
+
+/// OpenAI ASR(Automatic Speech Recognition) 어댑터.
+class OpenAIAsrAdapter implements ASRPort {
   final String apiKey;
-  final String defaultModel;
 
-  OpenAIWhisperAdapter({
-    required this.apiKey,
-    this.defaultModel = 'gpt-4o-transcribe-diarize',
-  });
-
-  static const _endpoint = 'https://api.openai.com/v1/audio/transcriptions';
+  OpenAIAsrAdapter({required this.apiKey});
 
   Future<String> _ensureAudioMp3(String path) async {
     // Normalize potential "file://" prefix on iOS
@@ -97,14 +94,14 @@ class OpenAIWhisperAdapter implements ASRPort {
     String? language,
     bool withSegments = true,
     Duration? timeout,
-    String? model,
   }) async {
     if ((filePath == null || filePath.isEmpty) &&
         (bytes == null || bytes.isEmpty)) {
       throw ArgumentError('filePath 또는 bytes 중 하나는 필수입니다.');
     }
 
-    final req = http.MultipartRequest('POST', Uri.parse(_endpoint));
+    final req =
+        http.MultipartRequest('POST', Uri.parse(OpenAIConstants.asrEndpoint));
 
     // Sanitize API key: trim, strip smart quotes and surrounding quotes
     final cleanKey =
@@ -114,7 +111,7 @@ class OpenAIWhisperAdapter implements ASRPort {
     }
     req.headers['Authorization'] = 'Bearer $cleanKey';
 
-    final chosenModel = model ?? defaultModel;
+    const chosenModel = OpenAIConstants.asrDefaultModel;
     req.fields['model'] = chosenModel;
     req.fields['temperature'] = '0';
 

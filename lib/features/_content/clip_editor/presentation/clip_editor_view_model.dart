@@ -19,8 +19,8 @@ import 'package:parrokit/data/local/dao/titles_dao.dart';
 import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart' as utils;
 
-import '../data/adapters/openai_adapter.dart';
-import '../data/adapters/openai_whisper_adapter.dart';
+import '../data/adapters/openai_llm_adapter.dart';
+import '../data/adapters/openai_asr_adapter.dart';
 import '../data/adapters/video_picker_files.dart';
 import '../data/adapters/video_picker_gallery.dart';
 import '../data/services/audio_to_video.dart';
@@ -28,6 +28,7 @@ import '../data/services/clip_load_service.dart';
 import '../data/services/clip_save_service.dart';
 import '../data/services/draft_generation_service.dart';
 import '../data/services/file_staging_service.dart';
+import '../data/services/native_title_service.dart';
 import '../data/services/video_meta_service.dart';
 import '../data/usecases/extract_duration_usecase.dart';
 import '../data/usecases/extract_thumbnail_usecase.dart';
@@ -36,6 +37,7 @@ import '../data/usecases/load_clip_for_edit_usecase.dart';
 import '../data/usecases/pick_video_usecase.dart';
 import '../data/usecases/save_clip_usecase.dart';
 import '../data/usecases/transcribe_usecase.dart';
+import '../data/usecases/lookup_native_title_usecase.dart';
 
 import '../domain/clip_form_data.dart';
 import '../domain/clip_validator.dart';
@@ -86,6 +88,7 @@ class ClipEditorViewModel extends ChangeNotifier
   late final SaveClipUseCase _saveClip;
   late final LoadClipForEditUseCase _loadClipForEdit;
   late final GenerateDraftUseCase _generateDraft;
+  late final LookupNativeTitleUseCase _lookupNativeTitle;
   final ClipValidator _validator = ClipValidator();
 
   // ─────────────────────────────────────────────────────────────────
@@ -100,6 +103,10 @@ class ClipEditorViewModel extends ChangeNotifier
   EditorSaveState _saveState = EditorSaveState.idle;
   EditorSaveState get saveState => _saveState;
   bool get isSaving => _saveState == EditorSaveState.saving;
+
+  // 원어 작품명 조회 상태
+  bool _isLookingUpNativeTitle = false;
+  bool get isLookingUpNativeTitle => _isLookingUpNativeTitle;
 
   // 에디터 모드
   EditorMode _mode = const CreateMode();
@@ -165,14 +172,19 @@ class ClipEditorViewModel extends ChangeNotifier
     );
 
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+    final llmAdapter = OpenAILlmAdapter(apiKey: apiKey);
+
     _generateDraft = GenerateDraftUseCase(
       service: DraftGenerationService(
         transcribe: TranscribeUseCase(
-          OpenAIWhisperAdapter(apiKey: apiKey),
+          OpenAIAsrAdapter(apiKey: apiKey),
         ),
-        llm: OpenAIAdapter(apiKey: apiKey),
+        llm: llmAdapter,
       ),
     );
+
+    _lookupNativeTitle =
+        LookupNativeTitleUseCase(NativeTitleService(llmAdapter));
 
     // 세그먼트 폼 초기화
     initSegmentForms();
@@ -242,6 +254,33 @@ class ClipEditorViewModel extends ChangeNotifier
   void setContentType(ContentType type) {
     _contentType = type;
     notifyListeners();
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // 원어 작품명 자동 조회
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 작품명을 기반으로 원어 작품명을 자동으로 조회합니다.
+  Future<void> lookupNativeTitle() async {
+    final workName = nameCtl.text.trim();
+    if (workName.isEmpty) {
+      showToast('먼저 작품명을 입력해 주세요.');
+      return;
+    }
+
+    _isLookingUpNativeTitle = true;
+    notifyListeners();
+
+    try {
+      final result = await _lookupNativeTitle(workName: workName);
+      nameNativeCtl.text = result.nativeTitle;
+      showToast('원어 작품명: ${result.nativeTitle}');
+    } catch (e) {
+      showToast('원어 작품명 조회 실패: $e');
+    } finally {
+      _isLookingUpNativeTitle = false;
+      notifyListeners();
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────

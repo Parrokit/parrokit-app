@@ -57,6 +57,26 @@ class PromptLoader {
   }
 
   // ─────────────────────────────────────────────────────────────────
+  // 원어 작품명 조회 프롬프트
+  // ─────────────────────────────────────────────────────────────────
+  static String? _nativeTitleSystem;
+  static String? _nativeTitleUser;
+
+  /// 원어 작품명 조회용 시스템 프롬프트를 로드합니다.
+  static Future<String> loadNativeTitleSystem() async {
+    _nativeTitleSystem ??=
+        await rootBundle.loadString('assets/prompts/native_title_system.txt');
+    return _nativeTitleSystem!;
+  }
+
+  /// 원어 작품명 조회용 유저 프롬프트 prefix를 로드합니다.
+  static Future<String> loadNativeTitleUser() async {
+    _nativeTitleUser ??=
+        await rootBundle.loadString('assets/prompts/native_title_user.txt');
+    return _nativeTitleUser!;
+  }
+
+  // ─────────────────────────────────────────────────────────────────
   // 유틸리티
   // ─────────────────────────────────────────────────────────────────
 
@@ -66,5 +86,7 @@ class PromptLoader {
     _sttDraftUser = null;
     _translateSystem = null;
     _translateUser = null;
+    _nativeTitleSystem = null;
+    _nativeTitleUser = null;
   }
 }

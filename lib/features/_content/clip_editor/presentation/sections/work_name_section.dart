@@ -61,12 +61,39 @@ class WorkNameSection extends StatelessWidget {
           },
         ),
         const SizedBox(height: 8),
-        LabeledTextField(
-          label: EditorStrings.workNameNativeLabel,
-          hint: EditorStrings.workNameNativeHint,
-          controller: vm.nameNativeCtl,
-          prefixIcon: Icons.movie_outlined,
-          clearable: true,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: LabeledTextField(
+                label: EditorStrings.workNameNativeLabel,
+                hint: EditorStrings.workNameNativeHint,
+                controller: vm.nameNativeCtl,
+                prefixIcon: Icons.movie_outlined,
+                clearable: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: FilledButton.icon(
+                onPressed:
+                    vm.isLookingUpNativeTitle ? null : vm.lookupNativeTitle,
+                icon: vm.isLookingUpNativeTitle
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_awesome, size: 18),
+                label: Text(
+                  vm.isLookingUpNativeTitle
+                      ? EditorStrings.workNameNativeLookupLoading
+                      : EditorStrings.workNameNativeLookupButton,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

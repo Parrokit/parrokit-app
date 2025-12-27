@@ -22,6 +22,8 @@ class EditorStrings {
 
   static const workNameNativeLabel = '원어 작품명';
   static const workNameNativeHint = '예: SPY×FAMILY, 君の名は。';
+  static const workNameNativeLookupButton = '자동 입력';
+  static const workNameNativeLookupLoading = '조회 중...';
 
   // ─────────────────────────────────────────────────────────────────────────
   // 타입 섹션 (TypeSection)

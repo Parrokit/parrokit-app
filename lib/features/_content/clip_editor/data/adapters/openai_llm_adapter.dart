@@ -1,10 +1,10 @@
 // ============================================================================
-// lib/features/_content/editor/data/adapters/openai_adapter.dart
+// lib/features/_content/clip_editor/data/adapters/openai_llm_adapter.dart
 // ============================================================================
 //
 // [역할]
 // OpenAI Chat Completions API 어댑터.
-// LLMPort 인터페이스 구현.
+// LLMPort 인터페이스 구현. 범용 LLM 호출.
 //
 // [레이어]
 // Data Layer > Adapters
@@ -13,22 +13,20 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:parrokit/features/_content/clip_editor/data/ports/llm_port.dart';
+import '../constants/openai_constants.dart';
 
-class OpenAIAdapter implements LLMPort {
+/// OpenAI LLM 어댑터.
+class OpenAILlmAdapter implements LLMPort {
   final String apiKey;
-  final String defaultModel;
 
-  OpenAIAdapter({required this.apiKey, this.defaultModel = "gpt-4o-mini"});
+  OpenAILlmAdapter({required this.apiKey});
 
   @override
   Future<String> complete({
     required String systemPrompt,
     required String userPrompt,
-    String? model,
     Duration? timeout,
   }) async {
-    final chosenModel = model ?? defaultModel;
-
     // sanitize API key (strip smart quotes / surrounding quotes)
     final cleanKey =
         apiKey.trim().replaceAll('\u201C', '').replaceAll('\u201D', '');
@@ -36,14 +34,14 @@ class OpenAIAdapter implements LLMPort {
       throw ArgumentError('OPENAI_API_KEY is empty after sanitization.');
     }
 
-    final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+    final uri = Uri.parse(OpenAIConstants.chatEndpoint);
     final headers = <String, String>{
       'Authorization': 'Bearer $cleanKey',
       'Content-Type': 'application/json',
     };
 
     final body = jsonEncode({
-      'model': chosenModel,
+      'model': OpenAIConstants.chatDefaultModel,
       // Force JSON-safe output
       'response_format': {'type': 'json_object'},
       'temperature': 0.2,
