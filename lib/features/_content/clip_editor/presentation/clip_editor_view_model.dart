@@ -115,7 +115,8 @@ class ClipEditorViewModel extends ChangeNotifier
   final titleCtl = TextEditingController();
   @override
   final nameCtl = TextEditingController();
-  final nameNativeCtl = TextEditingController(text: '-');
+  @override
+  final nameNativeCtl = TextEditingController();
   @override
   final seasonCtl = TextEditingController();
   @override

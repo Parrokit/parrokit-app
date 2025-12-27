@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../data/editor_strings.dart';
 import 'time_triplet_field.dart';
 import 'card_container.dart';
 import 'labeled_text_field.dart';
@@ -30,7 +32,7 @@ class SegmentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('구간 #$index',
+          Text(EditorStrings.segmentCardTitle(index),
               style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
 
@@ -41,28 +43,28 @@ class SegmentCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           LabeledTextField(
-            label: '발음',
-            hint: 'bonjour / 봉주르',
+            label: EditorStrings.pronLabel,
+            hint: EditorStrings.pronHint,
             controller: pronCtl,
-            helper: '로마자·한글·자국어 표기 등 편한 방식으로 적어도 좋아요.',
+            helper: EditorStrings.pronHelper,
             prefixIcon: Icons.record_voice_over_outlined,
             clearable: true,
           ),
           const SizedBox(height: 10),
           LabeledTextField(
-            label: '원문',
-            hint: '原文 예: merci / gracias / 谢谢',
+            label: EditorStrings.originalLabel,
+            hint: EditorStrings.originalHint,
             controller: originalCtl,
-            helper: '대사의 원문(아무 언어나)을 입력하세요.',
+            helper: EditorStrings.originalHelper,
             prefixIcon: Icons.translate,
             clearable: true,
           ),
           const SizedBox(height: 10),
           LabeledTextField(
-            label: '해석',
-            hint: '고마워 / 감사합니다',
+            label: EditorStrings.koLabel,
+            hint: EditorStrings.koHint,
             controller: koCtl,
-            helper: '본인이 이해하기 쉬운 표현으로 번역을 적어주세요.',
+            helper: EditorStrings.koHelper,
             prefixIcon: Icons.subtitles_outlined,
             clearable: true,
           ),

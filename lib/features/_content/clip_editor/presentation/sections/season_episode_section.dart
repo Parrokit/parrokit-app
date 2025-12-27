@@ -14,8 +14,10 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:flutter/services.dart';
 
+import '../../data/editor_strings.dart';
 import '../../domain/editor_state.dart';
 import '../widgets/section_title.dart';
+import '../widgets/labeled_text_field.dart';
 import '../clip_editor_view_model.dart';
 
 /// 시즌/회차 입력 섹션.
@@ -29,7 +31,7 @@ class SeasonEpisodeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle("시즌/화"),
+        SectionTitle(EditorStrings.seasonEpisodeSectionTitle),
         const SizedBox(height: 10),
         if (vm.contentType == ContentType.season) ...[
           _buildSeasonAutocomplete(context),
@@ -40,7 +42,7 @@ class SeasonEpisodeSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xs),
             child: Text(
-              '영화 타입은 시즌/회차 정보가 필요하지 않습니다.',
+              EditorStrings.movieTypeMessage,
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
@@ -75,26 +77,15 @@ class SeasonEpisodeSection extends StatelessWidget {
         focusNode.addListener(() {
           if (!focusNode.hasFocus) vm.loadEpisodeOptions();
         });
-        return TextField(
+        return LabeledTextField(
+          label: EditorStrings.seasonLabel,
+          hint: EditorStrings.seasonHint,
           controller: controller,
           focusNode: focusNode,
-          decoration: InputDecoration(
-            labelText: '시즌',
-            hintText: '몇 번째 시즌인지 숫자로 입력하세요.',
-            prefixIcon: const Icon(Icons.layers_outlined),
-            border: const OutlineInputBorder(),
-            suffixIcon: controller.text.isEmpty
-                ? null
-                : IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      controller.clear();
-                      vm.seasonCtl.clear();
-                    },
-                  ),
-          ),
+          prefixIcon: Icons.layers_outlined,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          clearable: true,
         );
       },
       optionsViewBuilder: (context, onSelected, options) {
@@ -127,26 +118,15 @@ class SeasonEpisodeSection extends StatelessWidget {
         focusNode.addListener(() {
           if (!focusNode.hasFocus) vm.autoFillEpisodeTitle();
         });
-        return TextField(
+        return LabeledTextField(
+          label: EditorStrings.episodeLabel,
+          hint: EditorStrings.episodeHint,
           controller: controller,
           focusNode: focusNode,
-          decoration: InputDecoration(
-            labelText: '화 (에피소드)',
-            hintText: '몇 화인지 숫자로 입력하세요.',
-            prefixIcon: const Icon(Icons.format_list_numbered_outlined),
-            border: const OutlineInputBorder(),
-            suffixIcon: controller.text.isEmpty
-                ? null
-                : IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      controller.clear();
-                      vm.episodeCtl.clear();
-                    },
-                  ),
-          ),
+          prefixIcon: Icons.format_list_numbered_outlined,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          clearable: true,
         );
       },
       optionsViewBuilder: (context, onSelected, options) {

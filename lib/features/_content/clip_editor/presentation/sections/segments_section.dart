@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../data/editor_strings.dart';
 import '../widgets/section_title.dart';
 import '../widgets/segment_card.dart';
 import '../clip_editor_view_model.dart';
@@ -27,23 +28,21 @@ class SegmentsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle("자막 정보"),
+        SectionTitle(EditorStrings.segmentsSectionTitle),
         const SizedBox(height: 10),
-        const Text(
-          "* 자동 자막 기능은 주변 소음이 크거나\n   음악이 포함된 영상에서는 정확도가 낮을 수 있어요.",
-        ),
+        Text(EditorStrings.segmentsNotice),
         const SizedBox(height: 5),
         Row(
           children: [
             FilledButton.icon(
               icon: const Icon(Icons.subtitles_outlined, size: 18),
-              label: const Text('자동 자막 달기'),
+              label: Text(EditorStrings.sttButtonLabel),
               onPressed: vm.onSttAndDraft,
             ),
             const SizedBox(width: 8),
             OutlinedButton.icon(
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('구간 추가'),
+              label: Text(EditorStrings.addSegmentButtonLabel),
               onPressed: vm.addSegment,
             ),
             const Spacer(),
@@ -74,7 +73,7 @@ class SegmentsSection extends StatelessWidget {
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('구간 삭제'),
+                label: Text(EditorStrings.removeSegmentButtonLabel),
                 onPressed: () => vm.removeSegment(i),
               ),
             ],

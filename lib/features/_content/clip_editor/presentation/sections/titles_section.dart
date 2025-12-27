@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../data/editor_strings.dart';
 import '../../domain/editor_state.dart';
 import '../widgets/section_title.dart';
 import '../widgets/labeled_text_field.dart';
@@ -29,24 +30,28 @@ class TitlesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle("제목"),
+        SectionTitle(EditorStrings.titlesSectionTitle),
         const SizedBox(height: 10),
         LabeledTextField(
-          label: isMovie ? '영화 제목' : '회차 제목',
-          hint: isMovie ? '영화의 제목을 입력하세요.' : '회차의 제목을 입력하세요.',
+          label: isMovie
+              ? EditorStrings.movieTitleLabel
+              : EditorStrings.episodeTitleLabel,
+          hint: isMovie
+              ? EditorStrings.movieTitleHint
+              : EditorStrings.episodeTitleHint,
           helper: isMovie
-              ? '시리즈가 없는 단독 영화의 경우,\n작품명과 동일하거나 편한대로 작성해주세요.'
-              : '수정한 경우, 기존 값은 새 내용으로 갱신됩니다.',
+              ? EditorStrings.movieTitleHelper
+              : EditorStrings.episodeTitleHelper,
           controller: vm.epiTitleCtl,
           prefixIcon: Icons.title_outlined,
           clearable: true,
         ),
         const SizedBox(height: 10),
         LabeledTextField(
-          label: '클립 제목',
-          hint: '클립 제목을 입력하세요.',
+          label: EditorStrings.clipTitleLabel,
+          hint: EditorStrings.clipTitleHint,
           controller: vm.titleCtl,
-          helper: '어떤 장면인지 바로 알아볼 수 있게 간결하게 적어주세요.',
+          helper: EditorStrings.clipTitleHelper,
           prefixIcon: Icons.title,
           clearable: true,
         ),

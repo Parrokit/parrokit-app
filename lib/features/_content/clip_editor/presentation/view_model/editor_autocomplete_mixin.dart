@@ -26,6 +26,7 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
   TextEditingController get seasonCtl;
   TextEditingController get episodeCtl;
   TextEditingController get epiTitleCtl;
+  TextEditingController get nameNativeCtl;
 
   // ─────────────────────────────────────────────────────────────────
   // 상태
@@ -112,6 +113,19 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
       );
       if (title != null && title.isNotEmpty) {
         epiTitleCtl.text = title;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  /// 작품명이 선택되었을 때, 해당 작품의 원어 작품명이 있으면 자동 완성합니다.
+  Future<void> autoFillNativeTitle(String titleName) async {
+    if (titleName.isEmpty) return;
+
+    try {
+      final nativeName = await titlesDao.findNativeByName(titleName);
+      if (nativeName != null && nativeName.isNotEmpty) {
+        nameNativeCtl.text = nativeName;
         notifyListeners();
       }
     } catch (_) {}
