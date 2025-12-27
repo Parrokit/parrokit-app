@@ -9,9 +9,12 @@
 // Presentation Layer > ViewModel > Mixin
 // ============================================================================
 
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:parrokit/core/utils/show_toast.dart';
 
@@ -90,6 +93,29 @@ mixin EditorFileMixin on ChangeNotifier {
     if (ms != null) {
       durationCtl.text = ms.toString();
     }
+    notifyListeners();
+  }
+
+  /// 기존 파일 경로를 설정합니다 (편집 모드용).
+  /// DB에 저장된 상대 경로를 절대 경로로 변환합니다.
+  Future<void> setExistingFile(String relPath) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final absPath = '${docsDir.path}/$relPath';
+
+    final file = File(absPath);
+    if (!await file.exists()) {
+      showToast('기존 파일을 찾을 수 없습니다.');
+      return;
+    }
+
+    final stat = await file.stat();
+    final name = absPath.split('/').last;
+
+    _picked = PlatformFile(name: name, size: stat.size, path: absPath);
+    _thumb = null;
+    notifyListeners();
+
+    await _setThumb(absPath);
     notifyListeners();
   }
 

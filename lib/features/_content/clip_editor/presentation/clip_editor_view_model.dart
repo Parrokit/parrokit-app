@@ -471,6 +471,11 @@ class ClipEditorViewModel extends ChangeNotifier
         segmentForms.add(SegmentFormData.empty());
       }
 
+      // 기존 파일 경로가 있으면 Step 1에 표시
+      if (form.filePath != null && form.filePath!.isNotEmpty) {
+        await setExistingFile(form.filePath!);
+      }
+
       notifyListeners();
     } catch (e) {
       showToast('편집 데이터 로드 실패: $e');
