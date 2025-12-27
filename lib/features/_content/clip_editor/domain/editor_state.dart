@@ -19,6 +19,16 @@ enum EditorSaveState {
   error,
 }
 
+/// STT 처리 진행 상태.
+enum SttProcessState {
+  idle, // 대기
+  extracting, // 오디오 추출 중
+  transcribing, // 음성 인식 중 (STT)
+  translating, // 번역 중
+  done, // 완료
+  error, // 오류
+}
+
 /// 에디터 스텝.
 enum EditorStep {
   file, // 0: 파일 선택

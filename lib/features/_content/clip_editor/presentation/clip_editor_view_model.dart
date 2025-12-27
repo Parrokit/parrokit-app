@@ -107,6 +107,21 @@ class ClipEditorViewModel extends ChangeNotifier
   bool _isLookingUpNativeTitle = false;
   bool get isLookingUpNativeTitle => _isLookingUpNativeTitle;
 
+  // STT 처리 진행 상태
+  SttProcessState _sttState = SttProcessState.idle;
+  SttProcessState get sttState => _sttState;
+  bool get isSttProcessing =>
+      _sttState != SttProcessState.idle &&
+      _sttState != SttProcessState.done &&
+      _sttState != SttProcessState.error;
+
+  // 배치 진행률 (번역 단계에서)
+  int _sttProgress = 0;
+  int _sttTotal = 0;
+  int get sttProgress => _sttProgress;
+  int get sttTotal => _sttTotal;
+  String get sttProgressText => _sttTotal > 0 ? '$_sttProgress/$_sttTotal' : '';
+
   // 에디터 모드
   EditorMode _mode = const CreateMode();
   EditorMode get mode => _mode;
@@ -289,14 +304,16 @@ class ClipEditorViewModel extends ChangeNotifier
       return;
     }
     final path = picked!.path!;
-    _setSaving(true);
+
+    // Step 1: 오디오 추출 준비
+    _setSttState(SttProcessState.extracting);
 
     int? durationMs = int.tryParse(durationCtl.text.trim());
     durationMs ??= await extractDuration(path);
 
     if (durationMs == null || durationMs <= 0) {
       showToast('영상 길이를 확인할 수 없습니다.');
-      _setSaving(false);
+      _setSttState(SttProcessState.error);
       return;
     }
 
@@ -304,16 +321,28 @@ class ClipEditorViewModel extends ChangeNotifier
     final cost = _calculateCoinCost(durationMs);
     if (cost > 0 && userProvider.coins < cost) {
       showToast('코인이 부족합니다. (필요: $cost, 보유: ${userProvider.coins})');
-      _setSaving(false);
+      _setSttState(SttProcessState.idle);
       return;
     }
 
     try {
-      // UseCase 호출
+      // Step 2: 음성 인식 (STT)
+      _setSttState(SttProcessState.transcribing);
+
+      // UseCase 호출 (내부에서 STT + 번역 처리)
       final result = await _generateDraft(
         filePath: path,
         durationMs: durationMs,
         language: 'ja',
+        onProgress: (current, total, message) {
+          _sttProgress = current;
+          _sttTotal = total;
+          if (_sttState != SttProcessState.translating) {
+            _setSttState(SttProcessState.translating);
+          } else {
+            notifyListeners();
+          }
+        },
       );
 
       if (result.segments.isNotEmpty) {
@@ -327,11 +356,28 @@ class ClipEditorViewModel extends ChangeNotifier
           showToast('STT/초안 생성에 코인 ${result.coinCost}개 사용');
         }
       }
+
+      _setSttState(SttProcessState.done);
+      // 잠시 후 idle로 복귀
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_sttState == SttProcessState.done) {
+          _setSttState(SttProcessState.idle);
+        }
+      });
     } catch (e) {
       showToast('STT/번역 실패: $e');
-    } finally {
-      _setSaving(false);
+      _setSttState(SttProcessState.error);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_sttState == SttProcessState.error) {
+          _setSttState(SttProcessState.idle);
+        }
+      });
     }
+  }
+
+  void _setSttState(SttProcessState state) {
+    _sttState = state;
+    notifyListeners();
   }
 
   void _fillSegmentsFromDraft(List<SegmentInput> segments) {

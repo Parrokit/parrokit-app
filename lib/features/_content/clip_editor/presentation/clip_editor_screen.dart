@@ -102,7 +102,7 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
                     currentStep: vm.currentStep,
                     onStepContinue: vm.nextOrSave,
                     onStepCancel: vm.prevOrCancel,
-                    onStepTapped: vm.goToStep,
+                    onStepTapped: vm.isSttProcessing ? null : vm.goToStep,
                     controlsBuilder: (context, details) =>
                         const SizedBox.shrink(),
                     steps: [
@@ -157,14 +157,16 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: vm.isSaving ? null : vm.prevOrCancel,
+            onPressed:
+                (vm.isSaving || vm.isSttProcessing) ? null : vm.prevOrCancel,
             child: Text(vm.currentStep == 0 ? '취소' : '이전'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: vm.isSaving ? null : vm.nextOrSave,
+            onPressed:
+                (vm.isSaving || vm.isSttProcessing) ? null : vm.nextOrSave,
             child: Text(vm.currentStep == ClipEditorViewModel.totalSteps - 1
                 ? '저장'
                 : '다음'),
