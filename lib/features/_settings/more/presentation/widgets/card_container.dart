@@ -3,13 +3,16 @@ import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:parrokit/core/theme/app_radius.dart';
 
 class CardContainer extends StatelessWidget {
-  const CardContainer(
-      {super.key,
-      required this.child,
-      this.padding = const EdgeInsets.all(AppSpacing.cardPadding)});
+  const CardContainer({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(AppSpacing.cardPadding),
+    this.gradient,
+  });
 
   final Widget child;
   final EdgeInsets padding;
+  final Gradient? gradient;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +21,8 @@ class CardContainer extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.xs),
       padding: padding,
       decoration: BoxDecoration(
-        color: t.colorScheme.surface,
+        color: gradient == null ? t.colorScheme.surface : null,
+        gradient: gradient,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: t.colorScheme.outlineVariant, width: 0.8),
         boxShadow: [

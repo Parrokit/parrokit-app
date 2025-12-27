@@ -146,6 +146,26 @@ abstract final class AppColors {
   /// 썸네일 다크 그라디언트 끝
   static const Color thumbGradientEnd = Color(0xFF1f2937);
 
+  /// 계정 카드 그라데이션 (라이트)
+  static const LinearGradient accountCardGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFF8FAFF), // 아주 연한 블루
+      Color(0xFFF0F4FF), // 살짝 더 진한 블루
+    ],
+  );
+
+  /// 계정 카드 그라데이션 (다크)
+  static const LinearGradient accountCardGradientDark = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF1A1F2E), // 어두운 네이비
+      Color(0xFF1F2438), // 살짝 퍼플틱한 네이비
+    ],
+  );
+
   // ═══════════════════════════════════════════════════════════════════
   // Dark Mode
   // ═══════════════════════════════════════════════════════════════════

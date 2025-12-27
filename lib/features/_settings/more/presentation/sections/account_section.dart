@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
 
@@ -26,6 +27,7 @@ class AccountSection extends StatelessWidget {
     final cs = theme.colorScheme;
     final userProvider = context.watch<UserProvider>();
     final user = userProvider.currentUser;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,6 +36,9 @@ class AccountSection extends StatelessWidget {
         const SizedBox(height: 10),
         CardContainer(
           padding: const EdgeInsets.all(20),
+          gradient: isDark
+              ? AppColors.accountCardGradientDark
+              : AppColors.accountCardGradient,
           child: Column(
             children: [
               Row(
@@ -131,22 +136,16 @@ class AccountSection extends StatelessWidget {
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton.tonalIcon(
+                child: FilledButton.icon(
                   onPressed: () {
                     context.push('/auth');
                   },
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    backgroundColor: cs.surfaceContainerHighest,
-                    foregroundColor: cs.onSurface,
                   ),
                   icon: const Icon(Icons.manage_accounts_rounded, size: 20),
                   label: Text(
                     user?.email == null ? '로그인 / 계정 만들기' : '계정 관리',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
