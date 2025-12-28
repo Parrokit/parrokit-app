@@ -1,0 +1,73 @@
+// ============================================================================
+// lib/core/services/cache_service.dart
+// ============================================================================
+//
+// [역할]
+// 앱의 임시 파일(캐시)을 관리하는 서비스.
+//
+// [기능]
+// 1. 임시 디렉터리(tmp) 용량 계산
+// 2. 임시 파일 삭제
+//
+// [레이어]
+// Core Layer > Services
+// ============================================================================
+
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
+
+class CacheService {
+  CacheService._();
+
+  static final CacheService instance = CacheService._();
+
+  /// 캐시(임시 디렉터리) 현재 용량 계산 (bytes)
+  Future<int> getCacheSize() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      if (!await tempDir.exists()) return 0;
+
+      int totalSize = 0;
+      await for (final entity
+          in tempDir.list(recursive: true, followLinks: false)) {
+        if (entity is File) {
+          totalSize += await entity.length();
+        }
+      }
+      return totalSize;
+    } catch (e) {
+      debugPrint('Cache size calc error: $e');
+      return 0;
+    }
+  }
+
+  /// 캐시 삭제 (임시 디렉터리 비우기)
+  Future<void> clearCache() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+        // 삭제 후 디렉터리가 필요할 수 있으므로 다시 생성
+        await tempDir.create();
+      }
+    } catch (e) {
+      debugPrint('Clear cache error: $e');
+      // 일부 파일 삭제 실패는 무시 (시스템 파일 등)
+    }
+  }
+
+  /// 바이트 단위를 보기 좋은 문자열로 변환 (예: 12.5 MB)
+  String formatSize(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = 0;
+    double size = bytes.toDouble();
+    while (size >= 1024 && i < suffixes.length - 1) {
+      size /= 1024;
+      i++;
+    }
+    return '${size.toStringAsFixed(1)} ${suffixes[i]}';
+  }
+}

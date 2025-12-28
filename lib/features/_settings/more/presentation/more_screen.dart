@@ -28,6 +28,7 @@ import 'sections/info_section.dart';
 import 'sections/payment_section.dart';
 import 'sections/player_settings_section.dart';
 import 'sections/shorts_settings_section.dart';
+import 'sections/cache_section.dart';
 
 /// 설정/더보기 화면.
 class MoreScreen extends StatelessWidget {
@@ -69,7 +70,12 @@ class MoreScreen extends StatelessWidget {
             SizedBox(height: AppSpacing.sectionGap),
 
             // 백업
+            // 백업
             BackupSection(),
+            SizedBox(height: AppSpacing.sectionGap),
+
+            // 캐시 관리
+            CacheSection(),
             SizedBox(height: AppSpacing.sectionGap),
 
             // 정보
