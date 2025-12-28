@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
 import '../../data/editor_strings.dart';
 import '../widgets/labeled_text_field.dart';
@@ -79,6 +80,13 @@ class WorkNameSection extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed:
                     vm.isLookingUpNativeTitle ? null : vm.lookupNativeTitle,
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
                 icon: vm.isLookingUpNativeTitle
                     ? const SizedBox(
                         width: 16,

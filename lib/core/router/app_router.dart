@@ -31,7 +31,6 @@ import 'package:parrokit/features/_settings/payment/domain/payment_args.dart';
 // Router 관련
 import 'app_routes.dart';
 import 'app_shell.dart';
-import 'package:parrokit/core/utils/app_logger.dart';
 
 // Re-export for convenience
 export 'app_routes.dart';
@@ -46,7 +45,6 @@ GoRouter buildAppRouter({required bool seenIntro}) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
-    observers: [ParrokitRouteObserver()],
     initialLocation: seenIntro ? AppRoutes.dashboardPath : AppRoutes.introPath,
     redirect: _handleRedirect,
     routes: [
@@ -263,29 +261,3 @@ ShellRoute get _shellRoute => ShellRoute(
         ),
       ],
     );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Route Observer
-// ─────────────────────────────────────────────────────────────────────────────
-
-class ParrokitRouteObserver extends NavigatorObserver {
-  @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    final name = route.settings.name ?? 'unnamed';
-    final args = route.settings.arguments;
-    AppLogger.r('🛫 Push: $name ${args != null ? '($args)' : ''}');
-  }
-
-  @override
-  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    final name = route.settings.name ?? 'unnamed';
-    AppLogger.r('🛬 Pop: $name');
-  }
-
-  @override
-  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    final newName = newRoute?.settings.name ?? 'unnamed';
-    final oldName = oldRoute?.settings.name ?? 'unnamed';
-    AppLogger.r('🔀 Replace: $oldName -> $newName');
-  }
-}

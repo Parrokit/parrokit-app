@@ -58,10 +58,10 @@ class SttProgressCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'AI 자막 생성 중...',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
-                ),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cs.primary,
+                    ),
               ),
             ],
           ),
@@ -98,13 +98,13 @@ class SttProgressCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     label,
-                    style: TextStyle(
-                      fontWeight:
-                          isActive ? FontWeight.bold : FontWeight.normal,
-                      color: isActive || isCompleted
-                          ? cs.onSurface
-                          : cs.onSurface.withValues(alpha: 0.5),
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight:
+                              isActive ? FontWeight.bold : FontWeight.normal,
+                          color: isActive || isCompleted
+                              ? cs.onSurface
+                              : cs.onSurface.withValues(alpha: 0.5),
+                        ),
                   ),
                 ],
               ),
