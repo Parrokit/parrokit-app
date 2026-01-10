@@ -11,9 +11,12 @@
 // ============================================================================
 
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+
+import 'package:parrokit/core/utils/app_logger.dart';
 
 abstract class AudioToVideoService {
   /// mp3 → mp4 변환하고 mp4 경로를 반환
@@ -46,11 +49,26 @@ class FfmpegAudioToVideoService implements AudioToVideoService {
       await outputFile.delete();
     }
 
+    // 1. 오디오 길이 측정 (ffprobe)
+    String? durationStr;
+    try {
+      final mediaInfoSession = await FFprobeKit.getMediaInformation(mp3Path);
+      final mediaInfo = mediaInfoSession.getMediaInformation();
+      final d = mediaInfo?.getDuration();
+      if (d != null && double.tryParse(d) != null) {
+        durationStr = d;
+      }
+    } catch (e) {
+      AppLogger.w(
+          'AudioToVideo: Duration probe failed. Fallback to -shortest. $e');
+    }
+
     // ffmpeg 명령:
     // - 검은 화면(1280x720)을 비디오 트랙으로 생성
     // - 오디오(mp3)를 함께 mux해서 mp4 컨테이너로 출력
     //
-    // 해상도나 색상은 필요에 따라 바꿔도 됨.
+    // -t <duration>: 오디오 길이만큼만 영상 생성 (가장 정확)
+    // -shortest: 혹시 모를 오차 대비 안전장치
     final cmd = [
       '-y', // 기존 파일 덮어쓰기
       '-i', _wrapPath(mp3Path),
@@ -58,6 +76,7 @@ class FfmpegAudioToVideoService implements AudioToVideoService {
       'lavfi',
       '-i',
       'color=c=black:s=1280x720',
+      if (durationStr != null) ...['-t', durationStr],
       '-shortest',
       '-c:a',
       'aac',
