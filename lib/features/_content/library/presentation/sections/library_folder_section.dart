@@ -16,9 +16,9 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import '../widgets/breadcrumb_bar.dart';
-import '../widgets/grid_section.dart';
-import '../widgets/episode_list_simple.dart';
-import '../widgets/clip_list_from_provider.dart';
+import '../widgets/folder_grid.dart';
+import '../widgets/episode_list.dart';
+import '../widgets/clip_list_view.dart';
 
 /// [역할]
 /// 라이브러리의 '폴더' 탭 UI 섹션.
@@ -108,7 +108,7 @@ class LibraryFolderSection extends StatelessWidget {
             builder: (_) {
               // 1) Titles
               if (media.selectedTitleId == null) {
-                return GridSection(
+                return FolderGrid(
                   sectionTitle: '작품',
                   items: media.titles.map((e) => e.name).toList(),
                   onTap: (idx) => media.selectTitle(media.titles[idx].id),
@@ -121,7 +121,7 @@ class LibraryFolderSection extends StatelessWidget {
                   if (r.type == 'season') return 'S${r.number}';
                   return '영화';
                 }).toList();
-                return GridSection(
+                return FolderGrid(
                   sectionTitle: '릴리스',
                   items: labels,
                   onTap: (idx) => media.selectRelease(media.releases[idx].id),
@@ -130,14 +130,14 @@ class LibraryFolderSection extends StatelessWidget {
 
               // 3) Episodes
               if (media.selectedEpisodeId == null) {
-                return EpisodeListSimple(
+                return EpisodeList(
                   episodes: media.episodes,
                   onOpen: (ep) => media.selectEpisode(ep.id),
                 );
               }
 
               // 4) Clips
-              return ClipListFromProvider(
+              return ClipListView(
                 items: media.clipItems,
                 onOpen: (ci) {
                   context.push(

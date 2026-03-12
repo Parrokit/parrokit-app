@@ -161,7 +161,7 @@ class _HeaderSectionState extends State<HeaderSection>
                   ],
                 ),
                 const SizedBox(height: 2),
-                const Text('오늘도 한 장면씩 👋', style: TextStyle(fontSize: 12)),
+                Text('오늘도 한 장면씩 👋', style: theme.textTheme.labelSmall),
               ],
             ),
           ),

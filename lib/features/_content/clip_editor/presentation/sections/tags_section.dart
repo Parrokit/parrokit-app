@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../data/editor_strings.dart';
 import '../widgets/section_title.dart';
 import '../widgets/labeled_text_field.dart';
 import '../clip_editor_view_model.dart';
@@ -28,13 +29,13 @@ class TagsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle("태그 추가"),
+        SectionTitle(EditorStrings.tagsSectionTitle),
         const SizedBox(height: 10),
         LabeledTextField(
-          label: '태그(선택)',
-          hint: '기억하기 쉽고 다시 찾기 편한 태그를 입력하세요.',
+          label: EditorStrings.tagsLabel,
+          hint: EditorStrings.tagsHint,
           controller: vm.tagsCtl,
-          helper: '"태그 추가" 버튼을 누르면 태그가 생성됩니다.',
+          helper: EditorStrings.tagsHelper,
           prefixIcon: Icons.tag_outlined,
           clearable: true,
         ),
@@ -43,7 +44,7 @@ class TagsSection extends StatelessWidget {
           children: [
             FilledButton.icon(
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('태그 추가'),
+              label: Text(EditorStrings.addTagButtonLabel),
               onPressed: () {
                 final tag = vm.tagsCtl.text.trim();
                 if (tag.isEmpty) return;
@@ -66,7 +67,7 @@ class TagsSection extends StatelessWidget {
                   vm.removeTag(tag);
                 }
               },
-              child: const Text('모두 지우기'),
+              child: Text(EditorStrings.clearAllTagsButtonLabel),
             ),
           ],
         ),

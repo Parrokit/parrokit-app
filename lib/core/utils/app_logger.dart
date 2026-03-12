@@ -1,14 +1,26 @@
 import 'package:logger/logger.dart';
 
 /// 앱 전역에서 사용하는 정적 로거 유틸
-class PaLogger {
+class AppLogger {
   // static logger instance
   static final Logger _logger = Logger(
     printer: PrettyPrinter(
       methodCount: 2,
       errorMethodCount: 8,
       lineLength: 80,
-      colors: true,
+      colors: false,
+      printEmojis: true,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
+    ),
+  );
+
+  // 스택 트레이스 없는 단순 로거 (라우팅 등)
+  static final Logger _simpleLogger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 5,
+      lineLength: 80,
+      colors: false,
       printEmojis: true,
       dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
     ),
@@ -31,4 +43,7 @@ class PaLogger {
 
   static void f(dynamic message, {dynamic error, StackTrace? stackTrace}) =>
       _logger.f(message, error: error, stackTrace: stackTrace);
+
+  /// 라우팅 로그용 (스택 없음)
+  static void r(dynamic message) => _simpleLogger.i(message);
 }

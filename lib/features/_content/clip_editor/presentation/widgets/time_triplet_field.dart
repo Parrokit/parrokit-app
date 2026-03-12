@@ -147,7 +147,10 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.label,
-            style: TextStyle(fontWeight: FontWeight.w800, color: cs.onSurface)),
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w800, color: cs.onSurface)),
         const SizedBox(height: 6),
         Row(
           children: [
@@ -169,11 +172,10 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
         if (widget.showGuide)
           Text(
             '형식: mm:ss.mmm (00:04.230) • 범위: 초 0–59 / 밀리초 0–999',
-            style: TextStyle(
-              fontSize: 11,
-              color: cs.onSurface.withValues(alpha: 0.6),
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w600,
+                ),
           ),
       ],
     );

@@ -11,8 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/services/backup_service.dart';
 import '../widgets/card_container.dart';
 import '../widgets/hairline_divider.dart';
-import '../widgets/nav_tile.dart';
+import '../widgets/tiles/nav_tile.dart';
 import '../widgets/section_title.dart';
+import '../widgets/backup_progress_dialog.dart';
 
 /// 백업 섹션.
 class BackupSection extends StatelessWidget {
@@ -31,13 +32,33 @@ class BackupSection extends StatelessWidget {
               NavTile(
                 icon: Icons.privacy_tip_outlined,
                 title: '불러오기',
-                onTap: () async => await BackupService.instance.restoreBackup(),
+                onTap: () async {
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => BackupProgressDialog(
+                      type: BackupDialogType.restore,
+                      onStart: (onProgress) => BackupService.instance
+                          .restoreBackup(onProgress: onProgress),
+                    ),
+                  );
+                },
               ),
               const HairlineDivider(),
               NavTile(
                 icon: Icons.mail_outline,
                 title: '저장하기',
-                onTap: () async => await BackupService.instance.createBackup(),
+                onTap: () async {
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => BackupProgressDialog(
+                      type: BackupDialogType.backup,
+                      onStart: (onProgress) => BackupService.instance
+                          .createBackup(onProgress: onProgress),
+                    ),
+                  );
+                },
               ),
             ],
           ),

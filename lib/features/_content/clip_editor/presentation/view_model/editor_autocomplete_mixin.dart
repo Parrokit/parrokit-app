@@ -11,7 +11,6 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:parrokit/data/local/dao/titles_dao.dart';
 
@@ -26,6 +25,7 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
   TextEditingController get seasonCtl;
   TextEditingController get episodeCtl;
   TextEditingController get epiTitleCtl;
+  TextEditingController get nameNativeCtl;
 
   // ─────────────────────────────────────────────────────────────────
   // 상태
@@ -45,9 +45,7 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
       allTitleNames = names;
       notifyListeners();
     } catch (e) {
-      if (rootNavigatorKey.currentContext != null) {
-        showToast(rootNavigatorKey.currentContext!, '작품 목록 로드 오류: $e');
-      }
+      showToast('작품 목록 로드 오류: $e');
     }
   }
 
@@ -59,9 +57,7 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
       seasonNumbers = nums;
       notifyListeners();
     } catch (e) {
-      if (rootNavigatorKey.currentContext != null) {
-        showToast(rootNavigatorKey.currentContext!, '시즌 정보 로드 오류: $e');
-      }
+      showToast('시즌 정보 로드 오류: $e');
     }
   }
 
@@ -85,9 +81,7 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
       episodeNumbers = nums;
       notifyListeners();
     } catch (e) {
-      if (rootNavigatorKey.currentContext != null) {
-        showToast(rootNavigatorKey.currentContext!, '회차 정보 로드 오류: $e');
-      }
+      showToast('회차 정보 로드 오류: $e');
     }
   }
 
@@ -112,6 +106,19 @@ mixin EditorAutocompleteMixin on ChangeNotifier {
       );
       if (title != null && title.isNotEmpty) {
         epiTitleCtl.text = title;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  /// 작품명이 선택되었을 때, 해당 작품의 원어 작품명이 있으면 자동 완성합니다.
+  Future<void> autoFillNativeTitle(String titleName) async {
+    if (titleName.isEmpty) return;
+
+    try {
+      final nativeName = await titlesDao.findNativeByName(titleName);
+      if (nativeName != null && nativeName.isNotEmpty) {
+        nameNativeCtl.text = nativeName;
         notifyListeners();
       }
     } catch (_) {}

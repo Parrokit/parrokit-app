@@ -46,12 +46,12 @@ class SegmentList extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Text('#${i + 1}  ${fmtMs(seg.startMs)} ~ ${fmtMs(seg.endMs)}',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color:
-                    active ? cs.primary : cs.onSurface.withValues(alpha: 0.7),
-              )),
+              style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: active
+                        ? cs.primary
+                        : cs.onSurface.withValues(alpha: 0.7),
+                  )),
         );
 
         return ListTile(
@@ -64,13 +64,16 @@ class SegmentList extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(seg.original,
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                    style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        )),
                 const SizedBox(height: 2),
                 Text(seg.pron,
-                    style:
-                        TextStyle(color: cs.onSurface.withValues(alpha: 0.7))),
+                    style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurface.withValues(alpha: 0.7),
+                        )),
                 const SizedBox(height: 2),
-                Text(seg.trans),
+                Text(seg.trans, style: Theme.of(ctx).textTheme.bodyMedium),
               ],
             ),
           ),

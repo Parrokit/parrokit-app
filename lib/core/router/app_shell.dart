@@ -29,8 +29,7 @@ class AppShell extends StatelessWidget {
   int _indexFromLocation(String location) {
     if (location.startsWith(AppRoutes.explorePath)) return 1;
     if (location.startsWith(AppRoutes.libraryPath)) return 2;
-    if (location.startsWith(AppRoutes.recomPath)) return 3;
-    if (location.startsWith(AppRoutes.morePath)) return 4;
+    if (location.startsWith(AppRoutes.morePath)) return 3;
     return 0; // dashboard
   }
 
@@ -67,9 +66,6 @@ class AppShell extends StatelessWidget {
         context.go(AppRoutes.libraryPath);
         break;
       case 3:
-        context.go(AppRoutes.recomPath);
-        break;
-      case 4:
         context.go(AppRoutes.morePath);
         break;
     }

@@ -17,11 +17,10 @@ class MiniChip extends StatelessWidget {
       ),
       child: Text(
         '#$label',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: cs.onSecondaryContainer.withValues(alpha: 0.8),
-        ),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: cs.onSecondaryContainer.withValues(alpha: 0.8),
+            ),
       ),
     );
   }

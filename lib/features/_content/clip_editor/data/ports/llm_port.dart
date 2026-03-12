@@ -10,11 +10,11 @@
 // Data Layer > Ports
 // ============================================================================
 
+/// LLM Chat Completions 포트.
 abstract class LLMPort {
   Future<String> complete({
     required String systemPrompt,
     required String userPrompt,
-    String? model,
     Duration? timeout,
   });
 }

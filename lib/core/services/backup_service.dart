@@ -1,26 +1,81 @@
+// ============================================================================
+// lib/core/services/backup_service.dart
+// ============================================================================
+//
+// [역할]
+// 앱 데이터(DB, 미디어 파일)의 백업 및 복원을 담당하는 서비스.
+//
+// [레이어]
+// Core Layer > Services
+// ============================================================================
+
 import 'dart:convert';
 import 'dart:io' show File, Directory, Platform;
+
+import 'package:flutter/foundation.dart' show compute;
 import 'package:archive/archive_io.dart';
-import 'package:crypto/crypto.dart';
-import 'package:path/path.dart' as p;
 import 'package:archive/archive.dart' as a;
-import 'package:path_provider/path_provider.dart';
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:restart_app/restart_app.dart';
 
+import 'package:parrokit/features/_settings/more/presentation/widgets/backup_progress_dialog.dart'
+    show BackupProgress, BackupProgressState;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Isolate 압축용 파라미터
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Isolate에 전달할 압축 작업 파라미터.
+class _CompressParams {
+  final String zipPath;
+  final String? dbPath;
+  final String dbRelativePath;
+  final String mediaPath;
+  final List<String> filePaths;
+  final String mediaRelativeDir;
+  final String timestamp;
+
+  const _CompressParams({
+    required this.zipPath,
+    required this.dbPath,
+    required this.dbRelativePath,
+    required this.mediaPath,
+    required this.filePaths,
+    required this.mediaRelativeDir,
+    required this.timestamp,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BackupService
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// 백업 및 복원 서비스 (싱글톤).
 class BackupService {
   BackupService._internal();
 
   static final BackupService instance = BackupService._internal();
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Constants
+  // ───────────────────────────────────────────────────────────────────────────
+
   final String dbRelativePath = 'paro.db';
   final String mediaRelativeDir = '';
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Private Helpers
+  // ───────────────────────────────────────────────────────────────────────────
 
   Future<Directory> _appDocDir() async =>
       await getApplicationDocumentsDirectory();
 
-  /// DB 파일 경로 및 생성
+  /// DB 파일 경로 반환 (없으면 생성).
   Future<File> _dbFile() async {
     final dir = await _appDocDir();
     final f = File(p.join(dir.path, dbRelativePath));
@@ -28,7 +83,7 @@ class BackupService {
     return f;
   }
 
-  /// Media 디렉터리 및 경로 생성
+  /// Media 디렉터리 경로 반환 (없으면 생성).
   Future<Directory> _mediaDir() async {
     final dir = await _appDocDir();
     final d = Directory(p.join(dir.path, mediaRelativeDir));
@@ -36,19 +91,29 @@ class BackupService {
     return d;
   }
 
-  /// 파일 백업 시 무결성 검증
+  /// 파일의 SHA256 해시 계산 (무결성 검증용).
   Future<String> _sha256OfFile(File f) async {
     if (!await f.exists()) return '';
     final digest = await sha256.bind(f.openRead()).first;
     return digest.toString();
   }
 
-  /// 백업 파일 생성
-  Future<File> createBackup() async {
+  // ───────────────────────────────────────────────────────────────────────────
+  // Public API: Backup
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// 백업 파일(.zip) 생성.
+  ///
+  /// 1. 데이터 확인: DB 및 미디어 파일 목록 수집, 용량 계산
+  /// 2. 데이터 압축: Isolate에서 zip 파일 생성
+  /// 3. 파일 저장: 사용자에게 저장 위치 선택
+  Future<File> createBackup({Function(BackupProgress)? onProgress}) async {
+    // 1단계: 데이터 확인
+    onProgress?.call(BackupProgress(state: BackupProgressState.checking));
+
     final appDir = await _appDocDir();
     final db = await _dbFile();
     final media = await _mediaDir();
-
     final ts = DateTime.now();
 
     // 기존 backup_*.zip 정리
@@ -60,80 +125,148 @@ class BackupService {
       }
     }
 
-    final name =
-        'backup_${ts.year}${pad2(ts.month)}${pad2(ts.day)}_${pad2(ts.hour)}${pad2(ts.minute)}${pad2(ts.second)}.zip';
-    final backupZip = File(p.join(appDir.path, name));
+    // 파일 목록 구성 및 용량 계산
+    int totalBytes = 0;
+    final List<String> filePaths = [];
 
-    final encoder = ZipFileEncoder();
-    encoder.create(backupZip.path);
-
-    // 1) DB 추가 — zip 내부 경로를 명시
     if (await db.exists()) {
-      encoder.addFile(db, dbRelativePath); // << 변경
+      totalBytes += await db.length();
     }
 
-    // 2) media 재귀 추가 — 자기 자신(zip)과 manifest.json 제외 (중요)
     if (await media.exists()) {
       await for (final ent in media.list(recursive: true, followLinks: false)) {
         if (ent is! File) continue;
-
         final base = p.basename(ent.path);
-        // 자기 자신(zip) 또는 manifest 제외
-        if (base == name ||
-            base == 'manifest.json' ||
-            base.startsWith('backup_')) {
-          continue;
-        }
-
-        final rel =
-            p.relative(ent.path, from: media.path).replaceAll('\\', '/');
-        final inZip = p.join(mediaRelativeDir, rel).replaceAll('\\', '/');
-        encoder.addFile(ent, inZip);
+        if (base.startsWith('backup_') || base == 'manifest.json') continue;
+        filePaths.add(ent.path);
+        totalBytes += await ent.length();
       }
     }
 
-    // 3) manifest entries
+    // 용량 정보와 함께 상태 업데이트
+    onProgress?.call(BackupProgress(
+      state: BackupProgressState.checking,
+      totalBytes: totalBytes,
+    ));
+
+    // 2단계: 데이터 압축 (compute()로 별도 스레드에서 실행)
+    onProgress?.call(BackupProgress(
+      state: BackupProgressState.compressing,
+      totalBytes: totalBytes,
+    ));
+
+    final name =
+        'backup_${ts.year}${pad2(ts.month)}${pad2(ts.day)}_${pad2(ts.hour)}${pad2(ts.minute)}${pad2(ts.second)}.zip';
+    final backupZipPath = p.join(appDir.path, name);
+
+    // compute()로 별도 Isolate에서 압축 실행
+    await compute(
+      _doCompress,
+      _CompressParams(
+        zipPath: backupZipPath,
+        dbPath: await db.exists() ? db.path : null,
+        dbRelativePath: dbRelativePath,
+        mediaPath: media.path,
+        filePaths: filePaths,
+        mediaRelativeDir: mediaRelativeDir,
+        timestamp: ts.toIso8601String(),
+      ),
+    );
+
+    final backupZip = File(backupZipPath);
+
+    // 3단계: 파일 저장
+    onProgress?.call(BackupProgress(state: BackupProgressState.saving));
+    final saved = await _save(backupZip, name);
+
+    if (saved) {
+      try {
+        await backupZip.delete();
+      } catch (_) {}
+    } else {
+      throw Exception('파일 저장이 취소되었거나 실패했습니다.');
+    }
+
+    return backupZip;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Isolate Helpers (static)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// 별도 Isolate에서 실행되는 압축 로직.
+  static void _doCompress(_CompressParams params) {
+    final encoder = ZipFileEncoder();
+    encoder.create(params.zipPath);
+
+    // DB 추가
+    if (params.dbPath != null) {
+      final dbFile = File(params.dbPath!);
+      try {
+        final bytes = dbFile.readAsBytesSync();
+        final archiveFile = a.ArchiveFile(
+          params.dbRelativePath,
+          bytes.length,
+          bytes,
+        );
+        encoder.addArchiveFile(archiveFile);
+      } catch (_) {
+        // DB 파일 읽기 실패 시 무시하거나 에러 처리
+      }
+    }
+
+    // Media 추가
+    for (final filePath in params.filePaths) {
+      if (filePath == params.dbPath) continue;
+      final file = File(filePath);
+
+      try {
+        final rel =
+            p.relative(filePath, from: params.mediaPath).replaceAll('\\', '/');
+        final inZip =
+            p.join(params.mediaRelativeDir, rel).replaceAll('\\', '/');
+
+        if (file.existsSync()) {
+          // 대용량 파일일 수 있지만, 확실한 저장을 위해 바이트로 읽음
+          final bytes = file.readAsBytesSync();
+          final archiveFile = a.ArchiveFile(inZip, bytes.length, bytes);
+          encoder.addArchiveFile(archiveFile);
+        }
+      } catch (_) {
+        // 파일 처리 실패 시 무시
+      }
+    }
+
+    // manifest 생성
     final entries = <Map<String, dynamic>>[];
 
-    // DB 엔트리
-    if (await db.exists()) {
+    if (params.dbPath != null) {
+      final dbFile = File(params.dbPath!);
       entries.add({
-        'path': dbRelativePath,
-        'sha256': await _sha256OfFile(db),
-        'bytes': await db.length(),
+        'path': params.dbRelativePath,
+        'sha256': _sha256OfFileSync(dbFile),
+        'bytes': dbFile.lengthSync(),
       });
     }
 
-    // media 엔트리 — 위와 동일한 제외 규칙 적용 (중요)
-    if (await media.exists()) {
-      await for (final ent in media.list(recursive: true, followLinks: false)) {
-        if (ent is! File) continue;
+    for (final filePath in params.filePaths) {
+      final file = File(filePath);
+      final inZipPath = p.joinAll([
+        params.mediaRelativeDir,
+        p.relative(filePath, from: params.mediaPath)
+      ]).replaceAll('\\', '/');
 
-        final base = p.basename(ent.path);
-        if (base == name ||
-            base == 'manifest.json' ||
-            base.startsWith('backup_')) {
-          continue;
-        }
-
-        final inZipPath = p.joinAll([
-          mediaRelativeDir,
-          p.relative(ent.path, from: media.path)
-        ]).replaceAll('\\', '/');
-
-        entries.add({
-          'path': inZipPath,
-          'sha256': await _sha256OfFile(ent),
-          'bytes': await ent.length(),
-        });
-      }
+      entries.add({
+        'path': inZipPath,
+        'sha256': _sha256OfFileSync(file),
+        'bytes': file.lengthSync(),
+      });
     }
 
-    // 4) manifest.json 추가
     final manifest = {
-      'createdAt': ts.toIso8601String(),
-      'db': dbRelativePath,
-      'mediaDir': mediaRelativeDir,
+      'createdAt': params.timestamp,
+      'db': params.dbRelativePath,
+      'mediaDir': params.mediaRelativeDir,
       'entries': entries,
       'version': 1,
     };
@@ -145,19 +278,21 @@ class BackupService {
         a.ArchiveFile('manifest.json', manifestBytes.length, manifestBytes));
 
     encoder.close();
-
-    final saved = await _save(backupZip, name);
-
-    // ⚠️ 외부 저장 성공 시 내부 zip 삭제는 호출부에서 하는 걸 권장
-    if (saved) {
-      try {
-        await backupZip.delete();
-      } catch (_) {}
-    }
-
-    return backupZip;
   }
 
+  /// 별도 Isolate에서 사용하는 동기적 SHA256 계산.
+  static String _sha256OfFileSync(File f) {
+    if (!f.existsSync()) return '';
+    final bytes = f.readAsBytesSync();
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // File Save Helpers
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// 플랫폼별 파일 저장 다이얼로그 호출.
   Future<bool> _save(File backupZip, String suggestedName) async {
     try {
       if (Platform.isAndroid || Platform.isIOS) {
@@ -181,19 +316,32 @@ class BackupService {
     }
   }
 
-  Future<void> restoreBackup() async {
-    // 1) Let user pick a .zip
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Public API: Restore
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /// 백업 파일(.zip)에서 데이터 복원.
+  ///
+  /// 1. 파일 분석: zip 파일 선택 및 manifest 확인
+  /// 2. 압축 해제: 임시 디렉터리에 파일 추출
+  /// 3. 데이터 복원: 파일 무결성 검증 후 이동, 앱 재시작
+  Future<void> restoreBackup({Function(BackupProgress)? onProgress}) async {
+    // 1단계: 파일 분석
+    onProgress?.call(BackupProgress(state: BackupProgressState.analyzing));
+
     final res = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['zip'],
     );
-    if (res == null || res.files.isEmpty) return;
+    if (res == null || res.files.isEmpty) {
+      throw Exception('파일 선택이 취소되었습니다.');
+    }
 
     final appDir = await _appDocDir();
     final zipPath = res.files.single.path!;
     final ts = DateTime.now().millisecondsSinceEpoch;
 
-    // (옵션) 이전 임시 폴더 정리
+    // 이전 임시 폴더 정리
     try {
       await for (final ent
           in appDir.list(recursive: false, followLinks: false)) {
@@ -206,14 +354,13 @@ class BackupService {
       }
     } catch (_) {}
 
-    // 2) Extract to temporary folder inside app directory
     final tmpDir = Directory(p.join(appDir.path, '.restore_tmp_$ts'));
     await tmpDir.create(recursive: true);
 
     Archive archive;
     try {
       final inputStream = InputFileStream(zipPath);
-      archive = ZipDecoder().decodeStream(inputStream); // 스트리밍 파싱(메모리 절약)
+      archive = ZipDecoder().decodeStream(inputStream);
       await inputStream.close();
     } catch (e) {
       try {
@@ -222,17 +369,26 @@ class BackupService {
       rethrow;
     }
 
-    // 3) 디스크로 임시 추출 (스트리밍)
+    // 2단계: 압축 해제
+    onProgress?.call(BackupProgress(state: BackupProgressState.extracting));
+
     try {
       for (final file in archive) {
-        final outPath = p.join(tmpDir.path, file.name);
+        await Future.delayed(const Duration(milliseconds: 1)); // UI 양보
+
+        // 경로 구분자 정규화 (백슬래시 → 슬래시)
+        final normalizedName = file.name.replaceAll('\\', '/');
+        final outPath = p.join(tmpDir.path, normalizedName);
+
         if (file.isFile) {
           await File(outPath).parent.create(recursive: true);
           final out = OutputFileStream(outPath);
           file.writeContent(out);
           await out.close();
         } else {
-          await Directory(outPath).create(recursive: true);
+          try {
+            await Directory(outPath).create(recursive: true);
+          } catch (_) {}
         }
       }
     } catch (e) {
@@ -242,7 +398,7 @@ class BackupService {
       rethrow;
     }
 
-    // 4) manifest.json 로드 (루트 우선, 실패 시 유연 탐색)
+    // manifest.json 로드
     Future<File?> findManifestIn(Directory root) async {
       final exact = File(p.join(root.path, 'manifest.json'));
       if (await exact.exists()) return exact;
@@ -274,7 +430,10 @@ class BackupService {
       throw StateError('Invalid manifest.json.');
     }
 
-    // 5) 엔트리 해시 검증 + 경로 검사 (경로 traversal 방지)
+    // manifest가 위치한 디렉토리를 기준으로 파일 찾기
+    final manifestDir = tmpManifest.parent;
+
+    // 엔트리 검증
     final List entries = manifestMap['entries'] ?? [];
     for (final e in entries) {
       final rel = (e['path'] as String?) ?? '';
@@ -284,7 +443,8 @@ class BackupService {
         } catch (_) {}
         throw StateError('Unsafe path in manifest: $rel');
       }
-      final tmpFile = File(p.join(tmpDir.path, rel));
+      // manifest 디렉토리 기준으로 파일 찾기
+      final tmpFile = File(p.join(manifestDir.path, rel));
       if (!await tmpFile.exists()) {
         try {
           await _deleteDir(tmpDir);
@@ -303,9 +463,9 @@ class BackupService {
       }
     }
 
-    // 6) 현재 DB 백업 (있으면)
+    // 현재 DB 백업
     try {
-      final dbFile = await _dbFile(); // e.g., appDir/paro.db
+      final dbFile = await _dbFile();
       if (await dbFile.exists()) {
         final bakPath = '${dbFile.path}.bak_$ts';
         await dbFile.copy(bakPath);
@@ -317,18 +477,21 @@ class BackupService {
       rethrow;
     }
 
-    // 7) 임시 폴더의 파일들을 앱 디렉토리로 원자적 교체 (entries + manifest.json)
+    // 3단계: 데이터 복원
+    onProgress?.call(BackupProgress(state: BackupProgressState.restoring));
+
     try {
-      // entries 이동/복사 (이번 tmp에 실제 존재하는 것만)
       for (final e in entries) {
+        if (entries.indexOf(e) % 5 == 0) {
+          await Future.delayed(const Duration(milliseconds: 1));
+        }
+
         final rel = e['path'] as String;
-        final src = File(p.join(tmpDir.path, rel));
+        // manifest 디렉토리 기준으로 소스 파일 찾기
+        final src = File(p.join(manifestDir.path, rel));
         final dst = File(p.join(appDir.path, rel));
 
-        if (!await src.exists()) {
-          // 이번 tmp에 없으면 건너뜀 (구버전/누락 대비)
-          continue;
-        }
+        if (!await src.exists()) continue;
 
         await dst.parent.create(recursive: true);
         try {
@@ -353,8 +516,8 @@ class BackupService {
         } catch (_) {}
       }
 
-      // ✅ paro.db 보장: tmp에 없으면 archive에서 직접 추출해 복구
-      final dbRel = dbRelativePath; // 예: 'paro.db'
+      // paro.db 보장
+      final dbRel = dbRelativePath;
       final dbSrc = File(p.join(tmpDir.path, dbRel));
       final dbDst = File(p.join(appDir.path, dbRel));
       if (!await dbSrc.exists()) {
@@ -365,7 +528,6 @@ class BackupService {
             break;
           }
         }
-
         if (dbEntry != null) {
           await dbDst.parent.create(recursive: true);
           final out = OutputFileStream(dbDst.path);
@@ -376,7 +538,6 @@ class BackupService {
     } catch (e) {
       rethrow;
     } finally {
-      // 8) 임시 폴더 정리
       try {
         await _deleteDir(tmpDir);
       } catch (_) {}
@@ -384,11 +545,17 @@ class BackupService {
     }
   }
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Utilities
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /// 디렉터리 삭제 (존재 시).
   Future<void> _deleteDir(Directory dir) async {
     if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
   }
 
+  /// 숫자를 2자리 문자열로 패딩.
   String pad2(int n) => n.toString().padLeft(2, '0');
 }

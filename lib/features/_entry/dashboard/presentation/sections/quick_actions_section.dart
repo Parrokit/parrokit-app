@@ -13,7 +13,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
-import '../widgets/qa_button.dart';
+import '../widgets/quick_action_button.dart';
 
 /// 대시보드 퀵 액션 버튼 섹션.
 ///
@@ -63,7 +63,7 @@ class QuickActionsSection extends StatelessWidget {
         child: Row(
           children: [
             const SizedBox(width: 4),
-            QAButton(
+            QuickActionButton(
               label: '추가',
               icon: Icons.file_download_rounded,
               cardBg: cardBg,
@@ -73,7 +73,7 @@ class QuickActionsSection extends StatelessWidget {
               onTap: onTapAdd,
             ),
             const SizedBox(width: 12),
-            QAButton(
+            QuickActionButton(
               label: '라이브러리',
               icon: Icons.bookmarks_rounded,
               cardBg: cardBg,
@@ -83,7 +83,7 @@ class QuickActionsSection extends StatelessWidget {
               onTap: onTapLibrary,
             ),
             const SizedBox(width: 4),
-            QAButton(
+            QuickActionButton(
               label: '검색',
               icon: Icons.search_rounded,
               cardBg: cardBg,
@@ -93,7 +93,7 @@ class QuickActionsSection extends StatelessWidget {
               onTap: onTapSearch,
             ),
             const SizedBox(width: 12),
-            QAButton(
+            QuickActionButton(
               label: '설정',
               icon: Icons.settings_rounded,
               cardBg: cardBg,

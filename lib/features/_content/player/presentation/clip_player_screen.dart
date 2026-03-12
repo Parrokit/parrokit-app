@@ -30,7 +30,7 @@ import 'widgets/segment_timeline.dart';
 import 'widgets/toggle_pill.dart';
 import 'widgets/segment_list.dart';
 import 'widgets/speed_menu.dart';
-import 'widgets/plain_subtitle_overlay.dart';
+import 'widgets/subtitle_overlay.dart';
 
 /// 클립 플레이어 화면.
 ///
@@ -207,7 +207,7 @@ class _ClipPlayerViewState extends State<_ClipPlayerView>
 
               // 자막
               if (vm.showSubtitles)
-                PlainSubtitleOverlay(
+                SubtitleOverlay(
                   ja: vm.currentSegment.original,
                   pron: vm.currentSegment.pron,
                   ko: vm.currentSegment.trans,
@@ -432,7 +432,7 @@ class _ClipPlayerViewState extends State<_ClipPlayerView>
 
         // 자막
         if (vm.showSubtitles)
-          PlainSubtitleOverlay(
+          SubtitleOverlay(
             ja: vm.currentSegment.original,
             pron: vm.currentSegment.pron,
             ko: vm.currentSegment.trans,

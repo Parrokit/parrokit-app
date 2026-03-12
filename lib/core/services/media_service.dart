@@ -356,7 +356,14 @@ class MediaService {
     final found = await (db.select(db.titles)
           ..where((t) => t.name.equals(name)))
         .getSingleOrNull();
-    if (found != null) return found.id;
+    if (found != null) {
+      // 기존 Title의 원어 작품명이 변경되었으면 업데이트
+      if (found.nameNative != nameNative) {
+        await (db.update(db.titles)..where((t) => t.id.equals(found.id)))
+            .write(TitlesCompanion(nameNative: Value(nameNative)));
+      }
+      return found.id;
+    }
 
     return db.into(db.titles).insert(
           TitlesCompanion.insert(

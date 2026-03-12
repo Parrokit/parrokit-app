@@ -23,9 +23,6 @@ import 'package:parrokit/features/_settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/_discovery/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/_content/clip_editor/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/_content/player/presentation/clip_player_screen.dart';
-import 'package:parrokit/features/_discovery/recom/presentation/recom_screen.dart';
-import 'package:parrokit/features/_discovery/recom/presentation/recom_result_screen.dart';
-import 'package:parrokit/features/_discovery/recom/domain/recom_result_args.dart';
 import 'package:parrokit/features/_settings/payment/presentation/payment_screen.dart';
 import 'package:parrokit/features/_settings/payment/presentation/payment_success_screen.dart';
 import 'package:parrokit/features/_settings/payment/presentation/payment_fail_screen.dart';
@@ -114,16 +111,18 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
 GoRoute get _introRoute => GoRoute(
       path: AppRoutes.introPath,
       name: AppRoutes.intro,
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: IntroScreen(),
+      pageBuilder: (context, state) => NoTransitionPage(
+        name: AppRoutes.intro,
+        child: const IntroScreen(),
       ),
     );
 
 GoRoute get _authRoute => GoRoute(
       path: AppRoutes.authPath,
       name: AppRoutes.auth,
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: AuthScreen(),
+      pageBuilder: (context, state) => NoTransitionPage(
+        name: AppRoutes.auth,
+        child: const AuthScreen(),
       ),
     );
 
@@ -169,6 +168,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.dashboardPath,
           name: AppRoutes.dashboard,
           pageBuilder: (context, state) => NoTransitionPage(
+            name: AppRoutes.dashboard,
             child: DashboardScreen(),
           ),
         ),
@@ -178,6 +178,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.explorePath,
           name: AppRoutes.explore,
           pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.explore,
             child: ShortsScreen(),
           ),
         ),
@@ -187,6 +188,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.libraryPath,
           name: AppRoutes.library,
           pageBuilder: (context, state) => NoTransitionPage(
+            name: AppRoutes.library,
             child: LibraryScreen(
               initialTitleId:
                   int.tryParse(state.uri.queryParameters['titleId'] ?? ''),
@@ -199,36 +201,12 @@ ShellRoute get _shellRoute => ShellRoute(
           ),
         ),
 
-        // Recommendation
-        GoRoute(
-          path: AppRoutes.recomPath,
-          name: AppRoutes.recom,
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: RecomScreen(),
-          ),
-        ),
-
-        // Recommendation Result
-        GoRoute(
-          path: AppRoutes.recomResultPath,
-          name: AppRoutes.recomResult,
-          builder: (context, state) {
-            final args = state.extra as RecomResultArgs;
-            return RecomResultScreen(
-              results: args.results,
-              titles: args.titles,
-              topK: args.topK,
-              cutoff: args.cutoff,
-              excludeWatched: args.excludeWatched,
-            );
-          },
-        ),
-
         // More
         GoRoute(
           path: AppRoutes.morePath,
           name: AppRoutes.more,
           pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.more,
             child: MoreScreen(),
           ),
         ),
@@ -238,6 +216,7 @@ ShellRoute get _shellRoute => ShellRoute(
           path: AppRoutes.recentsPath,
           name: AppRoutes.recents,
           pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.recents,
             child: RecentScreen(),
           ),
         ),

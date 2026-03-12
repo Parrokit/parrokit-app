@@ -10,13 +10,46 @@ description: 네이밍 규칙, 주석 템플릿, 코드 스타일
 |------|------|------|
 | Screen | `{Feature}Screen` | `AuthScreen` |
 | Section | `{Name}Section` | `AuthFormSection` |
-| Widget | `{Name}Card/Tab/...` | `CoinPackageCard` |
+| Widget | `{Name}{Suffix}` | 아래 표 참조 |
 | Provider | `{Feature}Provider` | `UserProvider` |
 | ViewModel | `{Feature}ViewModel` | `ClipEditorViewModel` |
 | UseCase | `{Action}{Target}UseCase` | `SaveClipUseCase` |
 | Service | `{Name}Service` | `ClipSaveService` |
 | enum | `{Name}Mode/Type/State` | `AuthMode`, `EditorSaveState` |
 | Model | `{Name}` 또는 `{Name}Entity` | `CoinPackage` |
+
+---
+
+## 위젯 접미사 규칙 (Suffix)
+
+| 접미사 | 용도 | 예시 |
+|--------|------|------|
+| `Card` | 독립적인 카드 UI | `HeroCard`, `CollectionCard`, `FolderCard` |
+| `Tile` | 리스트 아이템 | `SubtitleTile`, `SwipeActionTile` |
+| `Button` | 버튼 (축약 ❌) | `QuickActionButton`, `CircleIconButton` |
+| `Chip` | 칩/태그 형태 | `MiniChip`, `FilterChip` |
+| `Bar` | 수평 바 형태 | `ProgressBar`, `BreadcrumbBar` |
+| `Tab` | 탭 UI | `BookmarkTab` |
+| `Tabs` | 탭 그룹 | `BookmarkTabs` |
+| `List` | 리스트 컨테이너 | `SegmentList`, `EpisodeList` |
+| `Menu` | 메뉴/드롭다운 | `SpeedMenu` |
+| `Field` | 입력 필드 | `LabeledTextField`, `TimeTripletField` |
+| `Overlay` | 오버레이 레이어 | `SubtitleOverlay` |
+| `Layer` | 제스처/기능 레이어 | `SeekGestureLayer` |
+| `Pill` | 둥근 토글 버튼 | `TogglePill` |
+| `Badge` | 상태 배지 (접두사 필수) | `ShortsBadge`, `StatusBadge` |
+| `Timeline` | 타임라인 UI | `SegmentTimeline` |
+| `Thumbnail` | 썸네일 이미지 | `EpisodeThumbnail`, `ClipThumbnail` |
+| `Icon` | 아이콘 위젯 | `GradientIcon` |
+| `Divider` | 구분선 | `HairlineDivider` |
+| `Placeholder` | 로딩/빈 상태 | `VideoLayerPlaceholder` |
+| `Header` | 헤더 | `SectionHeader` |
+| `Rail` | 사이드 액션 레일 | `ActionRail` |
+
+### 금지 사항
+- ❌ 축약어 사용 금지: `QA` → `QuickAction`, `Btn` → `Button`
+- ❌ 일반적인 이름 단독 사용 금지: `Badge` → `ShortsBadge`
+- ❌ 파일명 오타 금지: `thumb_nail` → `thumbnail`
 
 ---
 

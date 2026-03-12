@@ -12,7 +12,7 @@
 import 'dart:convert';
 
 import '../../domain/clip_form_data.dart';
-import '../adapters/openai_adapter.dart';
+import '../ports/llm_port.dart';
 import '../prompts/prompt_loader.dart';
 import 'time_code_service.dart';
 import '../usecases/transcribe_usecase.dart';
@@ -31,7 +31,7 @@ class DraftResult {
 /// STT + LLM 초안 생성 서비스.
 class DraftGenerationService {
   final TranscribeUseCase transcribe;
-  final OpenAIAdapter llm;
+  final LLMPort llm;
   final TimecodeService _timecode = TimecodeService();
 
   DraftGenerationService({
@@ -40,10 +40,12 @@ class DraftGenerationService {
   });
 
   /// 영상 파일에서 STT를 수행하고 번역/발음 초안을 생성합니다.
+  /// [onProgress]는 (current, total, message) 형태로 진행 상황을 전달합니다.
   Future<DraftResult> generate({
     required String filePath,
     required int durationMs,
     String language = 'ja',
+    void Function(int current, int total, String message)? onProgress,
   }) async {
     // 1) STT 수행
     final asr = await transcribe(
@@ -62,7 +64,14 @@ class DraftGenerationService {
     final sys = await PromptLoader.loadSttDraftSystem();
     final userPrefix = await PromptLoader.loadSttDraftUser();
 
+    final totalBatches = (asr.segments.length / batchSize).ceil();
+    int currentBatch = 0;
+
     for (int offset = 0; offset < asr.segments.length; offset += batchSize) {
+      currentBatch++;
+      onProgress?.call(
+          currentBatch, totalBatches, '번역 중 ($currentBatch/$totalBatches)');
+
       final batch = asr.segments.sublist(
         offset,
         (offset + batchSize > asr.segments.length)
@@ -83,7 +92,6 @@ class DraftGenerationService {
       final jsonStr = await llm.complete(
         systemPrompt: sys,
         userPrompt: userPrompt,
-        model: 'gpt-4o-mini',
         timeout: const Duration(seconds: 60),
       );
 

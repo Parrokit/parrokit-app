@@ -18,6 +18,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
 import 'clip_editor_view_model.dart';
+import 'widgets/exit_confirm_sheet.dart';
 import 'sections/sections.dart';
 
 /// 클립 에디터 화면.
@@ -65,79 +66,103 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
       });
     }
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('편집'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.monetization_on_rounded,
-                  color: Colors.amber,
-                  size: 20,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${userProvider.coins}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _showExitConfirmation(context, vm);
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        appBar: AppBar(
+          title: const Text('편집'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => _showExitConfirmation(context, vm),
           ),
-        ],
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Stack(
+          actions: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Stepper(
-                    type: StepperType.horizontal,
-                    currentStep: vm.currentStep,
-                    onStepContinue: vm.nextOrSave,
-                    onStepCancel: vm.prevOrCancel,
-                    onStepTapped: vm.goToStep,
-                    controlsBuilder: (context, details) =>
-                        const SizedBox.shrink(),
-                    steps: [
-                      _buildStep(0, vm, FileSection(vm: vm)),
-                      _buildStep(1, vm, WorkNameSection(vm: vm)),
-                      _buildStep(2, vm, TypeSection(vm: vm)),
-                      _buildStep(3, vm, SeasonEpisodeSection(vm: vm)),
-                      _buildStep(4, vm, TitlesSection(vm: vm)),
-                      _buildStep(5, vm, TagsSection(vm: vm)),
-                      _buildStep(6, vm, SegmentsSection(vm: vm)),
-                    ],
+                  const Icon(
+                    Icons.monetization_on_rounded,
+                    color: Colors.amber,
+                    size: 20,
                   ),
-                  if (vm.isSaving)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                    ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${userProvider.coins}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ],
               ),
             ),
-            Container(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                8,
-                16,
-                16 + MediaQuery.of(context).padding.bottom,
-              ),
-              child: _buildStepperControls(context, vm),
-            ),
           ],
+          elevation: 0,
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    Stepper(
+                      type: StepperType.horizontal,
+                      currentStep: vm.currentStep,
+                      onStepContinue: vm.nextOrSave,
+                      onStepCancel: vm.prevOrCancel,
+                      onStepTapped: vm.isSttProcessing ? null : vm.goToStep,
+                      controlsBuilder: (context, details) =>
+                          const SizedBox.shrink(),
+                      steps: [
+                        _buildStep(0, vm, FileSection(vm: vm)),
+                        _buildStep(1, vm, WorkNameSection(vm: vm)),
+                        _buildStep(2, vm, TypeSection(vm: vm)),
+                        _buildStep(3, vm, SeasonEpisodeSection(vm: vm)),
+                        _buildStep(4, vm, TitlesSection(vm: vm)),
+                        _buildStep(5, vm, TagsSection(vm: vm)),
+                        _buildStep(6, vm, SegmentsSection(vm: vm)),
+                      ],
+                    ),
+                    if (vm.isSaving)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          child:
+                              const Center(child: CircularProgressIndicator()),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  16 + MediaQuery.of(context).padding.bottom,
+                ),
+                child: _buildStepperControls(context, vm),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _showExitConfirmation(
+      BuildContext context, ClipEditorViewModel vm) async {
+    // STT 처리 중이면 무시
+    if (vm.isSttProcessing) return;
+
+    final result = await showExitConfirmSheet(context);
+
+    if (result == true && context.mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Step _buildStep(int index, ClipEditorViewModel vm, Widget content) {
@@ -157,14 +182,23 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: vm.isSaving ? null : vm.prevOrCancel,
+            onPressed: (vm.isSaving || vm.isSttProcessing)
+                ? null
+                : () {
+                    if (vm.currentStep == 0) {
+                      _showExitConfirmation(context, vm);
+                    } else {
+                      vm.prevOrCancel();
+                    }
+                  },
             child: Text(vm.currentStep == 0 ? '취소' : '이전'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: vm.isSaving ? null : vm.nextOrSave,
+            onPressed:
+                (vm.isSaving || vm.isSttProcessing) ? null : vm.nextOrSave,
             child: Text(vm.currentStep == ClipEditorViewModel.totalSteps - 1
                 ? '저장'
                 : '다음'),

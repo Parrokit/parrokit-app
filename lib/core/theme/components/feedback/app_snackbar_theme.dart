@@ -9,6 +9,7 @@ SnackBarThemeData appSnackBarTheme(ColorScheme cs, {required bool isDark}) {
   return SnackBarThemeData(
     backgroundColor: isDark ? const Color(0xFF2C3038) : const Color(0xFF323232),
     contentTextStyle: const TextStyle(
+      fontFamily: 'IBMPlexSansKR',
       fontSize: 14,
       fontWeight: FontWeight.w600,
       color: Colors.white,

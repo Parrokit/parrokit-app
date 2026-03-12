@@ -110,15 +110,15 @@ class _IntroScreenState extends State<IntroScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // 페이지 영역
+            // 상하단 그라데이션 스크림 (배경)
+            const GradientScrim(),
+
+            // 페이지 영역 (이미지가 그라데이션 위에 표시)
             IntroPageSection(
               controller: _pageController,
               images: _images,
               onPageChanged: (i) => setState(() => _currentIndex = i),
             ),
-
-            // 상하단 그라데이션 스크림
-            const GradientScrim(),
 
             // 하단 컨트롤
             Positioned(

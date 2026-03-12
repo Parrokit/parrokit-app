@@ -20,8 +20,8 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/data/models/user.dart';
 import '../../domain/coin_package.dart';
-import '../widgets/coin_store_section.dart';
-import 'user_info_card.dart';
+import 'coin_store_section.dart';
+import 'user_info_section.dart';
 import 'email_verification_section.dart';
 
 /// 로그인된 상태에서 표시하는 섹션.
@@ -106,7 +106,7 @@ class LoggedInSection extends StatelessWidget {
                 // ─────────────────────────────────────────────────────
                 // 사용자 정보 카드
                 // ─────────────────────────────────────────────────────
-                UserInfoCard(
+                UserInfoSection(
                   user: user,
                   coins: coins,
                   isEmailVerified: isEmailVerified,

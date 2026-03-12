@@ -16,11 +16,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/local/dao/titles_dao.dart';
-import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart' as utils;
 
-import '../data/adapters/openai_adapter.dart';
-import '../data/adapters/openai_whisper_adapter.dart';
+import '../data/adapters/openai_llm_adapter.dart';
+import '../data/adapters/openai_asr_adapter.dart';
 import '../data/adapters/video_picker_files.dart';
 import '../data/adapters/video_picker_gallery.dart';
 import '../data/services/audio_to_video.dart';
@@ -28,6 +27,7 @@ import '../data/services/clip_load_service.dart';
 import '../data/services/clip_save_service.dart';
 import '../data/services/draft_generation_service.dart';
 import '../data/services/file_staging_service.dart';
+import '../data/services/native_title_service.dart';
 import '../data/services/video_meta_service.dart';
 import '../data/usecases/extract_duration_usecase.dart';
 import '../data/usecases/extract_thumbnail_usecase.dart';
@@ -36,6 +36,7 @@ import '../data/usecases/load_clip_for_edit_usecase.dart';
 import '../data/usecases/pick_video_usecase.dart';
 import '../data/usecases/save_clip_usecase.dart';
 import '../data/usecases/transcribe_usecase.dart';
+import '../data/usecases/lookup_native_title_usecase.dart';
 
 import '../domain/clip_form_data.dart';
 import '../domain/clip_validator.dart';
@@ -86,6 +87,7 @@ class ClipEditorViewModel extends ChangeNotifier
   late final SaveClipUseCase _saveClip;
   late final LoadClipForEditUseCase _loadClipForEdit;
   late final GenerateDraftUseCase _generateDraft;
+  late final LookupNativeTitleUseCase _lookupNativeTitle;
   final ClipValidator _validator = ClipValidator();
 
   // ─────────────────────────────────────────────────────────────────
@@ -101,6 +103,25 @@ class ClipEditorViewModel extends ChangeNotifier
   EditorSaveState get saveState => _saveState;
   bool get isSaving => _saveState == EditorSaveState.saving;
 
+  // 원어 작품명 조회 상태
+  bool _isLookingUpNativeTitle = false;
+  bool get isLookingUpNativeTitle => _isLookingUpNativeTitle;
+
+  // STT 처리 진행 상태
+  SttProcessState _sttState = SttProcessState.idle;
+  SttProcessState get sttState => _sttState;
+  bool get isSttProcessing =>
+      _sttState != SttProcessState.idle &&
+      _sttState != SttProcessState.done &&
+      _sttState != SttProcessState.error;
+
+  // 배치 진행률 (번역 단계에서)
+  int _sttProgress = 0;
+  int _sttTotal = 0;
+  int get sttProgress => _sttProgress;
+  int get sttTotal => _sttTotal;
+  String get sttProgressText => _sttTotal > 0 ? '$_sttProgress/$_sttTotal' : '';
+
   // 에디터 모드
   EditorMode _mode = const CreateMode();
   EditorMode get mode => _mode;
@@ -115,7 +136,8 @@ class ClipEditorViewModel extends ChangeNotifier
   final titleCtl = TextEditingController();
   @override
   final nameCtl = TextEditingController();
-  final nameNativeCtl = TextEditingController(text: '-');
+  @override
+  final nameNativeCtl = TextEditingController();
   @override
   final seasonCtl = TextEditingController();
   @override
@@ -139,11 +161,7 @@ class ClipEditorViewModel extends ChangeNotifier
   // 초기화
   // ─────────────────────────────────────────────────────────────────
 
-  void showToast(String msg) {
-    if (rootNavigatorKey.currentContext != null) {
-      utils.showToast(rootNavigatorKey.currentContext!, msg);
-    }
-  }
+  void showToast(String msg) => utils.showToast(msg);
 
   void _init() {
     staging = FileStagingService();
@@ -164,14 +182,19 @@ class ClipEditorViewModel extends ChangeNotifier
     );
 
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+    final llmAdapter = OpenAILlmAdapter(apiKey: apiKey);
+
     _generateDraft = GenerateDraftUseCase(
       service: DraftGenerationService(
         transcribe: TranscribeUseCase(
-          OpenAIWhisperAdapter(apiKey: apiKey),
+          OpenAIAsrAdapter(apiKey: apiKey),
         ),
-        llm: OpenAIAdapter(apiKey: apiKey),
+        llm: llmAdapter,
       ),
     );
+
+    _lookupNativeTitle =
+        LookupNativeTitleUseCase(NativeTitleService(llmAdapter));
 
     // 세그먼트 폼 초기화
     initSegmentForms();
@@ -244,6 +267,33 @@ class ClipEditorViewModel extends ChangeNotifier
   }
 
   // ─────────────────────────────────────────────────────────────────
+  // 원어 작품명 자동 조회
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 작품명을 기반으로 원어 작품명을 자동으로 조회합니다.
+  Future<void> lookupNativeTitle() async {
+    final workName = nameCtl.text.trim();
+    if (workName.isEmpty) {
+      showToast('먼저 작품명을 입력해 주세요.');
+      return;
+    }
+
+    _isLookingUpNativeTitle = true;
+    notifyListeners();
+
+    try {
+      final result = await _lookupNativeTitle(workName: workName);
+      nameNativeCtl.text = result.nativeTitle;
+      showToast('원어 작품명: ${result.nativeTitle}');
+    } catch (e) {
+      showToast('원어 작품명 조회 실패: $e');
+    } finally {
+      _isLookingUpNativeTitle = false;
+      notifyListeners();
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
   // STT + 초안 생성 (UseCase 위임)
   // ─────────────────────────────────────────────────────────────────
 
@@ -254,14 +304,16 @@ class ClipEditorViewModel extends ChangeNotifier
       return;
     }
     final path = picked!.path!;
-    _setSaving(true);
+
+    // Step 1: 오디오 추출 준비
+    _setSttState(SttProcessState.extracting);
 
     int? durationMs = int.tryParse(durationCtl.text.trim());
     durationMs ??= await extractDuration(path);
 
     if (durationMs == null || durationMs <= 0) {
       showToast('영상 길이를 확인할 수 없습니다.');
-      _setSaving(false);
+      _setSttState(SttProcessState.error);
       return;
     }
 
@@ -269,16 +321,28 @@ class ClipEditorViewModel extends ChangeNotifier
     final cost = _calculateCoinCost(durationMs);
     if (cost > 0 && userProvider.coins < cost) {
       showToast('코인이 부족합니다. (필요: $cost, 보유: ${userProvider.coins})');
-      _setSaving(false);
+      _setSttState(SttProcessState.idle);
       return;
     }
 
     try {
-      // UseCase 호출
+      // Step 2: 음성 인식 (STT)
+      _setSttState(SttProcessState.transcribing);
+
+      // UseCase 호출 (내부에서 STT + 번역 처리)
       final result = await _generateDraft(
         filePath: path,
         durationMs: durationMs,
         language: 'ja',
+        onProgress: (current, total, message) {
+          _sttProgress = current;
+          _sttTotal = total;
+          if (_sttState != SttProcessState.translating) {
+            _setSttState(SttProcessState.translating);
+          } else {
+            notifyListeners();
+          }
+        },
       );
 
       if (result.segments.isNotEmpty) {
@@ -289,14 +353,31 @@ class ClipEditorViewModel extends ChangeNotifier
         // 코인 차감
         if (result.coinCost > 0) {
           userProvider.addCoins(-result.coinCost);
-          showToast('STT/초안 생성에 코인 ${result.coinCost}개 사용');
+          showToast('🪙 자막 생성 완료! (${result.coinCost}코인 사용)');
         }
       }
+
+      _setSttState(SttProcessState.done);
+      // 잠시 후 idle로 복귀
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_sttState == SttProcessState.done) {
+          _setSttState(SttProcessState.idle);
+        }
+      });
     } catch (e) {
       showToast('STT/번역 실패: $e');
-    } finally {
-      _setSaving(false);
+      _setSttState(SttProcessState.error);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_sttState == SttProcessState.error) {
+          _setSttState(SttProcessState.idle);
+        }
+      });
     }
+  }
+
+  void _setSttState(SttProcessState state) {
+    _sttState = state;
+    notifyListeners();
   }
 
   void _fillSegmentsFromDraft(List<SegmentInput> segments) {
@@ -434,6 +515,11 @@ class ClipEditorViewModel extends ChangeNotifier
       }
       if (segmentForms.isEmpty) {
         segmentForms.add(SegmentFormData.empty());
+      }
+
+      // 기존 파일 경로가 있으면 Step 1에 표시
+      if (form.filePath != null && form.filePath!.isNotEmpty) {
+        await setExistingFile(form.filePath!);
       }
 
       notifyListeners();

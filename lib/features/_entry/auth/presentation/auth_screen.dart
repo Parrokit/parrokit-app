@@ -138,13 +138,13 @@ class _AuthScreenState extends State<AuthScreen> {
       // 성공 토스트 표시
       switch (_mode) {
         case AuthMode.signIn:
-          showToast(context, '로그인에 성공했습니다.');
+          showToast('로그인에 성공했습니다.');
           break;
         case AuthMode.signUp:
-          showToast(context, '회원가입이 완료되었습니다. 이메일로 전송된 인증 메일을 확인해 주세요.');
+          showToast('회원가입이 완료되었습니다. 이메일로 전송된 인증 메일을 확인해 주세요.');
           break;
         case AuthMode.resetPassword:
-          showToast(context, '비밀번호 재설정 메일을 전송했습니다.');
+          showToast('비밀번호 재설정 메일을 전송했습니다.');
           break;
       }
     } on FirebaseAuthException catch (e) {
@@ -153,13 +153,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
       // 세션 만료 등 특수 에러 처리
       if (e.code == 'invalid-credential') {
-        showToast(context, '세션이 만료되었어요. 다시 로그인해 주세요.',
-            devMsg:
-                '🔥 FirebaseAuthException: code=${e.code}, message=${e.message}');
+        showToast('세션이 만료되었어요. 다시 로그인해 주세요.');
         await userProvider.signOut();
         return;
       }
-      showToast(context, '오류가 발생했습니다: ${e.message}');
+      showToast('오류가 발생했습니다: ${e.message}');
     }
   }
 
@@ -176,11 +174,10 @@ class _AuthScreenState extends State<AuthScreen> {
       final verified = await userProvider.isEmailVerified();
 
       if (!mounted) return;
-      showToast(
-          context, verified ? '이메일 인증이 완료되었습니다.' : '아직 이메일 인증이 완료되지 않았습니다.');
+      showToast(verified ? '이메일 인증이 완료되었습니다.' : '아직 이메일 인증이 완료되지 않았습니다.');
     } catch (e) {
       if (!mounted) return;
-      showToast(context, '이메일 인증 상태 확인 중 오류가 발생했습니다: $e');
+      showToast('이메일 인증 상태 확인 중 오류가 발생했습니다: $e');
     }
   }
 
@@ -192,10 +189,10 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await userProvider.sendEmailVerification();
       if (!mounted) return;
-      showToast(context, '이메일 인증 메일을 다시 전송했습니다.');
+      showToast('이메일 인증 메일을 다시 전송했습니다.');
     } catch (e) {
       if (!mounted) return;
-      showToast(context, '인증 메일 재전송 중 오류가 발생했습니다: $e');
+      showToast('인증 메일 재전송 중 오류가 발생했습니다: $e');
     }
   }
 
@@ -207,10 +204,10 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await userProvider.signOut();
       if (!mounted) return;
-      showToast(context, '로그아웃되었습니다.');
+      showToast('로그아웃되었습니다.');
     } catch (e) {
       if (!mounted) return;
-      showToast(context, '로그아웃 중 오류가 발생했습니다: $e');
+      showToast('로그아웃 중 오류가 발생했습니다: $e');
     }
   }
 
@@ -227,7 +224,7 @@ class _AuthScreenState extends State<AuthScreen> {
     // 현재 유저 정보 (이메일 등)
     final user = context.read<UserProvider>().currentUser;
 
-    showToast(context,
+    showToast(
         '₩${pkg.price} 결제로 코인 ${pkg.totalCoins}개를 충전할게요. (+${pkg.bonusCoins} 보너스)');
 
     // 결제 화면으로 이동 (PaymentArgs 전달)

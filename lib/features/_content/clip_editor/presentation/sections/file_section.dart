@@ -18,7 +18,7 @@ import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/core/utils/show_toast.dart';
 
-import '../widgets/file_hero_card.dart';
+import '../widgets/cards/file_hero_card.dart';
 import '../widgets/section_title.dart';
 import '../clip_editor_view_model.dart';
 
@@ -85,7 +85,7 @@ class _FileSectionState extends State<FileSection> {
   Future<void> _playInline() async {
     final path = widget.vm.picked?.path;
     if (path == null) {
-      showToast(context, '재생할 파일 경로가 없습니다.');
+      showToast('재생할 파일 경로가 없습니다.');
       return;
     }
     try {
@@ -108,7 +108,7 @@ class _FileSectionState extends State<FileSection> {
       });
       await _vp!.play();
     } catch (e) {
-      if (mounted) showToast(context, '재생 초기화 실패: $e');
+      if (mounted) showToast('재생 초기화 실패: $e');
     }
   }
 

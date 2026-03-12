@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../data/editor_strings.dart';
 import '../../domain/editor_state.dart';
 import '../widgets/section_title.dart';
 import '../clip_editor_view_model.dart';
@@ -27,7 +28,7 @@ class TypeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle("시즌 또는 영화"),
+        SectionTitle(EditorStrings.typeSectionTitle),
         const SizedBox(height: 10),
         Row(
           children: [

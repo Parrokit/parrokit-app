@@ -15,8 +15,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 import '../widgets/section_header.dart';
-import '../widgets/clip_thumbnail_card.dart';
-import '../widgets/more_card.dart';
+import '../widgets/cards/clip_thumbnail_card.dart';
+import '../widgets/cards/more_card.dart';
 
 /// 대시보드 이어보기 섹션.
 ///

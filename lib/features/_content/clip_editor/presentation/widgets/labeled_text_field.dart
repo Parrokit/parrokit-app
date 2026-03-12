@@ -8,6 +8,7 @@ class LabeledTextField extends StatelessWidget {
     required this.label,
     required this.hint,
     this.controller,
+    this.focusNode,
     this.keyboardType,
     this.inputFormatters,
     this.helper,
@@ -19,6 +20,7 @@ class LabeledTextField extends StatelessWidget {
   final String label;
   final String hint;
   final TextEditingController? controller;
+  final FocusNode? focusNode;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final String? helper;
@@ -44,6 +46,7 @@ class LabeledTextField extends StatelessWidget {
             style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         TextField(
+          focusNode: focusNode,
           controller: controller,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,

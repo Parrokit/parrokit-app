@@ -48,8 +48,10 @@ class TogglePill extends StatelessWidget {
             Icon(icon, color: fg, size: 18),
             const SizedBox(width: 6),
             Text(label,
-                style: TextStyle(
-                    color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: fg, fontWeight: FontWeight.w700)),
           ],
         ),
       ),

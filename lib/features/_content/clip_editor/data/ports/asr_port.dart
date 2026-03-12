@@ -39,6 +39,5 @@ abstract class ASRPort {
     String? language,
     bool withSegments = true,
     Duration? timeout,
-    String? model,
   });
 }

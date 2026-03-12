@@ -42,8 +42,6 @@ abstract class AppRoutes {
   static const libraryPath = '/library';
   static const morePath = '/more';
   static const clipsPath = '/clips';
-  static const recomPath = '/recom';
-  static const recomResultPath = '/recom/result';
   static const recentsPath = '/recents';
   static const clipsCreatePath = 'create';
   static const clipsEditPath = 'edit';

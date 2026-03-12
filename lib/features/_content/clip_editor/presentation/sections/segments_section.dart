@@ -12,8 +12,11 @@
 
 import 'package:flutter/material.dart';
 
+import '../../data/editor_strings.dart';
+import '../../domain/editor_state.dart';
 import '../widgets/section_title.dart';
-import '../widgets/segment_card.dart';
+import '../widgets/stt_progress_card.dart';
+import '../widgets/cards/segment_card.dart';
 import '../clip_editor_view_model.dart';
 
 /// 자막 세그먼트 섹션.
@@ -27,24 +30,44 @@ class SegmentsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle("자막 정보"),
+        SectionTitle(EditorStrings.segmentsSectionTitle),
         const SizedBox(height: 10),
-        const Text(
-          "* 자동 자막 기능은 주변 소음이 크거나\n   음악이 포함된 영상에서는 정확도가 낮을 수 있어요.",
-        ),
+        Text(EditorStrings.segmentsNotice),
         const SizedBox(height: 5),
+
+        // STT 진행 상황 표시
+        if (vm.isSttProcessing) ...[
+          SttProgressCard(
+            sttState: vm.sttState,
+            sttProgress: vm.sttProgress,
+            sttTotal: vm.sttTotal,
+          ),
+          const SizedBox(height: 12),
+        ],
+
         Row(
           children: [
             FilledButton.icon(
-              icon: const Icon(Icons.subtitles_outlined, size: 18),
-              label: const Text('자동 자막 달기'),
-              onPressed: vm.onSttAndDraft,
+              icon: vm.isSttProcessing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.subtitles_outlined, size: 18),
+              label: Text(vm.isSttProcessing
+                  ? _getSttStatusText(vm.sttState)
+                  : EditorStrings.sttButtonLabel),
+              onPressed: vm.isSttProcessing ? null : vm.onSttAndDraft,
             ),
             const SizedBox(width: 8),
             OutlinedButton.icon(
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('구간 추가'),
-              onPressed: vm.addSegment,
+              label: Text(EditorStrings.addSegmentButtonLabel),
+              onPressed: vm.isSttProcessing ? null : vm.addSegment,
             ),
             const Spacer(),
           ],
@@ -53,6 +76,23 @@ class SegmentsSection extends StatelessWidget {
         _buildSegmentsList(),
       ],
     );
+  }
+
+  String _getSttStatusText(SttProcessState state) {
+    switch (state) {
+      case SttProcessState.extracting:
+        return '추출 중...';
+      case SttProcessState.transcribing:
+        return '인식 중...';
+      case SttProcessState.translating:
+        return '번역 중...';
+      case SttProcessState.done:
+        return '완료!';
+      case SttProcessState.error:
+        return '오류';
+      default:
+        return EditorStrings.sttButtonLabel;
+    }
   }
 
   Widget _buildSegmentsList() {
@@ -67,6 +107,7 @@ class SegmentsSection extends StatelessWidget {
             originalCtl: vm.segmentForms[i].originalCtl,
             pronCtl: vm.segmentForms[i].pronCtl,
             koCtl: vm.segmentForms[i].koCtl,
+            enabled: !vm.isSttProcessing,
           ),
           const SizedBox(height: 6),
           Row(
@@ -74,8 +115,9 @@ class SegmentsSection extends StatelessWidget {
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('구간 삭제'),
-                onPressed: () => vm.removeSegment(i),
+                label: Text(EditorStrings.removeSegmentButtonLabel),
+                onPressed:
+                    vm.isSttProcessing ? null : () => vm.removeSegment(i),
               ),
             ],
           ),

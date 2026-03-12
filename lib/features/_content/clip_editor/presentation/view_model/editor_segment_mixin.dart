@@ -11,7 +11,6 @@
 
 import 'package:flutter/material.dart';
 
-import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import '../../domain/editor_state.dart';
 
@@ -48,9 +47,7 @@ mixin EditorSegmentMixin on ChangeNotifier {
   /// (최소 1개는 유지해야 합니다)
   void removeSegment(int index) {
     if (segmentForms.length <= 1) {
-      if (rootNavigatorKey.currentContext != null) {
-        showToast(rootNavigatorKey.currentContext!, '세그먼트는 최소 1개 이상 필요합니다.');
-      }
+      showToast('세그먼트는 최소 1개 이상 필요합니다.');
       return;
     }
     final f = segmentForms.removeAt(index);

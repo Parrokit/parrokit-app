@@ -27,10 +27,13 @@ class PaymentSuccessScreen extends StatelessWidget {
         ),
         title: const Text('결제 성공'),
       ),
-      body: const Center(
+      body: Center(
         child: Text(
           '결제가 성공적으로 완료되었습니다!',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
     );

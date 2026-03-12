@@ -119,14 +119,14 @@ class PickedState extends StatelessWidget {
                             return Icons.play_arrow; // 끝남
                           }
                           return Icons.play_arrow; // 일시정지
-                        }(), color: Colors.white),
+                        }(), color: cs.primary),
                       ),
                       const SizedBox(width: 12),
                       // 되돌아가기(썸네일)
                       IconButton(
                         iconSize: 24,
                         onPressed: onStopInline,
-                        icon: const Icon(Icons.replay, color: Colors.white),
+                        icon: Icon(Icons.replay, color: cs.primary),
                       ),
                     ],
                   ),

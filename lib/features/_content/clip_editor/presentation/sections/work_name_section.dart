@@ -11,7 +11,9 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 
+import '../../data/editor_strings.dart';
 import '../widgets/labeled_text_field.dart';
 import '../clip_editor_view_model.dart';
 
@@ -37,6 +39,7 @@ class WorkNameSection extends StatelessWidget {
           onSelected: (selection) {
             vm.nameCtl.text = selection;
             vm.loadSeasonOptions(selection);
+            vm.autoFillNativeTitle(selection);
           },
           fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
             if (controller.text != vm.nameCtl.text) {
@@ -45,15 +48,13 @@ class WorkNameSection extends StatelessWidget {
             controller.addListener(() {
               vm.nameCtl.text = controller.text;
             });
-            return TextField(
+            return LabeledTextField(
+              label: EditorStrings.workNameLabel,
+              hint: EditorStrings.workNameHint,
               controller: controller,
               focusNode: focusNode,
-              decoration: const InputDecoration(
-                labelText: '작품명',
-                hintText: '영상의 시리즈/영화 제목을 입력하세요. (예: 스파이 패밀리)',
-                prefixIcon: Icon(Icons.movie_outlined),
-                border: OutlineInputBorder(),
-              ),
+              prefixIcon: Icons.movie_outlined,
+              clearable: true,
             );
           },
           optionsViewBuilder: (context, onSelected, options) {
@@ -61,12 +62,46 @@ class WorkNameSection extends StatelessWidget {
           },
         ),
         const SizedBox(height: 8),
-        LabeledTextField(
-          label: '원어 작품명',
-          hint: '작품의 본토 이름을 입력하세요.',
-          controller: vm.nameNativeCtl,
-          prefixIcon: Icons.movie_outlined,
-          clearable: true,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: LabeledTextField(
+                label: EditorStrings.workNameNativeLabel,
+                hint: EditorStrings.workNameNativeHint,
+                controller: vm.nameNativeCtl,
+                prefixIcon: Icons.movie_outlined,
+                clearable: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: FilledButton.icon(
+                onPressed:
+                    vm.isLookingUpNativeTitle ? null : vm.lookupNativeTitle,
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                icon: vm.isLookingUpNativeTitle
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_awesome, size: 18),
+                label: Text(
+                  vm.isLookingUpNativeTitle
+                      ? EditorStrings.workNameNativeLookupLoading
+                      : EditorStrings.workNameNativeLookupButton,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
