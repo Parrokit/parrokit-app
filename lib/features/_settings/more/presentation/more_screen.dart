@@ -70,7 +70,6 @@ class MoreScreen extends StatelessWidget {
             SizedBox(height: AppSpacing.sectionGap),
 
             // 백업
-            // 백업
             BackupSection(),
             SizedBox(height: AppSpacing.sectionGap),
 
