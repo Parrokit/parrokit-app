@@ -17,7 +17,7 @@ import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/services/daily_limit_service.dart';
-import 'package:parrokit/data/local/dao/titles_dao.dart';
+import 'package:parrokit/data/local/dao/collections_dao.dart';
 import 'package:parrokit/core/utils/show_toast.dart' as utils;
 
 import '../data/adapters/openai_llm_adapter.dart';
@@ -29,7 +29,6 @@ import '../data/services/clip_load_service.dart';
 import '../data/services/clip_save_service.dart';
 import '../data/services/draft_generation_service.dart';
 import '../data/services/file_staging_service.dart';
-import '../data/services/native_title_service.dart';
 import '../data/services/video_meta_service.dart';
 import '../data/usecases/extract_duration_usecase.dart';
 import '../data/usecases/extract_thumbnail_usecase.dart';
@@ -38,7 +37,6 @@ import '../data/usecases/load_clip_for_edit_usecase.dart';
 import '../data/usecases/pick_video_usecase.dart';
 import '../data/usecases/save_clip_usecase.dart';
 import '../data/usecases/transcribe_usecase.dart';
-import '../data/usecases/lookup_native_title_usecase.dart';
 
 import '../domain/clip_form_data.dart';
 import '../domain/clip_validator.dart';
@@ -60,7 +58,7 @@ class ClipEditorViewModel extends ChangeNotifier
   ClipEditorViewModel({
     required this.mediaProvider,
     required this.userProvider,
-    required this.titlesDao,
+    required this.collectionsDao,
     this.clipId,
   }) {
     _init();
@@ -72,7 +70,7 @@ class ClipEditorViewModel extends ChangeNotifier
   final MediaProvider mediaProvider;
   final UserProvider userProvider;
   @override
-  final TitlesDao titlesDao;
+  final CollectionsDao collectionsDao;
   final int? clipId;
 
   @override
@@ -89,7 +87,6 @@ class ClipEditorViewModel extends ChangeNotifier
   late final SaveClipUseCase _saveClip;
   late final LoadClipForEditUseCase _loadClipForEdit;
   late final GenerateDraftUseCase _generateDraft;
-  late final LookupNativeTitleUseCase _lookupNativeTitle;
   final ClipValidator _validator = ClipValidator();
 
   // ─────────────────────────────────────────────────────────────────
@@ -104,10 +101,6 @@ class ClipEditorViewModel extends ChangeNotifier
   EditorSaveState _saveState = EditorSaveState.idle;
   EditorSaveState get saveState => _saveState;
   bool get isSaving => _saveState == EditorSaveState.saving;
-
-  // 원어 작품명 조회 상태
-  bool _isLookingUpNativeTitle = false;
-  bool get isLookingUpNativeTitle => _isLookingUpNativeTitle;
 
   // STT 처리 진행 상태
   SttProcessState _sttState = SttProcessState.idle;
@@ -129,23 +122,9 @@ class ClipEditorViewModel extends ChangeNotifier
   EditorMode get mode => _mode;
   bool get isEdit => _mode is EditMode;
 
-  // 메타데이터
-  ContentType _contentType = ContentType.season;
-  @override
-  ContentType get contentType => _contentType;
-
   // TextEditingControllers (View에서 직접 사용)
-  final titleCtl = TextEditingController();
-  @override
-  final nameCtl = TextEditingController();
-  @override
-  final nameNativeCtl = TextEditingController();
-  @override
-  final seasonCtl = TextEditingController();
-  @override
-  final episodeCtl = TextEditingController();
-  @override
-  final epiTitleCtl = TextEditingController();
+  final titleCtl = TextEditingController();         // 클립 제목
+  final collectionNameCtl = TextEditingController(); // 컬렉션 이름 (선택)
   @override
   final durationCtl = TextEditingController();
   final tagsCtl = TextEditingController();
@@ -157,7 +136,7 @@ class ClipEditorViewModel extends ChangeNotifier
   dynamic _closeResult;
   dynamic get closeResult => _closeResult;
 
-  static const int totalSteps = 7;
+  static const int totalSteps = 5;
 
   // ─────────────────────────────────────────────────────────────────
   // 초기화
@@ -195,9 +174,6 @@ class ClipEditorViewModel extends ChangeNotifier
       ),
     );
 
-    _lookupNativeTitle =
-        LookupNativeTitleUseCase(NativeTitleService(llmAdapter));
-
     // 세그먼트 폼 초기화
     initSegmentForms();
 
@@ -206,8 +182,8 @@ class ClipEditorViewModel extends ChangeNotifier
       _loadForEdit(clipId!);
     }
 
-    // 작품명 목록 로드
-    loadTitleNames();
+    // 컬렉션 이름 목록 로드
+    loadCollectionNames();
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -255,43 +231,6 @@ class ClipEditorViewModel extends ChangeNotifier
       notifyListeners();
     } else {
       prevStep();
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // 콘텐츠 타입
-  // ─────────────────────────────────────────────────────────────────
-
-  /// 콘텐츠 타입(시즌/영화)을 설정합니다.
-  void setContentType(ContentType type) {
-    _contentType = type;
-    notifyListeners();
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // 원어 작품명 자동 조회
-  // ─────────────────────────────────────────────────────────────────
-
-  /// 작품명을 기반으로 원어 작품명을 자동으로 조회합니다.
-  Future<void> lookupNativeTitle() async {
-    final workName = nameCtl.text.trim();
-    if (workName.isEmpty) {
-      showToast('먼저 작품명을 입력해 주세요.');
-      return;
-    }
-
-    _isLookingUpNativeTitle = true;
-    notifyListeners();
-
-    try {
-      final result = await _lookupNativeTitle(workName: workName);
-      nameNativeCtl.text = result.nativeTitle;
-      showToast('원어 작품명: ${result.nativeTitle}');
-    } catch (e) {
-      showToast('원어 작품명 조회 실패: $e');
-    } finally {
-      _isLookingUpNativeTitle = false;
-      notifyListeners();
     }
   }
 
@@ -366,7 +305,7 @@ class ClipEditorViewModel extends ChangeNotifier
         // 코인 차감
         if (result.coinCost > 0) {
           userProvider.addCoins(-result.coinCost);
-          showToast('🪙 자막 생성 완료! (${result.coinCost}코인 사용)');
+          showToast('자막 생성 완료! (${result.coinCost}코인 사용)');
         }
       }
 
@@ -472,14 +411,11 @@ class ClipEditorViewModel extends ChangeNotifier
             ))
         .toList();
 
+    final colName = collectionNameCtl.text.trim();
+
     return ClipFormData(
-      titleName: nameCtl.text.trim(),
-      titleNameNative: nameNativeCtl.text.trim(),
+      collectionName: colName.isEmpty ? null : colName,
       clipTitle: titleCtl.text.trim(),
-      epiTitle: epiTitleCtl.text.trim(),
-      seasonNumber: int.tryParse(seasonCtl.text.trim()),
-      episodeNumber: int.tryParse(episodeCtl.text.trim()),
-      contentType: _contentType,
       durationMs: int.tryParse(durationCtl.text.trim()),
       segments: segments,
       tags: tags,
@@ -499,13 +435,8 @@ class ClipEditorViewModel extends ChangeNotifier
 
       // UI에 데이터 채우기
       final form = result.formData;
-      nameCtl.text = form.titleName;
-      nameNativeCtl.text = form.titleNameNative;
+      collectionNameCtl.text = form.collectionName ?? '';
       titleCtl.text = form.clipTitle;
-      epiTitleCtl.text = form.epiTitle;
-      seasonCtl.text = form.seasonNumber?.toString() ?? '';
-      episodeCtl.text = form.episodeNumber?.toString() ?? '';
-      _contentType = form.contentType;
 
       if (form.durationMs != null && form.durationMs! > 0) {
         durationCtl.text = form.durationMs.toString();
@@ -555,11 +486,7 @@ class ClipEditorViewModel extends ChangeNotifier
   @override
   void dispose() {
     titleCtl.dispose();
-    nameCtl.dispose();
-    nameNativeCtl.dispose();
-    seasonCtl.dispose();
-    episodeCtl.dispose();
-    epiTitleCtl.dispose();
+    collectionNameCtl.dispose();
     durationCtl.dispose();
     tagsCtl.dispose();
     for (final f in segmentForms) {

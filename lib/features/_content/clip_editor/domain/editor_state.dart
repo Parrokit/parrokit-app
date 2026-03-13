@@ -32,18 +32,10 @@ enum SttProcessState {
 /// 에디터 스텝.
 enum EditorStep {
   file, // 0: 파일 선택
-  workName, // 1: 작품명
-  type, // 2: 타입 (시즌/영화)
-  seasonEpisode, // 3: 시즌/회차
-  titles, // 4: 클립/에피소드 제목
-  tags, // 5: 태그
-  segments, // 6: 세그먼트
-}
-
-/// 콘텐츠 타입.
-enum ContentType {
-  season,
-  movie,
+  collection, // 1: 컬렉션 (선택)
+  titles, // 2: 클립 제목
+  tags, // 3: 태그
+  segments, // 4: 세그먼트
 }
 
 /// 세그먼트 입력 데이터.

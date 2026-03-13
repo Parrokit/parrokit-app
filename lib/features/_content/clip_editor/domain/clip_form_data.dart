@@ -9,8 +9,6 @@
 // Domain Layer
 // ============================================================================
 
-import 'editor_state.dart';
-
 /// 세그먼트 순수 데이터 (UI 독립적).
 class SegmentInput {
   final String start;
@@ -60,26 +58,16 @@ class SegmentInput {
 
 /// 클립 에디터 폼 전체 데이터.
 class ClipFormData {
-  final String titleName;
-  final String titleNameNative;
+  final String? collectionName; // optional collection (nullable)
   final String clipTitle;
-  final String epiTitle;
-  final int? seasonNumber;
-  final int? episodeNumber;
-  final ContentType contentType;
   final int? durationMs;
   final List<SegmentInput> segments;
   final List<String> tags;
   final String? filePath;
 
   const ClipFormData({
-    this.titleName = '',
-    this.titleNameNative = '-',
+    this.collectionName,
     this.clipTitle = '',
-    this.epiTitle = '',
-    this.seasonNumber,
-    this.episodeNumber,
-    this.contentType = ContentType.season,
     this.durationMs,
     this.segments = const [],
     this.tags = const [],
@@ -87,34 +75,25 @@ class ClipFormData {
   });
 
   ClipFormData copyWith({
-    String? titleName,
-    String? titleNameNative,
+    Object? collectionName = _sentinel,
     String? clipTitle,
-    String? epiTitle,
-    int? seasonNumber,
-    int? episodeNumber,
-    ContentType? contentType,
     int? durationMs,
     List<SegmentInput>? segments,
     List<String>? tags,
     String? filePath,
   }) {
     return ClipFormData(
-      titleName: titleName ?? this.titleName,
-      titleNameNative: titleNameNative ?? this.titleNameNative,
+      collectionName: collectionName == _sentinel
+          ? this.collectionName
+          : collectionName as String?,
       clipTitle: clipTitle ?? this.clipTitle,
-      epiTitle: epiTitle ?? this.epiTitle,
-      seasonNumber: seasonNumber ?? this.seasonNumber,
-      episodeNumber: episodeNumber ?? this.episodeNumber,
-      contentType: contentType ?? this.contentType,
       durationMs: durationMs ?? this.durationMs,
       segments: segments ?? this.segments,
       tags: tags ?? this.tags,
       filePath: filePath ?? this.filePath,
     );
   }
-
-  /// 타입 문자열 (API용).
-  String get typeString =>
-      contentType == ContentType.season ? 'season' : 'movie';
 }
+
+// Sentinel for nullable copyWith
+const _sentinel = Object();

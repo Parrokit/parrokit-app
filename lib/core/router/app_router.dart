@@ -190,12 +190,8 @@ ShellRoute get _shellRoute => ShellRoute(
           pageBuilder: (context, state) => NoTransitionPage(
             name: AppRoutes.library,
             child: LibraryScreen(
-              initialTitleId:
-                  int.tryParse(state.uri.queryParameters['titleId'] ?? ''),
-              initialReleaseId:
-                  int.tryParse(state.uri.queryParameters['releaseId'] ?? ''),
-              initialEpisodeId:
-                  int.tryParse(state.uri.queryParameters['episodeId'] ?? ''),
+              initialCollectionId:
+                  int.tryParse(state.uri.queryParameters['collectionId'] ?? ''),
               initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? ''),
             ),
           ),

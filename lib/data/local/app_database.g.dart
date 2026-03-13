@@ -3,11 +3,12 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $TitlesTable extends Titles with TableInfo<$TitlesTable, Title> {
+class $CollectionsTable extends Collections
+    with TableInfo<$CollectionsTable, Collection> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $TitlesTable(this.attachedDatabase, [this._alias]);
+  $CollectionsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -22,21 +23,15 @@ class $TitlesTable extends Titles with TableInfo<$TitlesTable, Title> {
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _nameNativeMeta =
-      const VerificationMeta('nameNative');
   @override
-  late final GeneratedColumn<String> nameNative = GeneratedColumn<String>(
-      'name_native', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  @override
-  List<GeneratedColumn> get $columns => [id, name, nameNative];
+  List<GeneratedColumn> get $columns => [id, name];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'titles';
+  static const String $name = 'collections';
   @override
-  VerificationContext validateIntegrity(Insertable<Title> instance,
+  VerificationContext validateIntegrity(Insertable<Collection> instance,
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
@@ -49,67 +44,53 @@ class $TitlesTable extends Titles with TableInfo<$TitlesTable, Title> {
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
-    if (data.containsKey('name_native')) {
-      context.handle(
-          _nameNativeMeta,
-          nameNative.isAcceptableOrUnknown(
-              data['name_native']!, _nameNativeMeta));
-    } else if (isInserting) {
-      context.missing(_nameNativeMeta);
-    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Title map(Map<String, dynamic> data, {String? tablePrefix}) {
+  Collection map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Title(
+    return Collection(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      nameNative: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name_native'])!,
     );
   }
 
   @override
-  $TitlesTable createAlias(String alias) {
-    return $TitlesTable(attachedDatabase, alias);
+  $CollectionsTable createAlias(String alias) {
+    return $CollectionsTable(attachedDatabase, alias);
   }
 }
 
-class Title extends DataClass implements Insertable<Title> {
+class Collection extends DataClass implements Insertable<Collection> {
   final int id;
   final String name;
-  final String nameNative;
-  const Title({required this.id, required this.name, required this.nameNative});
+  const Collection({required this.id, required this.name});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
-    map['name_native'] = Variable<String>(nameNative);
     return map;
   }
 
-  TitlesCompanion toCompanion(bool nullToAbsent) {
-    return TitlesCompanion(
+  CollectionsCompanion toCompanion(bool nullToAbsent) {
+    return CollectionsCompanion(
       id: Value(id),
       name: Value(name),
-      nameNative: Value(nameNative),
     );
   }
 
-  factory Title.fromJson(Map<String, dynamic> json,
+  factory Collection.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Title(
+    return Collection(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      nameNative: serializer.fromJson<String>(json['nameNative']),
     );
   }
   @override
@@ -118,78 +99,62 @@ class Title extends DataClass implements Insertable<Title> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
-      'nameNative': serializer.toJson<String>(nameNative),
     };
   }
 
-  Title copyWith({int? id, String? name, String? nameNative}) => Title(
+  Collection copyWith({int? id, String? name}) => Collection(
         id: id ?? this.id,
         name: name ?? this.name,
-        nameNative: nameNative ?? this.nameNative,
       );
-  Title copyWithCompanion(TitlesCompanion data) {
-    return Title(
+  Collection copyWithCompanion(CollectionsCompanion data) {
+    return Collection(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
-      nameNative:
-          data.nameNative.present ? data.nameNative.value : this.nameNative,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('Title(')
+    return (StringBuffer('Collection(')
           ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('nameNative: $nameNative')
+          ..write('name: $name')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, nameNative);
+  int get hashCode => Object.hash(id, name);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Title &&
-          other.id == this.id &&
-          other.name == this.name &&
-          other.nameNative == this.nameNative);
+      (other is Collection && other.id == this.id && other.name == this.name);
 }
 
-class TitlesCompanion extends UpdateCompanion<Title> {
+class CollectionsCompanion extends UpdateCompanion<Collection> {
   final Value<int> id;
   final Value<String> name;
-  final Value<String> nameNative;
-  const TitlesCompanion({
+  const CollectionsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
-    this.nameNative = const Value.absent(),
   });
-  TitlesCompanion.insert({
+  CollectionsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
-    required String nameNative,
-  })  : name = Value(name),
-        nameNative = Value(nameNative);
-  static Insertable<Title> custom({
+  }) : name = Value(name);
+  static Insertable<Collection> custom({
     Expression<int>? id,
     Expression<String>? name,
-    Expression<String>? nameNative,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
-      if (nameNative != null) 'name_native': nameNative,
     });
   }
 
-  TitlesCompanion copyWith(
-      {Value<int>? id, Value<String>? name, Value<String>? nameNative}) {
-    return TitlesCompanion(
+  CollectionsCompanion copyWith({Value<int>? id, Value<String>? name}) {
+    return CollectionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
-      nameNative: nameNative ?? this.nameNative,
     );
   }
 
@@ -202,541 +167,14 @@ class TitlesCompanion extends UpdateCompanion<Title> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
-    if (nameNative.present) {
-      map['name_native'] = Variable<String>(nameNative.value);
-    }
     return map;
   }
 
   @override
   String toString() {
-    return (StringBuffer('TitlesCompanion(')
+    return (StringBuffer('CollectionsCompanion(')
           ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('nameNative: $nameNative')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $ReleasesTable extends Releases with TableInfo<$ReleasesTable, Release> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ReleasesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _titleIdMeta =
-      const VerificationMeta('titleId');
-  @override
-  late final GeneratedColumn<int> titleId = GeneratedColumn<int>(
-      'title_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES titles (id)'));
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
-  @override
-  late final GeneratedColumn<String> type = GeneratedColumn<String>(
-      'type', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _numberMeta = const VerificationMeta('number');
-  @override
-  late final GeneratedColumn<int> number = GeneratedColumn<int>(
-      'number', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  @override
-  List<GeneratedColumn> get $columns => [id, titleId, type, number];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'releases';
-  @override
-  VerificationContext validateIntegrity(Insertable<Release> instance,
-      {bool isInserting = false}) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('title_id')) {
-      context.handle(_titleIdMeta,
-          titleId.isAcceptableOrUnknown(data['title_id']!, _titleIdMeta));
-    } else if (isInserting) {
-      context.missing(_titleIdMeta);
-    }
-    if (data.containsKey('type')) {
-      context.handle(
-          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
-    } else if (isInserting) {
-      context.missing(_typeMeta);
-    }
-    if (data.containsKey('number')) {
-      context.handle(_numberMeta,
-          number.isAcceptableOrUnknown(data['number']!, _numberMeta));
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  List<Set<GeneratedColumn>> get uniqueKeys => [
-        {titleId, type, number},
-      ];
-  @override
-  Release map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Release(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      titleId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}title_id'])!,
-      type: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
-      number: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}number']),
-    );
-  }
-
-  @override
-  $ReleasesTable createAlias(String alias) {
-    return $ReleasesTable(attachedDatabase, alias);
-  }
-}
-
-class Release extends DataClass implements Insertable<Release> {
-  final int id;
-  final int titleId;
-  final String type;
-  final int? number;
-  const Release(
-      {required this.id,
-      required this.titleId,
-      required this.type,
-      this.number});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['title_id'] = Variable<int>(titleId);
-    map['type'] = Variable<String>(type);
-    if (!nullToAbsent || number != null) {
-      map['number'] = Variable<int>(number);
-    }
-    return map;
-  }
-
-  ReleasesCompanion toCompanion(bool nullToAbsent) {
-    return ReleasesCompanion(
-      id: Value(id),
-      titleId: Value(titleId),
-      type: Value(type),
-      number:
-          number == null && nullToAbsent ? const Value.absent() : Value(number),
-    );
-  }
-
-  factory Release.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Release(
-      id: serializer.fromJson<int>(json['id']),
-      titleId: serializer.fromJson<int>(json['titleId']),
-      type: serializer.fromJson<String>(json['type']),
-      number: serializer.fromJson<int?>(json['number']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'titleId': serializer.toJson<int>(titleId),
-      'type': serializer.toJson<String>(type),
-      'number': serializer.toJson<int?>(number),
-    };
-  }
-
-  Release copyWith(
-          {int? id,
-          int? titleId,
-          String? type,
-          Value<int?> number = const Value.absent()}) =>
-      Release(
-        id: id ?? this.id,
-        titleId: titleId ?? this.titleId,
-        type: type ?? this.type,
-        number: number.present ? number.value : this.number,
-      );
-  Release copyWithCompanion(ReleasesCompanion data) {
-    return Release(
-      id: data.id.present ? data.id.value : this.id,
-      titleId: data.titleId.present ? data.titleId.value : this.titleId,
-      type: data.type.present ? data.type.value : this.type,
-      number: data.number.present ? data.number.value : this.number,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Release(')
-          ..write('id: $id, ')
-          ..write('titleId: $titleId, ')
-          ..write('type: $type, ')
-          ..write('number: $number')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, titleId, type, number);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Release &&
-          other.id == this.id &&
-          other.titleId == this.titleId &&
-          other.type == this.type &&
-          other.number == this.number);
-}
-
-class ReleasesCompanion extends UpdateCompanion<Release> {
-  final Value<int> id;
-  final Value<int> titleId;
-  final Value<String> type;
-  final Value<int?> number;
-  const ReleasesCompanion({
-    this.id = const Value.absent(),
-    this.titleId = const Value.absent(),
-    this.type = const Value.absent(),
-    this.number = const Value.absent(),
-  });
-  ReleasesCompanion.insert({
-    this.id = const Value.absent(),
-    required int titleId,
-    required String type,
-    this.number = const Value.absent(),
-  })  : titleId = Value(titleId),
-        type = Value(type);
-  static Insertable<Release> custom({
-    Expression<int>? id,
-    Expression<int>? titleId,
-    Expression<String>? type,
-    Expression<int>? number,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (titleId != null) 'title_id': titleId,
-      if (type != null) 'type': type,
-      if (number != null) 'number': number,
-    });
-  }
-
-  ReleasesCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? titleId,
-      Value<String>? type,
-      Value<int?>? number}) {
-    return ReleasesCompanion(
-      id: id ?? this.id,
-      titleId: titleId ?? this.titleId,
-      type: type ?? this.type,
-      number: number ?? this.number,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (titleId.present) {
-      map['title_id'] = Variable<int>(titleId.value);
-    }
-    if (type.present) {
-      map['type'] = Variable<String>(type.value);
-    }
-    if (number.present) {
-      map['number'] = Variable<int>(number.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ReleasesCompanion(')
-          ..write('id: $id, ')
-          ..write('titleId: $titleId, ')
-          ..write('type: $type, ')
-          ..write('number: $number')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $EpisodesTable extends Episodes with TableInfo<$EpisodesTable, Episode> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $EpisodesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _releaseIdMeta =
-      const VerificationMeta('releaseId');
-  @override
-  late final GeneratedColumn<int> releaseId = GeneratedColumn<int>(
-      'release_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES releases (id)'));
-  static const VerificationMeta _numberMeta = const VerificationMeta('number');
-  @override
-  late final GeneratedColumn<int> number = GeneratedColumn<int>(
-      'number', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
-      'title', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  @override
-  List<GeneratedColumn> get $columns => [id, releaseId, number, title];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'episodes';
-  @override
-  VerificationContext validateIntegrity(Insertable<Episode> instance,
-      {bool isInserting = false}) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('release_id')) {
-      context.handle(_releaseIdMeta,
-          releaseId.isAcceptableOrUnknown(data['release_id']!, _releaseIdMeta));
-    } else if (isInserting) {
-      context.missing(_releaseIdMeta);
-    }
-    if (data.containsKey('number')) {
-      context.handle(_numberMeta,
-          number.isAcceptableOrUnknown(data['number']!, _numberMeta));
-    }
-    if (data.containsKey('title')) {
-      context.handle(
-          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  Episode map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Episode(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      releaseId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}release_id'])!,
-      number: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}number']),
-      title: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}title']),
-    );
-  }
-
-  @override
-  $EpisodesTable createAlias(String alias) {
-    return $EpisodesTable(attachedDatabase, alias);
-  }
-}
-
-class Episode extends DataClass implements Insertable<Episode> {
-  final int id;
-  final int releaseId;
-  final int? number;
-  final String? title;
-  const Episode(
-      {required this.id, required this.releaseId, this.number, this.title});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['release_id'] = Variable<int>(releaseId);
-    if (!nullToAbsent || number != null) {
-      map['number'] = Variable<int>(number);
-    }
-    if (!nullToAbsent || title != null) {
-      map['title'] = Variable<String>(title);
-    }
-    return map;
-  }
-
-  EpisodesCompanion toCompanion(bool nullToAbsent) {
-    return EpisodesCompanion(
-      id: Value(id),
-      releaseId: Value(releaseId),
-      number:
-          number == null && nullToAbsent ? const Value.absent() : Value(number),
-      title:
-          title == null && nullToAbsent ? const Value.absent() : Value(title),
-    );
-  }
-
-  factory Episode.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Episode(
-      id: serializer.fromJson<int>(json['id']),
-      releaseId: serializer.fromJson<int>(json['releaseId']),
-      number: serializer.fromJson<int?>(json['number']),
-      title: serializer.fromJson<String?>(json['title']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'releaseId': serializer.toJson<int>(releaseId),
-      'number': serializer.toJson<int?>(number),
-      'title': serializer.toJson<String?>(title),
-    };
-  }
-
-  Episode copyWith(
-          {int? id,
-          int? releaseId,
-          Value<int?> number = const Value.absent(),
-          Value<String?> title = const Value.absent()}) =>
-      Episode(
-        id: id ?? this.id,
-        releaseId: releaseId ?? this.releaseId,
-        number: number.present ? number.value : this.number,
-        title: title.present ? title.value : this.title,
-      );
-  Episode copyWithCompanion(EpisodesCompanion data) {
-    return Episode(
-      id: data.id.present ? data.id.value : this.id,
-      releaseId: data.releaseId.present ? data.releaseId.value : this.releaseId,
-      number: data.number.present ? data.number.value : this.number,
-      title: data.title.present ? data.title.value : this.title,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Episode(')
-          ..write('id: $id, ')
-          ..write('releaseId: $releaseId, ')
-          ..write('number: $number, ')
-          ..write('title: $title')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, releaseId, number, title);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Episode &&
-          other.id == this.id &&
-          other.releaseId == this.releaseId &&
-          other.number == this.number &&
-          other.title == this.title);
-}
-
-class EpisodesCompanion extends UpdateCompanion<Episode> {
-  final Value<int> id;
-  final Value<int> releaseId;
-  final Value<int?> number;
-  final Value<String?> title;
-  const EpisodesCompanion({
-    this.id = const Value.absent(),
-    this.releaseId = const Value.absent(),
-    this.number = const Value.absent(),
-    this.title = const Value.absent(),
-  });
-  EpisodesCompanion.insert({
-    this.id = const Value.absent(),
-    required int releaseId,
-    this.number = const Value.absent(),
-    this.title = const Value.absent(),
-  }) : releaseId = Value(releaseId);
-  static Insertable<Episode> custom({
-    Expression<int>? id,
-    Expression<int>? releaseId,
-    Expression<int>? number,
-    Expression<String>? title,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (releaseId != null) 'release_id': releaseId,
-      if (number != null) 'number': number,
-      if (title != null) 'title': title,
-    });
-  }
-
-  EpisodesCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? releaseId,
-      Value<int?>? number,
-      Value<String?>? title}) {
-    return EpisodesCompanion(
-      id: id ?? this.id,
-      releaseId: releaseId ?? this.releaseId,
-      number: number ?? this.number,
-      title: title ?? this.title,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (releaseId.present) {
-      map['release_id'] = Variable<int>(releaseId.value);
-    }
-    if (number.present) {
-      map['number'] = Variable<int>(number.value);
-    }
-    if (title.present) {
-      map['title'] = Variable<String>(title.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('EpisodesCompanion(')
-          ..write('id: $id, ')
-          ..write('releaseId: $releaseId, ')
-          ..write('number: $number, ')
-          ..write('title: $title')
+          ..write('name: $name')
           ..write(')'))
         .toString();
   }
@@ -756,15 +194,15 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _episodeIdMeta =
-      const VerificationMeta('episodeId');
+  static const VerificationMeta _collectionIdMeta =
+      const VerificationMeta('collectionId');
   @override
-  late final GeneratedColumn<int> episodeId = GeneratedColumn<int>(
-      'episode_id', aliasedName, false,
+  late final GeneratedColumn<int> collectionId = GeneratedColumn<int>(
+      'collection_id', aliasedName, true,
       type: DriftSqlType.int,
-      requiredDuringInsert: true,
+      requiredDuringInsert: false,
       defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES episodes (id)'));
+          GeneratedColumn.constraintIsAlways('REFERENCES collections (id)'));
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -784,7 +222,7 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
       type: DriftSqlType.int, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, episodeId, title, filePath, durationMs];
+      [id, collectionId, title, filePath, durationMs];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -798,11 +236,11 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('episode_id')) {
-      context.handle(_episodeIdMeta,
-          episodeId.isAcceptableOrUnknown(data['episode_id']!, _episodeIdMeta));
-    } else if (isInserting) {
-      context.missing(_episodeIdMeta);
+    if (data.containsKey('collection_id')) {
+      context.handle(
+          _collectionIdMeta,
+          collectionId.isAcceptableOrUnknown(
+              data['collection_id']!, _collectionIdMeta));
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -835,8 +273,8 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
     return Clip(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      episodeId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}episode_id'])!,
+      collectionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}collection_id']),
       title: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
       filePath: attachedDatabase.typeMapping
@@ -854,13 +292,13 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
 
 class Clip extends DataClass implements Insertable<Clip> {
   final int id;
-  final int episodeId;
+  final int? collectionId;
   final String title;
   final String filePath;
   final int durationMs;
   const Clip(
       {required this.id,
-      required this.episodeId,
+      this.collectionId,
       required this.title,
       required this.filePath,
       required this.durationMs});
@@ -868,7 +306,9 @@ class Clip extends DataClass implements Insertable<Clip> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['episode_id'] = Variable<int>(episodeId);
+    if (!nullToAbsent || collectionId != null) {
+      map['collection_id'] = Variable<int>(collectionId);
+    }
     map['title'] = Variable<String>(title);
     map['file_path'] = Variable<String>(filePath);
     map['duration_ms'] = Variable<int>(durationMs);
@@ -878,7 +318,9 @@ class Clip extends DataClass implements Insertable<Clip> {
   ClipsCompanion toCompanion(bool nullToAbsent) {
     return ClipsCompanion(
       id: Value(id),
-      episodeId: Value(episodeId),
+      collectionId: collectionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(collectionId),
       title: Value(title),
       filePath: Value(filePath),
       durationMs: Value(durationMs),
@@ -890,7 +332,7 @@ class Clip extends DataClass implements Insertable<Clip> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Clip(
       id: serializer.fromJson<int>(json['id']),
-      episodeId: serializer.fromJson<int>(json['episodeId']),
+      collectionId: serializer.fromJson<int?>(json['collectionId']),
       title: serializer.fromJson<String>(json['title']),
       filePath: serializer.fromJson<String>(json['filePath']),
       durationMs: serializer.fromJson<int>(json['durationMs']),
@@ -901,7 +343,7 @@ class Clip extends DataClass implements Insertable<Clip> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'episodeId': serializer.toJson<int>(episodeId),
+      'collectionId': serializer.toJson<int?>(collectionId),
       'title': serializer.toJson<String>(title),
       'filePath': serializer.toJson<String>(filePath),
       'durationMs': serializer.toJson<int>(durationMs),
@@ -910,13 +352,14 @@ class Clip extends DataClass implements Insertable<Clip> {
 
   Clip copyWith(
           {int? id,
-          int? episodeId,
+          Value<int?> collectionId = const Value.absent(),
           String? title,
           String? filePath,
           int? durationMs}) =>
       Clip(
         id: id ?? this.id,
-        episodeId: episodeId ?? this.episodeId,
+        collectionId:
+            collectionId.present ? collectionId.value : this.collectionId,
         title: title ?? this.title,
         filePath: filePath ?? this.filePath,
         durationMs: durationMs ?? this.durationMs,
@@ -924,7 +367,9 @@ class Clip extends DataClass implements Insertable<Clip> {
   Clip copyWithCompanion(ClipsCompanion data) {
     return Clip(
       id: data.id.present ? data.id.value : this.id,
-      episodeId: data.episodeId.present ? data.episodeId.value : this.episodeId,
+      collectionId: data.collectionId.present
+          ? data.collectionId.value
+          : this.collectionId,
       title: data.title.present ? data.title.value : this.title,
       filePath: data.filePath.present ? data.filePath.value : this.filePath,
       durationMs:
@@ -936,7 +381,7 @@ class Clip extends DataClass implements Insertable<Clip> {
   String toString() {
     return (StringBuffer('Clip(')
           ..write('id: $id, ')
-          ..write('episodeId: $episodeId, ')
+          ..write('collectionId: $collectionId, ')
           ..write('title: $title, ')
           ..write('filePath: $filePath, ')
           ..write('durationMs: $durationMs')
@@ -945,13 +390,14 @@ class Clip extends DataClass implements Insertable<Clip> {
   }
 
   @override
-  int get hashCode => Object.hash(id, episodeId, title, filePath, durationMs);
+  int get hashCode =>
+      Object.hash(id, collectionId, title, filePath, durationMs);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Clip &&
           other.id == this.id &&
-          other.episodeId == this.episodeId &&
+          other.collectionId == this.collectionId &&
           other.title == this.title &&
           other.filePath == this.filePath &&
           other.durationMs == this.durationMs);
@@ -959,37 +405,36 @@ class Clip extends DataClass implements Insertable<Clip> {
 
 class ClipsCompanion extends UpdateCompanion<Clip> {
   final Value<int> id;
-  final Value<int> episodeId;
+  final Value<int?> collectionId;
   final Value<String> title;
   final Value<String> filePath;
   final Value<int> durationMs;
   const ClipsCompanion({
     this.id = const Value.absent(),
-    this.episodeId = const Value.absent(),
+    this.collectionId = const Value.absent(),
     this.title = const Value.absent(),
     this.filePath = const Value.absent(),
     this.durationMs = const Value.absent(),
   });
   ClipsCompanion.insert({
     this.id = const Value.absent(),
-    required int episodeId,
+    this.collectionId = const Value.absent(),
     required String title,
     required String filePath,
     required int durationMs,
-  })  : episodeId = Value(episodeId),
-        title = Value(title),
+  })  : title = Value(title),
         filePath = Value(filePath),
         durationMs = Value(durationMs);
   static Insertable<Clip> custom({
     Expression<int>? id,
-    Expression<int>? episodeId,
+    Expression<int>? collectionId,
     Expression<String>? title,
     Expression<String>? filePath,
     Expression<int>? durationMs,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (episodeId != null) 'episode_id': episodeId,
+      if (collectionId != null) 'collection_id': collectionId,
       if (title != null) 'title': title,
       if (filePath != null) 'file_path': filePath,
       if (durationMs != null) 'duration_ms': durationMs,
@@ -998,13 +443,13 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
 
   ClipsCompanion copyWith(
       {Value<int>? id,
-      Value<int>? episodeId,
+      Value<int?>? collectionId,
       Value<String>? title,
       Value<String>? filePath,
       Value<int>? durationMs}) {
     return ClipsCompanion(
       id: id ?? this.id,
-      episodeId: episodeId ?? this.episodeId,
+      collectionId: collectionId ?? this.collectionId,
       title: title ?? this.title,
       filePath: filePath ?? this.filePath,
       durationMs: durationMs ?? this.durationMs,
@@ -1017,8 +462,8 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (episodeId.present) {
-      map['episode_id'] = Variable<int>(episodeId.value);
+    if (collectionId.present) {
+      map['collection_id'] = Variable<int>(collectionId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -1036,7 +481,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
   String toString() {
     return (StringBuffer('ClipsCompanion(')
           ..write('id: $id, ')
-          ..write('episodeId: $episodeId, ')
+          ..write('collectionId: $collectionId, ')
           ..write('title: $title, ')
           ..write('filePath: $filePath, ')
           ..write('durationMs: $durationMs')
@@ -1971,30 +1416,21 @@ class RecentClipViewsCompanion extends UpdateCompanion<RecentClipView> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $TitlesTable titles = $TitlesTable(this);
-  late final $ReleasesTable releases = $ReleasesTable(this);
-  late final $EpisodesTable episodes = $EpisodesTable(this);
+  late final $CollectionsTable collections = $CollectionsTable(this);
   late final $ClipsTable clips = $ClipsTable(this);
   late final $SegmentsTable segments = $SegmentsTable(this);
   late final $TagsTable tags = $TagsTable(this);
   late final $ClipTagsTable clipTags = $ClipTagsTable(this);
   late final $RecentClipViewsTable recentClipViews =
       $RecentClipViewsTable(this);
-  late final TitlesDao titlesDao = TitlesDao(this as AppDatabase);
+  late final CollectionsDao collectionsDao =
+      CollectionsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [
-        titles,
-        releases,
-        episodes,
-        clips,
-        segments,
-        tags,
-        clipTags,
-        recentClipViews
-      ];
+  List<DatabaseSchemaEntity> get allSchemaEntities =>
+      [collections, clips, segments, tags, clipTags, recentClipViews];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
         [
@@ -2023,38 +1459,40 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       );
 }
 
-typedef $$TitlesTableCreateCompanionBuilder = TitlesCompanion Function({
+typedef $$CollectionsTableCreateCompanionBuilder = CollectionsCompanion
+    Function({
   Value<int> id,
   required String name,
-  required String nameNative,
 });
-typedef $$TitlesTableUpdateCompanionBuilder = TitlesCompanion Function({
+typedef $$CollectionsTableUpdateCompanionBuilder = CollectionsCompanion
+    Function({
   Value<int> id,
   Value<String> name,
-  Value<String> nameNative,
 });
 
-final class $$TitlesTableReferences
-    extends BaseReferences<_$AppDatabase, $TitlesTable, Title> {
-  $$TitlesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+final class $$CollectionsTableReferences
+    extends BaseReferences<_$AppDatabase, $CollectionsTable, Collection> {
+  $$CollectionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static MultiTypedResultKey<$ReleasesTable, List<Release>> _releasesRefsTable(
+  static MultiTypedResultKey<$ClipsTable, List<Clip>> _clipsRefsTable(
           _$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(db.releases,
-          aliasName: $_aliasNameGenerator(db.titles.id, db.releases.titleId));
+      MultiTypedResultKey.fromTable(db.clips,
+          aliasName:
+              $_aliasNameGenerator(db.collections.id, db.clips.collectionId));
 
-  $$ReleasesTableProcessedTableManager get releasesRefs {
-    final manager = $$ReleasesTableTableManager($_db, $_db.releases)
-        .filter((f) => f.titleId.id.sqlEquals($_itemColumn<int>('id')!));
+  $$ClipsTableProcessedTableManager get clipsRefs {
+    final manager = $$ClipsTableTableManager($_db, $_db.clips)
+        .filter((f) => f.collectionId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_releasesRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(_clipsRefsTable($_db));
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
 }
 
-class $$TitlesTableFilterComposer extends Composer<_$AppDatabase, $TitlesTable> {
-  $$TitlesTableFilterComposer({
+class $$CollectionsTableFilterComposer
+    extends Composer<_$AppDatabase, $CollectionsTable> {
+  $$CollectionsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -2067,583 +1505,13 @@ class $$TitlesTableFilterComposer extends Composer<_$AppDatabase, $TitlesTable> 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get nameNative => $composableBuilder(
-      column: $table.nameNative, builder: (column) => ColumnFilters(column));
-
-  Expression<bool> releasesRefs(
-      Expression<bool> Function($$ReleasesTableFilterComposer f) f) {
-    final $$ReleasesTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.releases,
-        getReferencedColumn: (t) => t.titleId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ReleasesTableFilterComposer(
-              $db: $db,
-              $table: $db.releases,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return f(composer);
-  }
-}
-
-class $$TitlesTableOrderingComposer
-    extends Composer<_$AppDatabase, $TitlesTable> {
-  $$TitlesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<String> get nameNative => $composableBuilder(
-      column: $table.nameNative, builder: (column) => ColumnOrderings(column));
-}
-
-class $$TitlesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $TitlesTable> {
-  $$TitlesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get nameNative => $composableBuilder(
-      column: $table.nameNative, builder: (column) => column);
-
-  Expression<T> releasesRefs<T extends Object>(
-      Expression<T> Function($$ReleasesTableAnnotationComposer a) f) {
-    final $$ReleasesTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.releases,
-        getReferencedColumn: (t) => t.titleId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ReleasesTableAnnotationComposer(
-              $db: $db,
-              $table: $db.releases,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return f(composer);
-  }
-}
-
-class $$TitlesTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $TitlesTable,
-    Title,
-    $$TitlesTableFilterComposer,
-    $$TitlesTableOrderingComposer,
-    $$TitlesTableAnnotationComposer,
-    $$TitlesTableCreateCompanionBuilder,
-    $$TitlesTableUpdateCompanionBuilder,
-    (Title, $$TitlesTableReferences),
-    Title,
-    PrefetchHooks Function({bool releasesRefs})> {
-  $$TitlesTableTableManager(_$AppDatabase db, $TitlesTable table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$TitlesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$TitlesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$TitlesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<String> nameNative = const Value.absent(),
-          }) =>
-              TitlesCompanion(
-            id: id,
-            name: name,
-            nameNative: nameNative,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required String name,
-            required String nameNative,
-          }) =>
-              TitlesCompanion.insert(
-            id: id,
-            name: name,
-            nameNative: nameNative,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) =>
-                  (e.readTable(table), $$TitlesTableReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: ({releasesRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (releasesRefs) db.releases],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (releasesRefs)
-                    await $_getPrefetchedData<Title, $TitlesTable, Release>(
-                        currentTable: table,
-                        referencedTable:
-                            $$TitlesTableReferences._releasesRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$TitlesTableReferences(db, table, p0).releasesRefs,
-                        referencedItemsForCurrentItem: (item,
-                                referencedItems) =>
-                            referencedItems.where((e) => e.titleId == item.id),
-                        typedResults: items)
-                ];
-              },
-            );
-          },
-        ));
-}
-
-typedef $$TitlesTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $TitlesTable,
-    Title,
-    $$TitlesTableFilterComposer,
-    $$TitlesTableOrderingComposer,
-    $$TitlesTableAnnotationComposer,
-    $$TitlesTableCreateCompanionBuilder,
-    $$TitlesTableUpdateCompanionBuilder,
-    (Title, $$TitlesTableReferences),
-    Title,
-    PrefetchHooks Function({bool releasesRefs})>;
-typedef $$ReleasesTableCreateCompanionBuilder = ReleasesCompanion Function({
-  Value<int> id,
-  required int titleId,
-  required String type,
-  Value<int?> number,
-});
-typedef $$ReleasesTableUpdateCompanionBuilder = ReleasesCompanion Function({
-  Value<int> id,
-  Value<int> titleId,
-  Value<String> type,
-  Value<int?> number,
-});
-
-final class $$ReleasesTableReferences
-    extends BaseReferences<_$AppDatabase, $ReleasesTable, Release> {
-  $$ReleasesTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $TitlesTable _titleIdTable(_$AppDatabase db) => db.titles
-      .createAlias($_aliasNameGenerator(db.releases.titleId, db.titles.id));
-
-  $$TitlesTableProcessedTableManager get titleId {
-    final $_column = $_itemColumn<int>('title_id')!;
-
-    final manager = $$TitlesTableTableManager($_db, $_db.titles)
-        .filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_titleIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
-  }
-
-  static MultiTypedResultKey<$EpisodesTable, List<Episode>> _episodesRefsTable(
-          _$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(db.episodes,
-          aliasName:
-              $_aliasNameGenerator(db.releases.id, db.episodes.releaseId));
-
-  $$EpisodesTableProcessedTableManager get episodesRefs {
-    final manager = $$EpisodesTableTableManager($_db, $_db.episodes)
-        .filter((f) => f.releaseId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_episodesRefsTable($_db));
-    return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
-  }
-}
-
-class $$ReleasesTableFilterComposer
-    extends Composer<_$AppDatabase, $ReleasesTable> {
-  $$ReleasesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<int> get number => $composableBuilder(
-      column: $table.number, builder: (column) => ColumnFilters(column));
-
-  $$TitlesTableFilterComposer get titleId {
-    final $$TitlesTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.titleId,
-        referencedTable: $db.titles,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$TitlesTableFilterComposer(
-              $db: $db,
-              $table: $db.titles,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
-
-  Expression<bool> episodesRefs(
-      Expression<bool> Function($$EpisodesTableFilterComposer f) f) {
-    final $$EpisodesTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.episodes,
-        getReferencedColumn: (t) => t.releaseId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$EpisodesTableFilterComposer(
-              $db: $db,
-              $table: $db.episodes,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return f(composer);
-  }
-}
-
-class $$ReleasesTableOrderingComposer
-    extends Composer<_$AppDatabase, $ReleasesTable> {
-  $$ReleasesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<int> get number => $composableBuilder(
-      column: $table.number, builder: (column) => ColumnOrderings(column));
-
-  $$TitlesTableOrderingComposer get titleId {
-    final $$TitlesTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.titleId,
-        referencedTable: $db.titles,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$TitlesTableOrderingComposer(
-              $db: $db,
-              $table: $db.titles,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
-}
-
-class $$ReleasesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ReleasesTable> {
-  $$ReleasesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get type =>
-      $composableBuilder(column: $table.type, builder: (column) => column);
-
-  GeneratedColumn<int> get number =>
-      $composableBuilder(column: $table.number, builder: (column) => column);
-
-  $$TitlesTableAnnotationComposer get titleId {
-    final $$TitlesTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.titleId,
-        referencedTable: $db.titles,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$TitlesTableAnnotationComposer(
-              $db: $db,
-              $table: $db.titles,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
-
-  Expression<T> episodesRefs<T extends Object>(
-      Expression<T> Function($$EpisodesTableAnnotationComposer a) f) {
-    final $$EpisodesTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.episodes,
-        getReferencedColumn: (t) => t.releaseId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$EpisodesTableAnnotationComposer(
-              $db: $db,
-              $table: $db.episodes,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return f(composer);
-  }
-}
-
-class $$ReleasesTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $ReleasesTable,
-    Release,
-    $$ReleasesTableFilterComposer,
-    $$ReleasesTableOrderingComposer,
-    $$ReleasesTableAnnotationComposer,
-    $$ReleasesTableCreateCompanionBuilder,
-    $$ReleasesTableUpdateCompanionBuilder,
-    (Release, $$ReleasesTableReferences),
-    Release,
-    PrefetchHooks Function({bool titleId, bool episodesRefs})> {
-  $$ReleasesTableTableManager(_$AppDatabase db, $ReleasesTable table)
-      : super(TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ReleasesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ReleasesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ReleasesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> titleId = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<int?> number = const Value.absent(),
-          }) =>
-              ReleasesCompanion(
-            id: id,
-            titleId: titleId,
-            type: type,
-            number: number,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required int titleId,
-            required String type,
-            Value<int?> number = const Value.absent(),
-          }) =>
-              ReleasesCompanion.insert(
-            id: id,
-            titleId: titleId,
-            type: type,
-            number: number,
-          ),
-          withReferenceMapper: (p0) => p0
-              .map((e) =>
-                  (e.readTable(table), $$ReleasesTableReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: ({titleId = false, episodesRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (episodesRefs) db.episodes],
-              addJoins: <
-                  T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic>>(state) {
-                if (titleId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.titleId,
-                    referencedTable:
-                        $$ReleasesTableReferences._titleIdTable(db),
-                    referencedColumn:
-                        $$ReleasesTableReferences._titleIdTable(db).id,
-                  ) as T;
-                }
-
-                return state;
-              },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (episodesRefs)
-                    await $_getPrefetchedData<Release, $ReleasesTable, Episode>(
-                        currentTable: table,
-                        referencedTable:
-                            $$ReleasesTableReferences._episodesRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$ReleasesTableReferences(db, table, p0)
-                                .episodesRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.releaseId == item.id),
-                        typedResults: items)
-                ];
-              },
-            );
-          },
-        ));
-}
-
-typedef $$ReleasesTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $ReleasesTable,
-    Release,
-    $$ReleasesTableFilterComposer,
-    $$ReleasesTableOrderingComposer,
-    $$ReleasesTableAnnotationComposer,
-    $$ReleasesTableCreateCompanionBuilder,
-    $$ReleasesTableUpdateCompanionBuilder,
-    (Release, $$ReleasesTableReferences),
-    Release,
-    PrefetchHooks Function({bool titleId, bool episodesRefs})>;
-typedef $$EpisodesTableCreateCompanionBuilder = EpisodesCompanion Function({
-  Value<int> id,
-  required int releaseId,
-  Value<int?> number,
-  Value<String?> title,
-});
-typedef $$EpisodesTableUpdateCompanionBuilder = EpisodesCompanion Function({
-  Value<int> id,
-  Value<int> releaseId,
-  Value<int?> number,
-  Value<String?> title,
-});
-
-final class $$EpisodesTableReferences
-    extends BaseReferences<_$AppDatabase, $EpisodesTable, Episode> {
-  $$EpisodesTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $ReleasesTable _releaseIdTable(_$AppDatabase db) => db.releases
-      .createAlias($_aliasNameGenerator(db.episodes.releaseId, db.releases.id));
-
-  $$ReleasesTableProcessedTableManager get releaseId {
-    final $_column = $_itemColumn<int>('release_id')!;
-
-    final manager = $$ReleasesTableTableManager($_db, $_db.releases)
-        .filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_releaseIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
-  }
-
-  static MultiTypedResultKey<$ClipsTable, List<Clip>> _clipsRefsTable(
-          _$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(db.clips,
-          aliasName: $_aliasNameGenerator(db.episodes.id, db.clips.episodeId));
-
-  $$ClipsTableProcessedTableManager get clipsRefs {
-    final manager = $$ClipsTableTableManager($_db, $_db.clips)
-        .filter((f) => f.episodeId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_clipsRefsTable($_db));
-    return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
-  }
-}
-
-class $$EpisodesTableFilterComposer
-    extends Composer<_$AppDatabase, $EpisodesTable> {
-  $$EpisodesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<int> get number => $composableBuilder(
-      column: $table.number, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnFilters(column));
-
-  $$ReleasesTableFilterComposer get releaseId {
-    final $$ReleasesTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.releaseId,
-        referencedTable: $db.releases,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ReleasesTableFilterComposer(
-              $db: $db,
-              $table: $db.releases,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
-
   Expression<bool> clipsRefs(
       Expression<bool> Function($$ClipsTableFilterComposer f) f) {
     final $$ClipsTableFilterComposer composer = $composerBuilder(
         composer: this,
         getCurrentColumn: (t) => t.id,
         referencedTable: $db.clips,
-        getReferencedColumn: (t) => t.episodeId,
+        getReferencedColumn: (t) => t.collectionId,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
@@ -2659,9 +1527,9 @@ class $$EpisodesTableFilterComposer
   }
 }
 
-class $$EpisodesTableOrderingComposer
-    extends Composer<_$AppDatabase, $EpisodesTable> {
-  $$EpisodesTableOrderingComposer({
+class $$CollectionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CollectionsTable> {
+  $$CollectionsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -2671,36 +1539,13 @@ class $$EpisodesTableOrderingComposer
   ColumnOrderings<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get number => $composableBuilder(
-      column: $table.number, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnOrderings(column));
-
-  $$ReleasesTableOrderingComposer get releaseId {
-    final $$ReleasesTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.releaseId,
-        referencedTable: $db.releases,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ReleasesTableOrderingComposer(
-              $db: $db,
-              $table: $db.releases,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
 }
 
-class $$EpisodesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $EpisodesTable> {
-  $$EpisodesTableAnnotationComposer({
+class $$CollectionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CollectionsTable> {
+  $$CollectionsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -2710,31 +1555,8 @@ class $$EpisodesTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<int> get number =>
-      $composableBuilder(column: $table.number, builder: (column) => column);
-
-  GeneratedColumn<String> get title =>
-      $composableBuilder(column: $table.title, builder: (column) => column);
-
-  $$ReleasesTableAnnotationComposer get releaseId {
-    final $$ReleasesTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.releaseId,
-        referencedTable: $db.releases,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$ReleasesTableAnnotationComposer(
-              $db: $db,
-              $table: $db.releases,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
 
   Expression<T> clipsRefs<T extends Object>(
       Expression<T> Function($$ClipsTableAnnotationComposer a) f) {
@@ -2742,7 +1564,7 @@ class $$EpisodesTableAnnotationComposer
         composer: this,
         getCurrentColumn: (t) => t.id,
         referencedTable: $db.clips,
-        getReferencedColumn: (t) => t.episodeId,
+        getReferencedColumn: (t) => t.collectionId,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
@@ -2758,98 +1580,69 @@ class $$EpisodesTableAnnotationComposer
   }
 }
 
-class $$EpisodesTableTableManager extends RootTableManager<
+class $$CollectionsTableTableManager extends RootTableManager<
     _$AppDatabase,
-    $EpisodesTable,
-    Episode,
-    $$EpisodesTableFilterComposer,
-    $$EpisodesTableOrderingComposer,
-    $$EpisodesTableAnnotationComposer,
-    $$EpisodesTableCreateCompanionBuilder,
-    $$EpisodesTableUpdateCompanionBuilder,
-    (Episode, $$EpisodesTableReferences),
-    Episode,
-    PrefetchHooks Function({bool releaseId, bool clipsRefs})> {
-  $$EpisodesTableTableManager(_$AppDatabase db, $EpisodesTable table)
+    $CollectionsTable,
+    Collection,
+    $$CollectionsTableFilterComposer,
+    $$CollectionsTableOrderingComposer,
+    $$CollectionsTableAnnotationComposer,
+    $$CollectionsTableCreateCompanionBuilder,
+    $$CollectionsTableUpdateCompanionBuilder,
+    (Collection, $$CollectionsTableReferences),
+    Collection,
+    PrefetchHooks Function({bool clipsRefs})> {
+  $$CollectionsTableTableManager(_$AppDatabase db, $CollectionsTable table)
       : super(TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$EpisodesTableFilterComposer($db: db, $table: table),
+              $$CollectionsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$EpisodesTableOrderingComposer($db: db, $table: table),
+              $$CollectionsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$EpisodesTableAnnotationComposer($db: db, $table: table),
+              $$CollectionsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<int> releaseId = const Value.absent(),
-            Value<int?> number = const Value.absent(),
-            Value<String?> title = const Value.absent(),
+            Value<String> name = const Value.absent(),
           }) =>
-              EpisodesCompanion(
+              CollectionsCompanion(
             id: id,
-            releaseId: releaseId,
-            number: number,
-            title: title,
+            name: name,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            required int releaseId,
-            Value<int?> number = const Value.absent(),
-            Value<String?> title = const Value.absent(),
+            required String name,
           }) =>
-              EpisodesCompanion.insert(
+              CollectionsCompanion.insert(
             id: id,
-            releaseId: releaseId,
-            number: number,
-            title: title,
+            name: name,
           ),
           withReferenceMapper: (p0) => p0
-              .map((e) =>
-                  (e.readTable(table), $$EpisodesTableReferences(db, table, e)))
+              .map((e) => (
+                    e.readTable(table),
+                    $$CollectionsTableReferences(db, table, e)
+                  ))
               .toList(),
-          prefetchHooksCallback: ({releaseId = false, clipsRefs = false}) {
+          prefetchHooksCallback: ({clipsRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [if (clipsRefs) db.clips],
-              addJoins: <
-                  T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic>>(state) {
-                if (releaseId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.releaseId,
-                    referencedTable:
-                        $$EpisodesTableReferences._releaseIdTable(db),
-                    referencedColumn:
-                        $$EpisodesTableReferences._releaseIdTable(db).id,
-                  ) as T;
-                }
-
-                return state;
-              },
+              addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (clipsRefs)
-                    await $_getPrefetchedData<Episode, $EpisodesTable, Clip>(
+                    await $_getPrefetchedData<Collection, $CollectionsTable,
+                            Clip>(
                         currentTable: table,
                         referencedTable:
-                            $$EpisodesTableReferences._clipsRefsTable(db),
+                            $$CollectionsTableReferences._clipsRefsTable(db),
                         managerFromTypedResult: (p0) =>
-                            $$EpisodesTableReferences(db, table, p0).clipsRefs,
+                            $$CollectionsTableReferences(db, table, p0)
+                                .clipsRefs,
                         referencedItemsForCurrentItem:
                             (item, referencedItems) => referencedItems
-                                .where((e) => e.episodeId == item.id),
+                                .where((e) => e.collectionId == item.id),
                         typedResults: items)
                 ];
               },
@@ -2858,28 +1651,28 @@ class $$EpisodesTableTableManager extends RootTableManager<
         ));
 }
 
-typedef $$EpisodesTableProcessedTableManager = ProcessedTableManager<
+typedef $$CollectionsTableProcessedTableManager = ProcessedTableManager<
     _$AppDatabase,
-    $EpisodesTable,
-    Episode,
-    $$EpisodesTableFilterComposer,
-    $$EpisodesTableOrderingComposer,
-    $$EpisodesTableAnnotationComposer,
-    $$EpisodesTableCreateCompanionBuilder,
-    $$EpisodesTableUpdateCompanionBuilder,
-    (Episode, $$EpisodesTableReferences),
-    Episode,
-    PrefetchHooks Function({bool releaseId, bool clipsRefs})>;
+    $CollectionsTable,
+    Collection,
+    $$CollectionsTableFilterComposer,
+    $$CollectionsTableOrderingComposer,
+    $$CollectionsTableAnnotationComposer,
+    $$CollectionsTableCreateCompanionBuilder,
+    $$CollectionsTableUpdateCompanionBuilder,
+    (Collection, $$CollectionsTableReferences),
+    Collection,
+    PrefetchHooks Function({bool clipsRefs})>;
 typedef $$ClipsTableCreateCompanionBuilder = ClipsCompanion Function({
   Value<int> id,
-  required int episodeId,
+  Value<int?> collectionId,
   required String title,
   required String filePath,
   required int durationMs,
 });
 typedef $$ClipsTableUpdateCompanionBuilder = ClipsCompanion Function({
   Value<int> id,
-  Value<int> episodeId,
+  Value<int?> collectionId,
   Value<String> title,
   Value<String> filePath,
   Value<int> durationMs,
@@ -2889,15 +1682,16 @@ final class $$ClipsTableReferences
     extends BaseReferences<_$AppDatabase, $ClipsTable, Clip> {
   $$ClipsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $EpisodesTable _episodeIdTable(_$AppDatabase db) => db.episodes
-      .createAlias($_aliasNameGenerator(db.clips.episodeId, db.episodes.id));
+  static $CollectionsTable _collectionIdTable(_$AppDatabase db) =>
+      db.collections.createAlias(
+          $_aliasNameGenerator(db.clips.collectionId, db.collections.id));
 
-  $$EpisodesTableProcessedTableManager get episodeId {
-    final $_column = $_itemColumn<int>('episode_id')!;
-
-    final manager = $$EpisodesTableTableManager($_db, $_db.episodes)
+  $$CollectionsTableProcessedTableManager? get collectionId {
+    final $_column = $_itemColumn<int>('collection_id');
+    if ($_column == null) return null;
+    final manager = $$CollectionsTableTableManager($_db, $_db.collections)
         .filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_episodeIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_collectionIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: [item]));
@@ -2969,18 +1763,18 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
   ColumnFilters<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => ColumnFilters(column));
 
-  $$EpisodesTableFilterComposer get episodeId {
-    final $$EpisodesTableFilterComposer composer = $composerBuilder(
+  $$CollectionsTableFilterComposer get collectionId {
+    final $$CollectionsTableFilterComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.episodeId,
-        referencedTable: $db.episodes,
+        getCurrentColumn: (t) => t.collectionId,
+        referencedTable: $db.collections,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$EpisodesTableFilterComposer(
+            $$CollectionsTableFilterComposer(
               $db: $db,
-              $table: $db.episodes,
+              $table: $db.collections,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -3053,7 +1847,8 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
   }
 }
 
-class $$ClipsTableOrderingComposer extends Composer<_$AppDatabase, $ClipsTable> {
+class $$ClipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ClipsTable> {
   $$ClipsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -3073,18 +1868,18 @@ class $$ClipsTableOrderingComposer extends Composer<_$AppDatabase, $ClipsTable> 
   ColumnOrderings<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => ColumnOrderings(column));
 
-  $$EpisodesTableOrderingComposer get episodeId {
-    final $$EpisodesTableOrderingComposer composer = $composerBuilder(
+  $$CollectionsTableOrderingComposer get collectionId {
+    final $$CollectionsTableOrderingComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.episodeId,
-        referencedTable: $db.episodes,
+        getCurrentColumn: (t) => t.collectionId,
+        referencedTable: $db.collections,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$EpisodesTableOrderingComposer(
+            $$CollectionsTableOrderingComposer(
               $db: $db,
-              $table: $db.episodes,
+              $table: $db.collections,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -3115,18 +1910,18 @@ class $$ClipsTableAnnotationComposer
   GeneratedColumn<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => column);
 
-  $$EpisodesTableAnnotationComposer get episodeId {
-    final $$EpisodesTableAnnotationComposer composer = $composerBuilder(
+  $$CollectionsTableAnnotationComposer get collectionId {
+    final $$CollectionsTableAnnotationComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.episodeId,
-        referencedTable: $db.episodes,
+        getCurrentColumn: (t) => t.collectionId,
+        referencedTable: $db.collections,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$EpisodesTableAnnotationComposer(
+            $$CollectionsTableAnnotationComposer(
               $db: $db,
-              $table: $db.episodes,
+              $table: $db.collections,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -3211,7 +2006,7 @@ class $$ClipsTableTableManager extends RootTableManager<
     (Clip, $$ClipsTableReferences),
     Clip,
     PrefetchHooks Function(
-        {bool episodeId,
+        {bool collectionId,
         bool segmentsRefs,
         bool clipTagsRefs,
         bool recentClipViewsRefs})> {
@@ -3227,28 +2022,28 @@ class $$ClipsTableTableManager extends RootTableManager<
               $$ClipsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<int> episodeId = const Value.absent(),
+            Value<int?> collectionId = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String> filePath = const Value.absent(),
             Value<int> durationMs = const Value.absent(),
           }) =>
               ClipsCompanion(
             id: id,
-            episodeId: episodeId,
+            collectionId: collectionId,
             title: title,
             filePath: filePath,
             durationMs: durationMs,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            required int episodeId,
+            Value<int?> collectionId = const Value.absent(),
             required String title,
             required String filePath,
             required int durationMs,
           }) =>
               ClipsCompanion.insert(
             id: id,
-            episodeId: episodeId,
+            collectionId: collectionId,
             title: title,
             filePath: filePath,
             durationMs: durationMs,
@@ -3258,7 +2053,7 @@ class $$ClipsTableTableManager extends RootTableManager<
                   (e.readTable(table), $$ClipsTableReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: (
-              {episodeId = false,
+              {collectionId = false,
               segmentsRefs = false,
               clipTagsRefs = false,
               recentClipViewsRefs = false}) {
@@ -3282,13 +2077,14 @@ class $$ClipsTableTableManager extends RootTableManager<
                       dynamic,
                       dynamic,
                       dynamic>>(state) {
-                if (episodeId) {
+                if (collectionId) {
                   state = state.withJoin(
                     currentTable: table,
-                    currentColumn: table.episodeId,
-                    referencedTable: $$ClipsTableReferences._episodeIdTable(db),
+                    currentColumn: table.collectionId,
+                    referencedTable:
+                        $$ClipsTableReferences._collectionIdTable(db),
                     referencedColumn:
-                        $$ClipsTableReferences._episodeIdTable(db).id,
+                        $$ClipsTableReferences._collectionIdTable(db).id,
                   ) as T;
                 }
 
@@ -3350,7 +2146,7 @@ typedef $$ClipsTableProcessedTableManager = ProcessedTableManager<
     (Clip, $$ClipsTableReferences),
     Clip,
     PrefetchHooks Function(
-        {bool episodeId,
+        {bool collectionId,
         bool segmentsRefs,
         bool clipTagsRefs,
         bool recentClipViewsRefs})>;
@@ -3726,7 +2522,8 @@ class $$TagsTableOrderingComposer extends Composer<_$AppDatabase, $TagsTable> {
       column: $table.name, builder: (column) => ColumnOrderings(column));
 }
 
-class $$TagsTableAnnotationComposer extends Composer<_$AppDatabase, $TagsTable> {
+class $$TagsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TagsTable> {
   $$TagsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -4368,12 +3165,8 @@ typedef $$RecentClipViewsTableProcessedTableManager = ProcessedTableManager<
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
-  $$TitlesTableTableManager get titles =>
-      $$TitlesTableTableManager(_db, _db.titles);
-  $$ReleasesTableTableManager get releases =>
-      $$ReleasesTableTableManager(_db, _db.releases);
-  $$EpisodesTableTableManager get episodes =>
-      $$EpisodesTableTableManager(_db, _db.episodes);
+  $$CollectionsTableTableManager get collections =>
+      $$CollectionsTableTableManager(_db, _db.collections);
   $$ClipsTableTableManager get clips =>
       $$ClipsTableTableManager(_db, _db.clips);
   $$SegmentsTableTableManager get segments =>

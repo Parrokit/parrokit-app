@@ -33,7 +33,7 @@ class ClipEditorScreen extends StatelessWidget {
       create: (context) => ClipEditorViewModel(
         mediaProvider: context.read<MediaProvider>(),
         userProvider: context.read<UserProvider>(),
-        titlesDao: context.read<db.AppDatabase>().titlesDao,
+        collectionsDao: context.read<db.AppDatabase>().collectionsDao,
         clipId: clipId,
       ),
       child: const _ClipEditorBody(),
@@ -119,11 +119,9 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
                       steps: [
                         _buildStep(0, vm, FileSection(vm: vm)),
                         _buildStep(1, vm, WorkNameSection(vm: vm)),
-                        _buildStep(2, vm, TypeSection(vm: vm)),
-                        _buildStep(3, vm, SeasonEpisodeSection(vm: vm)),
-                        _buildStep(4, vm, TitlesSection(vm: vm)),
-                        _buildStep(5, vm, TagsSection(vm: vm)),
-                        _buildStep(6, vm, SegmentsSection(vm: vm)),
+                        _buildStep(2, vm, TitlesSection(vm: vm)),
+                        _buildStep(3, vm, TagsSection(vm: vm)),
+                        _buildStep(4, vm, SegmentsSection(vm: vm)),
                       ],
                     ),
                     if (vm.isSaving)

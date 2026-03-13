@@ -6,58 +6,47 @@
 // 클립 활동 관련 상태 관리 Provider.
 // - 클립 수 카운팅
 // - 최근 시청 기록 (recent6, logRecent)
-// - 컬렉션(작품) 목록
+// - 컬렉션 목록
 // - 랜덤 자막/히어로 클립
 //
 // [레이어]
 // Core Layer > Provider
-// 앱 전역에서 사용되는 상태 관리.
-//
-// [사용처]
-// - DashboardScreen: 메인 대시보드 UI
-// - ClipPlayerScreen: 시청 기록 로깅
-// - ShortsScreen: 쇼츠 시청 기록
-// - RecentScreen: 최근 시청 화면
 // ============================================================================
 
 import 'dart:async';
-// dart:typed_data provided by drift
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-// flutter/material.dart provided by foundation
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:parrokit/data/local/app_database.dart';
 
 /// 클립 활동 관련 상태 관리 Provider.
-///
-/// 클립 수, 최근 시청, 컬렉션, 랜덤 자막 등을 관리.
 class ClipActivityProvider extends ChangeNotifier {
   final AppDatabase db;
 
   ClipActivityProvider(this.db) {
-    _initWatchers(); // ✅ 생성 시 한 번만 스트림 연결
+    _initWatchers();
   }
 
   // ─────────────────────────────────────────────────────────────────
   // State
   // ─────────────────────────────────────────────────────────────────
 
-  /// HeroCard용 상태 (clipId, imageBytes?, clipTitle?, titleName?)
+  /// HeroCard용 상태 (clipId, imageBytes?, clipTitle?, collectionName?)
   (int, Uint8List?, String?, String?)? heroClip;
   bool loadingHero = false;
 
-  /// 이어보기 (clipId, thumbnail, clipTitle, titleName)
+  /// 이어보기 (clipId, thumbnail, clipTitle, collectionName)
   List<(int, Uint8List?, String?, String?)> recent6 = const [];
 
-  /// 콜렉션 (titleId, titleKo, titleJa, clipCount)
+  /// 콜렉션 (collectionId, name, clipCount)  — third field kept as String? for compat
   List<(int, String, String?, int)> collections = const [];
 
   /// 헤더 카운트
   int clipCount = 0;
 
-  /// 로딩 플래그 (초기 구독 중/첫 수신 전)
+  /// 로딩 플래그
   bool isCounting = true;
   bool isLoadingRecents = true;
   bool isLoadingCollections = true;
@@ -80,10 +69,9 @@ class ClipActivityProvider extends ChangeNotifier {
   // Public API
   // ─────────────────────────────────────────────────────────────────
 
-  /// 최근 본 클립 기록 (watcher가 자동 반영)
+  /// 최근 본 클립 기록
   Future<void> logRecent(int clipId, {bool prune = false}) async {
     await db.transaction(() async {
-      // 1) UPSERT: 최근 시청 순서 증가
       await db.customUpdate(
         '''
       INSERT INTO recent_clip_views(clip_id, last_seq)
@@ -95,7 +83,6 @@ class ClipActivityProvider extends ChangeNotifier {
         updates: {db.recentClipViews},
       );
 
-      // 2) (옵션) 오래된 로그 정리
       if (prune) {
         await db.customUpdate(
           '''
@@ -116,7 +103,7 @@ class ClipActivityProvider extends ChangeNotifier {
     });
   }
 
-  /// 썸네일 캐시 무효화 (파일 경로 바꼈을 때 등)
+  /// 썸네일 캐시 무효화
   void invalidateThumb(int clipId) {
     _thumbCache.remove(clipId);
   }
@@ -129,7 +116,7 @@ class ClipActivityProvider extends ChangeNotifier {
   StreamSubscription<List<QueryRow>>? _collectionsSub;
   StreamSubscription<List<QueryRow>>? _recentsSub;
 
-  final _thumbCache = <int, Uint8List?>{}; // clipId → 썸네일
+  final _thumbCache = <int, Uint8List?>{};
   String? _docRoot;
 
   Future<String> _ensureDocRoot() async {
@@ -155,28 +142,25 @@ class ClipActivityProvider extends ChangeNotifier {
           notifyListeners();
         });
 
-    // 2) collections 자동 갱신 (titles 기준 집계)
+    // 2) collections 자동 갱신 (collections 테이블 기준 집계)
     _collectionsSub = db
         .customSelect(r'''
-SELECT 
-  t.id              AS tid,
-  t.name            AS nameKo,
-  t.name_native     AS nameOriginal,
-  COUNT(c.id)       AS clipCount
-FROM titles t
-LEFT JOIN releases r ON r.title_id   = t.id
-LEFT JOIN episodes e ON e.release_id = r.id
-LEFT JOIN clips    c ON c.episode_id = e.id
-GROUP BY t.id
-ORDER BY t.name;
-''', readsFrom: {db.titles, db.releases, db.episodes, db.clips})
+SELECT
+  col.id          AS cid,
+  col.name        AS colName,
+  COUNT(c.id)     AS clipCount
+FROM collections col
+LEFT JOIN clips c ON c.collection_id = col.id
+GROUP BY col.id
+ORDER BY col.name;
+''', readsFrom: {db.collections, db.clips})
         .watch()
         .listen((rows) {
           collections = rows
               .map<(int, String, String?, int)>((row) => (
-                    row.data['tid'] as int,
-                    (row.data['nameKo'] as String?) ?? '',
-                    row.data['nameOriginal'] as String?,
+                    row.data['cid'] as int,
+                    (row.data['colName'] as String?) ?? '',
+                    null,
                     (row.data['clipCount'] as int?) ?? 0,
                   ))
               .toList();
@@ -184,38 +168,34 @@ ORDER BY t.name;
           notifyListeners();
         });
 
-    // 3) recent6 자동 갱신 (N+1 제거한 JOIN)
+    // 3) recent6 자동 갱신
     _recentsSub = db
         .customSelect(r'''
-SELECT 
-  rc.clip_id   AS clipId,
-  c.title      AS clipTitle,
-  c.file_path  AS filePath,
-  t.name       AS titleName
+SELECT
+  rc.clip_id    AS clipId,
+  c.title       AS clipTitle,
+  c.file_path   AS filePath,
+  col.name      AS collectionName
 FROM recent_clip_views rc
-JOIN clips    c ON c.id = rc.clip_id
-LEFT JOIN episodes e ON e.id = c.episode_id
-LEFT JOIN releases r ON r.id = e.release_id
-LEFT JOIN titles   t ON t.id = r.title_id
+JOIN clips c ON c.id = rc.clip_id
+LEFT JOIN collections col ON col.id = c.collection_id
 ORDER BY rc.last_seq DESC
 LIMIT 6;
 ''', readsFrom: {
           db.recentClipViews,
           db.clips,
-          db.episodes,
-          db.releases,
-          db.titles,
+          db.collections,
         })
         .watch()
         .listen((rows) {
-          _rebuildRecents(rows); // 썸네일 포함 비동기 재구성
+          _rebuildRecents(rows);
         });
   }
 
   bool _buildingRecents = false;
 
   Future<void> _rebuildRecents(List<QueryRow> rows) async {
-    if (_buildingRecents) return; // 중복 호출 방지
+    if (_buildingRecents) return;
     _buildingRecents = true;
     try {
       final root = await _ensureDocRoot();
@@ -225,9 +205,8 @@ LIMIT 6;
         final clipId = (row.data['clipId'] as int?) ?? 0;
         final clipTitle = row.data['clipTitle'] as String?;
         final filePath = (row.data['filePath'] as String?) ?? '';
-        final titleName = row.data['titleName'] as String?;
+        final collectionName = row.data['collectionName'] as String?;
 
-        // 썸네일 캐시
         Uint8List? thumb = _thumbCache[clipId];
         if (thumb == null) {
           final absPath = '$root/$filePath';
@@ -245,7 +224,7 @@ LIMIT 6;
           _thumbCache[clipId] = thumb;
         }
 
-        result.add((clipId, thumb, clipTitle, titleName));
+        result.add((clipId, thumb, clipTitle, collectionName));
       }
 
       recent6 = result;
@@ -290,7 +269,7 @@ LIMIT 6;
     }
   }
 
-  /// 랜덤 클립 + 작품 제목 (episode → release → title)
+  /// 랜덤 클립 + 컬렉션 이름
   Future<List<(int, Uint8List?, String?, String?)>> _getRandomClipsWithTitle({
     int count = 10,
   }) async {
@@ -311,26 +290,24 @@ LIMIT 6;
     final rows = await db.customSelect(
       '''
       SELECT
-        c.id     AS clip_id,
-        c.title  AS clip_title,
-        t.name   AS title_name
+        c.id          AS clip_id,
+        c.title       AS clip_title,
+        col.name      AS collection_name
       FROM clips c
-      JOIN episodes e ON e.id = c.episode_id
-      JOIN releases r ON r.id = e.release_id
-      JOIN titles   t ON t.id = r.title_id
+      LEFT JOIN collections col ON col.id = c.collection_id
       WHERE EXISTS (SELECT 1 FROM segments s WHERE s.clip_id = c.id)
       ORDER BY RANDOM()
       LIMIT ?
       ''',
       variables: [Variable<int>(limit)],
-      readsFrom: {db.clips, db.episodes, db.releases, db.titles, db.segments},
+      readsFrom: {db.clips, db.collections, db.segments},
     ).get();
 
     return rows.map<(int, Uint8List?, String?, String?)>((r) {
       final clipId = r.data['clip_id'] as int;
       final clipTitle = r.data['clip_title'] as String?;
-      final titleName = r.data['title_name'] as String?;
-      return (clipId, null, clipTitle, titleName);
+      final collectionName = r.data['collection_name'] as String?;
+      return (clipId, null, clipTitle, collectionName);
     }).toList();
   }
 
@@ -356,16 +333,14 @@ LIMIT 6;
   }) async {
     final rows = await db.customSelect(
       '''
-    SELECT 
-      rc.clip_id   AS clipId,
-      c.title      AS clipTitle,
-      c.file_path  AS filePath,
-      t.name       AS titleName
+    SELECT
+      rc.clip_id    AS clipId,
+      c.title       AS clipTitle,
+      c.file_path   AS filePath,
+      col.name      AS collectionName
     FROM recent_clip_views rc
-    JOIN clips    c ON c.id = rc.clip_id
-    LEFT JOIN episodes e ON e.id = c.episode_id
-    LEFT JOIN releases r ON r.id = e.release_id
-    LEFT JOIN titles   t ON t.id = r.title_id
+    JOIN clips c ON c.id = rc.clip_id
+    LEFT JOIN collections col ON col.id = c.collection_id
     ORDER BY rc.last_seq DESC
     LIMIT ?
     ''',
@@ -373,9 +348,7 @@ LIMIT 6;
       readsFrom: {
         db.recentClipViews,
         db.clips,
-        db.episodes,
-        db.releases,
-        db.titles,
+        db.collections,
       },
     ).get();
 
@@ -388,7 +361,7 @@ LIMIT 6;
       final clipId = (row.data['clipId'] as int?) ?? 0;
       final clipTitle = row.data['clipTitle'] as String?;
       final filePath = (row.data['filePath'] as String?) ?? '';
-      final titleName = row.data['titleName'] as String?;
+      final collectionName = row.data['collectionName'] as String?;
 
       Uint8List? thumb;
       if (!refreshThumb && _thumbCache.containsKey(clipId)) {
@@ -409,7 +382,7 @@ LIMIT 6;
         _thumbCache[clipId] = thumb;
       }
 
-      result.add((clipId, thumb, clipTitle, titleName));
+      result.add((clipId, thumb, clipTitle, collectionName));
     }
 
     return result;

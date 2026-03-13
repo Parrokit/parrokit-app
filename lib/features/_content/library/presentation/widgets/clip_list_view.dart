@@ -144,8 +144,8 @@ class ClipListView extends StatelessWidget {
                             );
                             if (ok == true && context.mounted) {
                               final media = context.read<MediaProvider>();
-                              media.backToTitles();
-                              media.loadTitles();
+                              media.backToCollections();
+                              media.loadCollections();
                             }
                           },
                           child: Container(
