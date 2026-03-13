@@ -80,7 +80,7 @@ class PickedState extends StatelessWidget {
                 ),
               ),
 
-              // 하단 컨트롤 바 (항상 보이게)
+              // 하단 컨트롤 바
               Positioned(
                 left: 0,
                 right: 0,
@@ -203,7 +203,7 @@ class PickedState extends StatelessWidget {
                       style:
                           tt.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
                     ),
-                    onPressed: null, // 클릭 이벤트는 PopupMenuButton이 처리
+                    onPressed: null,
                   ),
                 ),
               ),

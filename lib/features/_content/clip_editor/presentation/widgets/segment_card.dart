@@ -38,16 +38,15 @@ class SegmentCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(EditorStrings.segmentCardTitle(index),
-                  style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                EditorStrings.segmentCardTitle(index),
+                style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 10),
-
-              // ✅ 세로(Column) 배치로 변경: 시작 → 간격 → 끝
               TimeTripletField(label: '시작', target: startCtl, showGuide: false),
               const SizedBox(height: 12),
               TimeTripletField(label: '끝', target: endCtl),
               const SizedBox(height: 14),
-
               LabeledTextField(
                 label: EditorStrings.pronLabel,
                 hint: EditorStrings.pronHint,
