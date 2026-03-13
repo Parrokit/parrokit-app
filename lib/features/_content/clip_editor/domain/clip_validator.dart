@@ -37,6 +37,11 @@ class ClipValidator {
       return const ValidationResult.invalid('영상 파일을 먼저 선택해 주세요.');
     }
 
+    // 컬렉션 이름 (필수)
+    if (form.collectionName == null || form.collectionName!.trim().isEmpty) {
+      return const ValidationResult.invalid('컬렉션은 필수입니다.');
+    }
+
     // 클립 제목
     if (form.clipTitle.trim().isEmpty) {
       return const ValidationResult.invalid('클립 제목은 필수입니다.');

@@ -4,7 +4,7 @@
 //
 // [역할]
 // 클립 에디터 화면. ViewModel에서 상태와 로직을 가져옴.
-// sections 위젯을 사용하여 UI 구성.
+// 모든 섹션을 단일 스크롤 페이지에 표시.
 //
 // [레이어]
 // Presentation Layer > Screen
@@ -105,47 +105,59 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
           elevation: 0,
         ),
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    Stepper(
-                      type: StepperType.horizontal,
-                      currentStep: vm.currentStep,
-                      onStepContinue: vm.nextOrSave,
-                      onStepCancel: vm.prevOrCancel,
-                      onStepTapped: vm.isSttProcessing ? null : vm.goToStep,
-                      controlsBuilder: (context, details) =>
-                          const SizedBox.shrink(),
-                      steps: [
-                        _buildStep(0, vm, FileSection(vm: vm)),
-                        _buildStep(1, vm, WorkNameSection(vm: vm)),
-                        _buildStep(2, vm, TitlesSection(vm: vm)),
-                        _buildStep(3, vm, TagsSection(vm: vm)),
-                        _buildStep(4, vm, SegmentsSection(vm: vm)),
+              Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      children: [
+                        FileSection(vm: vm),
+                        const SizedBox(height: 24),
+                        WorkNameSection(vm: vm),
+                        const SizedBox(height: 24),
+                        TitlesSection(vm: vm),
+                        const SizedBox(height: 24),
+                        TagsSection(vm: vm),
+                        const SizedBox(height: 24),
+                        SegmentsSection(vm: vm),
+                        const SizedBox(height: 16),
                       ],
                     ),
-                    if (vm.isSaving)
-                      Positioned.fill(
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          child:
-                              const Center(child: CircularProgressIndicator()),
-                        ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      8,
+                      16,
+                      16 + MediaQuery.of(context).padding.bottom,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: (vm.isSaving || vm.isSttProcessing)
+                            ? null
+                            : vm.save,
+                        child: vm.isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('저장'),
                       ),
-                  ],
-                ),
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  8,
-                  16,
-                  16 + MediaQuery.of(context).padding.bottom,
+              if (vm.isSaving)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
                 ),
-                child: _buildStepperControls(context, vm),
-              ),
             ],
           ),
         ),
@@ -155,56 +167,10 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
 
   Future<void> _showExitConfirmation(
       BuildContext context, ClipEditorViewModel vm) async {
-    // STT 처리 중이면 무시
     if (vm.isSttProcessing) return;
-
     final result = await showExitConfirmSheet(context);
-
     if (result == true && context.mounted) {
       Navigator.of(context).pop();
     }
-  }
-
-  Step _buildStep(int index, ClipEditorViewModel vm, Widget content) {
-    return Step(
-      title: const SizedBox.shrink(),
-      isActive: vm.currentStep >= index,
-      state: vm.currentStep > index ? StepState.complete : StepState.indexed,
-      content: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
-        child: content,
-      ),
-    );
-  }
-
-  Widget _buildStepperControls(BuildContext context, ClipEditorViewModel vm) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: (vm.isSaving || vm.isSttProcessing)
-                ? null
-                : () {
-                    if (vm.currentStep == 0) {
-                      _showExitConfirmation(context, vm);
-                    } else {
-                      vm.prevOrCancel();
-                    }
-                  },
-            child: Text(vm.currentStep == 0 ? '취소' : '이전'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
-            onPressed:
-                (vm.isSaving || vm.isSttProcessing) ? null : vm.nextOrSave,
-            child: Text(vm.currentStep == ClipEditorViewModel.totalSteps - 1
-                ? '저장'
-                : '다음'),
-          ),
-        ),
-      ],
-    );
   }
 }

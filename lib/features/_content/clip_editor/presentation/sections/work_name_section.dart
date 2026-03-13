@@ -42,7 +42,7 @@ class WorkNameSection extends StatelessWidget {
           vm.collectionNameCtl.text = controller.text;
         });
         return LabeledTextField(
-          label: '컬렉션 (선택)',
+          label: '컬렉션 *',
           hint: '예: 스파이 패밀리, 공부용',
           controller: controller,
           focusNode: focusNode,

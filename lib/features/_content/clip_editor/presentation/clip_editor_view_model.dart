@@ -96,10 +96,6 @@ class ClipEditorViewModel extends ChangeNotifier
   // 상태
   // ─────────────────────────────────────────────────────────────────
 
-  // Stepper 상태
-  int _currentStep = 0;
-  int get currentStep => _currentStep;
-
   // 저장 상태
   EditorSaveState _saveState = EditorSaveState.idle;
   EditorSaveState get saveState => _saveState;
@@ -138,8 +134,6 @@ class ClipEditorViewModel extends ChangeNotifier
 
   dynamic _closeResult;
   dynamic get closeResult => _closeResult;
-
-  static const int totalSteps = 5;
 
   // ─────────────────────────────────────────────────────────────────
   // 초기화
@@ -191,54 +185,6 @@ class ClipEditorViewModel extends ChangeNotifier
     // 초기 컬렉션 이름 pre-fill
     if (initialCollectionName != null && clipId == null) {
       collectionNameCtl.text = initialCollectionName!;
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // Stepper 제어
-  // ─────────────────────────────────────────────────────────────────
-
-  /// 특정 스텝으로 이동합니다.
-  void goToStep(int step) {
-    if (step >= 0 && step <= totalSteps - 1) {
-      _currentStep = step;
-      notifyListeners();
-    }
-  }
-
-  /// 다음 스텝으로 이동합니다.
-  void nextStep() {
-    if (_currentStep < totalSteps - 1) {
-      _currentStep++;
-      notifyListeners();
-    }
-  }
-
-  /// 이전 스텝으로 이동합니다.
-  void prevStep() {
-    if (_currentStep > 0) {
-      _currentStep--;
-      notifyListeners();
-    }
-  }
-
-  /// 다음 버튼 또는 저장 버튼 동작
-  void nextOrSave() {
-    if (_currentStep < totalSteps - 1) {
-      nextStep();
-    } else {
-      save();
-    }
-  }
-
-  /// 이전 버튼 또는 취소 버튼 동작
-  void prevOrCancel() {
-    if (_currentStep == 0) {
-      _shouldClose = true;
-      _closeResult = null;
-      notifyListeners();
-    } else {
-      prevStep();
     }
   }
 
