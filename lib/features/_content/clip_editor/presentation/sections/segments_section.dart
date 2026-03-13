@@ -61,10 +61,10 @@ class _SegmentsSectionState extends State<SegmentsSection> {
   void _addAndJump() {
     final newIndex = widget.vm.segmentForms.length;
     widget.vm.addSegment();
-    
+
     // 페이지 번호를 즉시 업데이트하여 UI 반응성 개선
     setState(() => _currentPage = newIndex);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.vm.segmentForms.isNotEmpty) {
         final width = MediaQuery.of(context).size.width - 32;
@@ -111,14 +111,6 @@ class _SegmentsSectionState extends State<SegmentsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          EditorStrings.segmentsNotice,
-          style: tt.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
-
         // STT 진행 상황
         if (vm.isSttProcessing) ...[
           SttProgressCard(
@@ -129,34 +121,7 @@ class _SegmentsSectionState extends State<SegmentsSection> {
           const SizedBox(height: 12),
         ],
 
-        // 버튼 행
-        Row(
-          children: [
-            FilledButton.icon(
-              icon: vm.isSttProcessing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.subtitles_outlined, size: 18),
-              label: Text(vm.isSttProcessing
-                  ? _sttStatusText(vm.sttState)
-                  : EditorStrings.sttButtonLabel),
-              onPressed: vm.isSttProcessing ? null : vm.onSttAndDraft,
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(EditorStrings.addSegmentButtonLabel),
-              onPressed: vm.isSttProcessing ? null : _addAndJump,
-            ),
-          ],
-        ),
-
+        const SizedBox(height: 8),
         if (total > 0) ...[
           const SizedBox(height: 14),
 
@@ -169,6 +134,29 @@ class _SegmentsSectionState extends State<SegmentsSection> {
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               const Spacer(),
+              TextButton.icon(
+                icon: vm.isSttProcessing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.subtitles_outlined, size: 18),
+                label: Text(vm.isSttProcessing
+                    ? _sttStatusText(vm.sttState)
+                    : EditorStrings.sttButtonLabel),
+                onPressed: vm.isSttProcessing ? null : vm.onSttAndDraft,
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(EditorStrings.addSegmentButtonLabel),
+                onPressed: vm.isSttProcessing ? null : _addAndJump,
+              ),
+              
+              const SizedBox(width: 4),
               TextButton.icon(
                 icon: Icon(
                   Icons.delete_outline_rounded,
@@ -205,7 +193,7 @@ class _SegmentsSectionState extends State<SegmentsSection> {
                 );
               }),
             ),
-          )
+          ),
         ],
       ],
     );

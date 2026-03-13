@@ -25,7 +25,7 @@ class EditorStrings {
   // 세그먼트 섹션
   static const segmentsSectionTitle = '자막 정보';
   static const segmentsNotice = '소음이나 음악이 많은 영상에선 자동 자막 정확도가 낮을 수 있어요.';
-  static const sttButtonLabel = '자동 자막 달기';
+  static const sttButtonLabel = '자동 자막 생성';
   static const addSegmentButtonLabel = '구간 추가';
   static const removeSegmentButtonLabel = '구간 삭제';
 
