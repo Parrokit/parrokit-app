@@ -1,6 +1,8 @@
 // lib/provider/user_provider.dart
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:parrokit/data/models/user.dart';
 import 'package:parrokit/core/repositories/user_repository.dart';
 import 'package:parrokit/core/utils/app_logger.dart';
@@ -82,6 +84,7 @@ class UserProvider extends ChangeNotifier {
         sendEmailVerification: sendEmailVerification,
       );
       _currentUser = user;
+      unawaited(Purchases.logIn(user.id));
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -100,6 +103,7 @@ class UserProvider extends ChangeNotifier {
         password: password,
       );
       _currentUser = user;
+      unawaited(Purchases.logIn(user.id));
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -196,6 +200,7 @@ class UserProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       await _userRepository.signOut();
+      unawaited(Purchases.logOut());
       _currentUser = null;
       notifyListeners();
     } finally {

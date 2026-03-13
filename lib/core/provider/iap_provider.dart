@@ -1,159 +1,67 @@
-import 'dart:async';
-// dart:io Platform not used currently
+// ============================================================================
+// lib/core/provider/iap_provider.dart
+// ============================================================================
+//
+// [역할]
+// RevenueCat 기반 프리미엄(구독) 상태 관리.
+// CustomerInfo 업데이트를 실시간으로 수신하여 isPremium 상태를 유지.
+//
+// [엔타이틀먼트]
+// RevenueCat 대시보드 entitlement ID: "parrokit_ads_removed"
+//
+// [레이어]
+// Core Layer > Provider
+// ============================================================================
+
 import 'package:flutter/foundation.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:parrokit/core/utils/app_logger.dart';
 
 class IapProvider extends ChangeNotifier {
-  // 🔁 App Store Connect / Play Console에 등록한 Product ID와 반드시 동일
-  static const String kRemoveAdsId = 'com.bull.parrokit.remove_ads';
-  static const String _prefsKeyPremium = 'is_premium';
+  static const String entitlementId = 'parrokit_ads_removed';
 
-  final InAppPurchase _iap = InAppPurchase.instance;
-
-  bool available = false; // 스토어 가용 여부
-  bool isPremium = false; // 프리미엄 소유 상태
-  bool loading = true; // 초기 로딩/쿼리 중
-  bool purchasing = false; // 결제 진행중 (버튼 디스에이블 등)
-  List<ProductDetails> products = const [];
-
-  StreamSubscription<List<PurchaseDetails>>? _sub;
-  bool _inited = false;
-
-  /// UI에서 쓰기 좋은 가격 문자열 (예: $0.99). 없으면 null
-  String? get removeAdsPrice => removeAdsProduct?.price;
-
-  ProductDetails? get removeAdsProduct =>
-      products.where((p) => p.id == kRemoveAdsId).firstOrNull;
+  bool isPremium = false;
+  bool loading = true;
+  bool available = true;
 
   Future<void> init() async {
-    if (_inited) return; // 중복 초기화 방지
-
-    _inited = true;
-
     loading = true;
     notifyListeners();
-    // 1) 스토어 연결
-    available = await _iap.isAvailable();
 
-    // 2) 로컬 보유 플래그
-    final prefs = await SharedPreferences.getInstance();
-    isPremium = prefs.getBool(_prefsKeyPremium) ?? false;
-
-    // 3) 상품 조회
-    if (available) {
-      final response = await _iap.queryProductDetails({kRemoveAdsId});
-      if (response.error != null) {
-        AppLogger.e('[IAP] queryProductDetails error: ${response.error}');
-      }
-      if (response.notFoundIDs.isNotEmpty) {
-        AppLogger.w('[IAP] notFoundIDs: ${response.notFoundIDs} '
-            '(Product ID가 콘솔과 다르거나, 아직 전파/승인 전일 수 있음)');
-      }
-      products = response.productDetails;
+    try {
+      final info = await Purchases.getCustomerInfo();
+      _applyCustomerInfo(info);
+    } catch (e) {
+      AppLogger.e('[IAP] init error: $e');
     }
 
-    // 4) 구매 스트림 구독 (한 번만)
-    _sub ??= _iap.purchaseStream.listen(
-      _onPurchaseUpdated,
-      onDone: () => _sub?.cancel(),
-      onError: (e, st) {
-        AppLogger.e('[IAP] purchaseStream error: $e');
-        purchasing = false;
-        notifyListeners();
-      },
-    );
+    Purchases.addCustomerInfoUpdateListener(_applyCustomerInfo);
 
     loading = false;
     notifyListeners();
   }
 
-  Future<void> buyRemoveAds() async {
-    if (!available) {
-      AppLogger.w('[IAP] Store not available');
-      return;
-    }
-    if (purchasing) return; // 중복 클릭 방지
-
-    final pd = removeAdsProduct;
-    if (pd == null) {
-      AppLogger.w('[IAP] Product not loaded: $kRemoveAdsId');
-      return;
-    }
-
-    purchasing = true;
+  void _applyCustomerInfo(CustomerInfo info) {
+    final active = info.entitlements.active.containsKey(entitlementId);
+    if (isPremium == active) return;
+    isPremium = active;
+    AppLogger.i('[IAP] isPremium updated: $isPremium');
     notifyListeners();
-
-    final purchaseParam = PurchaseParam(productDetails: pd);
-    // 광고 제거는 Non-Consumable
-    await _iap.buyNonConsumable(purchaseParam: purchaseParam);
   }
 
+  /// 구매 내역 복원.
   Future<void> restorePurchases() async {
-    if (!available) return;
-    purchasing = true;
-    notifyListeners();
-
-    await _iap.restorePurchases();
-    // 결과는 _onPurchaseUpdated로 들어옴
-  }
-
-  Future<void> _onPurchaseUpdated(List<PurchaseDetails> detailsList) async {
-    for (final pd in detailsList) {
-      AppLogger.i('[IAP] update: id=${pd.productID}, status=${pd.status}');
-
-      switch (pd.status) {
-        case PurchaseStatus.pending:
-          purchasing = true;
-          notifyListeners();
-          break;
-
-        case PurchaseStatus.error:
-          AppLogger.e('[IAP] purchase error: ${pd.error}');
-          purchasing = false;
-          notifyListeners();
-          break;
-
-        case PurchaseStatus.canceled:
-          purchasing = false;
-          notifyListeners();
-          break;
-
-        case PurchaseStatus.purchased:
-        case PurchaseStatus.restored:
-          // TODO: 프로덕션에서는 서버 영수증 검증 권장(특히 Android)
-          if (pd.productID == kRemoveAdsId) {
-            await _grantPremium();
-          }
-          if (pd.pendingCompletePurchase) {
-            try {
-              await _iap.completePurchase(pd);
-            } catch (e) {
-              AppLogger.e('[IAP] completePurchase error: $e');
-            }
-          }
-          purchasing = false;
-          notifyListeners();
-          break;
-      }
+    try {
+      final info = await Purchases.restorePurchases();
+      _applyCustomerInfo(info);
+    } catch (e) {
+      AppLogger.e('[IAP] restorePurchases error: $e');
     }
-  }
-
-  Future<void> _grantPremium() async {
-    isPremium = true;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefsKeyPremium, true);
-    notifyListeners();
   }
 
   @override
   void dispose() {
-    _sub?.cancel();
+    Purchases.removeCustomerInfoUpdateListener(_applyCustomerInfo);
     super.dispose();
   }
-}
-
-extension<T> on Iterable<T> {
-  T? get firstOrNull => isEmpty ? null : first;
 }

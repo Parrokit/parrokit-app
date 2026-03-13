@@ -27,15 +27,10 @@ import 'sections/ad_reward_section.dart';
 import 'sections/app_settings_section.dart';
 import 'sections/backup_section.dart';
 import 'sections/cache_section.dart';
-import 'sections/coin_store_section.dart';
 import 'sections/info_section.dart';
 import 'sections/payment_section.dart';
 import 'sections/player_settings_section.dart';
 import 'sections/shorts_settings_section.dart';
-
-// ── 수익화 모듈 토글 ────────────────────────────────────────────────────────
-const bool _kShowCoinStore = false; // 코인 결제 (추후 활성화)
-// ────────────────────────────────────────────────────────────────────────────
 
 /// 설정/더보기 화면.
 class MoreScreen extends StatelessWidget {
@@ -60,14 +55,13 @@ class MoreScreen extends StatelessWidget {
             const AccountSection(),
             const SizedBox(height: AppSpacing.sectionGap),
 
+            // 광고 보기
             const AdRewardSection(),
             const SizedBox(height: AppSpacing.sectionGap),
 
-            // 코인 결제 [_kShowCoinStore]
-            if (_kShowCoinStore) ...[
-              const CoinStoreSection(),
-              const SizedBox(height: AppSpacing.sectionGap),
-            ],
+            // 결제 (광고 제거 + 코인 충전 + 구매 내역)
+            const PaymentSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
 
             // 플레이어 설정
             const PlayerSettingsSection(),
@@ -79,10 +73,6 @@ class MoreScreen extends StatelessWidget {
 
             // 앱 설정
             const AppSettingsSection(),
-            const SizedBox(height: AppSpacing.sectionGap),
-
-            // 결제
-            const PaymentSection(),
             const SizedBox(height: AppSpacing.sectionGap),
 
             // 백업

@@ -28,6 +28,7 @@ import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/repositories/user_repository.dart';
 import 'package:parrokit/core/services/firebase_auth_service.dart';
 import 'package:parrokit/core/services/firebase_user_service.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:parrokit/core/services/ad_service.dart';
 import 'package:parrokit/core/utils/audio_bg.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
@@ -97,6 +98,16 @@ Future<void> bootstrap() async {
   AdService().loadAd();
 
   // ─────────────────────────────────────────────────────────────────
+  // RevenueCat 초기화
+  // ─────────────────────────────────────────────────────────────────
+  await Purchases.configure(
+    PurchasesConfiguration(dotenv.env['REVENUECAT_API_KEY']!),
+  );
+  if (userProvider.isLoggedIn && userProvider.currentUser != null) {
+    await Purchases.logIn(userProvider.currentUser!.id);
+  }
+
+  // ─────────────────────────────────────────────────────────────────
   // IAP 및 광고 Provider
   // ─────────────────────────────────────────────────────────────────
   final iapProvider = IapProvider();
@@ -106,6 +117,10 @@ Future<void> bootstrap() async {
     repository: adRepository,
     initialPremium: iapProvider.isPremium,
   );
+  // IapProvider 변경 시 AdProvider에 즉시 반영
+  iapProvider.addListener(() {
+    adProvider.premium = iapProvider.isPremium;
+  });
 
   // ─────────────────────────────────────────────────────────────────
   // 앱 실행

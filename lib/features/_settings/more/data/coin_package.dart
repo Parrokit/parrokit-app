@@ -4,23 +4,18 @@
 //
 // [역할]
 // 코인 충전 패키지 모델.
-// 결제 금액, 기본 코인, 보너스 코인 정보를 담고 있음.
+// 결제 금액, 기본 코인, 보너스 코인, RevenueCat 상품 ID 정보를 담고 있음.
 //
 // [레이어]
 // Domain Layer - 비즈니스 로직에서 사용하는 순수 모델.
-// UI나 외부 의존성 없이 독립적으로 존재.
-//
-// [사용처]
-// - CoinStoreSection: 코인 충전 UI
-// - PaymentScreen: 결제 처리
 // ============================================================================
 
 /// 코인 충전 패키지 모델.
-///
-/// 각 패키지는 가격, 기본 코인 수, 보너스 코인 수를 포함.
-/// [totalCoins]로 총 지급 코인 계산 가능.
 class CoinPackage {
-  /// 결제 금액 (KRW, 원화)
+  /// RevenueCat (App Store / Play Store) 상품 ID
+  final String productId;
+
+  /// 결제 금액 (KRW, 원화) — UI 표시용
   final int price;
 
   /// 기본 지급 코인 수
@@ -30,6 +25,7 @@ class CoinPackage {
   final int bonusCoins;
 
   const CoinPackage({
+    required this.productId,
     required this.price,
     required this.coins,
     required this.bonusCoins,
@@ -44,16 +40,18 @@ class CoinPackage {
 
   /// 사전 정의된 코인 패키지 목록 (10% 보너스 적용)
   ///
-  /// | 가격 | 기본 | 보너스 | 총 코인 |
-  /// |------|------|--------|---------|
-  /// | ₩1,000 | 80 | 8 | 88 |
-  /// | ₩3,000 | 240 | 24 | 264 |
-  /// | ₩5,000 | 400 | 40 | 440 |
-  /// | ₩10,000 | 800 | 80 | 880 |
+  /// RevenueCat 대시보드에서 아래 productId로 Consumable 상품을 등록해야 함.
+  ///
+  /// | productId              | 가격    | 기본  | 보너스 | 총 코인 |
+  /// |------------------------|---------|-------|--------|---------|
+  /// | parrokit_coins_1000    | ₩1,000  | 80    | 8      | 88      |
+  /// | parrokit_coins_3000    | ₩3,000  | 240   | 24     | 264     |
+  /// | parrokit_coins_5000    | ₩5,000  | 400   | 40     | 440     |
+  /// | parrokit_coins_10000   | ₩10,000 | 800   | 80     | 880     |
   static const List<CoinPackage> packages = [
-    CoinPackage(price: 1000, coins: 80, bonusCoins: 8),
-    CoinPackage(price: 3000, coins: 240, bonusCoins: 24),
-    CoinPackage(price: 5000, coins: 400, bonusCoins: 40),
-    CoinPackage(price: 10000, coins: 800, bonusCoins: 80),
+    CoinPackage(productId: 'parrokit_coins_1000',  price: 1000,  coins: 80,  bonusCoins: 8),
+    CoinPackage(productId: 'parrokit_coins_3000',  price: 3000,  coins: 240, bonusCoins: 24),
+    CoinPackage(productId: 'parrokit_coins_5000',  price: 5000,  coins: 400, bonusCoins: 40),
+    CoinPackage(productId: 'parrokit_coins_10000', price: 10000, coins: 800, bonusCoins: 80),
   ];
 }

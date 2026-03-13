@@ -34,10 +34,14 @@ class CoinPackageCard extends StatelessWidget {
   /// 카드 탭 콜백
   final VoidCallback? onTap;
 
+  /// 결제 진행 중 여부 (true이면 스피너 표시)
+  final bool isLoading;
+
   const CoinPackageCard({
     super.key,
     required this.package,
     this.onTap,
+    this.isLoading = false,
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -92,26 +96,32 @@ class CoinPackageCard extends StatelessWidget {
           ),
         ),
 
-        // 보너스 뱃지 + 화살표
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '+10% 보너스',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
+        // 보너스 뱃지 + 화살표 (결제 중이면 스피너)
+        trailing: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '+10% 보너스',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 2),
-            Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ],
-        ),
       ),
     );
   }
