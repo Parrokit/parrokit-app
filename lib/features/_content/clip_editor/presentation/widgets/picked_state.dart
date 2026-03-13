@@ -7,8 +7,8 @@ class PickedState extends StatelessWidget {
   const PickedState({
     super.key,
     required this.picked,
-    required this.onReplace, // 파일에서 다시 선택
-    required this.onPickFromPhotos, // ✅ 사진에서 다시 선택
+    required this.onReplace,
+    required this.onPickFromPhotos,
     required this.onRemove,
     this.thumb,
     required this.isPlayingInline,
@@ -20,7 +20,7 @@ class PickedState extends StatelessWidget {
 
   final PlatformFile picked;
   final VoidCallback onReplace;
-  final VoidCallback onPickFromPhotos; // ✅ 추가
+  final VoidCallback onPickFromPhotos;
   final VoidCallback onRemove;
   final Uint8List? thumb;
   final bool isPlayingInline;

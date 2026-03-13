@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../data/constants/editor_strings.dart';
 import '../widgets/labeled_text_field.dart';
 import '../clip_editor_view_model.dart';
 
@@ -42,8 +43,8 @@ class WorkNameSection extends StatelessWidget {
           vm.collectionNameCtl.text = controller.text;
         });
         return LabeledTextField(
-          label: '컬렉션 *',
-          hint: '예: 스파이 패밀리, 공부용',
+          label: EditorStrings.collectionLabel,
+          hint: EditorStrings.collectionHint,
           controller: controller,
           focusNode: focusNode,
           prefixIcon: Icons.folder_outlined,

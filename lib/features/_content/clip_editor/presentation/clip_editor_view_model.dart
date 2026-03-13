@@ -43,10 +43,10 @@ import '../domain/clip_validator.dart';
 import '../domain/editor_mode.dart';
 import '../domain/editor_state.dart';
 
-import 'view_model/editor_file_mixin.dart';
-import 'view_model/editor_segment_mixin.dart';
-import 'view_model/editor_tag_mixin.dart';
-import 'view_model/editor_autocomplete_mixin.dart';
+import 'mixins/editor_file_mixin.dart';
+import 'mixins/editor_segment_mixin.dart';
+import 'mixins/editor_tag_mixin.dart';
+import 'mixins/editor_autocomplete_mixin.dart';
 
 /// 클립 에디터 ViewModel.
 class ClipEditorViewModel extends ChangeNotifier
