@@ -20,11 +20,13 @@ import 'package:parrokit/features/_content/shorts/data/shorts_ad_repository.dart
 /// 특정 횟수([threshold])마다 광고 노출 신호를 보냅니다.
 class AdProvider extends ChangeNotifier {
   static const int threshold = 10;
+  static const Duration _cooldown = Duration(minutes: 2);
 
   final ShortsAdRepository _repository;
 
   int _count = 0;
   bool _premium = false;
+  DateTime? _lastAdTime;
 
   AdProvider({
     required ShortsAdRepository repository,
@@ -32,6 +34,7 @@ class AdProvider extends ChangeNotifier {
   }) : _repository = repository {
     _premium = initialPremium;
     _loadCount();
+    _loadLastAdTime();
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -58,6 +61,22 @@ class AdProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _loadLastAdTime() async {
+    final ms = await _repository.loadLastAdTime();
+    if (ms != null) _lastAdTime = DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  bool _isCooldownActive() {
+    if (_lastAdTime == null) return false;
+    return DateTime.now().difference(_lastAdTime!) < _cooldown;
+  }
+
+  /// 광고를 실제로 노출한 뒤 호출하여 쿨타임을 시작합니다.
+  void recordAdShown() {
+    _lastAdTime = DateTime.now();
+    _repository.saveLastAdTime(_lastAdTime!.millisecondsSinceEpoch);
+  }
+
   /// 0 ~ threshold-1 범위로 정규화
   static int _norm(int v) => ((v % threshold) + threshold) % threshold;
 
@@ -76,7 +95,7 @@ class AdProvider extends ChangeNotifier {
     _repository.saveCount(_count); // 굳이 await 안 해도 됨 (fire and forget)
 
     notifyListeners();
-    return _count == 0;
+    return _count == 0 && !_isCooldownActive();
   }
 
   void reset() {
