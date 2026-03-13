@@ -3,37 +3,119 @@
 // ============================================================================
 //
 // [역할]
-// 계정 섹션 위젯.
+// 계정 섹션 위젯. 계정 정보 + 코인 충전 + 로그아웃.
 // ============================================================================
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/services/ad_service.dart';
+import 'package:parrokit/core/services/daily_limit_service.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/features/_entry/auth/presentation/sections/email_verification_section.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
 
 /// 계정 섹션.
-class AccountSection extends StatelessWidget {
+class AccountSection extends StatefulWidget {
   const AccountSection({super.key});
+
+  @override
+  State<AccountSection> createState() => _AccountSectionState();
+}
+
+class _AccountSectionState extends State<AccountSection> {
+  int _dailyRemaining = AppConfig.sttDailyLimit;
+
+  @override
+  void initState() {
+    super.initState();
+    AdService().loadRewardedAd();
+    _loadDailyRemaining();
+  }
+
+  Future<void> _loadDailyRemaining() async {
+    final remaining = await DailyLimitService.getRemaining(
+      'stt',
+      limit: AppConfig.sttDailyLimit,
+    );
+    if (mounted) setState(() => _dailyRemaining = remaining);
+  }
+
+  Future<void> _onWatchAd() async {
+    AdService().showRewardedAd(
+      onRewarded: (coins) {
+        if (!mounted) return;
+        if (coins < 0) {
+          showToast('광고가 아직 준비 중이에요. 잠시 후 다시 시도해 주세요.');
+          return;
+        }
+        context.read<UserProvider>().addCoins(coins);
+        showToast('코인 $coins개를 받았어요!');
+        _loadDailyRemaining();
+      },
+    );
+  }
+
+  Future<void> _onLogout() async {
+    final userProvider = context.read<UserProvider>();
+    try {
+      await userProvider.signOut();
+      if (!mounted) return;
+      showToast('로그아웃되었습니다.');
+    } catch (e) {
+      if (!mounted) return;
+      showToast('로그아웃 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  Future<void> _checkEmailVerification() async {
+    final userProvider = context.read<UserProvider>();
+    try {
+      await userProvider.reloadFirebaseUser();
+      final verified = await userProvider.isEmailVerified();
+      if (!mounted) return;
+      showToast(verified ? '이메일 인증이 완료되었습니다.' : '아직 이메일 인증이 완료되지 않았습니다.');
+    } catch (e) {
+      if (!mounted) return;
+      showToast('이메일 인증 상태 확인 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  Future<void> _resendVerificationEmail() async {
+    final userProvider = context.read<UserProvider>();
+    try {
+      await userProvider.sendEmailVerification();
+      if (!mounted) return;
+      showToast('이메일 인증 메일을 다시 전송했습니다.');
+    } catch (e) {
+      if (!mounted) return;
+      showToast('인증 메일 재전송 중 오류가 발생했습니다: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final t = theme; // Alias used in build
     final cs = theme.colorScheme;
     final userProvider = context.watch<UserProvider>();
     final user = userProvider.currentUser;
     final isDark = theme.brightness == Brightness.dark;
+    final isEmailVerified =
+        FirebaseAuth.instance.currentUser?.emailVerified ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionTitle('계정'),
         const SizedBox(height: 10),
+
+        // ── 계정 카드
         CardContainer(
           padding: const EdgeInsets.all(20),
           gradient: isDark
@@ -43,28 +125,15 @@ class AccountSection extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  // Premium Avatar
                   Container(
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: cs.surfaceContainerHighest,
-                      border: Border.all(
-                        color: cs.outlineVariant,
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      border: Border.all(color: cs.outlineVariant, width: 1),
                     ),
-                    child: ClipOval(
-                      child: _buildAvatar(user?.photoUrl, cs),
-                    ),
+                    child: ClipOval(child: _buildAvatar(user?.photoUrl, cs)),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -72,61 +141,48 @@ class AccountSection extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user?.displayName ?? user?.email ?? '게스트 사용자',
-                          style: t.textTheme.titleMedium?.copyWith(
+                          user?.displayName ?? user?.email ?? '-',
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             fontSize: 18,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // Status Badges
-                        FutureBuilder<bool>(
-                          future:
-                              context.read<UserProvider>().isEmailVerified(),
-                          builder: (context, snapshot) {
-                            final verified = snapshot.data ?? false;
-                            final hasEmail = user?.email != null;
-
-                            return Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                // Coin Badge
-                                _StatusBadge(
-                                  icon: Icons.monetization_on_rounded,
-                                  label: '${userProvider.coins} 코인',
-                                  color: cs.primary,
-                                  backgroundColor:
-                                      cs.primary.withValues(alpha: 0.1),
-                                ),
-                                // Verification Badge
-                                if (!hasEmail)
-                                  _StatusBadge(
-                                    icon: Icons.no_accounts_rounded,
-                                    label: '이메일 없음',
-                                    color: cs.error,
-                                    backgroundColor:
-                                        cs.error.withValues(alpha: 0.1),
-                                  )
-                                else if (verified)
-                                  _StatusBadge(
-                                    icon: Icons.verified_rounded,
-                                    label: '인증됨',
-                                    color: Colors.blue,
-                                    backgroundColor:
-                                        Colors.blue.withValues(alpha: 0.1),
-                                  )
-                                else
-                                  _StatusBadge(
-                                    icon: Icons.error_outline_rounded,
-                                    label: '미인증',
-                                    color: cs.error,
-                                    backgroundColor:
-                                        cs.error.withValues(alpha: 0.1),
-                                  ),
-                              ],
-                            );
-                          },
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _StatusBadge(
+                              icon: Icons.monetization_on_rounded,
+                              label: '${userProvider.coins} 코인',
+                              color: cs.primary,
+                              backgroundColor:
+                                  cs.primary.withValues(alpha: 0.1),
+                            ),
+                            _StatusBadge(
+                              icon: Icons.today_rounded,
+                              label: '오늘 $_dailyRemaining/${AppConfig.sttDailyLimit}',
+                              color: cs.secondary,
+                              backgroundColor:
+                                  cs.secondary.withValues(alpha: 0.1),
+                            ),
+                            if (user?.email != null && !isEmailVerified)
+                              _StatusBadge(
+                                icon: Icons.error_outline_rounded,
+                                label: '이메일 미인증',
+                                color: cs.error,
+                                backgroundColor:
+                                    cs.error.withValues(alpha: 0.1),
+                              )
+                            else if (user?.email != null)
+                              _StatusBadge(
+                                icon: Icons.verified_rounded,
+                                label: '인증됨',
+                                color: Colors.blue,
+                                backgroundColor:
+                                    Colors.blue.withValues(alpha: 0.1),
+                              ),
+                          ],
                         ),
                       ],
                     ),
@@ -136,22 +192,34 @@ class AccountSection extends StatelessWidget {
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    context.push('/auth');
-                  },
-                  style: FilledButton.styleFrom(
+                child: OutlinedButton.icon(
+                  onPressed: userProvider.isLoading ? null : _onLogout,
+                  style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: cs.error.withValues(alpha: 0.6)),
+                    foregroundColor: cs.error,
                   ),
-                  icon: const Icon(Icons.manage_accounts_rounded, size: 20),
-                  label: Text(
-                    user?.email == null ? '로그인 / 계정 만들기' : '계정 관리',
-                  ),
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: const Text('로그아웃'),
                 ),
               ),
             ],
           ),
         ),
+
+        // ── 이메일 미인증 경고
+        if (user?.email != null && !isEmailVerified) ...[
+          const SizedBox(height: 12),
+          EmailVerificationSection(
+            isLoading: userProvider.isLoading,
+            onCheckVerification: _checkEmailVerification,
+            onResendEmail: _resendVerificationEmail,
+          ),
+        ],
+
+        // ── 광고 보고 코인 받기
+        const SizedBox(height: 20),
+        _AdRewardSection(onWatchAd: _onWatchAd),
       ],
     );
   }
@@ -159,22 +227,57 @@ class AccountSection extends StatelessWidget {
   Widget _buildAvatar(String? photoUrl, ColorScheme cs) {
     if (photoUrl == null) {
       return Center(
-        child: Icon(
-          Icons.person_outline,
-          size: 30,
-          color: cs.onSurfaceVariant,
-        ),
+        child:
+            Icon(Icons.person_outline, size: 30, color: cs.onSurfaceVariant),
       );
     }
-
     return SvgPicture.network(
       photoUrl,
       fit: BoxFit.cover,
       width: 56,
       height: 56,
-      placeholderBuilder: (context) => const Center(
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
+      placeholderBuilder: (_) =>
+          const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    );
+  }
+}
+
+class _AdRewardSection extends StatelessWidget {
+  final VoidCallback onWatchAd;
+
+  const _AdRewardSection({required this.onWatchAd});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '코인 받기',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '광고를 시청하면 코인 ${AdService.rewardCoins}개를 받을 수 있어요. 코인이 있으면 하루 제한 없이 자막 생성을 사용할 수 있어요.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onWatchAd,
+            icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
+            label: Text('광고 보고 코인 ${AdService.rewardCoins}개 받기'),
+          ),
+        ),
+      ],
     );
   }
 }

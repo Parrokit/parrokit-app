@@ -128,6 +128,18 @@ class ClipEditorViewModel extends ChangeNotifier
   final durationCtl = TextEditingController();
   final tagsCtl = TextEditingController();
 
+  // 오늘 STT 잔여 횟수
+  int _dailyRemaining = AppConfig.sttDailyLimit;
+  int get dailyRemaining => _dailyRemaining;
+
+  Future<void> _refreshDailyRemaining() async {
+    _dailyRemaining = await DailyLimitService.getRemaining(
+      'stt',
+      limit: AppConfig.sttDailyLimit,
+    );
+    notifyListeners();
+  }
+
   // 저장 후 닫기 플래그
   bool _shouldClose = false;
   bool get shouldClose => _shouldClose;
@@ -186,6 +198,9 @@ class ClipEditorViewModel extends ChangeNotifier
     if (initialCollectionName != null && clipId == null) {
       collectionNameCtl.text = initialCollectionName!;
     }
+
+    // 오늘 STT 잔여 횟수 로드
+    _refreshDailyRemaining();
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -199,16 +214,6 @@ class ClipEditorViewModel extends ChangeNotifier
       return;
     }
 
-    // 하루 사용 제한 체크
-    final allowed = await DailyLimitService.consume(
-      'stt',
-      limit: AppConfig.sttDailyLimit,
-    );
-    if (!allowed) {
-      final limit = AppConfig.sttDailyLimit;
-      showToast('오늘 자막 생성은 하루 $limit회까지 가능합니다. 내일 다시 시도해 주세요.');
-      return;
-    }
     final path = picked!.path!;
 
     // Step 1: 오디오 추출 준비
@@ -223,12 +228,24 @@ class ClipEditorViewModel extends ChangeNotifier
       return;
     }
 
-    // 코인 비용 미리 계산
+    // 코인이 있으면 코인 사용, 없으면 일일 제한 체크
     final cost = _calculateCoinCost(durationMs);
-    if (cost > 0 && userProvider.coins < cost) {
-      showToast('코인이 부족합니다. (필요: $cost, 보유: ${userProvider.coins})');
-      _setSttState(SttProcessState.idle);
-      return;
+    final bool usingCoins = cost > 0 && userProvider.coins >= cost;
+
+    if (!usingCoins) {
+      final allowed = await DailyLimitService.consume(
+        'stt',
+        limit: AppConfig.sttDailyLimit,
+      );
+      if (!allowed) {
+        showToast(
+          '오늘 무료 자막 생성을 모두 사용했어요. '
+          '광고를 보고 코인을 받거나 내일 다시 시도해 주세요.',
+        );
+        _setSttState(SttProcessState.idle);
+        await _refreshDailyRemaining();
+        return;
+      }
     }
 
     try {
@@ -254,15 +271,17 @@ class ClipEditorViewModel extends ChangeNotifier
       if (result.segments.isNotEmpty) {
         // UI에 세그먼트 채우기
         _fillSegmentsFromDraft(result.segments);
-        showToast('세그먼트 ${result.segments.length}개 자동 채움');
 
-        // 코인 차감
-        if (result.coinCost > 0) {
+        // 코인 사용 모드일 때만 차감
+        if (usingCoins && result.coinCost > 0) {
           userProvider.addCoins(-result.coinCost);
           showToast('자막 생성 완료! (${result.coinCost}코인 사용)');
+        } else {
+          showToast('자막 생성 완료!');
         }
       }
 
+      await _refreshDailyRemaining();
       _setSttState(SttProcessState.done);
       // 잠시 후 idle로 복귀
       Future.delayed(const Duration(seconds: 2), () {

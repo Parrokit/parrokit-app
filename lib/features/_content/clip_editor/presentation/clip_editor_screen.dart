@@ -13,6 +13,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
@@ -97,6 +98,25 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
                   Text(
                     '${userProvider.coins}',
                     style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(width: 10),
+                  Icon(
+                    Icons.today_rounded,
+                    size: 16,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.45),
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${vm.dailyRemaining}/${AppConfig.sttDailyLimit}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.45),
+                        ),
                   ),
                 ],
               ),

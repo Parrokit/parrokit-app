@@ -43,12 +43,7 @@ class UserProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final existing = await _userRepository.getCurrentUser();
-      if (existing != null) {
-        _currentUser = existing;
-      } else {
-        _currentUser = await _userRepository.signInAsGuest();
-      }
+      _currentUser = await _userRepository.getCurrentUser();
     } finally {
       _setLoading(false);
     }

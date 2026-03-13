@@ -14,7 +14,6 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import 'package:parrokit/data/local/app_database.dart';
-import 'package:parrokit/core/repositories/user_repository.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
 import 'package:parrokit/features/_content/shorts/presentation/providers/ad_provider.dart';
@@ -32,7 +31,7 @@ List<SingleChildWidget> buildProviders({
   required ThemeProvider themeProvider,
   required IapProvider iapProvider,
   required AdProvider adProvider,
-  required UserRepository userRepository,
+  required UserProvider userProvider,
 }) {
   return [
     // ─────────────────────────────────────────────────────────────────
@@ -53,9 +52,7 @@ List<SingleChildWidget> buildProviders({
     // ─────────────────────────────────────────────────────────────────
     // 사용자 관련
     // ─────────────────────────────────────────────────────────────────
-    ChangeNotifierProvider(
-      create: (_) => UserProvider(userRepository)..init(),
-    ),
+    ChangeNotifierProvider<UserProvider>.value(value: userProvider),
 
     // ─────────────────────────────────────────────────────────────────
     // 기능별 Provider들

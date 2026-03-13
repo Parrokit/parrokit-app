@@ -32,6 +32,7 @@ import 'package:parrokit/core/services/ad_service.dart';
 import 'package:parrokit/core/utils/audio_bg.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/_content/shorts/presentation/providers/ad_provider.dart';
 import 'package:parrokit/features/_content/shorts/data/shorts_ad_repository.dart';
 
@@ -73,25 +74,27 @@ Future<void> bootstrap() async {
   await themeProvider.loadTheme();
 
   // ─────────────────────────────────────────────────────────────────
-  // 라우터 설정
-  // ─────────────────────────────────────────────────────────────────
-  final seenIntro = await IntroPrefs.hasSeen();
-  final router = buildAppRouter(seenIntro: seenIntro);
-
-  // ─────────────────────────────────────────────────────────────────
-  // 광고 SDK 초기화
-  // ─────────────────────────────────────────────────────────────────
-  await MobileAds.instance.initialize();
-  AdService().loadAd();
-
-  // ─────────────────────────────────────────────────────────────────
-  // 인증 서비스 설정
+  // 인증 서비스 설정 (라우터보다 먼저 — refreshListenable에 필요)
   // ─────────────────────────────────────────────────────────────────
   final prefs = await SharedPreferences.getInstance();
   final userPrefs = UserPrefs(prefs);
   final authService = FirebaseAuthService();
   final userService = FirebaseUserService();
   final userRepository = UserRepository(userPrefs, authService, userService);
+  final userProvider = UserProvider(userRepository);
+  await userProvider.init();
+
+  // ─────────────────────────────────────────────────────────────────
+  // 라우터 설정
+  // ─────────────────────────────────────────────────────────────────
+  final seenIntro = await IntroPrefs.hasSeen();
+  final router = buildAppRouter(seenIntro: seenIntro, userProvider: userProvider);
+
+  // ─────────────────────────────────────────────────────────────────
+  // 광고 SDK 초기화
+  // ─────────────────────────────────────────────────────────────────
+  await MobileAds.instance.initialize();
+  AdService().loadAd();
 
   // ─────────────────────────────────────────────────────────────────
   // IAP 및 광고 Provider
@@ -113,7 +116,7 @@ Future<void> bootstrap() async {
         themeProvider: themeProvider,
         iapProvider: iapProvider,
         adProvider: adProvider,
-        userRepository: userRepository,
+        userProvider: userProvider,
       ),
       child: App(router: router),
     ),

@@ -12,6 +12,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 
 // Features - Screens
 import 'package:parrokit/features/_entry/intro/presentation/intro_screen.dart';
@@ -41,12 +43,16 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 /// GoRouter 빌더.
 ///
 /// [seenIntro]: 인트로를 봤는지 여부에 따라 초기 경로 결정.
-GoRouter buildAppRouter({required bool seenIntro}) {
+GoRouter buildAppRouter({
+  required bool seenIntro,
+  required UserProvider userProvider,
+}) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
     initialLocation: seenIntro ? AppRoutes.dashboardPath : AppRoutes.introPath,
     redirect: _handleRedirect,
+    refreshListenable: userProvider,
     routes: [
       // ─────────────────────────────────────────────────────────────────
       // 단독 라우트 (쉘 외부)
@@ -98,6 +104,19 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
       return AppRoutes.paymentFailPath;
     }
 
+    return AppRoutes.dashboardPath;
+  }
+
+  // 2) Auth guard
+  final user = Provider.of<UserProvider>(context, listen: false);
+  final isOnAuth = loc.startsWith(AppRoutes.authPath);
+  final isOnIntro = loc.startsWith(AppRoutes.introPath);
+
+  if (!user.isLoggedIn && !isOnAuth && !isOnIntro) {
+    return AppRoutes.authPath;
+  }
+
+  if (user.isLoggedIn && isOnAuth) {
     return AppRoutes.dashboardPath;
   }
 
