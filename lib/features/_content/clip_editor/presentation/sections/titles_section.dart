@@ -11,8 +11,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../../data/editor_strings.dart';
-import '../widgets/section_title.dart';
+import '../../data/constants/editor_strings.dart';
 import '../widgets/labeled_text_field.dart';
 import '../clip_editor_view_model.dart';
 
@@ -24,20 +23,12 @@ class TitlesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionTitle(EditorStrings.titlesSectionTitle),
-        const SizedBox(height: 10),
-        LabeledTextField(
-          label: EditorStrings.clipTitleLabel,
-          hint: EditorStrings.clipTitleHint,
-          controller: vm.titleCtl,
-          helper: EditorStrings.clipTitleHelper,
-          prefixIcon: Icons.title,
-          clearable: true,
-        ),
-      ],
+    return LabeledTextField(
+      label: EditorStrings.clipTitleLabel,
+      hint: EditorStrings.clipTitleHint,
+      controller: vm.titleCtl,
+      prefixIcon: Icons.title,
+      clearable: true,
     );
   }
 }

@@ -52,7 +52,7 @@ Future<void> bootstrap() async {
   );
 
   // ─────────────────────────────────────────────────────────────────
-  // Crashlytics: Flutter 에러 및 비동기 에러 자동 수집
+  // Crashlytics - Flutter 에러 및 비동기 에러 자동 수집
   // ─────────────────────────────────────────────────────────────────
   if (kReleaseMode) {
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;

@@ -12,11 +12,10 @@
 
 import 'package:flutter/material.dart';
 
-import '../../data/editor_strings.dart';
+import '../../data/constants/editor_strings.dart';
 import '../../domain/editor_state.dart';
-import '../widgets/section_title.dart';
 import '../widgets/stt_progress_card.dart';
-import '../widgets/cards/segment_card.dart';
+import '../widgets/segment_card.dart';
 import '../clip_editor_view_model.dart';
 
 /// 자막 세그먼트 섹션.
@@ -30,8 +29,6 @@ class SegmentsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle(EditorStrings.segmentsSectionTitle),
-        const SizedBox(height: 10),
         Text(EditorStrings.segmentsNotice),
         const SizedBox(height: 5),
 

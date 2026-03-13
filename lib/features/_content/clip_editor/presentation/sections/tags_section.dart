@@ -12,8 +12,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../../data/editor_strings.dart';
-import '../widgets/section_title.dart';
+import '../../data/constants/editor_strings.dart';
 import '../widgets/labeled_text_field.dart';
 import '../clip_editor_view_model.dart';
 
@@ -25,17 +24,13 @@ class TagsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle(EditorStrings.tagsSectionTitle),
-        const SizedBox(height: 10),
         LabeledTextField(
           label: EditorStrings.tagsLabel,
           hint: EditorStrings.tagsHint,
           controller: vm.tagsCtl,
-          helper: EditorStrings.tagsHelper,
           prefixIcon: Icons.tag_outlined,
           clearable: true,
         ),
@@ -53,15 +48,7 @@ class TagsSection extends StatelessWidget {
               },
             ),
             const SizedBox(width: 8),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                side: BorderSide(
-                  width: 1,
-                  color: t.colorScheme.onSurface.withValues(alpha: 0.38),
-                ),
-                backgroundColor: t.colorScheme.surface,
-                foregroundColor: t.colorScheme.primary,
-              ),
+            OutlinedButton(
               onPressed: () {
                 for (final tag in List<String>.from(vm.tags)) {
                   vm.removeTag(tag);
@@ -71,18 +58,20 @@ class TagsSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: -8,
-          children: vm.tags
-              .map((tag) => Chip(
-                    label: Text(tag),
-                    deleteIcon: const Icon(Icons.close_rounded, size: 18),
-                    onDeleted: () => vm.removeTag(tag),
-                  ))
-              .toList(),
-        ),
+        if (vm.tags.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: -8,
+            children: vm.tags
+                .map((tag) => Chip(
+                      label: Text(tag),
+                      deleteIcon: const Icon(Icons.close_rounded, size: 18),
+                      onDeleted: () => vm.removeTag(tag),
+                    ))
+                .toList(),
+          ),
+        ],
       ],
     );
   }

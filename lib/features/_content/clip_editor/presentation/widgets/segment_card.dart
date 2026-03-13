@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/editor_strings.dart';
-import '../time_triplet_field.dart';
-import '../card_container.dart';
-import '../labeled_text_field.dart';
+import '../../data/constants/editor_strings.dart';
+import 'time_triplet_field.dart';
+import 'card_container.dart';
+import 'labeled_text_field.dart';
 
 class SegmentCard extends StatelessWidget {
   const SegmentCard({
@@ -52,7 +52,6 @@ class SegmentCard extends StatelessWidget {
                 label: EditorStrings.pronLabel,
                 hint: EditorStrings.pronHint,
                 controller: pronCtl,
-                helper: EditorStrings.pronHelper,
                 prefixIcon: Icons.record_voice_over_outlined,
                 clearable: true,
               ),
@@ -61,7 +60,6 @@ class SegmentCard extends StatelessWidget {
                 label: EditorStrings.originalLabel,
                 hint: EditorStrings.originalHint,
                 controller: originalCtl,
-                helper: EditorStrings.originalHelper,
                 prefixIcon: Icons.translate,
                 clearable: true,
               ),
@@ -70,7 +68,6 @@ class SegmentCard extends StatelessWidget {
                 label: EditorStrings.koLabel,
                 hint: EditorStrings.koHint,
                 controller: koCtl,
-                helper: EditorStrings.koHelper,
                 prefixIcon: Icons.subtitles_outlined,
                 clearable: true,
               ),

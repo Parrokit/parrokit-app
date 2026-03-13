@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../card_container.dart';
+import 'card_container.dart';
 
 class InputCard extends StatelessWidget {
   const InputCard({super.key, required this.children});
