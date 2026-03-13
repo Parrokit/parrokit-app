@@ -35,6 +35,7 @@ class DailyLimitService {
 
   /// 오늘 [feature] 기능의 남은 횟수를 반환합니다.
   static Future<int> getRemaining(String feature, {required int limit}) async {
+    // reset(feature);
     final used = await getUsed(feature);
     return (limit - used).clamp(0, limit);
   }
@@ -58,6 +59,32 @@ class DailyLimitService {
     if (count >= limit) return false;
 
     await prefs.setInt(_countKey(feature), count + 1);
+    return true;
+  }
+
+  /// [n]회를 한 번에 소비합니다.
+  /// 소비 후 합계가 [limit]을 초과하지 않으면 true, 초과하면 false를 반환합니다.
+  static Future<bool> consumeN(
+    String feature, {
+    required int n,
+    required int limit,
+  }) async {
+    if (n <= 0) return true;
+    final prefs = await SharedPreferences.getInstance();
+    final today = _todayString();
+    final storedDate = prefs.getString(_dateKey(feature)) ?? '';
+
+    int count;
+    if (storedDate != today) {
+      count = 0;
+      await prefs.setString(_dateKey(feature), today);
+    } else {
+      count = prefs.getInt(_countKey(feature)) ?? 0;
+    }
+
+    if (count + n > limit) return false;
+
+    await prefs.setInt(_countKey(feature), count + n);
     return true;
   }
 

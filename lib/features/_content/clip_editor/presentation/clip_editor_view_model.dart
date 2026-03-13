@@ -235,18 +235,21 @@ class ClipEditorViewModel extends ChangeNotifier
       return;
     }
 
-    // 코인이 있으면 코인 사용, 없으면 일일 제한 체크
+    // 코인 + 데일리 합산 처리
+    // 1) 코인을 먼저 쓰고, 부족한 나머지는 데일리 충전량에서 차감
     final cost = _calculateCoinCost(durationMs);
-    final bool usingCoins = cost > 0 && userProvider.coins >= cost;
+    final int coinsToUse = userProvider.coins.clamp(0, cost);
+    final int dailyNeeded = cost - coinsToUse;
 
-    if (!usingCoins) {
-      final allowed = await DailyLimitService.consume(
+    if (dailyNeeded > 0) {
+      final consumed = await DailyLimitService.consumeN(
         'stt',
+        n: dailyNeeded,
         limit: AppConfig.sttDailyLimit,
       );
-      if (!allowed) {
+      if (!consumed) {
         showToast(
-          '오늘 무료 자막 생성을 모두 사용했어요. '
+          '코인과 무료 충전량을 합쳐도 부족합니다. '
           '광고를 보고 코인을 받거나 내일 다시 시도해 주세요.',
         );
         _setSttState(SttProcessState.idle);
@@ -279,10 +282,10 @@ class ClipEditorViewModel extends ChangeNotifier
         // UI에 세그먼트 채우기
         _fillSegmentsFromDraft(result.segments);
 
-        // 코인 사용 모드일 때만 차감
-        if (usingCoins && result.coinCost > 0) {
-          userProvider.addCoins(-result.coinCost);
-          showToast('자막 생성 완료! (${result.coinCost}코인 사용)');
+        // 코인 차감 (STT 성공 후에만)
+        if (coinsToUse > 0) {
+          userProvider.addCoins(-coinsToUse);
+          showToast('자막 생성 완료! ($coinsToUse코인 사용)');
         } else {
           showToast('자막 생성 완료!');
         }
