@@ -94,7 +94,6 @@ class CollectionsSection extends StatelessWidget {
               return CollectionCard(
                 titleId: id,
                 nameKo: name,
-                nameJa: null,
                 clipCount: clipCount,
                 cardBg: cardBg,
                 subtle: subtle,

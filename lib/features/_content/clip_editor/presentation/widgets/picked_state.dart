@@ -196,12 +196,18 @@ class PickedState extends StatelessWidget {
                 ],
                 child: SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                  child: TextButton.icon(
+                    icon: Icon(
+                      Icons.swap_horiz_rounded,
+                      size: 18,
+                      color: cs.onSurfaceVariant,
+                    ),
                     label: Text(
                       '다시 선택',
-                      style:
-                          tt.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+                      style: tt.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                     onPressed: null,
                   ),

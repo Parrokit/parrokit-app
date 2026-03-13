@@ -93,6 +93,14 @@ class MediaProvider extends ChangeNotifier
     notifyListeners();
   }
 
+  /// 컬렉션 내 클립 수 조회.
+  Future<int> countClipsInCollection(int collectionId) async {
+    final rows = await (db.select(db.clips)
+          ..where((c) => c.collectionId.equals(collectionId)))
+        .get();
+    return rows.length;
+  }
+
   /// 새 컬렉션 생성 후 목록 갱신.
   Future<void> createCollection(String name) async {
     await db.collectionsDao.findOrCreate(name);

@@ -121,10 +121,7 @@ class _SegmentsSectionState extends State<SegmentsSection> {
           const SizedBox(height: 12),
         ],
 
-        const SizedBox(height: 8),
         if (total > 0) ...[
-          const SizedBox(height: 14),
-
           // 페이지 인디케이터 + 삭제 버튼
           Row(
             children: [

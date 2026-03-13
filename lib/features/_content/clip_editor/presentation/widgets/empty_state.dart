@@ -36,7 +36,7 @@ class EmptyState extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
+              child: TextButton.icon(
                 icon: const Icon(Icons.file_open_rounded, size: 18),
                 label: Text('파일 선택',
                     style:
@@ -46,7 +46,7 @@ class EmptyState extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: OutlinedButton.icon(
+              child: TextButton.icon(
                 icon: const Icon(Icons.photo_library_rounded, size: 18),
                 label: Text('사진에서 선택',
                     style:

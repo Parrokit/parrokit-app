@@ -16,11 +16,17 @@ class EditorStrings {
 
   // 컬렉션 섹션
   static const collectionLabel = '컬렉션 *';
-  static const collectionHint = '예: 스파이 패밀리, 공부용';
+  static const collectionHint = '폴더명을 입력해주세요.';
 
-  // 제목 섹션 
+  // 클립 제목 섹션
   static const clipTitleLabel = '클립 제목 *';
-  static const clipTitleHint = '예: 아냐 땅콩 먹방';
+  static const clipTitleHint = '클립 제목을 입력해주세요.';
+
+  // 태그 섹션
+  static const addTagButtonLabel = '태그 추가';
+  static const tagsLabel = '태그';
+  static const tagsHint = '태그를 입력해주세요.';
+  static const clearAllTagsButtonLabel = '모두 지우기';
 
   // 세그먼트 섹션
   static const segmentsSectionTitle = '자막 정보';
@@ -32,15 +38,9 @@ class EditorStrings {
   // 세그먼트 카드
   static String segmentCardTitle(int index) => '구간 #$index';
   static const pronLabel = '발음';
-  static const pronHint = '예: bonjour, 봉주르';
+  static const pronHint = '발음을 입력해주세요.';
   static const originalLabel = '원문';
-  static const originalHint = '예: merci, gracias, 谢谢';
+  static const originalHint = '원문을 입력해주세요.';
   static const koLabel = '해석';
-  static const koHint = '예: 고마워, 감사합니다';
-
-  // 태그 섹션
-  static const addTagButtonLabel = '태그 추가';
-  static const tagsLabel = '태그';
-  static const tagsHint = '예: 먹방, 웃김, 감동';
-  static const clearAllTagsButtonLabel = '모두 지우기';
+  static const koHint = '해석을 입력해주세요.';
 }

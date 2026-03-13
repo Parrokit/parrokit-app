@@ -47,6 +47,23 @@ mixin MediaActionMixin on ChangeNotifier {
     return true;
   }
 
+  Future<bool> deleteCollectionById(int collectionId) async {
+    final clipsInCol = await (db.select(db.clips)
+          ..where((c) => c.collectionId.equals(collectionId)))
+        .get();
+
+    for (final clip in clipsInCol) {
+      await service.deleteClipById(clip.id);
+    }
+
+    await (db.delete(db.collections)
+          ..where((c) => c.id.equals(collectionId)))
+        .go();
+
+    await loadCollections();
+    return true;
+  }
+
   Future<void> addMedia({
     required String? collectionName,
     required String clipTitle,

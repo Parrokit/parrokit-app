@@ -37,7 +37,7 @@ class TagsSection extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            FilledButton.icon(
+            TextButton.icon(
               icon: const Icon(Icons.add_rounded, size: 18),
               label: Text(EditorStrings.addTagButtonLabel),
               onPressed: () {
@@ -48,13 +48,14 @@ class TagsSection extends StatelessWidget {
               },
             ),
             const SizedBox(width: 8),
-            OutlinedButton(
+            TextButton.icon(
+              icon: const Icon(Icons.delete_rounded, size: 18),
+              label: Text(EditorStrings.clearAllTagsButtonLabel),
               onPressed: () {
                 for (final tag in List<String>.from(vm.tags)) {
                   vm.removeTag(tag);
                 }
               },
-              child: Text(EditorStrings.clearAllTagsButtonLabel),
             ),
           ],
         ),

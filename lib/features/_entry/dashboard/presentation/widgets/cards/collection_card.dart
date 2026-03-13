@@ -19,7 +19,6 @@ import 'package:parrokit/core/theme/app_radius.dart';
 class CollectionCard extends StatelessWidget {
   final int titleId;
   final String nameKo;
-  final String? nameJa;
   final int clipCount;
   final Color cardBg;
   final Color subtle;
@@ -31,7 +30,6 @@ class CollectionCard extends StatelessWidget {
     super.key,
     required this.titleId,
     required this.nameKo,
-    required this.nameJa,
     required this.clipCount,
     required this.cardBg,
     required this.subtle,
@@ -65,16 +63,6 @@ class CollectionCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: textPrimary,
-                      ),
-                ),
-                const SizedBox(height: 4),
-
-                // 일본어 이름
-                Text(
-                  nameJa ?? '-',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: textSecondary,
                       ),
                 ),
                 const Spacer(),

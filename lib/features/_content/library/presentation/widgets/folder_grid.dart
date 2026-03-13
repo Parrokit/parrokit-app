@@ -8,11 +8,13 @@ class FolderGrid extends StatelessWidget {
     required this.sectionTitle,
     required this.items,
     required this.onTap,
+    this.deleteMode = false,
   });
 
   final String sectionTitle;
   final List<String> items;
   final ValueChanged<int> onTap;
+  final bool deleteMode;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +43,7 @@ class FolderGrid extends StatelessWidget {
               (ctx, i) => FolderCard(
                 name: items[i],
                 onTap: () => onTap(i),
+                deleteMode: deleteMode,
               ),
               childCount: items.length,
             ),
