@@ -13,8 +13,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/services/daily_limit_service.dart';
 import 'package:parrokit/data/local/dao/titles_dao.dart';
 import 'package:parrokit/core/utils/show_toast.dart' as utils;
 
@@ -301,6 +303,17 @@ class ClipEditorViewModel extends ChangeNotifier
   Future<void> onSttAndDraft() async {
     if (picked == null || (picked!.path ?? '').isEmpty) {
       showToast('먼저 영상 파일을 선택해 주세요.');
+      return;
+    }
+
+    // 하루 사용 제한 체크
+    final allowed = await DailyLimitService.consume(
+      'stt',
+      limit: AppConfig.sttDailyLimit,
+    );
+    if (!allowed) {
+      final limit = AppConfig.sttDailyLimit;
+      showToast('오늘 자막 생성은 하루 $limit회까지 가능합니다. 내일 다시 시도해 주세요.');
       return;
     }
     final path = picked!.path!;

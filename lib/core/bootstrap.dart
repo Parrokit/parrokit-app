@@ -10,13 +10,16 @@
 // Core Layer
 // ============================================================================
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:parrokit/core/config/firebase_options.dart';
 import 'package:parrokit/data/local/prefs/intro_prefs.dart';
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
@@ -42,35 +45,47 @@ Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ─────────────────────────────────────────────────────────────────
-  // 1. 외부 서비스 초기화
+  // 외부 서비스 초기화
   // ─────────────────────────────────────────────────────────────────
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // ─────────────────────────────────────────────────────────────────
+  // Crashlytics: Flutter 에러 및 비동기 에러 자동 수집
+  // ─────────────────────────────────────────────────────────────────
+  if (kReleaseMode) {
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
+
   await dotenv.load(fileName: ".env");
   await BgAudio.instance.ensureAudioHandler();
 
   // ─────────────────────────────────────────────────────────────────
-  // 2. 앱 설정 로드
+  // 앱 설정 로드
   // ─────────────────────────────────────────────────────────────────
   await AppConfig.loadFromPrefs();
   final themeProvider = ThemeProvider();
   await themeProvider.loadTheme();
 
   // ─────────────────────────────────────────────────────────────────
-  // 3. 라우터 설정
+  // 라우터 설정
   // ─────────────────────────────────────────────────────────────────
   final seenIntro = await IntroPrefs.hasSeen();
   final router = buildAppRouter(seenIntro: seenIntro);
 
   // ─────────────────────────────────────────────────────────────────
-  // 4. 광고 SDK 초기화
+  // 광고 SDK 초기화
   // ─────────────────────────────────────────────────────────────────
   await MobileAds.instance.initialize();
   AdService().loadAd();
 
   // ─────────────────────────────────────────────────────────────────
-  // 5. 인증 서비스 설정
+  // 인증 서비스 설정
   // ─────────────────────────────────────────────────────────────────
   final prefs = await SharedPreferences.getInstance();
   final userPrefs = UserPrefs(prefs);
@@ -79,7 +94,7 @@ Future<void> bootstrap() async {
   final userRepository = UserRepository(userPrefs, authService, userService);
 
   // ─────────────────────────────────────────────────────────────────
-  // 6. IAP 및 광고 Provider
+  // IAP 및 광고 Provider
   // ─────────────────────────────────────────────────────────────────
   final iapProvider = IapProvider();
   await iapProvider.init();
@@ -90,7 +105,7 @@ Future<void> bootstrap() async {
   );
 
   // ─────────────────────────────────────────────────────────────────
-  // 7. 앱 실행
+  // 앱 실행
   // ─────────────────────────────────────────────────────────────────
   runApp(
     MultiProvider(
