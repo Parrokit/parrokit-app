@@ -181,16 +181,11 @@ class _AccountSectionState extends State<AccountSection> {
                 ],
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.tonalIcon(
                   onPressed: userProvider.isLoading ? null : _onLogout,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: BorderSide(color: cs.error.withValues(alpha: 0.6)),
-                    foregroundColor: cs.error,
-                  ),
-                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  icon: const Icon(Icons.logout_rounded, size: 16),
                   label: const Text('로그아웃'),
                 ),
               ),

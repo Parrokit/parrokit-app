@@ -200,7 +200,7 @@ class UserProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       await _userRepository.signOut();
-      unawaited(Purchases.logOut());
+      () async { try { await Purchases.logOut(); } catch (_) {} }();
       _currentUser = null;
       notifyListeners();
     } finally {

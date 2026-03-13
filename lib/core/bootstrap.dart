@@ -10,6 +10,7 @@
 // Core Layer
 // ============================================================================
 
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -19,7 +20,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
 import 'package:parrokit/core/config/firebase_options.dart';
 import 'package:parrokit/data/local/prefs/intro_prefs.dart';
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
@@ -89,7 +90,8 @@ Future<void> bootstrap() async {
   // 라우터 설정
   // ─────────────────────────────────────────────────────────────────
   final seenIntro = await IntroPrefs.hasSeen();
-  final router = buildAppRouter(seenIntro: seenIntro, userProvider: userProvider);
+  final router =
+      buildAppRouter(seenIntro: seenIntro, userProvider: userProvider);
 
   // ─────────────────────────────────────────────────────────────────
   // 광고 SDK 초기화
@@ -100,11 +102,31 @@ Future<void> bootstrap() async {
   // ─────────────────────────────────────────────────────────────────
   // RevenueCat 초기화
   // ─────────────────────────────────────────────────────────────────
-  await Purchases.configure(
-    PurchasesConfiguration(dotenv.env['REVENUECAT_API_KEY']!),
-  );
-  if (userProvider.isLoggedIn && userProvider.currentUser != null) {
-    await Purchases.logIn(userProvider.currentUser!.id);
+
+  // 예시 코드
+  if (kDebugMode) {
+    await Purchases.configure(
+      PurchasesConfiguration(dotenv.env['REVENUECAT_TEST_API_KEY']!),
+    );
+    if (userProvider.isLoggedIn && userProvider.currentUser != null) {
+      await Purchases.logIn(userProvider.currentUser!.id);
+    }
+  } else {
+    if (Platform.isAndroid) {
+      await Purchases.configure(
+        PurchasesConfiguration(dotenv.env['REVENUECAT_ANDROID_API_KEY']!),
+      );
+      if (userProvider.isLoggedIn && userProvider.currentUser != null) {
+        await Purchases.logIn(userProvider.currentUser!.id);
+      }
+    } else if (Platform.isIOS) {
+      await Purchases.configure(
+        PurchasesConfiguration(dotenv.env['REVENUECAT_APPLE_API_KEY']!),
+      );
+      if (userProvider.isLoggedIn && userProvider.currentUser != null) {
+        await Purchases.logIn(userProvider.currentUser!.id);
+      }
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────
