@@ -58,7 +58,6 @@ class LibraryFolderSection extends StatelessWidget {
         ],
       ),
     );
-    ctl.dispose();
   }
 
   @override
