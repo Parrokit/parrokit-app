@@ -16,23 +16,14 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final subtle = cs.onSurface.withValues(alpha: 0.6);
-    final borderColor = cs.outlineVariant;
 
     return Column(
       children: [
         AspectRatio(
           aspectRatio: 16 / 9,
-          child: Container(
-            decoration: BoxDecoration(
-              color: cs.onSurface.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderColor, width: 0.8),
-            ),
-            child: Center(
-              child: Icon(Icons.video_file_rounded,
-                  size: 56, color: cs.onSurface.withValues(alpha: 0.35)),
-            ),
+          child: Center(
+            child: Icon(Icons.video_file_rounded,
+                size: 56, color: cs.onSurfaceVariant),
           ),
         ),
         const SizedBox(height: 12),
@@ -40,7 +31,7 @@ class EmptyState extends StatelessWidget {
             style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
         Text('파일을 선택한 후, 미리보기와 관련 정보를 이어서 입력해 주세요.',
-            style: tt.bodySmall?.copyWith(color: subtle)),
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         const SizedBox(height: 14),
         Row(
           children: [
