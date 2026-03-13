@@ -32,7 +32,7 @@ class FolderGrid extends StatelessWidget {
         ),
         if (items.isEmpty)
           const SliverFillRemaining(
-            child: Center(child: Text('아직 등록된 클립이 없어요.')),
+            child: Center(child: Text('아직 등록된 컬렉션이 없어요.')),
           )
         else
         SliverPadding(

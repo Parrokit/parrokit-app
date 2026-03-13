@@ -130,7 +130,7 @@ class _SegmentsSectionState extends State<SegmentsSection> {
                 '구간 ${_currentPage + 1} / $total',
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
-              const Spacer(),
+              Spacer(),
               TextButton.icon(
                 icon: vm.isSttProcessing
                     ? const SizedBox(
@@ -145,14 +145,13 @@ class _SegmentsSectionState extends State<SegmentsSection> {
                 label: Text(vm.isSttProcessing
                     ? _sttStatusText(vm.sttState)
                     : EditorStrings.sttButtonLabel),
-                onPressed: vm.isSttProcessing ? null : vm.onSttAndDraft,
+                onPressed: vm.isSttProcessing ? null : () => vm.onSttAndDraft(context),
               ),
               TextButton.icon(
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text(EditorStrings.addSegmentButtonLabel),
                 onPressed: vm.isSttProcessing ? null : _addAndJump,
               ),
-              
               const SizedBox(width: 4),
               TextButton.icon(
                 icon: Icon(

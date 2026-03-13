@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'widgets/stt_confirm_dialog.dart';
 
 import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
@@ -122,7 +123,7 @@ class ClipEditorViewModel extends ChangeNotifier
   bool get isEdit => _mode is EditMode;
 
   // TextEditingControllers (View에서 직접 사용)
-  final titleCtl = TextEditingController();         // 클립 제목
+  final titleCtl = TextEditingController(); // 클립 제목
   final collectionNameCtl = TextEditingController(); // 컬렉션 이름 (선택)
   @override
   final durationCtl = TextEditingController();
@@ -208,7 +209,13 @@ class ClipEditorViewModel extends ChangeNotifier
   // ─────────────────────────────────────────────────────────────────
 
   /// 선택된 비디오 파일에 대해 STT를 수행하고 초안을 생성합니다.
-  Future<void> onSttAndDraft() async {
+  Future<void> onSttAndDraft(BuildContext context) async {
+    if (!context.mounted) return;
+    final confirmed = await showSttConfirmDialog(context);
+    if (!confirmed) {
+      _setSttState(SttProcessState.idle);
+      return;
+    }
     if (picked == null || (picked!.path ?? '').isEmpty) {
       showToast('먼저 영상 파일을 선택해 주세요.');
       return;
