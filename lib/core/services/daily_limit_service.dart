@@ -4,7 +4,8 @@
 //
 // [역할]
 // 기능별 하루 사용 횟수 제한 추적.
-// SharedPreferences에 날짜+카운트를 저장하고, 자정마다 자동 초기화.
+// Firestore users/{uid} 문서의 dailyLimits 맵 필드에 저장.
+// 구조: dailyLimits: { stt: { date: "2026-03-14", count: 3 } }
 //
 // [사용법]
 // final ok = await DailyLimitService.consume('stt', limit: 3);
@@ -14,28 +15,34 @@
 // Core Layer > Services
 // ============================================================================
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DailyLimitService {
-  static String _dateKey(String feature) => 'daily_${feature}_date';
-  static String _countKey(String feature) => 'daily_${feature}_count';
-
   static String _todayString() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
+  static DocumentReference<Map<String, dynamic>>? _userRef() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    return FirebaseFirestore.instance.collection('users').doc(uid);
+  }
+
   /// 오늘 [feature] 기능을 사용한 횟수를 반환합니다.
   static Future<int> getUsed(String feature) async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedDate = prefs.getString(_dateKey(feature)) ?? '';
-    if (storedDate != _todayString()) return 0;
-    return prefs.getInt(_countKey(feature)) ?? 0;
+    final ref = _userRef();
+    if (ref == null) return 0;
+    final snap = await ref.get();
+    if (!snap.exists) return 0;
+    final entry = (snap.data()!['dailyLimits'] as Map<String, dynamic>?)?[feature] as Map<String, dynamic>?;
+    if (entry == null || entry['date'] != _todayString()) return 0;
+    return (entry['count'] as int? ?? 0);
   }
 
   /// 오늘 [feature] 기능의 남은 횟수를 반환합니다.
   static Future<int> getRemaining(String feature, {required int limit}) async {
-    // reset(feature);
     final used = await getUsed(feature);
     return (limit - used).clamp(0, limit);
   }
@@ -43,23 +50,7 @@ class DailyLimitService {
   /// 사용 가능하면 카운트를 1 증가시키고 true를 반환합니다.
   /// 이미 [limit]에 도달했으면 false를 반환합니다.
   static Future<bool> consume(String feature, {required int limit}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = _todayString();
-    final storedDate = prefs.getString(_dateKey(feature)) ?? '';
-
-    int count;
-    if (storedDate != today) {
-      // 날짜가 바뀌었으면 초기화
-      count = 0;
-      await prefs.setString(_dateKey(feature), today);
-    } else {
-      count = prefs.getInt(_countKey(feature)) ?? 0;
-    }
-
-    if (count >= limit) return false;
-
-    await prefs.setInt(_countKey(feature), count + 1);
-    return true;
+    return consumeN(feature, n: 1, limit: limit);
   }
 
   /// [n]회를 한 번에 소비합니다.
@@ -70,28 +61,33 @@ class DailyLimitService {
     required int limit,
   }) async {
     if (n <= 0) return true;
-    final prefs = await SharedPreferences.getInstance();
+    final ref = _userRef();
+    if (ref == null) return false;
     final today = _todayString();
-    final storedDate = prefs.getString(_dateKey(feature)) ?? '';
 
-    int count;
-    if (storedDate != today) {
-      count = 0;
-      await prefs.setString(_dateKey(feature), today);
-    } else {
-      count = prefs.getInt(_countKey(feature)) ?? 0;
-    }
-
-    if (count + n > limit) return false;
-
-    await prefs.setInt(_countKey(feature), count + n);
-    return true;
+    return FirebaseFirestore.instance.runTransaction<bool>((tx) async {
+      final snap = await tx.get(ref);
+      int count = 0;
+      if (snap.exists) {
+        final entry = (snap.data()!['dailyLimits'] as Map<String, dynamic>?)?[feature] as Map<String, dynamic>?;
+        if (entry != null && entry['date'] == today) {
+          count = entry['count'] as int? ?? 0;
+        }
+      }
+      if (count + n > limit) return false;
+      tx.update(ref, {
+        'dailyLimits.$feature': {'date': today, 'count': count + n},
+      });
+      return true;
+    });
   }
 
   /// 테스트/디버그용: 특정 기능의 오늘 사용량을 초기화합니다.
   static Future<void> reset(String feature) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_dateKey(feature));
-    await prefs.remove(_countKey(feature));
+    final ref = _userRef();
+    if (ref == null) return;
+    await ref.update({
+      'dailyLimits.$feature': FieldValue.delete(),
+    });
   }
 }
