@@ -112,6 +112,10 @@ class ClipListView extends StatelessWidget {
         // ✅ 로딩 시엔 스켈레톤만
         if (loading)
           const _SkeletonSliver()
+        else if (items.isEmpty)
+          const SliverFillRemaining(
+            child: Center(child: Text('아직 등록된 클립이 없어요.')),
+          )
         else
           // ✅ 데이터일 때만 리스트 렌더
           SliverList.separated(

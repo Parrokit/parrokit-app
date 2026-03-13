@@ -50,7 +50,7 @@ GoRouter buildAppRouter({
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
-    initialLocation: seenIntro ? AppRoutes.dashboardPath : AppRoutes.introPath,
+    initialLocation: AppRoutes.dashboardPath,
     redirect: _handleRedirect,
     refreshListenable: userProvider,
     routes: [

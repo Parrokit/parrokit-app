@@ -33,16 +33,16 @@ class InfoSection extends StatelessWidget {
               NavTile(
                 icon: Icons.info_outline,
                 title: '앱 정보',
-                subtitle: '버전 1.0.0',
+                subtitle: '버전 1.0.1',
                 onTap: () {},
                 showArrow: false,
               ),
-              const HairlineDivider(),
-              NavTile(
-                icon: Icons.help_outline,
-                title: '도움말',
-                onTap: () => context.go(AppRoutes.introPath),
-              ),
+              // const HairlineDivider(),
+              // NavTile(
+              //   icon: Icons.help_outline,
+              //   title: '도움말',
+              //   onTap: () => context.go(AppRoutes.introPath),
+              // ),
               const HairlineDivider(),
               NavTile(
                 icon: Icons.privacy_tip_outlined,

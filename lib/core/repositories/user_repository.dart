@@ -162,7 +162,9 @@ class UserRepository {
 
   /// 현재 로그인된 Firebase 유저에게 이메일 인증 메일을 다시 보냅니다.
   Future<void> sendEmailVerification() async {
+    await _authService.reloadCurrentUser();
     final fbUser = _authService.currentUser;
+
     if (fbUser != null && !fbUser.emailVerified) {
       await fbUser.sendEmailVerification();
     }
@@ -205,28 +207,6 @@ class UserRepository {
     return user;
   }
 
-  /// 게스트 유저로 로그인합니다.
-  /// - 이미 로컬에 유저가 있으면 그대로 반환.
-  /// - 없으면 새 guest 유저를 만들고 저장한 뒤 반환.
-  Future<PaUser> signInAsGuest() async {
-    final existing = _userPrefs.loadUser();
-    if (existing != null) {
-      return existing;
-    }
-
-    final now = DateTime.now();
-    final newUser = PaUser(
-      id: 'guest-${now.millisecondsSinceEpoch}',
-      displayName: null,
-      email: null,
-      coins: 0,
-      createdAt: now,
-      updatedAt: now,
-    );
-
-    await _userPrefs.saveUser(newUser);
-    return newUser;
-  }
 
   /// 유저 정보를 저장(업데이트)합니다.
   /// 예: 서버에서 프로필/코인 값을 받아온 경우 등에 사용.

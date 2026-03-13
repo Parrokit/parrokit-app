@@ -30,6 +30,11 @@ class FolderGrid extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.w800)),
           ),
         ),
+        if (items.isEmpty)
+          const SliverFillRemaining(
+            child: Center(child: Text('아직 등록된 클립이 없어요.')),
+          )
+        else
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           sliver: SliverGrid(

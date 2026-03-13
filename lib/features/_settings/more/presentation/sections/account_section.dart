@@ -76,7 +76,7 @@ class _AccountSectionState extends State<AccountSection> {
     try {
       await userProvider.sendEmailVerification();
       if (!mounted) return;
-      showToast('이메일 인증 메일을 다시 전송했습니다.');
+      showToast('인증 메일을 전송했습니다. 메일이 보이지 않는다면 스팸 메일함도 확인해 주세요.');
     } catch (e) {
       if (!mounted) return;
       showToast('인증 메일 재전송 중 오류가 발생했습니다: $e');

@@ -49,17 +49,6 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  /// 강제로 새 게스트 유저를 만들고 싶을 때 사용합니다.
-  /// (대부분의 경우 [init] 만으로 충분합니다.)
-  Future<void> signInAsGuest() async {
-    _setLoading(true);
-    try {
-      _currentUser = await _userRepository.signInAsGuest();
-    } finally {
-      _setLoading(false);
-    }
-  }
-
   /// 코인을 delta 만큼 증감시키고, 변경 사항을 UI에 반영합니다.
   /// - delta는 음수도 허용됩니다.
   Future<void> addCoins(int delta) async {
