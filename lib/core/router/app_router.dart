@@ -226,7 +226,9 @@ ShellRoute get _shellRoute => ShellRoute(
             GoRoute(
               path: AppRoutes.clipsCreatePath,
               name: AppRoutes.clipsCreate,
-              builder: (context, state) => ClipEditorScreen(),
+              builder: (context, state) => ClipEditorScreen(
+                initialCollectionName: state.uri.queryParameters['collectionName'],
+              ),
             ),
             GoRoute(
               path: AppRoutes.clipsEditPath,

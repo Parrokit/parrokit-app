@@ -93,6 +93,12 @@ class MediaProvider extends ChangeNotifier
     notifyListeners();
   }
 
+  /// 새 컬렉션 생성 후 목록 갱신.
+  Future<void> createCollection(String name) async {
+    await db.collectionsDao.findOrCreate(name);
+    await loadCollections();
+  }
+
   /// 컬렉션 목록으로 돌아감.
   void backToCollections() {
     selectedCollectionId = null;

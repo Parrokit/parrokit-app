@@ -60,9 +60,12 @@ class ClipEditorViewModel extends ChangeNotifier
     required this.userProvider,
     required this.collectionsDao,
     this.clipId,
+    this.initialCollectionName,
   }) {
     _init();
   }
+
+  final String? initialCollectionName;
 
   // ─────────────────────────────────────────────────────────────────
   // 의존성
@@ -184,6 +187,11 @@ class ClipEditorViewModel extends ChangeNotifier
 
     // 컬렉션 이름 목록 로드
     loadCollectionNames();
+
+    // 초기 컬렉션 이름 pre-fill
+    if (initialCollectionName != null && clipId == null) {
+      collectionNameCtl.text = initialCollectionName!;
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────

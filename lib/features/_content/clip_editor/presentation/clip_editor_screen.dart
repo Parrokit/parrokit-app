@@ -23,9 +23,10 @@ import 'sections/sections.dart';
 
 /// 클립 에디터 화면.
 class ClipEditorScreen extends StatelessWidget {
-  const ClipEditorScreen({super.key, this.clipId});
+  const ClipEditorScreen({super.key, this.clipId, this.initialCollectionName});
 
   final int? clipId;
+  final String? initialCollectionName;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +36,7 @@ class ClipEditorScreen extends StatelessWidget {
         userProvider: context.read<UserProvider>(),
         collectionsDao: context.read<db.AppDatabase>().collectionsDao,
         clipId: clipId,
+        initialCollectionName: initialCollectionName,
       ),
       child: const _ClipEditorBody(),
     );
