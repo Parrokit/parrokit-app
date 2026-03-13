@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../leading_icon.dart';
+import 'leading_icon.dart';
 
 class ThemeTile extends StatelessWidget {
   const ThemeTile({

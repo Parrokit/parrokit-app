@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
-import 'package:parrokit/features/_entry/auth/data/avatar_presets.dart';
+import 'package:parrokit/features/_settings/more/data/avatar_presets.dart';
 import 'package:provider/provider.dart';
 
 class AvatarSelectionSheet extends StatelessWidget {

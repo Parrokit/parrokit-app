@@ -89,35 +89,37 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.monetization_on_rounded,
-                    color: Colors.amber,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${userProvider.coins}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
                   const SizedBox(width: 10),
                   Icon(
                     Icons.today_rounded,
-                    size: 16,
+                    size: 20,
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
                         .withValues(alpha: 0.45),
                   ),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 5),
                   Text(
                     '${vm.dailyRemaining}/${AppConfig.sttDailyLimit}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
                               .withValues(alpha: 0.45),
                         ),
                   ),
+                  const SizedBox(width: 10),
+                  const Icon(
+                    Icons.monetization_on_rounded,
+                    color: Colors.amber,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    '${userProvider.coins}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(width: 5),
                 ],
               ),
             ),
@@ -163,7 +165,8 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Text('저장'),
                       ),
