@@ -34,7 +34,7 @@ import 'sections/player_settings_section.dart';
 import 'sections/shorts_settings_section.dart';
 
 // ── 수익화 모듈 토글 ────────────────────────────────────────────────────────
-const bool _kShowCoinStore = true; // 코인 결제 (추후 활성화)
+const bool _kShowCoinStore = false; // 코인 결제 (추후 활성화)
 // ────────────────────────────────────────────────────────────────────────────
 
 /// 설정/더보기 화면.

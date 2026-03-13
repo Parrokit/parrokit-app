@@ -35,6 +35,19 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 2;
+
+  // @override
+  // MigrationStrategy get migration => MigrationStrategy(
+  //       onUpgrade: (m, from, to) async {
+  //         await m.recreateAllViews();
+  //         // 스키마 변경 시 기존 데이터를 초기화합니다.
+  //         // (개발 중 DB 구조가 바뀌어 호환되지 않는 경우)
+  //         for (final table in allTables) {
+  //           await m.deleteTable(table.actualTableName);
+  //           await m.createTable(table);
+  //         }
+  //       },
+  //     );
 }
 
 LazyDatabase _open() => LazyDatabase(() async {
