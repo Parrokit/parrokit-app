@@ -19,6 +19,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
 import 'clip_editor_view_model.dart';
+import '../../../../core/wigdets/tip_dialog.dart';
 import 'widgets/exit_confirm_sheet.dart';
 import 'sections/sections.dart';
 
@@ -54,7 +55,7 @@ class _ClipEditorBody extends StatefulWidget {
 class _ClipEditorBodyState extends State<_ClipEditorBody> {
   bool _hasHandledClose = false;
 
-  @override
+
   Widget build(BuildContext context) {
     final vm = context.watch<ClipEditorViewModel>();
     final userProvider = context.watch<UserProvider>();

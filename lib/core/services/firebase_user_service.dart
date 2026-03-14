@@ -1,5 +1,6 @@
 // lib/services/firebase_user_service.dart
 
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:parrokit/data/models/user.dart';
 
@@ -62,7 +63,11 @@ class FirebaseUserService {
   }
 
   Future<PaUser?> loadUserDocument({required String uid}) async {
-    final snap = await _firestore.collection('users').doc(uid).get();
+    final snap = await _firestore
+        .collection('users')
+        .doc(uid)
+        .get()
+        .timeout(const Duration(seconds: 5), onTimeout: () => throw TimeoutException('loadUserDocument timeout'));
     if (!snap.exists) {
       return null;
     }

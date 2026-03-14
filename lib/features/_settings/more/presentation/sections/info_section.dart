@@ -7,9 +7,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/wigdets/tip_dialog.dart';
 
-import 'package:parrokit/core/router/app_router.dart';
 import '../widgets/card_container.dart';
 import '../widgets/hairline_divider.dart';
 import '../widgets/nav_tile.dart';
@@ -37,12 +36,12 @@ class InfoSection extends StatelessWidget {
                 onTap: () {},
                 showArrow: false,
               ),
-              // const HairlineDivider(),
-              // NavTile(
-              //   icon: Icons.help_outline,
-              //   title: '도움말',
-              //   onTap: () => context.go(AppRoutes.introPath),
-              // ),
+              const HairlineDivider(),
+              NavTile(
+                icon: Icons.help_outline,
+                title: '도움말',
+                onTap: () => showTipDialog(context, force: true),
+              ),
               const HairlineDivider(),
               NavTile(
                 icon: Icons.privacy_tip_outlined,

@@ -41,11 +41,69 @@ import 'package:parrokit/features/_content/shorts/data/shorts_ad_repository.dart
 import 'app.dart';
 import 'di/providers.dart';
 
+/// 인터넷 연결 여부 확인 (DNS 조회 방식, 추가 패키지 불필요).
+Future<bool> _hasInternet() async {
+  try {
+    final result = await InternetAddress.lookup('google.com')
+        .timeout(const Duration(seconds: 3));
+    return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// 인터넷 없을 때 띄우는 최소 앱.
+class _NoInternetApp extends StatelessWidget {
+  const _NoInternetApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Builder(
+        builder: (context) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            showDialog<void>(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => AlertDialog(
+                title: const Text('인터넷 연결 필요'),
+                content: const Text('앱을 사용하려면 인터넷에 연결해 주세요.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => exit(0),
+                    child: const Text('확인'),
+                  ),
+                ],
+              ),
+            );
+          });
+          return const Scaffold();
+        },
+      ),
+    );
+  }
+}
+
 /// 앱 부트스트랩 - main()에서 호출.
 ///
 /// 모든 초기화 완료 후 runApp() 실행.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // ─────────────────────────────────────────────────────────────────
+  // 앱 설정 로드
+  // ─────────────────────────────────────────────────────────────────
+  await AppConfig.loadFromPrefs();
+  final themeProvider = ThemeProvider();
+  await themeProvider.loadTheme();
+
+  // ─────────────────────────────────────────────────────────────────
+  // 인터넷 연결 확인
+  // ─────────────────────────────────────────────────────────────────
+  if (!await _hasInternet()) {
+    runApp(const _NoInternetApp());
+    return;
+  }
 
   // ─────────────────────────────────────────────────────────────────
   // 외부 서비스 초기화
@@ -67,13 +125,6 @@ Future<void> bootstrap() async {
 
   await dotenv.load(fileName: ".env");
   await BgAudio.instance.ensureAudioHandler();
-
-  // ─────────────────────────────────────────────────────────────────
-  // 앱 설정 로드
-  // ─────────────────────────────────────────────────────────────────
-  await AppConfig.loadFromPrefs();
-  final themeProvider = ThemeProvider();
-  await themeProvider.loadTheme();
 
   // ─────────────────────────────────────────────────────────────────
   // 인증 서비스 설정 (라우터보다 먼저 — refreshListenable에 필요)

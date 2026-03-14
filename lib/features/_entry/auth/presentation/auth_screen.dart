@@ -88,12 +88,23 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      if (e.code == 'invalid-credential') {
-        showToast('세션이 만료되었어요. 다시 로그인해 주세요.');
-        await userProvider.signOut();
-        return;
+      switch (e.code) {
+        case 'invalid-credential':
+        case 'wrong-password':
+          showToast('이메일 또는 비밀번호가 올바르지 않아요.');
+        case 'user-not-found':
+          showToast('등록되지 않은 이메일이에요.');
+        case 'email-already-in-use':
+          showToast('이미 사용 중인 이메일이에요.');
+        case 'weak-password':
+          showToast('비밀번호는 6자 이상이어야 해요.');
+        case 'invalid-email':
+          showToast('이메일 형식이 올바르지 않아요.');
+        case 'too-many-requests':
+          showToast('요청이 너무 많아요. 잠시 후 다시 시도해 주세요.');
+        default:
+          showToast('오류가 발생했습니다: ${e.message}');
       }
-      showToast('오류가 발생했습니다: ${e.message}');
     }
   }
 

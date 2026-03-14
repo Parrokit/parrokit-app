@@ -36,9 +36,13 @@ class UserRepository {
       return null;
     }
 
-    // 2. Firestore 기준 유저 문서 조회
-    final serverUser =
-        await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    // 2. Firestore 기준 유저 문서 조회 (timeout 시 로컬 캐시로 폴백)
+    PaUser? serverUser;
+    try {
+      serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    } catch (_) {
+      serverUser = null;
+    }
 
     // 3. 로컬 캐시(SharedPreferences)에 저장된 유저 (폴백용)
     final localUser = _userPrefs.loadUser();
