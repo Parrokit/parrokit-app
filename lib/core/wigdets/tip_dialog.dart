@@ -93,6 +93,16 @@ class _TipDialog extends StatelessWidget {
               body:
                   '편집한 동영상은 이 기기에만 저장돼요. 앱 삭제 또는 기기 초기화 시 영구적으로 삭제될 수 있으니 반드시 백업해 두세요.',
             ),
+            const SizedBox(height: AppSpacing.md),
+
+            // 안내 항목 3
+            _TipItem(
+              icon: Icons.science_outlined,
+              color: cs.onPrimaryFixed,
+              title: '베타 테스트 중',
+              body:
+                  '현재 베타 테스트 기간으로, 결제 기능이 임시로 빠진 상태예요. 정식 출시 시 결제 기능이 추가될 예정이에요.',
+            ),
             const SizedBox(height: AppSpacing.xl),
 
             // 버튼 영역

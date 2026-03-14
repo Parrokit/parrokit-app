@@ -21,7 +21,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:parrokit/core/theme/app_spacing.dart';
-
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'sections/account_section.dart';
 import 'sections/ad_reward_section.dart';
 import 'sections/app_settings_section.dart';
@@ -60,8 +60,10 @@ class MoreScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.sectionGap),
 
             // 결제 (광고 제거 + 코인 충전 + 구매 내역)
-            const PaymentSection(),
-            const SizedBox(height: AppSpacing.sectionGap),
+            if (kReleaseMode) ...[
+              const PaymentSection(),
+              const SizedBox(height: AppSpacing.sectionGap),
+            ],
 
             // 플레이어 설정
             const PlayerSettingsSection(),
