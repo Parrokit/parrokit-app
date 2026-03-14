@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
@@ -14,13 +15,15 @@ class AdService {
   bool _isLoading = false;
 
   String get _interstitialAdUnitId {
-    if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/1033173712';
-    } else if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/1033173712';
-    } else {
+    if (kReleaseMode) {
+      if (Platform.isAndroid) return ''; // TODO: 실제 Android interstitial ID
+      if (Platform.isIOS) return '';     // TODO: 실제 iOS interstitial ID
       return '';
     }
+    // 테스트 ID
+    if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/1033173712';
+    if (Platform.isIOS) return 'ca-app-pub-3940256099942544/1033173712';
+    return '';
   }
 
   void loadAd() {
@@ -74,13 +77,15 @@ class AdService {
   bool _isRewardedLoading = false;
 
   String get _rewardedAdUnitId {
-    if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/5224354917'; // 테스트 ID
-    } else if (Platform.isIOS) {
-      return 'ca-app-pub-3940256099942544/1712485313'; // 테스트 ID
-    } else {
+    if (kReleaseMode) {
+      if (Platform.isAndroid) return ''; // 실제 Android rewarded ID
+      if (Platform.isIOS) return '';     // 실제 iOS rewarded ID
       return '';
     }
+    // 테스트 ID
+    if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/5224354917';
+    if (Platform.isIOS) return 'ca-app-pub-3940256099942544/1712485313';
+    return '';
   }
 
   /// 보상형 광고를 미리 로드합니다.

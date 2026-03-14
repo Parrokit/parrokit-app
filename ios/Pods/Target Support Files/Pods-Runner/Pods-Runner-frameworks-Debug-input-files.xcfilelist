@@ -31,6 +31,7 @@ ${BUILT_PRODUCTS_DIR}/abseil/absl.framework
 ${BUILT_PRODUCTS_DIR}/app_links/app_links.framework
 ${BUILT_PRODUCTS_DIR}/audio_service/audio_service.framework
 ${BUILT_PRODUCTS_DIR}/audio_session/audio_session.framework
+${BUILT_PRODUCTS_DIR}/device_info_plus/device_info_plus.framework
 ${BUILT_PRODUCTS_DIR}/file_picker/file_picker.framework
 ${BUILT_PRODUCTS_DIR}/file_saver/file_saver.framework
 ${BUILT_PRODUCTS_DIR}/flutter_email_sender/flutter_email_sender.framework

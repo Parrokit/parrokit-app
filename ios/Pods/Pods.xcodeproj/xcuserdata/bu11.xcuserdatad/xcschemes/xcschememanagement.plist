@@ -324,6 +324,16 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>device_info_plus-device_info_plus_privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>device_info_plus.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>ffmpeg_kit_flutter.xcscheme</key>
 		<dict>
 			<key>isShown</key>

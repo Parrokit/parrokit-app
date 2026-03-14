@@ -58,15 +58,13 @@ class PaymentSection extends StatelessWidget {
                 onTap: () => _openCoinPaywall(context),
               ),
 
-              // 구매 내역 (프리미엄 전용)
-              if (isPremium) ...[
-                const Divider(height: 1, indent: 16, endIndent: 16),
-                NavTile(
-                  icon: Icons.receipt_long_rounded,
-                  title: '구매 내역',
-                  onTap: () => RevenueCatUI.presentCustomerCenter(),
-                ),
-              ],
+              // 구매 내역
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              NavTile(
+                icon: Icons.receipt_long_rounded,
+                title: '구매 내역',
+                onTap: () => RevenueCatUI.presentCustomerCenter(),
+              ),
             ],
           ),
         ),
