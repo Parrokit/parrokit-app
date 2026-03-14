@@ -16,9 +16,8 @@ class AdService {
 
   String get _interstitialAdUnitId {
     if (kReleaseMode) {
-      if (Platform.isAndroid) return ''; // TODO: 실제 Android interstitial ID
-      if (Platform.isIOS) return '';     // TODO: 실제 iOS interstitial ID
-      return '';
+      if (Platform.isAndroid) return 'ca-app-pub-6519817120789589/3864454628';
+      if (Platform.isIOS) return 'ca-app-pub-6519817120789589/8988581964';
     }
     // 테스트 ID
     if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/1033173712';
@@ -79,7 +78,7 @@ class AdService {
   String get _rewardedAdUnitId {
     if (kReleaseMode) {
       if (Platform.isAndroid) return ''; // 실제 Android rewarded ID
-      if (Platform.isIOS) return '';     // 실제 iOS rewarded ID
+      if (Platform.isIOS) return ''; // 실제 iOS rewarded ID
       return '';
     }
     // 테스트 ID
@@ -90,7 +89,8 @@ class AdService {
 
   /// 보상형 광고를 미리 로드합니다.
   void loadRewardedAd() {
-    if (_isRewardedLoading || _rewardedAd != null || _rewardedAdUnitId.isEmpty) return;
+    if (_isRewardedLoading || _rewardedAd != null || _rewardedAdUnitId.isEmpty)
+      return;
     _isRewardedLoading = true;
 
     RewardedAd.load(
