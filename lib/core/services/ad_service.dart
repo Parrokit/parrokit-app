@@ -77,11 +77,11 @@ class AdService {
 
   String get _rewardedAdUnitId {
     if (kReleaseMode) {
-      if (Platform.isAndroid) return ''; // 실제 Android rewarded ID
-      if (Platform.isIOS) return ''; // 실제 iOS rewarded ID
+      if (Platform.isAndroid) return 'ca-app-pub-6519817120789589/3864454628';
+      if (Platform.isIOS) return 'ca-app-pub-6519817120789589/8988581964';
       return '';
     }
-    // 테스트 ID
+    // 테스트
     if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/5224354917';
     if (Platform.isIOS) return 'ca-app-pub-3940256099942544/1712485313';
     return '';
