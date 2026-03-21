@@ -355,16 +355,33 @@ class _ClipPlayerViewState extends State<_ClipPlayerView>
     bool isLight,
   ) {
     final controller = vm.controller;
+    final ar = controller?.value.aspectRatio ?? 0;
+    final displayAr = ar == 0 ? 16.0 / 9.0 : ar;
+    final isPortraitVideo = displayAr < 1.0;
 
     return Column(
       children: [
         // Video + Subs
-        AspectRatio(
-          aspectRatio: controller?.value.aspectRatio == 0
-              ? 16 / 9
-              : controller?.value.aspectRatio ?? 16 / 9,
-          child: _buildVideoStack(context, vm, isLight),
-        ),
+        // 세로 영상은 16:9 높이 박스 안에 중앙 배치(pillarbox),
+        // 가로 영상은 원래 비율 그대로 표시.
+        if (isPortraitVideo)
+          AspectRatio(
+            aspectRatio: 16.0 / 9.0,
+            child: ColoredBox(
+              color: Colors.black,
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: displayAr,
+                  child: _buildVideoStack(context, vm, isLight),
+                ),
+              ),
+            ),
+          )
+        else
+          AspectRatio(
+            aspectRatio: displayAr,
+            child: _buildVideoStack(context, vm, isLight),
+          ),
 
         // Timeline
         if (controller != null)
