@@ -25,8 +25,8 @@ import 'sections/ad_reward_section.dart';
 import 'sections/app_settings_section.dart';
 import 'sections/backup_section.dart';
 import 'sections/cache_section.dart';
+import 'sections/delete_account_section.dart';
 import 'sections/info_section.dart';
-import 'sections/payment_section.dart';
 import 'sections/player_settings_section.dart';
 import 'sections/shorts_settings_section.dart';
 
@@ -83,6 +83,10 @@ class MoreScreen extends StatelessWidget {
 
             // 정보
             const InfoSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
+
+            // 회원탈퇴
+            const DeleteAccountSection(),
           ],
         ),
       ),

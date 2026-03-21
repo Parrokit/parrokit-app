@@ -83,4 +83,8 @@ class FirebaseUserService {
       updatedAt: DateTime.now(),
     );
   }
+
+  Future<void> deleteUserDocument({required String uid}) async {
+    await _firestore.collection('users').doc(uid).delete();
+  }
 }

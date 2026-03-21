@@ -306,4 +306,17 @@ class UserRepository {
     await _authService.signOut();
     await _userPrefs.clear();
   }
+
+  /// 회원탈퇴.
+  /// - Firestore 유저 문서 삭제
+  /// - Firebase Auth 계정 삭제
+  /// - 로컬 캐시 삭제
+  Future<void> deleteAccount() async {
+    final uid = _authService.currentUser?.uid;
+    if (uid != null) {
+      await _firebaseUserService.deleteUserDocument(uid: uid);
+    }
+    await _authService.deleteAccount();
+    await _userPrefs.clear();
+  }
 }

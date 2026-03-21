@@ -194,6 +194,20 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// 회원탈퇴.
+  /// Firestore 문서, Firebase Auth 계정, 로컬 캐시를 모두 삭제합니다.
+  Future<void> deleteAccount() async {
+    _setLoading(true);
+    try {
+      await _userRepository.deleteAccount();
+      () async { try { await Purchases.logOut(); } catch (_) {} }();
+      _currentUser = null;
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 로그아웃/초기화.
   /// 로컬 저장소를 비우고 메모리에 있는 유저도 제거합니다.
   Future<void> signOut() async {
