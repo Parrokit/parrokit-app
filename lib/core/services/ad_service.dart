@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
@@ -16,12 +17,11 @@ class AdService {
 
   String get _interstitialAdUnitId {
     if (kReleaseMode) {
-      if (Platform.isAndroid) return 'ca-app-pub-6519817120789589/3864454628';
-      if (Platform.isIOS) return 'ca-app-pub-6519817120789589/8988581964';
+      if (Platform.isAndroid) return dotenv.env['ADMOB_INTERSTITIAL_ANDROID_PROD'] ?? '';
+      if (Platform.isIOS) return dotenv.env['ADMOB_INTERSTITIAL_IOS_PROD'] ?? '';
     }
-    // 테스트 ID
-    if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/1033173712';
-    if (Platform.isIOS) return 'ca-app-pub-3940256099942544/1033173712';
+    if (Platform.isAndroid) return dotenv.env['ADMOB_INTERSTITIAL_ANDROID_TEST'] ?? '';
+    if (Platform.isIOS) return dotenv.env['ADMOB_INTERSTITIAL_IOS_TEST'] ?? '';
     return '';
   }
 
@@ -77,13 +77,12 @@ class AdService {
 
   String get _rewardedAdUnitId {
     if (kReleaseMode) {
-      if (Platform.isAndroid) return '';
-      if (Platform.isIOS) return 'ca-app-pub-6519817120789589/4263773788';
+      if (Platform.isAndroid) return dotenv.env['ADMOB_REWARDED_ANDROID_PROD'] ?? '';
+      if (Platform.isIOS) return dotenv.env['ADMOB_REWARDED_IOS_PROD'] ?? '';
       return '';
     }
-    // 테스트
-    if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/5224354917';
-    if (Platform.isIOS) return 'ca-app-pub-3940256099942544/1712485313';
+    if (Platform.isAndroid) return dotenv.env['ADMOB_REWARDED_ANDROID_TEST'] ?? '';
+    if (Platform.isIOS) return dotenv.env['ADMOB_REWARDED_IOS_TEST'] ?? '';
     return '';
   }
 
