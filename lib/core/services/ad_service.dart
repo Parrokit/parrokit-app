@@ -77,8 +77,8 @@ class AdService {
 
   String get _rewardedAdUnitId {
     if (kReleaseMode) {
-      if (Platform.isAndroid) return 'ca-app-pub-6519817120789589/3864454628';
-      if (Platform.isIOS) return 'ca-app-pub-6519817120789589/8988581964';
+      if (Platform.isAndroid) return '';
+      if (Platform.isIOS) return 'ca-app-pub-6519817120789589/4263773788';
       return '';
     }
     // 테스트
