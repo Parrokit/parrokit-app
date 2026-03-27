@@ -3,7 +3,7 @@ description: "Parrokit: 애니메이션 클립으로 즐기는 언어 학습 앱
 # Private Project - Do not publish to pub.dev
 publish_to: 'none'
 
-version: 1.0.2+62
+version: 1.0.3+64
 
 environment:
   sdk: ^3.6.1
@@ -50,12 +50,12 @@ dependencies:
   audio_service: ^0.18.18     # 백그라운드 오디오 제어
   audio_session: ^0.2.2       # 오디오 세션 관리
   image_picker: ^1.2.0        # 갤러리/카메라 이미지 선택
-  ffmpeg_kit_flutter:         # FFmpeg (영상 편집/변환)
-    git:
-      url: https://github.com/Sahad2701/ffmpeg-kit.git
-      path: flutter/flutter
-      ref: flutter_fix_retired_v6.0.3
-
+  # ffmpeg_kit_flutter:         # FFmpeg (영상 편집/변환)
+  #   git:
+  #     url: https://github.com/Sahad2701/ffmpeg-kit.git
+  #     path: flutter/flutter
+  #     ref: flutter_fix_retired_v6.0.3
+  ffmpeg_kit_flutter_new_video: ^2.0.0
   # -----------------------------------------------------------
   # Network & Utilities
   # -----------------------------------------------------------
@@ -63,16 +63,16 @@ dependencies:
   dio: ^5.9.0                 # 강력한 HTTP 클라이언트
   flutter_dotenv: ^6.0.0      # 환경 변수 (.env) 관리
   url_launcher: ^6.3.2        # URL 열기 (브라우저 등)
-  webview_flutter: ^4.10.0    # 인앱 브라우저
+  flutter_inappwebview: ^6.1.5    # 인앱 브라우저
   web_socket_channel: ^3.0.1  # 웹소켓 통신 (필요 시)
   flutter_email_sender: ^7.0.0 # 이메일 앱 호출
-
+ 
   # -----------------------------------------------------------
   # File Management
   # -----------------------------------------------------------
   path_provider: ^2.1.5       # 디바이스 경로 획득
   path: ^1.9.0                # 경로 조작 유틸리티
-  file_picker: ^10.3.2        # 파일 선택기
+  file_selector: ^1.1.0       # 파일 선택기
   file_saver: ^0.2.14         # 파일 저장
   flutter_file_dialog: ^3.0.2 # 시스템 파일 대화상자
   archive: ^4.0.7             # 압축/해제 (ZIP 등)
@@ -83,8 +83,6 @@ dependencies:
   # -----------------------------------------------------------
   google_mobile_ads: ^6.0.0   # 구글 애드몹 (광고)
   in_app_purchase: ^3.2.3     # 인앱 결제 (IAP)
-  iamport_flutter: ^0.10.21   # 국내 PG 결제 연동 (포트원)
-
   # -----------------------------------------------------------
   # Utils & Helpers
   # -----------------------------------------------------------
@@ -97,6 +95,7 @@ dependencies:
   http_parser: ^4.1.2         # HTTP 헤더 파싱
   purchases_flutter: ^9.14.0
   purchases_ui_flutter: ^9.14.0
+  advertising_id: ^2.7.1
 
 dev_dependencies:
   flutter_test:
@@ -107,8 +106,6 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4 # 앱 아이콘 생성
   flutter_native_splash: ^2.4.4   # 스플래시 스크린 생성
 
-dependency_overrides:
-  webview_flutter_android: 3.16.2
 
 # -----------------------------------------------------------
 # Flutter Configuration

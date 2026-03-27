@@ -35,7 +35,7 @@
   "swift_versions": "5.0",
   "dependencies": {
     "sqlite3": [
-      "~> 3.50.4"
+      "~> 3.52.0"
     ],
     "sqlite3/fts5": [],
     "sqlite3/perf-threadsafe": [],

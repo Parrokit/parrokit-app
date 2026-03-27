@@ -194,7 +194,6 @@ Future<void> bootstrap() async {
   iapProvider.addListener(() {
     adProvider.premium = iapProvider.isPremium;
   });
-
   // ─────────────────────────────────────────────────────────────────
   // 앱 실행
   // ─────────────────────────────────────────────────────────────────

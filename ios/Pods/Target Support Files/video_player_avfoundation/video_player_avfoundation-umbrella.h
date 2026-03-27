@@ -11,6 +11,7 @@
 #endif
 
 #import "AVAssetTrackUtils.h"
+#import "FVPAssetProvider.h"
 #import "FVPAVFactory.h"
 #import "FVPDisplayLink.h"
 #import "FVPEventBridge.h"
