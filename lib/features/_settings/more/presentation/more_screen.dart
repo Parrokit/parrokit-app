@@ -20,15 +20,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
-
 import 'sections/account_section.dart';
+import 'sections/ad_reward_section.dart';
 import 'sections/app_settings_section.dart';
 import 'sections/backup_section.dart';
+import 'sections/cache_section.dart';
+import 'sections/delete_account_section.dart';
 import 'sections/info_section.dart';
-import 'sections/payment_section.dart';
 import 'sections/player_settings_section.dart';
 import 'sections/shorts_settings_section.dart';
-import 'sections/cache_section.dart';
 
 /// 설정/더보기 화면.
 class MoreScreen extends StatelessWidget {
@@ -46,39 +46,47 @@ class MoreScreen extends StatelessWidget {
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.md,
           ).copyWith(bottom: AppSpacing.xxl),
-          children: const [
-            SizedBox(height: AppSpacing.md),
+          children: [
+            const SizedBox(height: AppSpacing.md),
 
             // 계정
-            AccountSection(),
-            SizedBox(height: AppSpacing.sectionGap),
+            const AccountSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
+
+            // 광고 보기
+            const AdRewardSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
+
+            // // 결제 (광고 제거 + 코인 충전 + 구매 내역)
+            // const PaymentSection(),
+            // const SizedBox(height: AppSpacing.sectionGap),
 
             // 플레이어 설정
-            PlayerSettingsSection(),
-            SizedBox(height: AppSpacing.sectionGap),
+            const PlayerSettingsSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
 
             // 쇼츠 설정
-            ShortsSettingsSection(),
-            SizedBox(height: AppSpacing.sectionGap),
+            const ShortsSettingsSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
 
             // 앱 설정
-            AppSettingsSection(),
-            SizedBox(height: AppSpacing.sectionGap),
-
-            // 결제
-            PaymentSection(),
-            SizedBox(height: AppSpacing.sectionGap),
+            const AppSettingsSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
 
             // 백업
-            BackupSection(),
-            SizedBox(height: AppSpacing.sectionGap),
+            const BackupSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
 
             // 캐시 관리
-            CacheSection(),
-            SizedBox(height: AppSpacing.sectionGap),
+            const CacheSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
 
             // 정보
-            InfoSection(),
+            const InfoSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
+
+            // 회원탈퇴
+            const DeleteAccountSection(),
           ],
         ),
       ),

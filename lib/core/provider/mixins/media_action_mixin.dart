@@ -18,14 +18,10 @@ mixin MediaActionMixin on ChangeNotifier {
   MediaService get service;
 
   // Navigation / Refresh required methods
-  int? get selectedTitleId;
-  int? get selectedReleaseId;
-  int? get selectedEpisodeId;
+  int? get selectedCollectionId;
 
-  Future<void> selectTitle(int id);
-  Future<void> selectRelease(int id);
-  Future<void> selectEpisode(int id);
-  Future<void> loadTitles();
+  Future<void> selectCollection(int? id);
+  Future<void> loadCollections();
 
   // ─────────────────────────────────────────────────────────────────
   // Actions
@@ -35,50 +31,41 @@ mixin MediaActionMixin on ChangeNotifier {
     final success = await service.deleteClipById(clipId);
     if (!success) return false;
 
-    // ===== 뷰 리프레시 (기존 로직 유지) =====
-    if (selectedEpisodeId != null) {
-      final existsEp = await (db.select(db.episodes)
-            ..where((e) => e.id.equals(selectedEpisodeId!))
+    // Refresh current view
+    if (selectedCollectionId != null) {
+      final exists = await (db.select(db.collections)
+            ..where((c) => c.id.equals(selectedCollectionId!))
             ..limit(1))
           .getSingleOrNull();
-      if (existsEp != null) {
-        await selectEpisode(selectedEpisodeId!);
-        return true;
-      }
-      if (selectedReleaseId != null) {
-        final existsRel = await (db.select(db.releases)
-              ..where((r) => r.id.equals(selectedReleaseId!))
-              ..limit(1))
-            .getSingleOrNull();
-        if (existsRel != null) {
-          await selectRelease(selectedReleaseId!);
-          return true;
-        }
-      }
-    }
-
-    if (selectedTitleId != null) {
-      final existsTitle = await (db.select(db.titles)
-            ..where((t) => t.id.equals(selectedTitleId!))
-            ..limit(1))
-          .getSingleOrNull();
-      if (existsTitle != null) {
-        await selectTitle(selectedTitleId!);
+      if (exists != null) {
+        await selectCollection(selectedCollectionId);
         return true;
       }
     }
 
-    await loadTitles();
+    await loadCollections();
+    return true;
+  }
+
+  Future<bool> deleteCollectionById(int collectionId) async {
+    final clipsInCol = await (db.select(db.clips)
+          ..where((c) => c.collectionId.equals(collectionId)))
+        .get();
+
+    for (final clip in clipsInCol) {
+      await service.deleteClipById(clip.id);
+    }
+
+    await (db.delete(db.collections)
+          ..where((c) => c.id.equals(collectionId)))
+        .go();
+
+    await loadCollections();
     return true;
   }
 
   Future<void> addMedia({
-    required String titleName,
-    required String titleNameNative,
-    required String type,
-    required int? seasonNumber,
-    required int? episodeNumber,
-    required String episodeTitle,
+    required String? collectionName,
     required String clipTitle,
     required String filePath,
     required int durationMs,
@@ -86,12 +73,7 @@ mixin MediaActionMixin on ChangeNotifier {
     required List<String>? tags,
   }) async {
     await service.addMedia(
-      titleName: titleName,
-      titleNameNative: titleNameNative,
-      type: type,
-      seasonNumber: seasonNumber,
-      episodeNumber: episodeNumber,
-      episodeTitle: episodeTitle,
+      collectionName: collectionName,
       clipTitle: clipTitle,
       filePath: filePath,
       durationMs: durationMs,
@@ -102,12 +84,7 @@ mixin MediaActionMixin on ChangeNotifier {
 
   Future<void> updateMedia({
     required int clipId,
-    required String titleName,
-    required String titleNameNative,
-    required String type,
-    required int? seasonNumber,
-    required int? episodeNumber,
-    required String episodeTitle,
+    required String? collectionName,
     required String clipTitle,
     required String filePath,
     required int durationMs,
@@ -116,12 +93,7 @@ mixin MediaActionMixin on ChangeNotifier {
   }) async {
     await service.updateMedia(
       clipId: clipId,
-      titleName: titleName,
-      titleNameNative: titleNameNative,
-      type: type,
-      seasonNumber: seasonNumber,
-      episodeNumber: episodeNumber,
-      episodeTitle: episodeTitle,
+      collectionName: collectionName,
       clipTitle: clipTitle,
       filePath: filePath,
       durationMs: durationMs,

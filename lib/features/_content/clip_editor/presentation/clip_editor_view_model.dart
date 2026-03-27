@@ -12,10 +12,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'widgets/stt_confirm_dialog.dart';
 
+import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/data/local/dao/titles_dao.dart';
+import 'package:parrokit/core/services/daily_limit_service.dart';
+import 'package:parrokit/data/local/dao/collections_dao.dart';
 import 'package:parrokit/core/utils/show_toast.dart' as utils;
 
 import '../data/adapters/openai_llm_adapter.dart';
@@ -27,7 +30,6 @@ import '../data/services/clip_load_service.dart';
 import '../data/services/clip_save_service.dart';
 import '../data/services/draft_generation_service.dart';
 import '../data/services/file_staging_service.dart';
-import '../data/services/native_title_service.dart';
 import '../data/services/video_meta_service.dart';
 import '../data/usecases/extract_duration_usecase.dart';
 import '../data/usecases/extract_thumbnail_usecase.dart';
@@ -36,17 +38,16 @@ import '../data/usecases/load_clip_for_edit_usecase.dart';
 import '../data/usecases/pick_video_usecase.dart';
 import '../data/usecases/save_clip_usecase.dart';
 import '../data/usecases/transcribe_usecase.dart';
-import '../data/usecases/lookup_native_title_usecase.dart';
 
 import '../domain/clip_form_data.dart';
 import '../domain/clip_validator.dart';
 import '../domain/editor_mode.dart';
 import '../domain/editor_state.dart';
 
-import 'view_model/editor_file_mixin.dart';
-import 'view_model/editor_segment_mixin.dart';
-import 'view_model/editor_tag_mixin.dart';
-import 'view_model/editor_autocomplete_mixin.dart';
+import 'mixins/editor_file_mixin.dart';
+import 'mixins/editor_segment_mixin.dart';
+import 'mixins/editor_tag_mixin.dart';
+import 'mixins/editor_autocomplete_mixin.dart';
 
 /// 클립 에디터 ViewModel.
 class ClipEditorViewModel extends ChangeNotifier
@@ -58,11 +59,14 @@ class ClipEditorViewModel extends ChangeNotifier
   ClipEditorViewModel({
     required this.mediaProvider,
     required this.userProvider,
-    required this.titlesDao,
+    required this.collectionsDao,
     this.clipId,
+    this.initialCollectionName,
   }) {
     _init();
   }
+
+  final String? initialCollectionName;
 
   // ─────────────────────────────────────────────────────────────────
   // 의존성
@@ -70,7 +74,7 @@ class ClipEditorViewModel extends ChangeNotifier
   final MediaProvider mediaProvider;
   final UserProvider userProvider;
   @override
-  final TitlesDao titlesDao;
+  final CollectionsDao collectionsDao;
   final int? clipId;
 
   @override
@@ -87,25 +91,16 @@ class ClipEditorViewModel extends ChangeNotifier
   late final SaveClipUseCase _saveClip;
   late final LoadClipForEditUseCase _loadClipForEdit;
   late final GenerateDraftUseCase _generateDraft;
-  late final LookupNativeTitleUseCase _lookupNativeTitle;
   final ClipValidator _validator = ClipValidator();
 
   // ─────────────────────────────────────────────────────────────────
   // 상태
   // ─────────────────────────────────────────────────────────────────
 
-  // Stepper 상태
-  int _currentStep = 0;
-  int get currentStep => _currentStep;
-
   // 저장 상태
   EditorSaveState _saveState = EditorSaveState.idle;
   EditorSaveState get saveState => _saveState;
   bool get isSaving => _saveState == EditorSaveState.saving;
-
-  // 원어 작품명 조회 상태
-  bool _isLookingUpNativeTitle = false;
-  bool get isLookingUpNativeTitle => _isLookingUpNativeTitle;
 
   // STT 처리 진행 상태
   SttProcessState _sttState = SttProcessState.idle;
@@ -127,26 +122,24 @@ class ClipEditorViewModel extends ChangeNotifier
   EditorMode get mode => _mode;
   bool get isEdit => _mode is EditMode;
 
-  // 메타데이터
-  ContentType _contentType = ContentType.season;
-  @override
-  ContentType get contentType => _contentType;
-
   // TextEditingControllers (View에서 직접 사용)
-  final titleCtl = TextEditingController();
-  @override
-  final nameCtl = TextEditingController();
-  @override
-  final nameNativeCtl = TextEditingController();
-  @override
-  final seasonCtl = TextEditingController();
-  @override
-  final episodeCtl = TextEditingController();
-  @override
-  final epiTitleCtl = TextEditingController();
+  final titleCtl = TextEditingController(); // 클립 제목
+  final collectionNameCtl = TextEditingController(); // 컬렉션 이름 (선택)
   @override
   final durationCtl = TextEditingController();
   final tagsCtl = TextEditingController();
+
+  // 오늘 STT 잔여 횟수
+  int _dailyRemaining = AppConfig.sttDailyLimit;
+  int get dailyRemaining => _dailyRemaining;
+
+  Future<void> _refreshDailyRemaining() async {
+    _dailyRemaining = await DailyLimitService.getRemaining(
+      'stt',
+      limit: AppConfig.sttDailyLimit,
+    );
+    notifyListeners();
+  }
 
   // 저장 후 닫기 플래그
   bool _shouldClose = false;
@@ -154,8 +147,6 @@ class ClipEditorViewModel extends ChangeNotifier
 
   dynamic _closeResult;
   dynamic get closeResult => _closeResult;
-
-  static const int totalSteps = 7;
 
   // ─────────────────────────────────────────────────────────────────
   // 초기화
@@ -193,9 +184,6 @@ class ClipEditorViewModel extends ChangeNotifier
       ),
     );
 
-    _lookupNativeTitle =
-        LookupNativeTitleUseCase(NativeTitleService(llmAdapter));
-
     // 세그먼트 폼 초기화
     initSegmentForms();
 
@@ -204,93 +192,16 @@ class ClipEditorViewModel extends ChangeNotifier
       _loadForEdit(clipId!);
     }
 
-    // 작품명 목록 로드
-    loadTitleNames();
-  }
+    // 컬렉션 이름 목록 로드
+    loadCollectionNames();
 
-  // ─────────────────────────────────────────────────────────────────
-  // Stepper 제어
-  // ─────────────────────────────────────────────────────────────────
-
-  /// 특정 스텝으로 이동합니다.
-  void goToStep(int step) {
-    if (step >= 0 && step <= totalSteps - 1) {
-      _currentStep = step;
-      notifyListeners();
-    }
-  }
-
-  /// 다음 스텝으로 이동합니다.
-  void nextStep() {
-    if (_currentStep < totalSteps - 1) {
-      _currentStep++;
-      notifyListeners();
-    }
-  }
-
-  /// 이전 스텝으로 이동합니다.
-  void prevStep() {
-    if (_currentStep > 0) {
-      _currentStep--;
-      notifyListeners();
-    }
-  }
-
-  /// 다음 버튼 또는 저장 버튼 동작
-  void nextOrSave() {
-    if (_currentStep < totalSteps - 1) {
-      nextStep();
-    } else {
-      save();
-    }
-  }
-
-  /// 이전 버튼 또는 취소 버튼 동작
-  void prevOrCancel() {
-    if (_currentStep == 0) {
-      _shouldClose = true;
-      _closeResult = null;
-      notifyListeners();
-    } else {
-      prevStep();
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // 콘텐츠 타입
-  // ─────────────────────────────────────────────────────────────────
-
-  /// 콘텐츠 타입(시즌/영화)을 설정합니다.
-  void setContentType(ContentType type) {
-    _contentType = type;
-    notifyListeners();
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // 원어 작품명 자동 조회
-  // ─────────────────────────────────────────────────────────────────
-
-  /// 작품명을 기반으로 원어 작품명을 자동으로 조회합니다.
-  Future<void> lookupNativeTitle() async {
-    final workName = nameCtl.text.trim();
-    if (workName.isEmpty) {
-      showToast('먼저 작품명을 입력해 주세요.');
-      return;
+    // 초기 컬렉션 이름 pre-fill
+    if (initialCollectionName != null && clipId == null) {
+      collectionNameCtl.text = initialCollectionName!;
     }
 
-    _isLookingUpNativeTitle = true;
-    notifyListeners();
-
-    try {
-      final result = await _lookupNativeTitle(workName: workName);
-      nameNativeCtl.text = result.nativeTitle;
-      showToast('원어 작품명: ${result.nativeTitle}');
-    } catch (e) {
-      showToast('원어 작품명 조회 실패: $e');
-    } finally {
-      _isLookingUpNativeTitle = false;
-      notifyListeners();
-    }
+    // 오늘 STT 잔여 횟수 로드
+    _refreshDailyRemaining();
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -298,11 +209,18 @@ class ClipEditorViewModel extends ChangeNotifier
   // ─────────────────────────────────────────────────────────────────
 
   /// 선택된 비디오 파일에 대해 STT를 수행하고 초안을 생성합니다.
-  Future<void> onSttAndDraft() async {
+  Future<void> onSttAndDraft(BuildContext context) async {
+    if (!context.mounted) return;
+    final confirmed = await showSttConfirmDialog(context);
+    if (!confirmed) {
+      _setSttState(SttProcessState.idle);
+      return;
+    }
     if (picked == null || (picked!.path ?? '').isEmpty) {
       showToast('먼저 영상 파일을 선택해 주세요.');
       return;
     }
+
     final path = picked!.path!;
 
     // Step 1: 오디오 추출 준비
@@ -317,12 +235,27 @@ class ClipEditorViewModel extends ChangeNotifier
       return;
     }
 
-    // 코인 비용 미리 계산
+    // 코인 + 데일리 합산 처리
+    // 1) 코인을 먼저 쓰고, 부족한 나머지는 데일리 충전량에서 차감
     final cost = _calculateCoinCost(durationMs);
-    if (cost > 0 && userProvider.coins < cost) {
-      showToast('코인이 부족합니다. (필요: $cost, 보유: ${userProvider.coins})');
-      _setSttState(SttProcessState.idle);
-      return;
+    final int coinsToUse = userProvider.coins.clamp(0, cost);
+    final int dailyNeeded = cost - coinsToUse;
+
+    if (dailyNeeded > 0) {
+      final consumed = await DailyLimitService.consumeN(
+        'stt',
+        n: dailyNeeded,
+        limit: AppConfig.sttDailyLimit,
+      );
+      if (!consumed) {
+        showToast(
+          '코인과 무료 충전량을 합쳐도 부족합니다. '
+          '광고를 보고 코인을 받거나 내일 다시 시도해 주세요.',
+        );
+        _setSttState(SttProcessState.idle);
+        await _refreshDailyRemaining();
+        return;
+      }
     }
 
     try {
@@ -348,15 +281,17 @@ class ClipEditorViewModel extends ChangeNotifier
       if (result.segments.isNotEmpty) {
         // UI에 세그먼트 채우기
         _fillSegmentsFromDraft(result.segments);
-        showToast('세그먼트 ${result.segments.length}개 자동 채움');
 
-        // 코인 차감
-        if (result.coinCost > 0) {
-          userProvider.addCoins(-result.coinCost);
-          showToast('🪙 자막 생성 완료! (${result.coinCost}코인 사용)');
+        // 코인 차감 (STT 성공 후에만)
+        if (coinsToUse > 0) {
+          userProvider.addCoins(-coinsToUse);
+          showToast('자막 생성 완료! ($coinsToUse코인 사용)');
+        } else {
+          showToast('자막 생성 완료!');
         }
       }
 
+      await _refreshDailyRemaining();
       _setSttState(SttProcessState.done);
       // 잠시 후 idle로 복귀
       Future.delayed(const Duration(seconds: 2), () {
@@ -459,14 +394,11 @@ class ClipEditorViewModel extends ChangeNotifier
             ))
         .toList();
 
+    final colName = collectionNameCtl.text.trim();
+
     return ClipFormData(
-      titleName: nameCtl.text.trim(),
-      titleNameNative: nameNativeCtl.text.trim(),
+      collectionName: colName.isEmpty ? null : colName,
       clipTitle: titleCtl.text.trim(),
-      epiTitle: epiTitleCtl.text.trim(),
-      seasonNumber: int.tryParse(seasonCtl.text.trim()),
-      episodeNumber: int.tryParse(episodeCtl.text.trim()),
-      contentType: _contentType,
       durationMs: int.tryParse(durationCtl.text.trim()),
       segments: segments,
       tags: tags,
@@ -486,13 +418,8 @@ class ClipEditorViewModel extends ChangeNotifier
 
       // UI에 데이터 채우기
       final form = result.formData;
-      nameCtl.text = form.titleName;
-      nameNativeCtl.text = form.titleNameNative;
+      collectionNameCtl.text = form.collectionName ?? '';
       titleCtl.text = form.clipTitle;
-      epiTitleCtl.text = form.epiTitle;
-      seasonCtl.text = form.seasonNumber?.toString() ?? '';
-      episodeCtl.text = form.episodeNumber?.toString() ?? '';
-      _contentType = form.contentType;
 
       if (form.durationMs != null && form.durationMs! > 0) {
         durationCtl.text = form.durationMs.toString();
@@ -542,11 +469,7 @@ class ClipEditorViewModel extends ChangeNotifier
   @override
   void dispose() {
     titleCtl.dispose();
-    nameCtl.dispose();
-    nameNativeCtl.dispose();
-    seasonCtl.dispose();
-    episodeCtl.dispose();
-    epiTitleCtl.dispose();
+    collectionNameCtl.dispose();
     durationCtl.dispose();
     tagsCtl.dispose();
     for (final f in segmentForms) {

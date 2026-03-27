@@ -32,6 +32,7 @@ import 'sections/quick_actions_section.dart';
 import 'sections/continue_watching_section.dart';
 import 'sections/collections_section.dart';
 import 'sections/random_subtitle_section.dart';
+import '../../../../core/wigdets/tip_dialog.dart';
 
 /// 대시보드 메인 화면 (앱 홈).
 ///
@@ -57,6 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final ui = context.read<ClipActivityProvider>();
       ui.refreshRandomSegments();
       ui.refreshRandomHeroClip();
+      if (context.mounted) showTipDialog(context);
     });
   }
 

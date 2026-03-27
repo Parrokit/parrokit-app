@@ -7,12 +7,11 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/wigdets/tip_dialog.dart';
 
-import 'package:parrokit/core/router/app_router.dart';
 import '../widgets/card_container.dart';
 import '../widgets/hairline_divider.dart';
-import '../widgets/tiles/nav_tile.dart';
+import '../widgets/nav_tile.dart';
 import '../widgets/section_title.dart';
 import '../web_document_screen.dart';
 
@@ -33,7 +32,7 @@ class InfoSection extends StatelessWidget {
               NavTile(
                 icon: Icons.info_outline,
                 title: '앱 정보',
-                subtitle: '버전 1.0.0',
+                subtitle: '버전 1.0.1',
                 onTap: () {},
                 showArrow: false,
               ),
@@ -41,7 +40,7 @@ class InfoSection extends StatelessWidget {
               NavTile(
                 icon: Icons.help_outline,
                 title: '도움말',
-                onTap: () => context.go(AppRoutes.introPath),
+                onTap: () => showTipDialog(context, force: true),
               ),
               const HairlineDivider(),
               NavTile(

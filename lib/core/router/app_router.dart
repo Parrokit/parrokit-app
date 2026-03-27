@@ -12,9 +12,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 
 // Features - Screens
-import 'package:parrokit/features/_entry/intro/presentation/intro_screen.dart';
 import 'package:parrokit/features/_entry/auth/presentation/auth_screen.dart';
 import 'package:parrokit/features/_entry/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/_content/shorts/presentation/shorts_screen.dart';
@@ -23,10 +24,6 @@ import 'package:parrokit/features/_settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/_discovery/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/_content/clip_editor/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/_content/player/presentation/clip_player_screen.dart';
-import 'package:parrokit/features/_settings/payment/presentation/payment_screen.dart';
-import 'package:parrokit/features/_settings/payment/presentation/payment_success_screen.dart';
-import 'package:parrokit/features/_settings/payment/presentation/payment_fail_screen.dart';
-import 'package:parrokit/features/_settings/payment/domain/payment_args.dart';
 
 // Router 관련
 import 'app_routes.dart';
@@ -41,21 +38,21 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 /// GoRouter 빌더.
 ///
 /// [seenIntro]: 인트로를 봤는지 여부에 따라 초기 경로 결정.
-GoRouter buildAppRouter({required bool seenIntro}) {
+GoRouter buildAppRouter({
+  required bool seenIntro,
+  required UserProvider userProvider,
+}) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: true,
-    initialLocation: seenIntro ? AppRoutes.dashboardPath : AppRoutes.introPath,
+    initialLocation: AppRoutes.dashboardPath,
     redirect: _handleRedirect,
+    refreshListenable: userProvider,
     routes: [
       // ─────────────────────────────────────────────────────────────────
       // 단독 라우트 (쉘 외부)
       // ─────────────────────────────────────────────────────────────────
-      _introRoute,
       _authRoute,
-      _paymentRoute,
-      _paymentSuccessRoute,
-      _paymentFailRoute,
 
       // ─────────────────────────────────────────────────────────────────
       // ShellRoute (하단 네비바 + 자식 화면)
@@ -78,26 +75,16 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
     return AppRoutes.dashboardPath;
   }
 
-  // 1) PortOne(Iamport) 앱 스킴 처리
-  if (uri.scheme == 'parrokit') {
-    final successParam =
-        uri.queryParameters['imp_success'] ?? uri.queryParameters['success'];
+  // 2) Auth guard
+  final user = Provider.of<UserProvider>(context, listen: false);
+  final isOnAuth = loc.startsWith(AppRoutes.authPath);
+  final isOnIntro = loc.startsWith(AppRoutes.introPath);
 
-    if (successParam == 'true') {
-      return AppRoutes.paymentSuccessPath;
-    }
-    if (successParam == 'false') {
-      return AppRoutes.paymentFailPath;
-    }
+  if (!user.isLoggedIn && !isOnAuth && !isOnIntro) {
+    return AppRoutes.authPath;
+  }
 
-    // 옛날 방식 지원
-    if (loc.startsWith('parrokit://payment/success')) {
-      return AppRoutes.paymentSuccessPath;
-    }
-    if (loc.startsWith('parrokit://payment/fail')) {
-      return AppRoutes.paymentFailPath;
-    }
-
+  if (user.isLoggedIn && isOnAuth) {
     return AppRoutes.dashboardPath;
   }
 
@@ -108,15 +95,6 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
 // Route Definitions
 // ─────────────────────────────────────────────────────────────────────────────
 
-GoRoute get _introRoute => GoRoute(
-      path: AppRoutes.introPath,
-      name: AppRoutes.intro,
-      pageBuilder: (context, state) => NoTransitionPage(
-        name: AppRoutes.intro,
-        child: const IntroScreen(),
-      ),
-    );
-
 GoRoute get _authRoute => GoRoute(
       path: AppRoutes.authPath,
       name: AppRoutes.auth,
@@ -124,36 +102,6 @@ GoRoute get _authRoute => GoRoute(
         name: AppRoutes.auth,
         child: const AuthScreen(),
       ),
-    );
-
-GoRoute get _paymentRoute => GoRoute(
-      path: AppRoutes.paymentPath,
-      name: AppRoutes.payment,
-      builder: (context, state) {
-        final args = state.extra as PaymentArgs;
-        return PaymentScreen(
-          merchantUid: args.merchantUid,
-          amount: args.amount,
-          coins: args.coins,
-          productName: args.productName,
-          buyerEmail: args.buyerEmail,
-          onResult: (result) {
-            // TODO: 서버에 결제 상태 조회 요청 후 처리
-          },
-        );
-      },
-    );
-
-GoRoute get _paymentSuccessRoute => GoRoute(
-      path: AppRoutes.paymentSuccessPath,
-      name: AppRoutes.paymentSuccess,
-      builder: (context, state) => const PaymentSuccessScreen(),
-    );
-
-GoRoute get _paymentFailRoute => GoRoute(
-      path: AppRoutes.paymentFailPath,
-      name: AppRoutes.paymentFail,
-      builder: (context, state) => const PaymentFailScreen(),
     );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -190,12 +138,8 @@ ShellRoute get _shellRoute => ShellRoute(
           pageBuilder: (context, state) => NoTransitionPage(
             name: AppRoutes.library,
             child: LibraryScreen(
-              initialTitleId:
-                  int.tryParse(state.uri.queryParameters['titleId'] ?? ''),
-              initialReleaseId:
-                  int.tryParse(state.uri.queryParameters['releaseId'] ?? ''),
-              initialEpisodeId:
-                  int.tryParse(state.uri.queryParameters['episodeId'] ?? ''),
+              initialCollectionId:
+                  int.tryParse(state.uri.queryParameters['collectionId'] ?? ''),
               initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? ''),
             ),
           ),
@@ -230,7 +174,10 @@ ShellRoute get _shellRoute => ShellRoute(
             GoRoute(
               path: AppRoutes.clipsCreatePath,
               name: AppRoutes.clipsCreate,
-              builder: (context, state) => ClipEditorScreen(),
+              builder: (context, state) => ClipEditorScreen(
+                initialCollectionName:
+                    state.uri.queryParameters['collectionName'],
+              ),
             ),
             GoRoute(
               path: AppRoutes.clipsEditPath,

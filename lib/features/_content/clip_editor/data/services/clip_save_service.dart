@@ -14,7 +14,6 @@ import 'package:parrokit/data/local/app_database.dart' as db;
 
 import '../../domain/clip_form_data.dart';
 import '../../domain/editor_mode.dart';
-import '../../domain/editor_state.dart';
 import 'file_staging_service.dart';
 import 'time_code_service.dart';
 
@@ -59,16 +58,7 @@ class ClipSaveService {
     if (mode is EditMode) {
       await repo.updateMedia(
         clipId: mode.clipId,
-        titleName: formData.titleName,
-        titleNameNative: formData.titleNameNative,
-        type: formData.typeString,
-        seasonNumber: formData.contentType == ContentType.season
-            ? formData.seasonNumber
-            : null,
-        episodeNumber: formData.contentType == ContentType.season
-            ? formData.episodeNumber
-            : null,
-        episodeTitle: formData.epiTitle,
+        collectionName: formData.collectionName,
         clipTitle: formData.clipTitle,
         filePath: relPath,
         durationMs: formData.durationMs!,
@@ -77,16 +67,7 @@ class ClipSaveService {
       );
     } else {
       await repo.addMedia(
-        titleName: formData.titleName,
-        titleNameNative: formData.titleNameNative,
-        type: formData.typeString,
-        seasonNumber: formData.contentType == ContentType.season
-            ? formData.seasonNumber
-            : null,
-        episodeNumber: formData.contentType == ContentType.season
-            ? formData.episodeNumber
-            : null,
-        episodeTitle: formData.epiTitle,
+        collectionName: formData.collectionName,
         clipTitle: formData.clipTitle,
         filePath: relPath,
         durationMs: formData.durationMs!,

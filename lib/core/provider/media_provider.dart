@@ -3,7 +3,7 @@
 // ============================================================================
 //
 // [역할]
-// 미디어 데이터 조회 및 선택 상태 관리 (Title -> Release -> Episode -> Clip)
+// 미디어 데이터 조회 및 선택 상태 관리 (Collection -> Clip)
 //
 // [레이어]
 // Core > Provider
@@ -12,7 +12,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-// app_logger not used here
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../data/local/app_database.dart';
@@ -41,22 +40,13 @@ class MediaProvider extends ChangeNotifier
   // State
   // ─────────────────────────────────────────────────────────────────
 
-  List<Title> titles = [];
-  List<Release> releases = [];
-  List<Episode> episodes = [];
+  List<Collection> collections = [];
+  @override
+  int? selectedCollectionId;
+
   List<ClipItem> clipItems = [];
-
-  @override
-  int? selectedTitleId;
-  @override
-  int? selectedReleaseId;
-  @override
-  int? selectedEpisodeId;
-
   List<Clip> clips = [];
   Map<int, List<Tag>> tagsByClip = {};
-
-  // MediaTagMixin handles distinctTags
 
   // ─────────────────────────────────────────────────────────────────
   // Methods
@@ -66,64 +56,71 @@ class MediaProvider extends ChangeNotifier
     return _service.fetchClipById(clipId);
   }
 
-  // MediaActionMixin implements deleteClipById
-
+  /// 모든 컬렉션 로드.
   @override
-  Future<void> loadTitles() async {
-    titles = await (db.select(db.titles)
-          ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+  Future<void> loadCollections() async {
+    collections = await (db.select(db.collections)
+          ..orderBy([(c) => OrderingTerm.asc(c.name)]))
         .get();
-    selectedTitleId = null;
-    selectedReleaseId = null;
-    releases = [];
-    episodes = [];
-    notifyListeners();
-  }
-
-  /// title 선택.
-  @override
-  Future<void> selectTitle(int titleId) async {
-    selectedTitleId = titleId;
-
-    releases = await (db.select(db.releases)
-          ..where((r) => r.titleId.equals(titleId))
-          ..orderBy([
-            (r) => OrderingTerm.desc(r.type),
-            (r) => OrderingTerm.asc(r.number),
-          ]))
-        .get();
-
-    selectedReleaseId = null;
-    episodes = [];
-    notifyListeners();
-  }
-
-  /// release 선택.
-  @override
-  Future<void> selectRelease(int releaseId) async {
-    selectedReleaseId = releaseId;
-    selectedEpisodeId = null;
+    selectedCollectionId = null;
     clips = [];
+    clipItems = [];
+    tagsByClip = {};
+    notifyListeners();
+  }
+
+  /// 컬렉션 선택 (null이면 컬렉션 없는 클립 표시).
+  @override
+  Future<void> selectCollection(int? id) async {
+    selectedCollectionId = id;
+    clips = [];
+    clipItems = [];
     tagsByClip = {};
 
-    episodes = await (db.select(db.episodes)
-          ..where((e) => e.releaseId.equals(releaseId))
-          ..orderBy([(e) => OrderingTerm.asc(e.number)]))
-        .get();
+    if (id == null) {
+      clips = await (db.select(db.clips)
+            ..where((c) => c.collectionId.isNull())
+            ..orderBy([(c) => OrderingTerm.asc(c.id)]))
+          .get();
+    } else {
+      clips = await (db.select(db.clips)
+            ..where((c) => c.collectionId.equals(id))
+            ..orderBy([(c) => OrderingTerm.asc(c.id)]))
+          .get();
+    }
+
+    await _buildClipItems();
     notifyListeners();
   }
 
-  /// episode 선택.
-  @override
-  Future<void> selectEpisode(int episodeId) async {
-    selectedEpisodeId = episodeId;
-
-    // 클립 목록
-    clips = await (db.select(db.clips)
-          ..where((e) => e.episodeId.equals(episodeId))
-          ..orderBy([(c) => OrderingTerm.asc(c.id)]))
+  /// 컬렉션 내 클립 수 조회.
+  Future<int> countClipsInCollection(int collectionId) async {
+    final rows = await (db.select(db.clips)
+          ..where((c) => c.collectionId.equals(collectionId)))
         .get();
+    return rows.length;
+  }
 
+  /// 새 컬렉션 생성 후 목록 갱신.
+  Future<void> createCollection(String name) async {
+    await db.collectionsDao.findOrCreate(name);
+    await loadCollections();
+  }
+
+  /// 컬렉션 목록으로 돌아감.
+  void backToCollections() {
+    selectedCollectionId = null;
+    clips = [];
+    clipItems = [];
+    tagsByClip = {};
+    notifyListeners();
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Internal helpers
+  // ─────────────────────────────────────────────────────────────────
+
+  Future<void> _buildClipItems() async {
     // 태그 매핑
     tagsByClip = {};
     if (clips.isNotEmpty) {
@@ -142,7 +139,7 @@ class MediaProvider extends ChangeNotifier
       }
     }
 
-    // ✅ ClipItem에 segments + thumbnail까지 넣어서 구성
+    // ClipItem 구성 (segments + thumbnail)
     clipItems = [];
     for (final c in clips) {
       final segments = await (db.select(db.segments)
@@ -153,12 +150,11 @@ class MediaProvider extends ChangeNotifier
       final dir = await getApplicationDocumentsDirectory();
       final absPath =
           c.filePath.startsWith('/') ? c.filePath : '${dir.path}/${c.filePath}';
-      // clipAbs removed - absPath used directly below
 
       Uint8List? thumbBytes;
       try {
         thumbBytes = await VideoThumbnail.thumbnailData(
-          video: absPath, // ✅ 절대경로 사용
+          video: absPath,
           imageFormat: ImageFormat.JPEG,
           quality: 70,
           timeMs: 500,
@@ -175,43 +171,6 @@ class MediaProvider extends ChangeNotifier
         ),
       );
     }
-
-    notifyListeners();
   }
 
-  /// titles 화면으로 돌아감.
-  void backToTitles() {
-    selectedTitleId = null;
-    selectedReleaseId = null;
-    selectedEpisodeId = null;
-
-    releases = [];
-    episodes = [];
-    clips = [];
-    tagsByClip = {};
-
-    notifyListeners();
-  }
-
-  /// releases 화면으로 돌아감.
-  void backToReleases() {
-    selectedReleaseId = null;
-    selectedEpisodeId = null;
-
-    episodes = [];
-    clips = [];
-    tagsByClip = {};
-
-    notifyListeners();
-  }
-
-  /// episodes 화면으로 돌아감.
-  void backToEpisodes() {
-    selectedEpisodeId = null;
-
-    clips = [];
-    tagsByClip = {};
-
-    notifyListeners();
-  }
 }

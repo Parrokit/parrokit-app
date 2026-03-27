@@ -1,4 +1,6 @@
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
@@ -6,23 +8,23 @@ class AdService {
   static final AdService _instance = AdService._internal();
   factory AdService() => _instance;
 
+  // ─────────────────────────────────────────────────────────────────
+  // 전면 광고 (Interstitial)
+  // ─────────────────────────────────────────────────────────────────
+
   InterstitialAd? _ad;
   bool _isLoading = false;
 
-  /// ✅ 플랫폼별 광고 단위 ID
   String get _interstitialAdUnitId {
-    if (Platform.isAndroid) {
-      // 👉 Android용
-      return 'ca-app-pub-3940256099942544/1033173712';
-    } else if (Platform.isIOS) {
-      // 👉 iOS용
-      return 'ca-app-pub-3940256099942544/1033173712'; // (테스트 ID 예시, 실제 값 넣기)
-    } else {
-      return ''; // 웹/기타 플랫폼
+    if (kReleaseMode) {
+      if (Platform.isAndroid) return dotenv.env['ADMOB_INTERSTITIAL_ANDROID_PROD'] ?? '';
+      if (Platform.isIOS) return dotenv.env['ADMOB_INTERSTITIAL_IOS_PROD'] ?? '';
     }
+    if (Platform.isAndroid) return dotenv.env['ADMOB_INTERSTITIAL_ANDROID_TEST'] ?? '';
+    if (Platform.isIOS) return dotenv.env['ADMOB_INTERSTITIAL_IOS_TEST'] ?? '';
+    return '';
   }
 
-  /// 광고 로드
   void loadAd() {
     if (_isLoading || _ad != null || _interstitialAdUnitId.isEmpty) return;
     _isLoading = true;
@@ -38,7 +40,7 @@ class AdService {
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
               _ad = null;
-              loadAd(); // 닫히면 바로 다음 광고 준비
+              loadAd();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
               ad.dispose();
@@ -50,19 +52,93 @@ class AdService {
         onAdFailedToLoad: (error) {
           _isLoading = false;
           _ad = null;
-          // 실패 시 재시도 로직 넣어도 됨 (예: 타이머로 일정 시간 후 재로드)
         },
       ),
     );
   }
 
-  /// 광고 보여주기
   void showAd() {
     if (_ad != null) {
       _ad!.show();
       _ad = null;
     } else {
-      loadAd(); // 준비 안 됐으면 로드 시도
+      loadAd();
     }
   }
+
+  // ─────────────────────────────────────────────────────────────────
+  // 보상형 광고 (Rewarded) — 시청 시 코인 지급
+  // ─────────────────────────────────────────────────────────────────
+
+  static const int rewardCoins = 5; // 광고 1회당 지급 코인
+
+  RewardedAd? _rewardedAd;
+  bool _isRewardedLoading = false;
+
+  String get _rewardedAdUnitId {
+    if (kReleaseMode) {
+      if (Platform.isAndroid) return dotenv.env['ADMOB_REWARDED_ANDROID_PROD'] ?? '';
+      if (Platform.isIOS) return dotenv.env['ADMOB_REWARDED_IOS_PROD'] ?? '';
+      return '';
+    }
+    if (Platform.isAndroid) return dotenv.env['ADMOB_REWARDED_ANDROID_TEST'] ?? '';
+    if (Platform.isIOS) return dotenv.env['ADMOB_REWARDED_IOS_TEST'] ?? '';
+    return '';
+  }
+
+  /// 보상형 광고를 미리 로드합니다.
+  void loadRewardedAd() {
+    if (_isRewardedLoading || _rewardedAd != null || _rewardedAdUnitId.isEmpty)
+      return;
+    _isRewardedLoading = true;
+
+    RewardedAd.load(
+      adUnitId: _rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+          _isRewardedLoading = false;
+        },
+        onAdFailedToLoad: (error) {
+          _isRewardedLoading = false;
+          _rewardedAd = null;
+        },
+      ),
+    );
+  }
+
+  /// 보상형 광고를 보여줍니다.
+  ///
+  /// [onRewarded]: 시청 완료 시 지급 코인 수로 호출됩니다.
+  /// 광고가 준비되지 않았으면 [onRewarded](-1)로 알립니다.
+  void showRewardedAd({required void Function(int coins) onRewarded}) {
+    if (_rewardedAd == null) {
+      loadRewardedAd();
+      onRewarded(-1); // 준비 안 됨
+      return;
+    }
+
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _rewardedAd = null;
+        loadRewardedAd();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _rewardedAd = null;
+        loadRewardedAd();
+      },
+    );
+
+    _rewardedAd!.show(
+      onUserEarnedReward: (ad, reward) {
+        onRewarded(rewardCoins);
+      },
+    );
+    _rewardedAd = null;
+  }
+
+  bool get isRewardedAdReady => _rewardedAd != null;
 }

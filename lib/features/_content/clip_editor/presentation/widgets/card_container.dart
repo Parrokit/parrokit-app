@@ -13,18 +13,8 @@ class CardContainer extends StatelessWidget {
     return Container(
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: t.colorScheme.outlineVariant, width: 0.8),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 2))
-        ],
       ),
       child: child,
     );

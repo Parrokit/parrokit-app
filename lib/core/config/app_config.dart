@@ -1,6 +1,9 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppConfig {
+  /// 하루 사용 제한
+  static const int sttDailyLimit = 3; // 자동 자막 생성 하루 최대 횟수
+
   /// 플레이어
   static bool segmentLoop = false; // 구간 재생
   static bool repeatAll = false; // 반복 재생(전체)
@@ -12,7 +15,6 @@ class AppConfig {
   static bool shortsShowSubtitles = true; // 자막 표시(쇼츠)
 
   /// 앱 테마는 프로바이더 관리
-
   static Future<void> loadFromPrefs() async {
     final p = await SharedPreferences.getInstance();
 

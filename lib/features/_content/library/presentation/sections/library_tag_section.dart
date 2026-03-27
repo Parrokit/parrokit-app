@@ -51,7 +51,7 @@ class LibraryTagSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (allTags.isEmpty) {
-      return const Center(child: Text('등록된 태그가 없습니다'));
+      return const Center(child: Text('등록된 태그가 없어요.'));
     }
 
     final names = selectedTags.toList().reversed.toList();

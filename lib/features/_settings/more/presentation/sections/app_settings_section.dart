@@ -12,7 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
-import '../widgets/tiles/theme_tile.dart';
+import '../widgets/theme_tile.dart';
 
 /// 앱 설정 섹션.
 class AppSettingsSection extends StatelessWidget {

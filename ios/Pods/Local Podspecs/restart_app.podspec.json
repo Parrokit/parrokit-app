@@ -1,19 +1,19 @@
 {
   "name": "restart_app",
-  "version": "0.0.1",
-  "summary": "A new Flutter project.",
-  "description": "A new Flutter project.",
-  "homepage": "http://example.com",
+  "version": "1.7.3",
+  "summary": "A Flutter plugin to restart the app using native APIs.",
+  "description": "A Flutter plugin that helps you to restart the whole Flutter app with a single function call by using native APIs.",
+  "homepage": "https://github.com/gabrimatic/restart_app",
   "license": {
     "file": "../LICENSE"
   },
   "authors": {
-    "Your Company": "email@example.com"
+    "Soroush Yousefpour": "https://gabrimatic.info"
   },
   "source": {
     "path": "."
   },
-  "source_files": "Classes/**/*",
+  "source_files": "restart_app/Sources/restart_app/**/*",
   "dependencies": {
     "Flutter": []
   },

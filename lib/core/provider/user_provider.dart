@@ -1,6 +1,8 @@
 // lib/provider/user_provider.dart
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:parrokit/data/models/user.dart';
 import 'package:parrokit/core/repositories/user_repository.dart';
 import 'package:parrokit/core/utils/app_logger.dart';
@@ -43,23 +45,7 @@ class UserProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      final existing = await _userRepository.getCurrentUser();
-      if (existing != null) {
-        _currentUser = existing;
-      } else {
-        _currentUser = await _userRepository.signInAsGuest();
-      }
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  /// 강제로 새 게스트 유저를 만들고 싶을 때 사용합니다.
-  /// (대부분의 경우 [init] 만으로 충분합니다.)
-  Future<void> signInAsGuest() async {
-    _setLoading(true);
-    try {
-      _currentUser = await _userRepository.signInAsGuest();
+      _currentUser = await _userRepository.getCurrentUser();
     } finally {
       _setLoading(false);
     }
@@ -98,6 +84,7 @@ class UserProvider extends ChangeNotifier {
         sendEmailVerification: sendEmailVerification,
       );
       _currentUser = user;
+      unawaited(Purchases.logIn(user.id));
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -116,6 +103,7 @@ class UserProvider extends ChangeNotifier {
         password: password,
       );
       _currentUser = user;
+      unawaited(Purchases.logIn(user.id));
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -206,12 +194,27 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// 회원탈퇴.
+  /// Firestore 문서, Firebase Auth 계정, 로컬 캐시를 모두 삭제합니다.
+  Future<void> deleteAccount() async {
+    _setLoading(true);
+    try {
+      await _userRepository.deleteAccount();
+      () async { try { await Purchases.logOut(); } catch (_) {} }();
+      _currentUser = null;
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 로그아웃/초기화.
   /// 로컬 저장소를 비우고 메모리에 있는 유저도 제거합니다.
   Future<void> signOut() async {
     _setLoading(true);
     try {
       await _userRepository.signOut();
+      () async { try { await Purchases.logOut(); } catch (_) {} }();
       _currentUser = null;
       notifyListeners();
     } finally {

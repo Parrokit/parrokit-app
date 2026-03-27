@@ -7,8 +7,8 @@ class PickedState extends StatelessWidget {
   const PickedState({
     super.key,
     required this.picked,
-    required this.onReplace, // 파일에서 다시 선택
-    required this.onPickFromPhotos, // ✅ 사진에서 다시 선택
+    required this.onReplace,
+    required this.onPickFromPhotos,
     required this.onRemove,
     this.thumb,
     required this.isPlayingInline,
@@ -20,7 +20,7 @@ class PickedState extends StatelessWidget {
 
   final PlatformFile picked;
   final VoidCallback onReplace;
-  final VoidCallback onPickFromPhotos; // ✅ 추가
+  final VoidCallback onPickFromPhotos;
   final VoidCallback onRemove;
   final Uint8List? thumb;
   final bool isPlayingInline;
@@ -80,7 +80,7 @@ class PickedState extends StatelessWidget {
                 ),
               ),
 
-              // 하단 컨트롤 바 (항상 보이게)
+              // 하단 컨트롤 바
               Positioned(
                 left: 0,
                 right: 0,
@@ -196,14 +196,20 @@ class PickedState extends StatelessWidget {
                 ],
                 child: SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                  child: TextButton.icon(
+                    icon: Icon(
+                      Icons.swap_horiz_rounded,
+                      size: 18,
+                      color: cs.onSurfaceVariant,
+                    ),
                     label: Text(
                       '다시 선택',
-                      style:
-                          tt.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+                      style: tt.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
-                    onPressed: null, // 클릭 이벤트는 PopupMenuButton이 처리
+                    onPressed: null,
                   ),
                 ),
               ),

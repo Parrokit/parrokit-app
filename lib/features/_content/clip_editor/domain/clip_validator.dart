@@ -10,7 +10,6 @@
 // ============================================================================
 
 import 'clip_form_data.dart';
-import 'editor_state.dart';
 
 /// 검증 결과.
 class ValidationResult {
@@ -38,35 +37,14 @@ class ClipValidator {
       return const ValidationResult.invalid('영상 파일을 먼저 선택해 주세요.');
     }
 
+    // 컬렉션 이름 (필수)
+    if (form.collectionName == null || form.collectionName!.trim().isEmpty) {
+      return const ValidationResult.invalid('컬렉션은 필수입니다.');
+    }
+
     // 클립 제목
     if (form.clipTitle.trim().isEmpty) {
       return const ValidationResult.invalid('클립 제목은 필수입니다.');
-    }
-
-    // 작품명
-    if (form.titleName.trim().isEmpty) {
-      return const ValidationResult.invalid('작품명은 필수입니다.');
-    }
-
-    // 원어 작품명
-    if (form.titleNameNative.trim().isEmpty) {
-      return const ValidationResult.invalid('원어 작품명은 필수입니다.');
-    }
-
-    // 에피소드/영화 제목
-    if (form.epiTitle.trim().isEmpty) {
-      final label = form.contentType == ContentType.movie ? '영화 제목' : '회차 제목';
-      return ValidationResult.invalid('$label은 필수입니다.');
-    }
-
-    // 시즌/에피소드 번호 (시즌 타입인 경우)
-    if (form.contentType == ContentType.season) {
-      if (form.seasonNumber == null || form.seasonNumber! <= 0) {
-        return const ValidationResult.invalid('시즌 번호는 1 이상의 숫자로 필수입니다.');
-      }
-      if (form.episodeNumber == null || form.episodeNumber! <= 0) {
-        return const ValidationResult.invalid('화 번호는 1 이상의 숫자로 필수입니다.');
-      }
     }
 
     // 영상 길이

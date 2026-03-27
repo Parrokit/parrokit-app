@@ -13,7 +13,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
-import '../widgets/cards/hero_card.dart';
+import '../widgets/hero_card.dart';
 
 /// 대시보드 히어로 카드 섹션.
 ///

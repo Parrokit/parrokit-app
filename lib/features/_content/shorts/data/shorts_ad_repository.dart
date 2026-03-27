@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ShortsAdRepository {
   static const String _keyAdvanceCount = 'ad_advance_count';
+  static const String _keyLastAdTime = 'ad_last_shown_time';
 
   /// 저장된 스와이프 카운트를 불러옵니다.
   ///
@@ -40,5 +41,17 @@ class ShortsAdRepository {
   Future<void> clearCount() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyAdvanceCount);
+  }
+
+  /// 마지막으로 광고가 노출된 시각(ms)을 불러옵니다.
+  Future<int?> loadLastAdTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keyLastAdTime);
+  }
+
+  /// 마지막으로 광고가 노출된 시각을 저장합니다.
+  Future<void> saveLastAdTime(int millisecondsSinceEpoch) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyLastAdTime, millisecondsSinceEpoch);
   }
 }

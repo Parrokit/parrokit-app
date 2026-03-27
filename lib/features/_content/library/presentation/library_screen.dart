@@ -24,30 +24,22 @@ import 'widgets/bookmark_tabs.dart';
 /// [역할]
 /// 라이브러리 메인 화면.
 ///
-/// '폴더(Title/Season/Episode)별 보기'와 '태그별 보기' 두 가지 모드를 제공합니다.
+/// '폴더(Collections)별 보기'와 '태그별 보기' 두 가지 모드를 제공합니다.
 /// 상단 [BookmarkTabs]를 통해 모드를 전환할 수 있습니다.
 ///
 /// [기능]
-/// - [LibraryTab.folder]: [LibraryFolderSection] 표시 (계층 구조 탐색)
+/// - [LibraryTab.folder]: [LibraryFolderSection] 표시 (컬렉션 → 클립)
 /// - [LibraryTab.tag]: [LibraryTagSection] 표시 (태그 기반 필터링 및 검색)
-/// - 초기 진입 시 특정 Title/Release/Episode로 바로 이동 가능 ([initialTitleId] 등)
+/// - 초기 진입 시 특정 Collection으로 바로 이동 가능 ([initialCollectionId])
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({
     super.key,
-    this.initialTitleId,
-    this.initialReleaseId,
-    this.initialEpisodeId,
+    this.initialCollectionId,
     this.initialTab,
   });
 
-  /// 초기 선택할 Title ID (옵션)
-  final int? initialTitleId;
-
-  /// 초기 선택할 Release ID (옵션)
-  final int? initialReleaseId;
-
-  /// 초기 선택할 Episode ID (옵션)
-  final int? initialEpisodeId;
+  /// 초기 선택할 Collection ID (옵션)
+  final int? initialCollectionId;
 
   /// 초기 활성화할 탭 인덱스 (0: Folder, 1: Tag)
   final int? initialTab;
@@ -59,8 +51,6 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   LibraryTab tab = LibraryTab.folder;
 
-  // Tag Tab State는 Provider(TagFilterProvider)로 이관됨.
-
   @override
   void initState() {
     super.initState();
@@ -71,17 +61,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
       final tagProv = context.read<TagFilterProvider>();
 
       await tagProv.startWatching();
-      await media.loadTitles();
+      await media.loadCollections();
       media.startWatchingDistinctTags();
 
-      if (widget.initialTitleId != null) {
-        await media.selectTitle(widget.initialTitleId!);
-      }
-      if (widget.initialReleaseId != null) {
-        await media.selectRelease(widget.initialReleaseId!);
-      }
-      if (widget.initialEpisodeId != null) {
-        await media.selectEpisode(widget.initialEpisodeId!);
+      if (widget.initialCollectionId != null) {
+        await media.selectCollection(widget.initialCollectionId);
       }
     });
   }
@@ -100,7 +84,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final media = context.read<MediaProvider>();
     if (media.distinctTags.isEmpty) return;
 
-    // 현재 있는 모든 태그를 선택 상태로 만듦
     context.read<TagFilterProvider>().setTags(
           media.distinctTags.map((t) => t.name),
         );
@@ -114,7 +97,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final media = context.watch<MediaProvider>();
-    final tagProv = context.watch<TagFilterProvider>(); // 태그 상태 구독
+    final tagProv = context.watch<TagFilterProvider>();
 
     return Scaffold(
       backgroundColor: cs.surface,

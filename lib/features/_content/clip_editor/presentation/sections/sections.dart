@@ -11,8 +11,6 @@
 
 export 'file_section.dart';
 export 'work_name_section.dart';
-export 'type_section.dart';
-export 'season_episode_section.dart';
 export 'titles_section.dart';
 export 'tags_section.dart';
 export 'segments_section.dart';

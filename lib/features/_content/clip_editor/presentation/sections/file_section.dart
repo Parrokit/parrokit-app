@@ -18,8 +18,7 @@ import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/core/utils/show_toast.dart';
 
-import '../widgets/cards/file_hero_card.dart';
-import '../widgets/section_title.dart';
+import '../widgets/file_hero_card.dart';
 import '../clip_editor_view_model.dart';
 
 /// 파일 선택 섹션.
@@ -48,8 +47,6 @@ class _FileSectionState extends State<FileSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionTitle("영상 정보"),
-        const SizedBox(height: 10),
         FileHeroCard(
           picked: vm.picked,
           onPick: vm.pickFromSandbox,

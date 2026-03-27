@@ -85,6 +85,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
     if (shouldShow) {
       _pauseSignal.value = true;
       AdService().showAd(); // premium이면 incrementBy가 false를 반환 → 여기 안 옴
+      ad.recordAdShown();
       _pauseSignal.value = false;
     }
   }
@@ -107,12 +108,15 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (shorts.shorts.isEmpty) {
-          return Center(
-              child: Text("영상이 없습니다",
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: Colors.white)));
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            body: Center(
+              child: Text(
+                '아직 등록된 클립이 없어요.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          );
         }
 
         return Scaffold(

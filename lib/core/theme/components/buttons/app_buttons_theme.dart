@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 ButtonStyle _baseButton(ColorScheme cs, {required bool isDark}) {
   return ButtonStyle(
     shape: WidgetStatePropertyAll(
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     elevation: const WidgetStatePropertyAll(0),
   );

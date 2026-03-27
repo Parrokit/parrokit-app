@@ -3,26 +3,32 @@
 // ============================================================================
 //
 // [역할]
-// 결제 섹션 위젯 (프리미엄 구매).
+// 결제 섹션 위젯 (광고 제거 + 코인 충전 + 구매 내역).
+// RevenueCat Paywall / Customer Center 연동.
 // ============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
+import 'package:parrokit/core/provider/iap_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:parrokit/core/theme/app_radius.dart';
-import 'package:parrokit/core/provider/iap_provider.dart';
-import '../widgets/card_container.dart';
-import '../widgets/tiles/nav_tile.dart';
-import '../widgets/section_title.dart';
-import '../premium_dialog.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/features/_settings/more/data/coin_package.dart';
+import '../widgets/card_container.dart';
+import '../widgets/nav_tile.dart';
+import '../widgets/section_title.dart';
 
-/// 결제 섹션.
+/// 결제 섹션 (광고 제거 + 코인 충전 + 구매 내역).
 class PaymentSection extends StatelessWidget {
   const PaymentSection({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final isPremium = context.watch<IapProvider>().isPremium;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -31,11 +37,33 @@ class PaymentSection extends StatelessWidget {
         CardContainer(
           child: Column(
             children: [
+              // 광고 제거
               NavTile(
-                icon: Icons.add_shopping_cart_rounded,
+                icon: Icons.block_rounded,
                 title: '광고 제거',
-                showArrow: false,
-                trailing: _buildPaymentButton(context),
+                subtitle: isPremium
+                    ? '쇼츠 광고가 비활성화되어 있어요'
+                    : '한 번 구매로 모든 광고를 없애요',
+                showArrow: !isPremium,
+                trailing: isPremium ? _buildActiveChip(context) : null,
+                onTap: isPremium ? null : () => _presentPaywall(context),
+              ),
+
+              // 코인 충전
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              NavTile(
+                icon: Icons.toll_rounded,
+                title: '코인 충전',
+                subtitle: '결제마다 10% 보너스 코인 지급',
+                onTap: () => _openCoinPaywall(context),
+              ),
+
+              // 구매 내역
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              NavTile(
+                icon: Icons.receipt_long_rounded,
+                title: '구매 내역',
+                onTap: () => RevenueCatUI.presentCustomerCenter(),
               ),
             ],
           ),
@@ -44,78 +72,95 @@ class PaymentSection extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentButton(BuildContext context) {
-    final iap = context.watch<IapProvider>();
+  Widget _buildActiveChip(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
-    // 이미 프리미엄이면 '구매 완료' 비활성 버튼
-    if (iap.isPremium) {
-      return FilledButton.icon(
-        onPressed: null,
-        label: const Text('구매 완료'),
-        style: FilledButton.styleFrom(
-          disabledBackgroundColor: cs.surfaceContainerHighest,
-          disabledForegroundColor: cs.onSurface.withValues(alpha: 0.6),
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-    }
-
-    // 결제 버튼
-    return FilledButton(
-      style: FilledButton.styleFrom(
-        backgroundColor: cs.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        textStyle: const TextStyle(
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        '구매 완료',
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
+          color: cs.onPrimaryContainer,
         ),
-        elevation: 0,
       ),
-      onPressed: () async {
-        final iap = context.read<IapProvider>();
+    );
+  }
 
-        if (iap.loading) {
-          showToast('결제 정보를 불러오는 중입니다… 잠시만요.');
-          return;
-        }
-        if (!iap.available) {
-          showToast('스토어에 연결할 수 없습니다.');
-          return;
-        }
-        if (iap.removeAdsProduct == null) {
-          await iap.init();
-          if (!context.mounted) return;
-          if (iap.removeAdsProduct == null) {
-            showToast('상품 정보를 찾을 수 없습니다.');
-            return;
-          }
-        }
+  Future<void> _presentPaywall(BuildContext context) async {
+    await RevenueCatUI.presentPaywallIfNeeded(IapProvider.entitlementId);
+  }
 
-        if (!context.mounted) return;
-        showPremiumDialog(
-          context,
-          price: iap.removeAdsProduct!.price,
-          onBuy: () => context.read<IapProvider>().buyRemoveAds(),
-          onRestore: () => context.read<IapProvider>().restorePurchases(),
+  Future<void> _openCoinPaywall(BuildContext context) async {
+    Offering? offering;
+    try {
+      final offerings = await Purchases.getOfferings();
+      offering = offerings.getOffering('parrokit_coins');
+    } catch (_) {}
+
+    if (offering == null) {
+      showToast('상품 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    if (!context.mounted) return;
+
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _CoinPaywallPage(
+          offering: offering!,
+          userProvider: context.read<UserProvider>(),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 코인 페이월 페이지 (PaywallView + onPurchaseCompleted 콜백)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CoinPaywallPage extends StatefulWidget {
+  final Offering offering;
+  final UserProvider userProvider;
+
+  const _CoinPaywallPage({
+    required this.offering,
+    required this.userProvider,
+  });
+
+  @override
+  State<_CoinPaywallPage> createState() => _CoinPaywallPageState();
+}
+
+class _CoinPaywallPageState extends State<_CoinPaywallPage> {
+  @override
+  Widget build(BuildContext context) {
+    return PaywallView(
+      offering: widget.offering,
+      displayCloseButton: true,
+      onPurchaseCompleted: (_, storeTransaction) {
+        // 구매 즉시 코인 지급 + 토스트 (onDismiss 의존 X)
+        final pkg = CoinPackage.packages.firstWhere(
+          (p) => p.productId == storeTransaction.productIdentifier,
+          orElse: () => CoinPackage.packages.first,
         );
+        widget.userProvider.addCoins(pkg.totalCoins);
+        showToast('${pkg.totalCoins}코인이 충전됐어요!');
       },
-      child: Text(
-        context.watch<IapProvider>().removeAdsProduct?.price ?? 'US\$0.99',
-      ),
+      onDismiss: () {
+        Navigator.of(context, rootNavigator: true).pop();
+      },
+      onPurchaseError: (_) {
+        showToast('결제에 실패했어요. 다시 시도해 주세요.');
+      },
     );
   }
 }
