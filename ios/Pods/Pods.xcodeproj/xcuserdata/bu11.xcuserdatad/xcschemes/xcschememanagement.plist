@@ -344,7 +344,7 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>ffmpeg_kit_flutter_new_video.xcscheme</key>
+		<key>ffmpeg_kit_flutter_new.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -495,6 +495,16 @@
 			<false/>
 		</dict>
 		<key>nanopb.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>path_provider_foundation-path_provider_foundation_privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>path_provider_foundation.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>

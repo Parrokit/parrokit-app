@@ -3,7 +3,7 @@ description: "Parrokit: 애니메이션 클립으로 즐기는 언어 학습 앱
 # Private Project - Do not publish to pub.dev
 publish_to: 'none'
 
-version: 1.0.3+64
+version: 1.0.4+64
 
 environment:
   sdk: ^3.6.1
@@ -50,12 +50,17 @@ dependencies:
   audio_service: ^0.18.18     # 백그라운드 오디오 제어
   audio_session: ^0.2.2       # 오디오 세션 관리
   image_picker: ^1.2.0        # 갤러리/카메라 이미지 선택
+
+  # iOS 18 용, But Android 빌드 안됨 (V1 Embedding 문제)
   # ffmpeg_kit_flutter:         # FFmpeg (영상 편집/변환)
   #   git:
   #     url: https://github.com/Sahad2701/ffmpeg-kit.git
   #     path: flutter/flutter
   #     ref: flutter_fix_retired_v6.0.3
-  ffmpeg_kit_flutter_new_video: ^2.0.0
+ 
+  # iOS 17 + Android 호환, iOS 18에서는 파일 피커시 프리징 현상
+  ffmpeg_kit_flutter_new: ^4.1.0
+  
   # -----------------------------------------------------------
   # Network & Utilities
   # -----------------------------------------------------------
@@ -72,7 +77,7 @@ dependencies:
   # -----------------------------------------------------------
   path_provider: ^2.1.5       # 디바이스 경로 획득
   path: ^1.9.0                # 경로 조작 유틸리티
-  file_selector: ^1.1.0       # 파일 선택기
+  file_picker: ^10.1.5         # 파일 선택기
   file_saver: ^0.2.14         # 파일 저장
   flutter_file_dialog: ^3.0.2 # 시스템 파일 대화상자
   archive: ^4.0.7             # 압축/해제 (ZIP 등)
@@ -97,6 +102,12 @@ dependencies:
   purchases_ui_flutter: ^9.14.0
   advertising_id: ^2.7.1
 
+# -----------------------------------------------------------
+# Dependency Overrides
+# -----------------------------------------------------------
+dependency_overrides:
+  path_provider_foundation: 2.4.4  # 2.6.0+는 objective_c.framework 필요 (iOS 18+)
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -168,3 +179,4 @@ flutter_native_splash:
     image: assets/splash/pa_splash_android12.png
     icon_background_color: "#FFFFFF"
     icon_background_color_dark: "#0D0F12"
+

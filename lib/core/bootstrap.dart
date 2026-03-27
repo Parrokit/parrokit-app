@@ -90,6 +90,7 @@ class _NoInternetApp extends StatelessWidget {
 /// 모든 초기화 완료 후 runApp() 실행.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   // ─────────────────────────────────────────────────────────────────
   // 앱 설정 로드
   // ─────────────────────────────────────────────────────────────────
