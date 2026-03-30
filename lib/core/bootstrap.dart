@@ -88,13 +88,16 @@ class _NoInternetApp extends StatelessWidget {
 /// 앱 부트스트랩 - main()에서 호출.
 ///
 /// 모든 초기화 완료 후 runApp() 실행.
+/// 앱 부트스트랩 - main()에서 호출.
+///
+/// 모든 초기화 완료 후 runApp() 실행.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ─────────────────────────────────────────────────────────────────
   // 앱 설정 로드
   // ─────────────────────────────────────────────────────────────────
-  await AppConfig.loadFromPrefs();
+  await _initAppConfig();
   final themeProvider = ThemeProvider();
   await themeProvider.loadTheme();
 
@@ -109,34 +112,20 @@ Future<void> bootstrap() async {
   // ─────────────────────────────────────────────────────────────────
   // 외부 서비스 초기화
   // ─────────────────────────────────────────────────────────────────
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await _initFirebase();
 
   // ─────────────────────────────────────────────────────────────────
   // Crashlytics - Flutter 에러 및 비동기 에러 자동 수집
   // ─────────────────────────────────────────────────────────────────
-  if (kReleaseMode) {
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
-  }
+  _initCrashlytics();
 
-  await dotenv.load(fileName: ".env");
-  await BgAudio.instance.ensureAudioHandler();
+  await _initEnv();
+  await _initAudio();
 
   // ─────────────────────────────────────────────────────────────────
   // 인증 서비스 설정 (라우터보다 먼저 — refreshListenable에 필요)
   // ─────────────────────────────────────────────────────────────────
-  final prefs = await SharedPreferences.getInstance();
-  final userPrefs = UserPrefs(prefs);
-  final authService = FirebaseAuthService();
-  final userService = FirebaseUserService();
-  final userRepository = UserRepository(userPrefs, authService, userService);
-  final userProvider = UserProvider(userRepository);
-  await userProvider.init();
+  final userProvider = await _initUserProvider();
 
   // ─────────────────────────────────────────────────────────────────
   // 라우터 설정
@@ -148,38 +137,12 @@ Future<void> bootstrap() async {
   // ─────────────────────────────────────────────────────────────────
   // 광고 SDK 초기화
   // ─────────────────────────────────────────────────────────────────
-  await MobileAds.instance.initialize();
-  AdService().loadAd();
+  await _initAds();
 
   // ─────────────────────────────────────────────────────────────────
   // RevenueCat 초기화
   // ─────────────────────────────────────────────────────────────────
-
-  // 예시 코드
-  if (kDebugMode) {
-    await Purchases.configure(
-      PurchasesConfiguration(dotenv.env['REVENUECAT_TEST_API_KEY']!),
-    );
-    if (userProvider.isLoggedIn && userProvider.currentUser != null) {
-      await Purchases.logIn(userProvider.currentUser!.id);
-    }
-  } else {
-    if (Platform.isAndroid) {
-      await Purchases.configure(
-        PurchasesConfiguration(dotenv.env['REVENUECAT_ANDROID_API_KEY']!),
-      );
-      if (userProvider.isLoggedIn && userProvider.currentUser != null) {
-        await Purchases.logIn(userProvider.currentUser!.id);
-      }
-    } else if (Platform.isIOS) {
-      await Purchases.configure(
-        PurchasesConfiguration(dotenv.env['REVENUECAT_APPLE_API_KEY']!),
-      );
-      if (userProvider.isLoggedIn && userProvider.currentUser != null) {
-        await Purchases.logIn(userProvider.currentUser!.id);
-      }
-    }
-  }
+  await _initRevenueCat(userProvider);
 
   // ─────────────────────────────────────────────────────────────────
   // IAP 및 광고 Provider
@@ -195,6 +158,7 @@ Future<void> bootstrap() async {
   iapProvider.addListener(() {
     adProvider.premium = iapProvider.isPremium;
   });
+
   // ─────────────────────────────────────────────────────────────────
   // 앱 실행
   // ─────────────────────────────────────────────────────────────────
@@ -209,4 +173,105 @@ Future<void> bootstrap() async {
       child: App(router: router),
     ),
   );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 초기화 세부 함수
+// ─────────────────────────────────────────────────────────────────
+
+Future<void> _initAppConfig() async {
+  try {
+    await AppConfig.loadFromPrefs();
+  } catch (e) {
+    debugPrint('AppConfig load failed: $e');
+  }
+}
+
+Future<void> _initFirebase() async {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(const Duration(seconds: 8));
+  } catch (e) {
+    debugPrint('Firebase init failed: $e');
+  }
+}
+
+void _initCrashlytics() {
+  try {
+    if (kReleaseMode) {
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    }
+  } catch (e) {
+    debugPrint('Crashlytics init failed: $e');
+  }
+}
+
+Future<void> _initEnv() async {
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Env load failed: $e');
+  }
+}
+
+Future<void> _initAudio() async {
+  try {
+    await BgAudio.instance.ensureAudioHandler();
+  } catch (e) {
+    debugPrint('Audio init failed: $e');
+  }
+}
+
+Future<UserProvider> _initUserProvider() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final userProvider = UserProvider(
+      UserRepository(
+          UserPrefs(prefs), FirebaseAuthService(), FirebaseUserService()),
+    );
+    await userProvider.init();
+    return userProvider;
+  } catch (e) {
+    debugPrint('UserProvider init failed: $e');
+    // 실패 시 빈 저장소를 가진 기본 객체라도 반환하여 앱 중단 방지
+    return UserProvider(UserRepository(UserPrefs(null as dynamic),
+        FirebaseAuthService(), FirebaseUserService()));
+  }
+}
+
+Future<void> _initAds() async {
+  try {
+    await MobileAds.instance.initialize();
+    AdService().loadAd();
+  } catch (e) {
+    debugPrint('Ads init failed: $e');
+  }
+}
+
+Future<void> _initRevenueCat(UserProvider userProvider) async {
+  try {
+    String? apiKey;
+    if (kDebugMode) {
+      apiKey = dotenv.env['REVENUECAT_TEST_API_KEY'];
+    } else {
+      apiKey = Platform.isAndroid
+          ? dotenv.env['REVENUECAT_ANDROID_API_KEY']
+          : dotenv.env['REVENUECAT_APPLE_API_KEY'];
+    }
+
+    if (apiKey != null && apiKey.isNotEmpty) {
+      await Purchases.configure(PurchasesConfiguration(apiKey));
+      if (userProvider.isLoggedIn && userProvider.currentUser != null) {
+        await Purchases.logIn(userProvider.currentUser!.id);
+      }
+    }
+  } catch (e) {
+    debugPrint('RevenueCat init failed: $e');
+  }
 }
