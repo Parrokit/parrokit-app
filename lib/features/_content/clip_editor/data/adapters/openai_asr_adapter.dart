@@ -85,10 +85,9 @@ class OpenAIAsrAdapter implements ASRPort {
     final normalized = path.startsWith('file://') ? path.substring(7) : path;
     final ext = p.extension(normalized).toLowerCase();
 
-    // 이미 오디오 파일이면 그대로 반환
-    final isAudio = _audioExtensions.contains(ext);
-    final isVideo = _videoExtensions.contains(ext);
-    if (isAudio && !isVideo) return normalized;
+    // 이미 WAV 파일이면 그대로 반환
+    // mp3 등 다른 오디오도 diarize 모델 호환을 위해 WAV로 변환
+    if (ext == '.wav') return normalized;
 
     // WAV로 변환
     try {
@@ -97,7 +96,7 @@ class OpenAIAsrAdapter implements ASRPort {
           '${tmpDir.path}/stt_${DateTime.now().millisecondsSinceEpoch}.wav';
 
       final cmd =
-          '-hide_banner -loglevel info -y -i "$normalized" -vn -af "volume=2" -ac 1 -ar 16000 -sample_fmt s16 -c:a pcm_s16le "$wavPath"';
+          '-hide_banner -loglevel info -y -i "$normalized" -map 0:a:0 -map_metadata -1 -af "volume=2" -ac 1 -ar 16000 -sample_fmt s16 -c:a pcm_s16le "$wavPath"';
 
       final session = await FFmpegKit.execute(cmd);
       final rc = await session.getReturnCode();
@@ -151,7 +150,7 @@ class OpenAIAsrAdapter implements ASRPort {
     req.fields['model'] = OpenAIConstants.asrDefaultModel;
     req.fields['temperature'] = '0';
     req.fields['response_format'] = 'diarized_json';
-    req.fields['chunking_strategy'] = 'auto';
+    req.fields['chunking_strategy'] = '{"type": "server_vad"}';
 
     if (language != null && language.isNotEmpty) {
       req.fields['language'] = language;
@@ -168,7 +167,7 @@ class OpenAIAsrAdapter implements ASRPort {
         'file',
         uploadPath,
         filename: filename,
-        contentType: MediaType('audio', 'wav'),
+        contentType: _contentTypeFor(uploadPath),
       ));
     } else {
       final filename = 'audio_${DateTime.now().millisecondsSinceEpoch}.wav';
@@ -228,6 +227,21 @@ class OpenAIAsrAdapter implements ASRPort {
     }
 
     return ASRResult(text: text, segments: segments);
+  }
+
+  /// 파일 확장자에 맞는 MIME type을 반환합니다.
+  MediaType _contentTypeFor(String path) {
+    final ext = p.extension(path).toLowerCase();
+    return switch (ext) {
+      '.mp3' => MediaType('audio', 'mpeg'),
+      '.wav' => MediaType('audio', 'wav'),
+      '.m4a' || '.aac' => MediaType('audio', 'mp4'),
+      '.flac' => MediaType('audio', 'flac'),
+      '.ogg' || '.opus' => MediaType('audio', 'ogg'),
+      '.mp4' => MediaType('video', 'mp4'),
+      '.webm' => MediaType('video', 'webm'),
+      _ => MediaType('application', 'octet-stream'),
+    };
   }
 
   /// 숫자 값을 double로 파싱합니다.

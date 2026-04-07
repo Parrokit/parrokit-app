@@ -221,7 +221,9 @@ class ClipEditorViewModel extends ChangeNotifier
       return;
     }
 
-    final path = picked!.path!;
+    // STT에는 원본 경로 사용 (mp3→mp4→wav 이중 변환 방지)
+    // OpenAI API는 mp3, mp4, wav 등을 직접 지원
+    final path = originalStagedPath ?? picked!.path!;
 
     // Step 1: 오디오 추출 준비
     _setSttState(SttProcessState.extracting);

@@ -245,12 +245,27 @@ Future<UserProvider> _initUserProvider() async {
   }
 }
 
+
 Future<void> _initAds() async {
   try {
+    // 1. 광고 SDK 초기화
     await MobileAds.instance.initialize();
     AdService().loadAd();
+
+    // 2. 테스트 기기 ID 등록 (iPhone 16 Pro & Galaxy A21s)
+    RequestConfiguration configuration = RequestConfiguration(
+      testDeviceIds: [
+        "49CD5924-A2F7-4DD9-9FD2-5545ACD55D6B", // iPhone 16 Pro
+        "9DBB0D7B-2CDF-440E-A886-134E853705BB", // Samsung SM-A217N
+      ],
+    );
+
+    // 설정 적용
+    await MobileAds.instance.updateRequestConfiguration(configuration);
+
+    debugPrint("✅ Parrokit: 모든 테스트 기기 설정 완료");
   } catch (e) {
-    debugPrint('Ads init failed: $e');
+    debugPrint('❌ Ads init failed: $e');
   }
 }
 

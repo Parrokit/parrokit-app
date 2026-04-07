@@ -44,6 +44,12 @@ mixin EditorFileMixin on ChangeNotifier {
   PlatformFile? _picked;
   PlatformFile? get picked => _picked;
 
+  /// mp4 변환 전 원본 경로 (STT용).
+  /// mp3 등 오디오 파일은 mp4로 변환하기 전 경로를 보존하여
+  /// STT 시 이중 변환(mp3→mp4→wav) 없이 원본을 직접 사용합니다.
+  String? _originalStagedPath;
+  String? get originalStagedPath => _originalStagedPath;
+
   Uint8List? _thumb;
   Uint8List? get thumb => _thumb;
 
@@ -76,6 +82,9 @@ mixin EditorFileMixin on ChangeNotifier {
     required String name,
     required int size,
   }) async {
+    // 원본 경로 보존 (STT에서 이중 변환 방지용)
+    _originalStagedPath = path;
+
     String effectivePath = path;
     try {
       effectivePath = await audioToVideo.ensureMp4(path);
@@ -123,6 +132,7 @@ mixin EditorFileMixin on ChangeNotifier {
     final p = _picked?.path;
     _picked = null;
     _thumb = null;
+    _originalStagedPath = null;
     if (p != null && staging.isInStaging(p)) {
       staging.discard(p);
     }
