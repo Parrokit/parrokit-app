@@ -1,10 +1,11 @@
 // ============================================================================
-// lib/features/_content/clip_editor/data/adapters/openai_asr_adapter.dart
+// lib/features/_content/clip_editor/data/adapters/openai_asr_base.dart
 // ============================================================================
 //
 // [역할]
-// OpenAI GPT-4o Transcribe API 어댑터.
-// ASRPort 인터페이스 구현. 동영상→WAV 변환 후 STT 수행.
+// OpenAI 계열 ASR 어댑터의 공통 베이스.
+// 파일 변환(WAV), multipart 빌드, 응답 파싱 등 공통 로직을 제공합니다.
+// 모델별 차이(model명, response_format, 추가 필드)는 서브클래스가 오버라이드.
 //
 // [레이어]
 // Data Layer > Adapters
@@ -16,7 +17,6 @@ import 'dart:io';
 
 // package
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
-
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -28,68 +28,36 @@ import 'package:parrokit/core/utils/app_logger.dart';
 import '../constants/openai_constants.dart';
 import '../ports/asr_port.dart';
 
-/// OpenAI ASR(Automatic Speech Recognition) 어댑터.
-///
-/// GPT-4o Transcribe Diarize 모델을 사용하여
-/// 오디오/비디오 파일을 텍스트로 변환합니다.
-class OpenAIAsrAdapter implements ASRPort {
-  // ─────────────────────────────────────────────────────────────────
-  // 상수
-  // ─────────────────────────────────────────────────────────────────
-
-  /// FFmpeg 지원 오디오 확장자
-  static const _audioExtensions = {
-    '.mp3',
-    '.wav',
-    '.m4a',
-    '.aac',
-    '.flac',
-    '.ogg',
-    '.wma',
-    '.opus',
-    '.amr',
-  };
-
-  /// FFmpeg 지원 비디오 확장자
-  static const _videoExtensions = {
-    '.mp4',
-    '.mov',
-    '.mkv',
-    '.webm',
-    '.avi',
-    '.wmv',
-    '.flv',
-    '.m4v',
-    '.3gp',
-    '.ts',
-    '.mts',
-    '.m2ts',
-  };
-
-  // ─────────────────────────────────────────────────────────────────
-  // 필드
-  // ─────────────────────────────────────────────────────────────────
+/// OpenAI ASR 어댑터 공통 베이스.
+abstract class OpenAIAsrBase implements ASRPort {
   final String apiKey;
 
-  OpenAIAsrAdapter({required this.apiKey});
+  OpenAIAsrBase({required this.apiKey});
+
+  // ─────────────────────────────────────────────────────────────────
+  // 서브클래스가 정의해야 하는 항목
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 사용할 OpenAI 모델 이름.
+  String get model;
+
+  /// API 응답 포맷 (예: 'json', 'verbose_json', 'diarized_json').
+  String get responseFormat;
+
+  /// 모델별 추가 필드를 multipart 요청에 주입할 훅.
+  void configureExtraFields(http.MultipartRequest req) {}
 
   // ─────────────────────────────────────────────────────────────────
   // 파일 변환
   // ─────────────────────────────────────────────────────────────────
 
   /// 동영상/오디오 파일을 WAV로 변환합니다.
-  ///
-  /// 이미 오디오 파일이면 그대로 반환합니다.
   Future<String> _ensureWav(String path) async {
-    // iOS에서 "file://" prefix 제거
     final normalized = path.startsWith('file://') ? path.substring(7) : path;
     final ext = p.extension(normalized).toLowerCase();
 
-    // 이미 WAV 파일이면 그대로 반환
-    // mp3 등 다른 오디오도 diarize 모델 호환을 위해 WAV로 변환
     if (ext == '.wav') return normalized;
 
-    // WAV로 변환
     try {
       final tmpDir = await getTemporaryDirectory();
       final wavPath =
@@ -105,7 +73,6 @@ class OpenAIAsrAdapter implements ASRPort {
         return wavPath;
       }
 
-      // 변환 실패 시 원본 반환 (Whisper가 일부 포맷 지원)
       final logs = await session.getAllLogsAsString();
       AppLogger.e('FFmpeg 변환 실패. rc=${rc?.getValue()}\n$logs');
       return normalized;
@@ -130,38 +97,37 @@ class OpenAIAsrAdapter implements ASRPort {
     bool withSegments = true,
     Duration? timeout,
   }) async {
-    // 입력 검증
     if ((filePath == null || filePath.isEmpty) &&
         (bytes == null || bytes.isEmpty)) {
       throw ArgumentError('filePath 또는 bytes 중 하나는 필수입니다.');
     }
 
-    // API 키 정리
     final cleanKey =
         apiKey.trim().replaceAll('\u201C', '').replaceAll('\u201D', '');
     if (cleanKey.isEmpty) {
       throw ArgumentError('OPENAI_API_KEY가 비어있습니다.');
     }
 
-    // HTTP 요청 구성
     final req =
         http.MultipartRequest('POST', Uri.parse(OpenAIConstants.asrEndpoint));
     req.headers['Authorization'] = 'Bearer $cleanKey';
-    req.fields['model'] = OpenAIConstants.asrDefaultModel;
+    req.fields['model'] = model;
     req.fields['temperature'] = '0';
-    req.fields['response_format'] = 'diarized_json';
-    req.fields['chunking_strategy'] = '{"type": "server_vad"}';
+    req.fields['response_format'] = responseFormat;
 
     if (language != null && language.isNotEmpty) {
       req.fields['language'] = language;
     }
+
+    // 서브클래스 훅
+    configureExtraFields(req);
 
     // 파일 첨부
     if (filePath != null && filePath.isNotEmpty) {
       final uploadPath = await _ensureWav(filePath);
       final filename = p.basename(uploadPath);
 
-      AppLogger.d('STT 업로드: $uploadPath');
+      AppLogger.d('STT 업로드($model): $uploadPath');
 
       req.files.add(await http.MultipartFile.fromPath(
         'file',
@@ -179,7 +145,6 @@ class OpenAIAsrAdapter implements ASRPort {
       ));
     }
 
-    // API 호출
     final streamed =
         await req.send().timeout(timeout ?? const Duration(seconds: 1000));
     final res = await http.Response.fromStream(streamed);
@@ -188,7 +153,6 @@ class OpenAIAsrAdapter implements ASRPort {
       throw Exception('ASR 실패(${res.statusCode}): ${res.body}');
     }
 
-    // 응답 파싱
     final map = jsonDecode(res.body) as Map<String, dynamic>;
     AppLogger.d('ASR 응답: ${res.body}');
 
@@ -199,7 +163,6 @@ class OpenAIAsrAdapter implements ASRPort {
   // 응답 파싱
   // ─────────────────────────────────────────────────────────────────
 
-  /// API 응답을 ASRResult로 파싱합니다.
   ASRResult _parseResult(Map<String, dynamic> map, bool withSegments) {
     final text = (map['text'] as String?)?.trim() ?? '';
 
@@ -244,7 +207,6 @@ class OpenAIAsrAdapter implements ASRPort {
     };
   }
 
-  /// 숫자 값을 double로 파싱합니다.
   double _parseDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse('$value') ?? 0.0;

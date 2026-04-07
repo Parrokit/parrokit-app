@@ -21,8 +21,11 @@ import 'package:parrokit/core/services/daily_limit_service.dart';
 import 'package:parrokit/data/local/dao/collections_dao.dart';
 import 'package:parrokit/core/utils/show_toast.dart' as utils;
 
+import '../data/adapters/asr_engine.dart';
 import '../data/adapters/openai_llm_adapter.dart';
-import '../data/adapters/openai_asr_adapter.dart';
+import '../data/adapters/openai_diarize_asr_adapter.dart';
+import '../data/adapters/openai_whisper_asr_adapter.dart';
+import '../data/ports/asr_port.dart';
 import '../data/adapters/video_picker_files.dart';
 import '../data/adapters/video_picker_gallery.dart';
 import '../data/services/audio_to_video.dart';
@@ -90,7 +93,7 @@ class ClipEditorViewModel extends ChangeNotifier
 
   late final SaveClipUseCase _saveClip;
   late final LoadClipForEditUseCase _loadClipForEdit;
-  late final GenerateDraftUseCase _generateDraft;
+  late final Map<AsrEngine, GenerateDraftUseCase> _generateDraftByEngine;
   final ClipValidator _validator = ClipValidator();
 
   // ─────────────────────────────────────────────────────────────────
@@ -175,14 +178,19 @@ class ClipEditorViewModel extends ChangeNotifier
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
     final llmAdapter = OpenAILlmAdapter(apiKey: apiKey);
 
-    _generateDraft = GenerateDraftUseCase(
-      service: DraftGenerationService(
-        transcribe: TranscribeUseCase(
-          OpenAIAsrAdapter(apiKey: apiKey),
-        ),
-        llm: llmAdapter,
-      ),
-    );
+    GenerateDraftUseCase buildDraftUseCase(ASRPort asr) => GenerateDraftUseCase(
+          service: DraftGenerationService(
+            transcribe: TranscribeUseCase(asr),
+            llm: llmAdapter,
+          ),
+        );
+
+    _generateDraftByEngine = {
+      AsrEngine.diarize:
+          buildDraftUseCase(OpenAIDiarizeAsrAdapter(apiKey: apiKey)),
+      AsrEngine.whisper:
+          buildDraftUseCase(OpenAIWhisperAsrAdapter(apiKey: apiKey)),
+    };
 
     // 세그먼트 폼 초기화
     initSegmentForms();
@@ -211,11 +219,12 @@ class ClipEditorViewModel extends ChangeNotifier
   /// 선택된 비디오 파일에 대해 STT를 수행하고 초안을 생성합니다.
   Future<void> onSttAndDraft(BuildContext context) async {
     if (!context.mounted) return;
-    final confirmed = await showSttConfirmDialog(context);
-    if (!confirmed) {
+    final engine = await showSttConfirmDialog(context);
+    if (engine == null) {
       _setSttState(SttProcessState.idle);
       return;
     }
+    final generateDraft = _generateDraftByEngine[engine]!;
     if (picked == null || (picked!.path ?? '').isEmpty) {
       showToast('먼저 영상 파일을 선택해 주세요.');
       return;
@@ -265,7 +274,7 @@ class ClipEditorViewModel extends ChangeNotifier
       _setSttState(SttProcessState.transcribing);
 
       // UseCase 호출 (내부에서 STT + 번역 처리)
-      final result = await _generateDraft(
+      final result = await generateDraft(
         filePath: path,
         durationMs: durationMs,
         language: 'ja',
