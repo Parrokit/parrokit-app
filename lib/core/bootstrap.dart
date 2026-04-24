@@ -18,6 +18,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:parrokit/features/settings/no_internet/no_internet_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
@@ -52,39 +53,6 @@ Future<bool> _hasInternet() async {
   }
 }
 
-/// 인터넷 없을 때 띄우는 최소 앱.
-class _NoInternetApp extends StatelessWidget {
-  const _NoInternetApp();
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Builder(
-        builder: (context) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            showDialog<void>(
-              context: context,
-              barrierDismissible: false,
-              builder: (_) => AlertDialog(
-                title: const Text('인터넷 연결 필요'),
-                content: const Text('앱을 사용하려면 인터넷에 연결해 주세요.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => exit(0),
-                    child: const Text('확인'),
-                  ),
-                ],
-              ),
-            );
-          });
-          return const Scaffold();
-        },
-      ),
-    );
-  }
-}
-
 /// 앱 부트스트랩 - main()에서 호출.
 ///
 /// 모든 초기화 완료 후 runApp() 실행.
@@ -105,7 +73,12 @@ Future<void> bootstrap() async {
   // 인터넷 연결 확인
   // ─────────────────────────────────────────────────────────────────
   if (!await _hasInternet()) {
-    runApp(const _NoInternetApp());
+    runApp(
+      ChangeNotifierProvider.value(
+        value: themeProvider,
+        child: const NoInternetScreen(),
+      ),
+    );
     return;
   }
 
