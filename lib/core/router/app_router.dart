@@ -16,8 +16,10 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 
 // Features - Screens
-import 'package:parrokit/features/entry/auth/presentation/auth_screen.dart';
-import 'package:parrokit/features/entry/dashboard/presentation/dashboard_screen.dart';
+import 'package:parrokit/features/auth/sign-in/sign_in_screen.dart';
+import 'package:parrokit/features/auth/sign-up/sign_up_screen.dart';
+import 'package:parrokit/features/auth/find-pw/find_pw_screen.dart';
+import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/content/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
@@ -81,11 +83,16 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
   final isOnIntro = loc.startsWith(AppRoutes.introPath);
 
   if (!user.isLoggedIn && !isOnAuth && !isOnIntro) {
-    return AppRoutes.authPath;
+    return '${AppRoutes.authPath}/${AppRoutes.signInPath}';
   }
 
   if (user.isLoggedIn && isOnAuth) {
     return AppRoutes.dashboardPath;
+  }
+
+  // Handle bare /auth redirect to /auth/sign-in
+  if (loc == AppRoutes.authPath) {
+    return '${AppRoutes.authPath}/${AppRoutes.signInPath}';
   }
 
   return null;
@@ -98,10 +105,38 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
 GoRoute get _authRoute => GoRoute(
       path: AppRoutes.authPath,
       name: AppRoutes.auth,
-      pageBuilder: (context, state) => NoTransitionPage(
-        name: AppRoutes.auth,
-        child: const AuthScreen(),
-      ),
+      redirect: (context, state) {
+        if (state.uri.toString() == AppRoutes.authPath) {
+          return '${AppRoutes.authPath}/${AppRoutes.signInPath}';
+        }
+        return null;
+      },
+      routes: [
+        GoRoute(
+          path: AppRoutes.signInPath,
+          name: AppRoutes.signIn,
+          pageBuilder: (context, state) => NoTransitionPage(
+            name: AppRoutes.signIn,
+            child: const SignInScreen(),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.signUpPath,
+          name: AppRoutes.signUp,
+          pageBuilder: (context, state) => NoTransitionPage(
+            name: AppRoutes.signUp,
+            child: const SignUpScreen(),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.findPwPath,
+          name: AppRoutes.findPw,
+          pageBuilder: (context, state) => NoTransitionPage(
+            name: AppRoutes.findPw,
+            child: const FindPwScreen(),
+          ),
+        ),
+      ],
     );
 
 // ─────────────────────────────────────────────────────────────────────────────

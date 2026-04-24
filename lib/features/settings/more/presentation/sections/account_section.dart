@@ -16,7 +16,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/services/daily_limit_service.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
-import 'package:parrokit/features/entry/auth/presentation/sections/email_verification_section.dart';
+import 'email_verification_section.dart';
 import 'package:parrokit/features/settings/more/presentation/widgets/nickname_edit_dialog.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
