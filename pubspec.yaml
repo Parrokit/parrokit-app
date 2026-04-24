@@ -128,7 +128,7 @@ flutter:
   assets:
     - .env
     - assets/logos/pa_logo.png
-    - assets/icons/pa_icon.png
+    - assets/icons/
     - assets/intros/
     - assets/prompts/
 

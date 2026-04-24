@@ -32,6 +32,8 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   AuthMode _mode = AuthMode.signIn;
 
+  bool _isAutoLogin = true;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -49,7 +51,7 @@ class _AuthScreenState extends State<AuthScreen> {
       case AuthMode.signUp:
         return '회원가입';
       case AuthMode.resetPassword:
-        return '비밀번호 재설정 메일 보내기';
+        return '메일 전송';
     }
   }
 
@@ -111,23 +113,51 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: _mode == AuthMode.signIn
+          ? null
+          : AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+                onPressed: () {
+                  setState(() {
+                    _mode = AuthMode.signIn;
+                    _emailController.clear();
+                    _passwordController.clear();
+                    _passwordConfirmController.clear();
+                  });
+                },
+              ),
+              title: Text(
+                _mode == AuthMode.signUp ? '회원가입' : '비밀번호 재설정',
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              centerTitle: true,
+            ),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: _mode == AuthMode.signIn ? Alignment.center : Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: AuthFormSection(
-                mode: _mode,
-                formKey: _formKey,
-                emailController: _emailController,
-                passwordController: _passwordController,
-                passwordConfirmController: _passwordConfirmController,
-                isLoading: _isLoading,
-                primaryButtonLabel: _primaryButtonLabel,
-                onSubmit: _onSubmit,
-                onModeChanged: (mode) => setState(() => _mode = mode),
-              ),
+            child: AuthFormSection(
+              mode: _mode,
+              formKey: _formKey,
+              emailController: _emailController,
+              passwordController: _passwordController,
+              passwordConfirmController: _passwordConfirmController,
+              isLoading: _isLoading,
+              isAutoLogin: _isAutoLogin,
+              onAutoLoginChanged: (val) => setState(() => _isAutoLogin = val ?? true),
+              primaryButtonLabel: _primaryButtonLabel,
+              onSubmit: _onSubmit,
+              onModeChanged: (mode) => setState(() => _mode = mode),
             ),
           ),
         ),
