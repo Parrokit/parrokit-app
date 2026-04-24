@@ -12,7 +12,36 @@
           "package_name": "com.bull.parrokit"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "392832464036-0qf5mdltl9fl0jlgtedm5ia0hu0c5ibq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bull.parrokit",
+            "certificate_hash": "a2c21cd238b7d2c362520fa3b810f074519a46b7"
+          }
+        },
+        {
+          "client_id": "392832464036-5cspbto1g4vgca3c7efjfo1bpmpekmu1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bull.parrokit",
+            "certificate_hash": "66e6d46799024259bff908490907476255897f5f"
+          }
+        },
+        {
+          "client_id": "392832464036-no55d61hktugtcre4n613pnjnafbeqtf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bull.parrokit",
+            "certificate_hash": "1f57174a2b1a2b63e40f3ba146808f2b4a4d9e5c"
+          }
+        },
+        {
+          "client_id": "392832464036-hnla6eipqoubrcnhg0r3hu45sn894a4f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyASS8vOzh1zswL9E4YjKQedYpwykUJuFhY"
@@ -20,7 +49,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "392832464036-hnla6eipqoubrcnhg0r3hu45sn894a4f.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "392832464036-f3mihj8mtksl1jnjthii7e7r1k9n4k66.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bull.parrokit"
+              }
+            }
+          ]
         }
       }
     }

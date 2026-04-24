@@ -55,6 +55,24 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  Future<void> _onGoogleSignIn() async {
+    final userProvider = context.read<UserProvider>();
+    try {
+      await userProvider.signInWithGoogle();
+      if (!mounted) return;
+      // If userProvider.currentUser is set, sign in was successful
+      if (userProvider.currentUser != null) {
+        showToast('구글 로그인에 성공했습니다.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      showToast('구글 로그인 오류: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      showToast('구글 로그인 중 오류가 발생했습니다.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +90,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset('assets/logos/pa_logo.png', width: 64, height: 64),
+                      Image.asset('assets/logos/pa_logo.png',
+                          width: 64, height: 64),
                       const SizedBox(width: 8),
                       const Text(
                         '패로킷',
@@ -100,7 +119,8 @@ class _SignInScreenState extends State<SignInScreen> {
                         height: 24,
                         child: Checkbox(
                           value: _isAutoLogin,
-                          onChanged: (val) => setState(() => _isAutoLogin = val ?? true),
+                          onChanged: (val) =>
+                              setState(() => _isAutoLogin = val ?? true),
                           activeColor: const Color(0xFF0066FF),
                           shape: const CircleBorder(),
                         ),
@@ -114,6 +134,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           fontSize: 14,
                         ),
                       ),
+                      const SizedBox(width: 12),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -122,7 +143,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: 32),
                   // 비밀번호 재설정 | 회원가입
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       GestureDetector(
                         onTap: () => context.pushNamed(AppRoutes.findPw),
@@ -148,6 +169,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               fontSize: 13),
                         ),
                       ),
+                      const SizedBox(width: 12),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -169,7 +191,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildSocialIcon('assets/icons/google_icon.png'),
+                      _buildSocialIcon('assets/icons/google_icon.png',
+                          onTap: _onGoogleSignIn),
                       const SizedBox(width: 32),
                       _buildSocialIcon('assets/icons/kakao_icon.png'),
                       const SizedBox(width: 32),
@@ -282,24 +305,27 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  Widget _buildSocialIcon(String assetPath) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+  Widget _buildSocialIcon(String assetPath, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: _isLoading ? null : onTap,
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            assetPath,
+            fit: BoxFit.cover,
           ),
-        ],
-      ),
-      child: ClipOval(
-        child: Image.asset(
-          assetPath,
-          fit: BoxFit.cover,
         ),
       ),
     );

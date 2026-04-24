@@ -31,6 +31,11 @@ class FirebaseAuthService {
     );
   }
 
+  /// 제공된 OAuth 인증 정보를 사용하여 Firebase 에 로그인합니다. (Google, Apple 등)
+  Future<fb.UserCredential> signInWithCredential(fb.OAuthCredential credential) {
+    return _auth.signInWithCredential(credential);
+  }
+
   Future<void> sendPasswordResetEmail(String email) {
     return _auth.sendPasswordResetEmail(email: email);
   }
@@ -52,9 +57,12 @@ class FirebaseAuthService {
     await _auth.currentUser?.updateDisplayName(displayName);
   }
 
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
 
   Future<void> deleteAccount() async {
     await _auth.currentUser?.delete();
   }
 }
+
