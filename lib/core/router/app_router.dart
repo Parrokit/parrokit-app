@@ -16,14 +16,14 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 
 // Features - Screens
-import 'package:parrokit/features/_entry/auth/presentation/auth_screen.dart';
-import 'package:parrokit/features/_entry/dashboard/presentation/dashboard_screen.dart';
-import 'package:parrokit/features/_content/shorts/presentation/shorts_screen.dart';
-import 'package:parrokit/features/_content/library/presentation/library_screen.dart';
-import 'package:parrokit/features/_settings/more/presentation/more_screen.dart';
-import 'package:parrokit/features/_discovery/recent/presentation/recent_screen.dart';
-import 'package:parrokit/features/_content/clip_editor/presentation/clip_editor_screen.dart';
-import 'package:parrokit/features/_content/player/presentation/clip_player_screen.dart';
+import 'package:parrokit/features/entry/auth/presentation/auth_screen.dart';
+import 'package:parrokit/features/entry/dashboard/presentation/dashboard_screen.dart';
+import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
+import 'package:parrokit/features/content/library/presentation/library_screen.dart';
+import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
+import 'package:parrokit/features/discovery/recent/presentation/recent_screen.dart';
+import 'package:parrokit/features/content/clip_editor/presentation/clip_editor_screen.dart';
+import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
 
 // Router 관련
 import 'app_routes.dart';

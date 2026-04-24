@@ -35,8 +35,8 @@ import 'package:parrokit/core/utils/audio_bg.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/features/_content/shorts/presentation/providers/ad_provider.dart';
-import 'package:parrokit/features/_content/shorts/data/shorts_ad_repository.dart';
+import 'package:parrokit/features/content/shorts/presentation/providers/ad_provider.dart';
+import 'package:parrokit/features/content/shorts/data/shorts_ad_repository.dart';
 
 import 'app.dart';
 import 'di/providers.dart';
