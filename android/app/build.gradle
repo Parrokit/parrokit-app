@@ -2,16 +2,32 @@ plugins {
     id "com.android.application"
     // START: FlutterFire Configuration
     id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
     // END: FlutterFire Configuration
     id "org.jetbrains.kotlin.android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.bull.parrokit"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -30,13 +46,19 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            signingConfig signingConfigs.release 
+            
+            shrinkResources false
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
@@ -46,6 +68,15 @@ flutter {
 }
 
 dependencies {
+    // 1. Firebase BoM (버전 관리자)
+    implementation platform('com.google.firebase:firebase-bom:33.10.0')
+
+    // 2. Firebase Analytics (AdMob 연동 및 사용자 분석용)
+    implementation 'com.google.firebase:firebase-analytics'
+
+    // 3. Firebase Crashlytics (앱 크래시 수집용)
+    implementation 'com.google.firebase:firebase-crashlytics'
+
     // core-ktx / core 1.16.0은 AGP 8.6 필요해서 에러 나니까,
     // 한 단계 낮은 버전으로 강제 고정
     implementation "androidx.core:core-ktx:1.15.0"

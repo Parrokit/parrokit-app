@@ -3,8 +3,12 @@
 // firebase_auth accessed via FirebaseAuthService
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
 import 'package:parrokit/data/models/user.dart';
-import 'package:parrokit/core/services/firebase_auth_service.dart';
-import 'package:parrokit/core/services/firebase_user_service.dart';
+import 'package:parrokit/core/services/firebase/firebase_auth_service.dart';
+import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
+import 'package:parrokit/core/services/sso/apple_sso_service.dart';
+import 'package:parrokit/core/services/sso/google_sso_service.dart';
+import 'package:parrokit/core/services/sso/kakao_sso_service.dart';
+import 'package:parrokit/core/services/sso/naver_sso_service.dart';
 
 /// 앱 도메인 기준의 인증/유저 레포지토리.
 ///
@@ -16,11 +20,23 @@ class UserRepository {
   final UserPrefs _userPrefs;
   final FirebaseAuthService _authService;
   final FirebaseUserService _firebaseUserService;
-  const UserRepository(
+  final GoogleSsoService _googleSsoService;
+  final KakaoSsoService _kakaoSsoService;
+  final NaverSsoService _naverSsoService;
+  final AppleSsoService _appleSsoService;
+  
+  UserRepository(
     this._userPrefs,
     this._authService,
-    this._firebaseUserService,
-  );
+    this._firebaseUserService, {
+    GoogleSsoService? googleSsoService,
+    KakaoSsoService? kakaoSsoService,
+    NaverSsoService? naverSsoService,
+    AppleSsoService? appleSsoService,
+  })  : _googleSsoService = googleSsoService ?? GoogleSsoService(),
+        _kakaoSsoService = kakaoSsoService ?? KakaoSsoService(),
+        _naverSsoService = naverSsoService ?? NaverSsoService(),
+        _appleSsoService = appleSsoService ?? AppleSsoService();
 
   /// 현재 로컬에 저장된 유저를 반환합니다.
   /// 저장된 유저가 없으면 null을 반환합니다.
@@ -146,6 +162,162 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
+      updatedAt: DateTime.now(),
+    );
+
+    await _userPrefs.saveUser(user);
+    return user;
+  }
+
+  /// Google 계정으로 로그인 (또는 회원가입)을 수행합니다.
+  Future<PaUser?> signInWithGoogle() async {
+    // 1. Google OAuth 인증 얻기
+    final googleCred = await _googleSsoService.getCredential();
+    if (googleCred == null) {
+      // 사용자가 취소함
+      return null;
+    }
+
+    // 2. 파이어베이스에 해당 정보로 로그인
+    final cred = await _authService.signInWithCredential(googleCred);
+
+    final fbUser = cred.user;
+    if (fbUser == null) {
+      throw StateError('FirebaseAuth: user is null after signInWithGoogle');
+    }
+
+    // 3) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
+    PaUser? serverUser;
+    try {
+      serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    } catch (_) {
+      serverUser = null;
+    }
+
+    // 문서가 없으면 초기화 (회원가입의 경우)
+    if (serverUser == null) {
+      await _firebaseUserService.initUserDocument(
+        uid: fbUser.uid,
+        email: fbUser.email ?? '',
+      );
+    }
+
+    // 4) 로컬 캐시 조회
+    final existingLocal = _userPrefs.loadUser();
+
+    final user = PaUser(
+      id: fbUser.uid,
+      displayName: fbUser.displayName ??
+          serverUser?.displayName ??
+          existingLocal?.displayName,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
+      photoUrl:
+          fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
+      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _userPrefs.saveUser(user);
+    return user;
+  }
+
+  /// Kakao 계정으로 로그인 (또는 회원가입)을 수행합니다.
+  Future<PaUser?> signInWithKakao() async {
+    // 1. Kakao OAuth 인증 얻기
+    final kakaoCred = await _kakaoSsoService.getCredential();
+    if (kakaoCred == null) {
+      // 사용자가 취소함
+      return null;
+    }
+
+    // 2. 파이어베이스에 해당 정보로 로그인
+    final cred = await _authService.signInWithCredential(kakaoCred);
+
+    final fbUser = cred.user;
+    if (fbUser == null) {
+      throw StateError('FirebaseAuth: user is null after signInWithKakao');
+    }
+
+    // 3) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
+    PaUser? serverUser;
+    try {
+      serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    } catch (_) {
+      serverUser = null;
+    }
+
+    // 문서가 없으면 초기화 (회원가입의 경우)
+    if (serverUser == null) {
+      await _firebaseUserService.initUserDocument(
+        uid: fbUser.uid,
+        email: fbUser.email ?? '',
+      );
+    }
+
+    // 4) 로컬 캐시 조회
+    final existingLocal = _userPrefs.loadUser();
+
+    final user = PaUser(
+      id: fbUser.uid,
+      displayName: fbUser.displayName ??
+          serverUser?.displayName ??
+          existingLocal?.displayName,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
+      photoUrl:
+          fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
+      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _userPrefs.saveUser(user);
+    return user;
+  }
+
+  /// Naver 계정으로 로그인 (또는 회원가입)을 수행합니다.
+  Future<PaUser?> signInWithNaver() async {
+    // 1. Naver OAuth 인증 + Cloud Functions 호출하여 Firebase 로그인
+    final cred = await _naverSsoService.getCredentialAndSignIn();
+    if (cred == null) {
+      // 사용자가 취소하거나 에러 발생
+      return null;
+    }
+
+    final fbUser = cred.user;
+    if (fbUser == null) {
+      throw StateError('FirebaseAuth: user is null after signInWithNaver');
+    }
+
+    // 2) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
+    PaUser? serverUser;
+    try {
+      serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    } catch (_) {
+      serverUser = null;
+    }
+
+    // 문서가 없으면 초기화 (회원가입의 경우)
+    if (serverUser == null) {
+      await _firebaseUserService.initUserDocument(
+        uid: fbUser.uid,
+        email: fbUser.email ?? '',
+      );
+    }
+
+    // 3) 로컬 캐시 조회
+    final existingLocal = _userPrefs.loadUser();
+
+    final user = PaUser(
+      id: fbUser.uid,
+      displayName: fbUser.displayName ??
+          serverUser?.displayName ??
+          existingLocal?.displayName,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
+      photoUrl:
+          fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
+      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
@@ -300,9 +472,14 @@ class UserRepository {
   }
 
   /// 로그아웃/유저 초기화.
+  /// - Kakao SDK 에서 로그아웃
+  /// - Google SDK 에서 로그아웃
   /// - Firebase 에서 로그아웃
   /// - 로컬에 저장된 유저 정보를 모두 삭제합니다.
   Future<void> signOut() async {
+    await _naverSsoService.signOut();
+    await _kakaoSsoService.signOut();
+    await _googleSsoService.signOut();
     await _authService.signOut();
     await _userPrefs.clear();
   }
@@ -318,5 +495,50 @@ class UserRepository {
     }
     await _authService.deleteAccount();
     await _userPrefs.clear();
+  }
+
+  /// Apple SSO 로그인 연동
+  Future<PaUser?> signInWithApple() async {
+    final cred = await _appleSsoService.getCredentialAndSignIn();
+    if (cred == null) {
+      return null;
+    }
+
+    final fbUser = cred.user;
+    if (fbUser == null) {
+      throw StateError('FirebaseAuth: user is null after signInWithApple');
+    }
+
+    PaUser? serverUser;
+    try {
+      serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    } catch (_) {
+      serverUser = null;
+    }
+
+    if (serverUser == null) {
+      await _firebaseUserService.initUserDocument(
+        uid: fbUser.uid,
+        email: fbUser.email ?? '',
+      );
+    }
+
+    final existingLocal = _userPrefs.loadUser();
+
+    final user = PaUser(
+      id: fbUser.uid,
+      displayName: fbUser.displayName ??
+          serverUser?.displayName ??
+          existingLocal?.displayName,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
+      photoUrl:
+          fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
+      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _userPrefs.saveUser(user);
+    return user;
   }
 }

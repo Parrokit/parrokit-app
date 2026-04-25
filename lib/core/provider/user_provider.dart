@@ -110,6 +110,65 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// Google 로그인 래핑
+  Future<void> signInWithGoogle() async {
+    _setLoading(true);
+    try {
+      final user = await _userRepository.signInWithGoogle();
+      if (user != null) {
+        _currentUser = user;
+        unawaited(Purchases.logIn(user.id));
+        notifyListeners();
+      }
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Kakao 로그인 래핑
+  Future<void> signInWithKakao() async {
+    _setLoading(true);
+    try {
+      final user = await _userRepository.signInWithKakao();
+      if (user != null) {
+        _currentUser = user;
+        unawaited(Purchases.logIn(user.id));
+        notifyListeners();
+      }
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Naver 계정으로 로그인 (또는 회원가입)을 수행합니다.
+  Future<void> signInWithNaver() async {
+    _setLoading(true);
+    try {
+      final user = await _userRepository.signInWithNaver();
+      if (user != null) {
+        _currentUser = user;
+        unawaited(Purchases.logIn(user.id));
+        notifyListeners();
+      }
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> signInWithApple() async {
+    _setLoading(true);
+    try {
+      final user = await _userRepository.signInWithApple();
+      if (user != null) {
+        _currentUser = user;
+        unawaited(Purchases.logIn(user.id));
+        notifyListeners();
+      }
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 비밀번호 재설정 이메일 전송
   Future<void> sendPasswordResetEmail(String email) async {
     await _userRepository.sendPasswordResetEmail(email);

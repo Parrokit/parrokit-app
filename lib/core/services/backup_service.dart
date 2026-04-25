@@ -23,7 +23,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:restart_app/restart_app.dart';
 
-import 'package:parrokit/features/_settings/more/presentation/widgets/backup_progress_dialog.dart'
+import 'package:parrokit/features/settings/more/presentation/widgets/backup_progress_dialog.dart'
     show BackupProgress, BackupProgressState;
 
 // ─────────────────────────────────────────────────────────────────────────────

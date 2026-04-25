@@ -29,6 +29,9 @@ abstract class AppRoutes {
   static const clipsPlay = 'clips_play';
   static const intro = 'intro';
   static const auth = 'auth';
+  static const signIn = 'sign_in';
+  static const signUp = 'sign_up';
+  static const findPw = 'find_pw';
   static const payment = 'payment';
   static const paymentSuccess = 'payment_success';
   static const paymentFail = 'payment_fail';
@@ -47,7 +50,10 @@ abstract class AppRoutes {
   static const clipsEditPath = 'edit';
   static const clipsPlayPath = 'play';
   static const introPath = '/intro';
-  static const authPath = '/auth';
+  static const authPath = '/auth'; // Root of auth flows
+  static const signInPath = 'sign-in';
+  static const signUpPath = 'sign-up';
+  static const findPwPath = 'find-pw';
   static const paymentPath = '/payment';
   static const paymentSuccessPath = '/payment/success';
   static const paymentFailPath = '/payment/fail';

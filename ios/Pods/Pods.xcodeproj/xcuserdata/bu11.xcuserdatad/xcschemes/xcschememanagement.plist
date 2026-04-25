@@ -4,6 +4,21 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>AppAuth-AppAuthCore_Privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>AppAuth.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>AppCheckCore.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>BoringSSL-GRPC-openssl_grpc.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -119,12 +134,22 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>FirebaseFunctions.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>FirebaseInstallations-FirebaseInstallations_Privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
 		</dict>
 		<key>FirebaseInstallations.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>FirebaseMessagingInterop.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -149,7 +174,22 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>GTMAppAuth-GTMAppAuth_Privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>GTMAppAuth.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>GTMSessionFetcher-GTMSessionFetcher_Core_Privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>GTMSessionFetcher-GTMSessionFetcher_Full_Privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -179,6 +219,16 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>GoogleSignIn-GoogleSignIn.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>GoogleSignIn.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>GoogleUserMessagingPlatform-UserMessagingPlatformResources.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -195,6 +245,11 @@
 			<false/>
 		</dict>
 		<key>GoogleUtilities.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>NidThirdPartyLogin.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -334,6 +389,11 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>cloud_functions.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>device_info_plus-device_info_plus_privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -414,6 +474,11 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>flutter_naver_login.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>gRPC-C++-gRPCCertificates-Cpp.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -449,6 +514,16 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>google_sign_in_ios-google_sign_in_ios_privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>google_sign_in_ios.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>image_picker_ios-image_picker_ios_privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -470,6 +545,21 @@
 			<false/>
 		</dict>
 		<key>just_audio.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>kakao_flutter_sdk_auth-kakao_flutter_sdk_auth_privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>kakao_flutter_sdk_auth.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>kakao_flutter_sdk_common.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
@@ -540,6 +630,11 @@
 			<false/>
 		</dict>
 		<key>shared_preferences_foundation.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>sign_in_with_apple.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
