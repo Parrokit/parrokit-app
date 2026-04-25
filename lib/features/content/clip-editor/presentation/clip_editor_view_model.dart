@@ -14,10 +14,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widgets/stt_confirm_dialog.dart';
 
-import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/core/services/daily_limit_service.dart';
 import 'package:parrokit/data/local/dao/collections_dao.dart';
 import 'package:parrokit/core/utils/show_toast.dart' as utils;
 
@@ -132,17 +130,7 @@ class ClipEditorViewModel extends ChangeNotifier
   final durationCtl = TextEditingController();
   final tagsCtl = TextEditingController();
 
-  // 오늘 STT 잔여 횟수
-  int _dailyRemaining = AppConfig.sttDailyLimit;
-  int get dailyRemaining => _dailyRemaining;
 
-  Future<void> _refreshDailyRemaining() async {
-    _dailyRemaining = await DailyLimitService.getRemaining(
-      'stt',
-      limit: AppConfig.sttDailyLimit,
-    );
-    notifyListeners();
-  }
 
   // 저장 후 닫기 플래그
   bool _shouldClose = false;
@@ -208,8 +196,6 @@ class ClipEditorViewModel extends ChangeNotifier
       collectionNameCtl.text = initialCollectionName!;
     }
 
-    // 오늘 STT 잔여 횟수 로드
-    _refreshDailyRemaining();
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -246,28 +232,9 @@ class ClipEditorViewModel extends ChangeNotifier
       return;
     }
 
-    // 코인 + 데일리 합산 처리
-    // 1) 코인을 먼저 쓰고, 부족한 나머지는 데일리 충전량에서 차감
+    // 1) 코인 사용
     final cost = _calculateCoinCost(durationMs);
     final int coinsToUse = userProvider.coins.clamp(0, cost);
-    final int dailyNeeded = cost - coinsToUse;
-
-    if (dailyNeeded > 0) {
-      final consumed = await DailyLimitService.consumeN(
-        'stt',
-        n: dailyNeeded,
-        limit: AppConfig.sttDailyLimit,
-      );
-      if (!consumed) {
-        showToast(
-          '코인과 무료 충전량을 합쳐도 부족합니다. '
-          '광고를 보고 코인을 받거나 내일 다시 시도해 주세요.',
-        );
-        _setSttState(SttProcessState.idle);
-        await _refreshDailyRemaining();
-        return;
-      }
-    }
 
     try {
       // Step 2: 음성 인식 (STT)
@@ -302,7 +269,6 @@ class ClipEditorViewModel extends ChangeNotifier
         }
       }
 
-      await _refreshDailyRemaining();
       _setSttState(SttProcessState.done);
       // 잠시 후 idle로 복귀
       Future.delayed(const Duration(seconds: 2), () {

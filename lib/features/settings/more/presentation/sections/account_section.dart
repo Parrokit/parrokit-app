@@ -13,7 +13,6 @@ import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/core/services/daily_limit_service.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'email_verification_section.dart';
@@ -30,20 +29,9 @@ class AccountSection extends StatefulWidget {
 }
 
 class _AccountSectionState extends State<AccountSection> {
-  int _dailyRemaining = AppConfig.sttDailyLimit;
-
   @override
   void initState() {
     super.initState();
-    _loadDailyRemaining();
-  }
-
-  Future<void> _loadDailyRemaining() async {
-    final remaining = await DailyLimitService.getRemaining(
-      'stt',
-      limit: AppConfig.sttDailyLimit,
-    );
-    if (mounted) setState(() => _dailyRemaining = remaining);
   }
 
   Future<void> _onLogout() async {
@@ -161,14 +149,6 @@ class _AccountSectionState extends State<AccountSection> {
                             _StatusBadge(
                               icon: Icons.monetization_on_rounded,
                               label: '${userProvider.coins} 코인',
-                              color: cs.primary,
-                              backgroundColor:
-                                  cs.primary.withValues(alpha: 0.1),
-                            ),
-                            _StatusBadge(
-                              icon: Icons.today_rounded,
-                              label:
-                                  '$_dailyRemaining/${AppConfig.sttDailyLimit}',
                               color: cs.primary,
                               backgroundColor:
                                   cs.primary.withValues(alpha: 0.1),

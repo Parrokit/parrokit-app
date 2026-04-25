@@ -55,7 +55,6 @@ class _ClipEditorBody extends StatefulWidget {
 class _ClipEditorBodyState extends State<_ClipEditorBody> {
   bool _hasHandledClose = false;
 
-
   Widget build(BuildContext context) {
     final vm = context.watch<ClipEditorViewModel>();
     final userProvider = context.watch<UserProvider>();
@@ -91,25 +90,6 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(width: 10),
-                  Icon(
-                    Icons.today_rounded,
-                    size: 20,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.45),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    '${vm.dailyRemaining}/${AppConfig.sttDailyLimit}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.45),
-                        ),
-                  ),
-                  const SizedBox(width: 10),
                   const Icon(
                     Icons.monetization_on_rounded,
                     color: Colors.amber,
@@ -120,7 +100,7 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
                     '${userProvider.coins}',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 10),
                 ],
               ),
             ),
