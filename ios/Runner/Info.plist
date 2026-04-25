@@ -68,14 +68,21 @@
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>com.googleusercontent.apps.392832464036-f3mihj8mtksl1jnjthii7e7r1k9n4k66</string>
+					<string>kakao66d87f24de00f33c803440233d1b1597</string>
 				</array>
 			</dict>
 		</array>
-		<key>ITSAppUsesNonExemptEncryption</key>
-		<false />
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>kakaokompassauth</string>
+			<string>kakaolink</string>
+			<string>kakaoplus</string>
+		</array>
 		<key>GIDClientID</key>
 		<string>392832464036-f3mihj8mtksl1jnjthii7e7r1k9n4k66.apps.googleusercontent.com</string>
 	</dict>

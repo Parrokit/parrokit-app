@@ -126,6 +126,18 @@
 @import just_audio;
 #endif
 
+#if __has_include(<kakao_flutter_sdk_auth/KakaoFlutterSdkAuthPlugin.h>)
+#import <kakao_flutter_sdk_auth/KakaoFlutterSdkAuthPlugin.h>
+#else
+@import kakao_flutter_sdk_auth;
+#endif
+
+#if __has_include(<kakao_flutter_sdk_common/KakaoFlutterSdkCommonPlugin.h>)
+#import <kakao_flutter_sdk_common/KakaoFlutterSdkCommonPlugin.h>
+#else
+@import kakao_flutter_sdk_common;
+#endif
+
 #if __has_include(<path_provider_foundation/PathProviderPlugin.h>)
 #import <path_provider_foundation/PathProviderPlugin.h>
 #else
@@ -221,6 +233,8 @@
   [FLTImagePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTImagePickerPlugin"]];
   [InAppPurchasePlugin registerWithRegistrar:[registry registrarForPlugin:@"InAppPurchasePlugin"]];
   [JustAudioPlugin registerWithRegistrar:[registry registrarForPlugin:@"JustAudioPlugin"]];
+  [KakaoFlutterSdkAuthPlugin registerWithRegistrar:[registry registrarForPlugin:@"KakaoFlutterSdkAuthPlugin"]];
+  [KakaoFlutterSdkCommonPlugin registerWithRegistrar:[registry registrarForPlugin:@"KakaoFlutterSdkCommonPlugin"]];
   [PathProviderPlugin registerWithRegistrar:[registry registrarForPlugin:@"PathProviderPlugin"]];
   [PurchasesFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"PurchasesFlutterPlugin"]];
   [PurchasesUiFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"PurchasesUiFlutterPlugin"]];

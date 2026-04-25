@@ -73,6 +73,23 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  Future<void> _onKakaoSignIn() async {
+    final userProvider = context.read<UserProvider>();
+    try {
+      await userProvider.signInWithKakao();
+      if (!mounted) return;
+      if (userProvider.currentUser != null) {
+        showToast('카카오 로그인에 성공했습니다.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      showToast('카카오 로그인 오류: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      showToast('카카오 로그인 중 오류가 발생했습니다.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,7 +211,8 @@ class _SignInScreenState extends State<SignInScreen> {
                       _buildSocialIcon('assets/icons/google_icon.png',
                           onTap: _onGoogleSignIn),
                       const SizedBox(width: 32),
-                      _buildSocialIcon('assets/icons/kakao_icon.png'),
+                      _buildSocialIcon('assets/icons/kakao_icon.png',
+                          onTap: _onKakaoSignIn),
                       const SizedBox(width: 32),
                       _buildSocialIcon('assets/icons/naver_icon.png'),
                       const SizedBox(width: 32),

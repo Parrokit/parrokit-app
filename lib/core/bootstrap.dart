@@ -16,6 +16,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:parrokit/core/utils/has_internet.dart';
 import 'package:parrokit/features/settings/no_internet/no_internet_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,6 +60,9 @@ Future<void> bootstrap() async {
 
   // 환경변수 설정
   await _initEnv();
+
+  // 카카오 SDK 초기화
+  await _initKakao();
 
   // 오디오 설정
   await _initAudio();
@@ -155,6 +159,24 @@ Future<void> _initEnv() async {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     debugPrint('Env load failed: $e');
+  }
+}
+
+Future<void> _initKakao() async {
+  try {
+    final nativeAppKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
+    final javaScriptAppKey = dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'];
+    
+    if (nativeAppKey != null && nativeAppKey.isNotEmpty) {
+      KakaoSdk.init(
+        nativeAppKey: nativeAppKey,
+        javaScriptAppKey: javaScriptAppKey,
+      );
+    } else {
+      debugPrint('Kakao init failed: KAKAO_NATIVE_APP_KEY is missing in .env');
+    }
+  } catch (e) {
+    debugPrint('Kakao init failed: $e');
   }
 }
 

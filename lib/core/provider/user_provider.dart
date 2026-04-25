@@ -125,6 +125,21 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// Kakao 로그인 래핑
+  Future<void> signInWithKakao() async {
+    _setLoading(true);
+    try {
+      final user = await _userRepository.signInWithKakao();
+      if (user != null) {
+        _currentUser = user;
+        unawaited(Purchases.logIn(user.id));
+        notifyListeners();
+      }
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 비밀번호 재설정 이메일 전송
   Future<void> sendPasswordResetEmail(String email) async {
     await _userRepository.sendPasswordResetEmail(email);
