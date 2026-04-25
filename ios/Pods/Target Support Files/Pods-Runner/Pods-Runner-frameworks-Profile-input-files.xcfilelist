@@ -56,6 +56,8 @@ ${BUILT_PRODUCTS_DIR}/gRPC-Core/grpc.framework
 ${BUILT_PRODUCTS_DIR}/image_picker_ios/image_picker_ios.framework
 ${BUILT_PRODUCTS_DIR}/in_app_purchase_storekit/in_app_purchase_storekit.framework
 ${BUILT_PRODUCTS_DIR}/just_audio/just_audio.framework
+${BUILT_PRODUCTS_DIR}/kakao_flutter_sdk_auth/kakao_flutter_sdk_auth.framework
+${BUILT_PRODUCTS_DIR}/kakao_flutter_sdk_common/kakao_flutter_sdk_common.framework
 ${BUILT_PRODUCTS_DIR}/leveldb-library/leveldb.framework
 ${BUILT_PRODUCTS_DIR}/libwebp/libwebp.framework
 ${BUILT_PRODUCTS_DIR}/nanopb/nanopb.framework

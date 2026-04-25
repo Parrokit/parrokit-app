@@ -524,6 +524,21 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>kakao_flutter_sdk_auth-kakao_flutter_sdk_auth_privacy.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>kakao_flutter_sdk_auth.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
+		<key>kakao_flutter_sdk_common.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>leveldb-library-leveldb_Privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>

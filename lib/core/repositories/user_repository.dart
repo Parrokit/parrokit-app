@@ -202,7 +202,7 @@ class UserRepository {
       displayName: fbUser.displayName ??
           serverUser?.displayName ??
           existingLocal?.displayName,
-      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
       photoUrl:
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
@@ -255,7 +255,7 @@ class UserRepository {
       displayName: fbUser.displayName ??
           serverUser?.displayName ??
           existingLocal?.displayName,
-      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
       photoUrl:
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
