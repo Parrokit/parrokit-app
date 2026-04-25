@@ -5,6 +5,7 @@ import 'package:parrokit/data/local/prefs/user_prefs.dart';
 import 'package:parrokit/data/models/user.dart';
 import 'package:parrokit/core/services/firebase/firebase_auth_service.dart';
 import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
+import 'package:parrokit/core/services/sso/apple_sso_service.dart';
 import 'package:parrokit/core/services/sso/google_sso_service.dart';
 import 'package:parrokit/core/services/sso/kakao_sso_service.dart';
 import 'package:parrokit/core/services/sso/naver_sso_service.dart';
@@ -22,6 +23,7 @@ class UserRepository {
   final GoogleSsoService _googleSsoService;
   final KakaoSsoService _kakaoSsoService;
   final NaverSsoService _naverSsoService;
+  final AppleSsoService _appleSsoService;
   
   UserRepository(
     this._userPrefs,
@@ -30,9 +32,11 @@ class UserRepository {
     GoogleSsoService? googleSsoService,
     KakaoSsoService? kakaoSsoService,
     NaverSsoService? naverSsoService,
+    AppleSsoService? appleSsoService,
   })  : _googleSsoService = googleSsoService ?? GoogleSsoService(),
         _kakaoSsoService = kakaoSsoService ?? KakaoSsoService(),
-        _naverSsoService = naverSsoService ?? NaverSsoService();
+        _naverSsoService = naverSsoService ?? NaverSsoService(),
+        _appleSsoService = appleSsoService ?? AppleSsoService();
 
   /// 현재 로컬에 저장된 유저를 반환합니다.
   /// 저장된 유저가 없으면 null을 반환합니다.
@@ -491,5 +495,50 @@ class UserRepository {
     }
     await _authService.deleteAccount();
     await _userPrefs.clear();
+  }
+
+  /// Apple SSO 로그인 연동
+  Future<PaUser?> signInWithApple() async {
+    final cred = await _appleSsoService.getCredentialAndSignIn();
+    if (cred == null) {
+      return null;
+    }
+
+    final fbUser = cred.user;
+    if (fbUser == null) {
+      throw StateError('FirebaseAuth: user is null after signInWithApple');
+    }
+
+    PaUser? serverUser;
+    try {
+      serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    } catch (_) {
+      serverUser = null;
+    }
+
+    if (serverUser == null) {
+      await _firebaseUserService.initUserDocument(
+        uid: fbUser.uid,
+        email: fbUser.email ?? '',
+      );
+    }
+
+    final existingLocal = _userPrefs.loadUser();
+
+    final user = PaUser(
+      id: fbUser.uid,
+      displayName: fbUser.displayName ??
+          serverUser?.displayName ??
+          existingLocal?.displayName,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
+      photoUrl:
+          fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
+      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _userPrefs.saveUser(user);
+    return user;
   }
 }

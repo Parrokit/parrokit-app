@@ -634,6 +634,11 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
+		<key>sign_in_with_apple.xcscheme</key>
+		<dict>
+			<key>isShown</key>
+			<false/>
+		</dict>
 		<key>sqflite_darwin-sqflite_darwin_privacy.xcscheme</key>
 		<dict>
 			<key>isShown</key>
