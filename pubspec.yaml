@@ -103,6 +103,8 @@ dependencies:
   advertising_id: ^2.7.1
   google_sign_in: ^6.2.1
   kakao_flutter_sdk: ^2.0.0+1
+  cloud_functions: ^6.2.0
+  flutter_naver_login: ^2.1.1
 
 # -----------------------------------------------------------
 # Dependency Overrides

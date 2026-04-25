@@ -90,6 +90,23 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  Future<void> _onNaverSignIn() async {
+    final userProvider = context.read<UserProvider>();
+    try {
+      await userProvider.signInWithNaver();
+      if (!mounted) return;
+      if (userProvider.currentUser != null) {
+        showToast('네이버 로그인에 성공했습니다.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      showToast('네이버 로그인 오류: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      showToast('네이버 로그인 중 오류가 발생했습니다.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,7 +231,8 @@ class _SignInScreenState extends State<SignInScreen> {
                       _buildSocialIcon('assets/icons/kakao_icon.png',
                           onTap: _onKakaoSignIn),
                       const SizedBox(width: 32),
-                      _buildSocialIcon('assets/icons/naver_icon.png'),
+                      _buildSocialIcon('assets/icons/naver_icon.png',
+                          onTap: _onNaverSignIn),
                       const SizedBox(width: 32),
                       _buildSocialIcon('assets/icons/apple_icon.png'),
                     ],

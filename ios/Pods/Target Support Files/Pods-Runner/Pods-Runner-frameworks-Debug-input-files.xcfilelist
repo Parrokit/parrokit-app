@@ -13,7 +13,9 @@ ${BUILT_PRODUCTS_DIR}/FirebaseCoreInternal/FirebaseCoreInternal.framework
 ${BUILT_PRODUCTS_DIR}/FirebaseCrashlytics/FirebaseCrashlytics.framework
 ${BUILT_PRODUCTS_DIR}/FirebaseFirestore/FirebaseFirestore.framework
 ${BUILT_PRODUCTS_DIR}/FirebaseFirestoreInternal/FirebaseFirestoreInternal.framework
+${BUILT_PRODUCTS_DIR}/FirebaseFunctions/FirebaseFunctions.framework
 ${BUILT_PRODUCTS_DIR}/FirebaseInstallations/FirebaseInstallations.framework
+${BUILT_PRODUCTS_DIR}/FirebaseMessagingInterop/FirebaseMessagingInterop.framework
 ${BUILT_PRODUCTS_DIR}/FirebaseRemoteConfigInterop/FirebaseRemoteConfigInterop.framework
 ${BUILT_PRODUCTS_DIR}/FirebaseSessions/FirebaseSessions.framework
 ${BUILT_PRODUCTS_DIR}/FirebaseSharedSwift/FirebaseSharedSwift.framework
@@ -51,6 +53,7 @@ ${BUILT_PRODUCTS_DIR}/flutter_email_sender/flutter_email_sender.framework
 ${BUILT_PRODUCTS_DIR}/flutter_file_dialog/flutter_file_dialog.framework
 ${BUILT_PRODUCTS_DIR}/flutter_inappwebview_ios/flutter_inappwebview_ios.framework
 ${BUILT_PRODUCTS_DIR}/flutter_native_splash/flutter_native_splash.framework
+${BUILT_PRODUCTS_DIR}/flutter_naver_login/flutter_naver_login.framework
 ${BUILT_PRODUCTS_DIR}/gRPC-C++/grpcpp.framework
 ${BUILT_PRODUCTS_DIR}/gRPC-Core/grpc.framework
 ${BUILT_PRODUCTS_DIR}/image_picker_ios/image_picker_ios.framework
@@ -74,3 +77,5 @@ ${BUILT_PRODUCTS_DIR}/url_launcher_ios/url_launcher_ios.framework
 ${BUILT_PRODUCTS_DIR}/video_player_avfoundation/video_player_avfoundation.framework
 ${BUILT_PRODUCTS_DIR}/video_thumbnail/video_thumbnail.framework
 ${BUILT_PRODUCTS_DIR}/webview_flutter_wkwebview/webview_flutter_wkwebview.framework
+${PODS_XCFRAMEWORKS_BUILD_DIR}/NidThirdPartyLogin/NidCore.framework/NidCore
+${PODS_XCFRAMEWORKS_BUILD_DIR}/NidThirdPartyLogin/NidThirdPartyLogin.framework/NidThirdPartyLogin

@@ -24,7 +24,7 @@ import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart
 import 'package:parrokit/features/content/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/discovery/recent/presentation/recent_screen.dart';
-import 'package:parrokit/features/content/clip_editor/presentation/clip_editor_screen.dart';
+import 'package:parrokit/features/content/clip-editor/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
 
 // Router 관련

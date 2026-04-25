@@ -10,7 +10,7 @@
 // Data Layer > UseCases
 // ============================================================================
 
-import 'package:parrokit/features/content/clip_editor/domain/native_title_result.dart';
+import 'package:parrokit/features/content/clip-editor/domain/native_title_result.dart';
 import '../services/native_title_service.dart';
 
 /// 원어 작품명 조회 UseCase.

@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'package:file_picker/file_picker.dart';
-import 'package:parrokit/features/content/clip_editor/data/ports/video_picker_port.dart';
+import 'package:parrokit/features/content/clip-editor/data/ports/video_picker_port.dart';
 
 class PickVideoUseCase {
   final VideoPickerPort files;

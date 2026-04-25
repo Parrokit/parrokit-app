@@ -30,6 +30,12 @@
 @import cloud_firestore;
 #endif
 
+#if __has_include(<cloud_functions/FirebaseFunctionsPlugin.h>)
+#import <cloud_functions/FirebaseFunctionsPlugin.h>
+#else
+@import cloud_functions;
+#endif
+
 #if __has_include(<device_info_plus/FPPDeviceInfoPlusPlugin.h>)
 #import <device_info_plus/FPPDeviceInfoPlusPlugin.h>
 #else
@@ -94,6 +100,12 @@
 #import <flutter_native_splash/FlutterNativeSplashPlugin.h>
 #else
 @import flutter_native_splash;
+#endif
+
+#if __has_include(<flutter_naver_login/FlutterNaverLoginPlugin.h>)
+#import <flutter_naver_login/FlutterNaverLoginPlugin.h>
+#else
+@import flutter_naver_login;
 #endif
 
 #if __has_include(<google_mobile_ads/FLTGoogleMobileAdsPlugin.h>)
@@ -217,6 +229,7 @@
   [AudioServicePlugin registerWithRegistrar:[registry registrarForPlugin:@"AudioServicePlugin"]];
   [AudioSessionPlugin registerWithRegistrar:[registry registrarForPlugin:@"AudioSessionPlugin"]];
   [FLTFirebaseFirestorePlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseFirestorePlugin"]];
+  [FirebaseFunctionsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FirebaseFunctionsPlugin"]];
   [FPPDeviceInfoPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPDeviceInfoPlusPlugin"]];
   [FFmpegKitFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"FFmpegKitFlutterPlugin"]];
   [FilePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FilePickerPlugin"]];
@@ -228,6 +241,7 @@
   [FlutterFileDialogPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterFileDialogPlugin"]];
   [InAppWebViewFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"InAppWebViewFlutterPlugin"]];
   [FlutterNativeSplashPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterNativeSplashPlugin"]];
+  [FlutterNaverLoginPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterNaverLoginPlugin"]];
   [FLTGoogleMobileAdsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTGoogleMobileAdsPlugin"]];
   [FLTGoogleSignInPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTGoogleSignInPlugin"]];
   [FLTImagePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTImagePickerPlugin"]];

@@ -9,7 +9,7 @@
 // Data Layer > UseCases
 // ============================================================================
 
-import 'package:parrokit/features/content/clip_editor/data/services/video_meta_service.dart';
+import 'package:parrokit/features/content/clip-editor/data/services/video_meta_service.dart';
 
 class ExtractDurationUseCase {
   final VideoMetaService meta;

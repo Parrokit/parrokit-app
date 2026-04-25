@@ -10,7 +10,7 @@
 // Data Layer > UseCases
 // ============================================================================
 
-import 'package:parrokit/features/content/clip_editor/data/ports/llm_port.dart';
+import 'package:parrokit/features/content/clip-editor/data/ports/llm_port.dart';
 import '../prompts/prompt_loader.dart';
 
 class TranslateSegmentUseCase {

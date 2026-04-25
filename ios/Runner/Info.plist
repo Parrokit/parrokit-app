@@ -74,6 +74,7 @@
 				<array>
 					<string>com.googleusercontent.apps.392832464036-f3mihj8mtksl1jnjthii7e7r1k9n4k66</string>
 					<string>kakao66d87f24de00f33c803440233d1b1597</string>
+					<string>parrokitnaverlogin</string>
 				</array>
 			</dict>
 		</array>
@@ -82,8 +83,18 @@
 			<string>kakaokompassauth</string>
 			<string>kakaolink</string>
 			<string>kakaoplus</string>
+			<string>naversearchapp</string>
+			<string>naversearchthirdlogin</string>
 		</array>
 		<key>GIDClientID</key>
 		<string>392832464036-f3mihj8mtksl1jnjthii7e7r1k9n4k66.apps.googleusercontent.com</string>
+		<key>NidUrlScheme</key>
+		<string>parrokitnaverlogin</string>
+		<key>NidClientID</key>
+		<string>l4mNALY_B2u2A3ETaOzV</string>
+		<key>NidClientSecret</key>
+		<string>xySJLL7J7p</string>
+		<key>NidAppName</key>
+		<string>패로킷</string>
 	</dict>
 </plist>

@@ -190,7 +190,9 @@ if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseCrashlytics/FirebaseCrashlytics.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFirestore/FirebaseFirestore.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFirestoreInternal/FirebaseFirestoreInternal.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFunctions/FirebaseFunctions.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseInstallations/FirebaseInstallations.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/FirebaseMessagingInterop/FirebaseMessagingInterop.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseRemoteConfigInterop/FirebaseRemoteConfigInterop.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseSessions/FirebaseSessions.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseSharedSwift/FirebaseSharedSwift.framework"
@@ -228,6 +230,7 @@ if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_file_dialog/flutter_file_dialog.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_inappwebview_ios/flutter_inappwebview_ios.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_native_splash/flutter_native_splash.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/flutter_naver_login/flutter_naver_login.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/gRPC-C++/grpcpp.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/gRPC-Core/grpc.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/image_picker_ios/image_picker_ios.framework"
@@ -251,6 +254,8 @@ if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/video_player_avfoundation/video_player_avfoundation.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/video_thumbnail/video_thumbnail.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/webview_flutter_wkwebview/webview_flutter_wkwebview.framework"
+  install_framework "${PODS_XCFRAMEWORKS_BUILD_DIR}/NidThirdPartyLogin/NidCore.framework"
+  install_framework "${PODS_XCFRAMEWORKS_BUILD_DIR}/NidThirdPartyLogin/NidThirdPartyLogin.framework"
 fi
 if [[ "$CONFIGURATION" == "Profile" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/AppAuth/AppAuth.framework"
@@ -267,7 +272,9 @@ if [[ "$CONFIGURATION" == "Profile" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseCrashlytics/FirebaseCrashlytics.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFirestore/FirebaseFirestore.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFirestoreInternal/FirebaseFirestoreInternal.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFunctions/FirebaseFunctions.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseInstallations/FirebaseInstallations.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/FirebaseMessagingInterop/FirebaseMessagingInterop.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseRemoteConfigInterop/FirebaseRemoteConfigInterop.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseSessions/FirebaseSessions.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseSharedSwift/FirebaseSharedSwift.framework"
@@ -305,6 +312,7 @@ if [[ "$CONFIGURATION" == "Profile" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_file_dialog/flutter_file_dialog.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_inappwebview_ios/flutter_inappwebview_ios.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_native_splash/flutter_native_splash.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/flutter_naver_login/flutter_naver_login.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/gRPC-C++/grpcpp.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/gRPC-Core/grpc.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/image_picker_ios/image_picker_ios.framework"
@@ -328,6 +336,8 @@ if [[ "$CONFIGURATION" == "Profile" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/video_player_avfoundation/video_player_avfoundation.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/video_thumbnail/video_thumbnail.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/webview_flutter_wkwebview/webview_flutter_wkwebview.framework"
+  install_framework "${PODS_XCFRAMEWORKS_BUILD_DIR}/NidThirdPartyLogin/NidCore.framework"
+  install_framework "${PODS_XCFRAMEWORKS_BUILD_DIR}/NidThirdPartyLogin/NidThirdPartyLogin.framework"
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/AppAuth/AppAuth.framework"
@@ -344,7 +354,9 @@ if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseCrashlytics/FirebaseCrashlytics.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFirestore/FirebaseFirestore.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFirestoreInternal/FirebaseFirestoreInternal.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/FirebaseFunctions/FirebaseFunctions.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseInstallations/FirebaseInstallations.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/FirebaseMessagingInterop/FirebaseMessagingInterop.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseRemoteConfigInterop/FirebaseRemoteConfigInterop.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseSessions/FirebaseSessions.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/FirebaseSharedSwift/FirebaseSharedSwift.framework"
@@ -382,6 +394,7 @@ if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_file_dialog/flutter_file_dialog.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_inappwebview_ios/flutter_inappwebview_ios.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/flutter_native_splash/flutter_native_splash.framework"
+  install_framework "${BUILT_PRODUCTS_DIR}/flutter_naver_login/flutter_naver_login.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/gRPC-C++/grpcpp.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/gRPC-Core/grpc.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/image_picker_ios/image_picker_ios.framework"
@@ -405,6 +418,8 @@ if [[ "$CONFIGURATION" == "Release" ]]; then
   install_framework "${BUILT_PRODUCTS_DIR}/video_player_avfoundation/video_player_avfoundation.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/video_thumbnail/video_thumbnail.framework"
   install_framework "${BUILT_PRODUCTS_DIR}/webview_flutter_wkwebview/webview_flutter_wkwebview.framework"
+  install_framework "${PODS_XCFRAMEWORKS_BUILD_DIR}/NidThirdPartyLogin/NidCore.framework"
+  install_framework "${PODS_XCFRAMEWORKS_BUILD_DIR}/NidThirdPartyLogin/NidThirdPartyLogin.framework"
 fi
 if [ "${COCOAPODS_PARALLEL_CODE_SIGN}" == "true" ]; then
   wait

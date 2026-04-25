@@ -7,6 +7,7 @@ import 'package:parrokit/core/services/firebase/firebase_auth_service.dart';
 import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
 import 'package:parrokit/core/services/sso/google_sso_service.dart';
 import 'package:parrokit/core/services/sso/kakao_sso_service.dart';
+import 'package:parrokit/core/services/sso/naver_sso_service.dart';
 
 /// 앱 도메인 기준의 인증/유저 레포지토리.
 ///
@@ -20,6 +21,7 @@ class UserRepository {
   final FirebaseUserService _firebaseUserService;
   final GoogleSsoService _googleSsoService;
   final KakaoSsoService _kakaoSsoService;
+  final NaverSsoService _naverSsoService;
   
   UserRepository(
     this._userPrefs,
@@ -27,8 +29,10 @@ class UserRepository {
     this._firebaseUserService, {
     GoogleSsoService? googleSsoService,
     KakaoSsoService? kakaoSsoService,
+    NaverSsoService? naverSsoService,
   })  : _googleSsoService = googleSsoService ?? GoogleSsoService(),
-        _kakaoSsoService = kakaoSsoService ?? KakaoSsoService();
+        _kakaoSsoService = kakaoSsoService ?? KakaoSsoService(),
+        _naverSsoService = naverSsoService ?? NaverSsoService();
 
   /// 현재 로컬에 저장된 유저를 반환합니다.
   /// 저장된 유저가 없으면 null을 반환합니다.
@@ -267,6 +271,56 @@ class UserRepository {
     return user;
   }
 
+  /// Naver 계정으로 로그인 (또는 회원가입)을 수행합니다.
+  Future<PaUser?> signInWithNaver() async {
+    // 1. Naver OAuth 인증 + Cloud Functions 호출하여 Firebase 로그인
+    final cred = await _naverSsoService.getCredentialAndSignIn();
+    if (cred == null) {
+      // 사용자가 취소하거나 에러 발생
+      return null;
+    }
+
+    final fbUser = cred.user;
+    if (fbUser == null) {
+      throw StateError('FirebaseAuth: user is null after signInWithNaver');
+    }
+
+    // 2) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
+    PaUser? serverUser;
+    try {
+      serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
+    } catch (_) {
+      serverUser = null;
+    }
+
+    // 문서가 없으면 초기화 (회원가입의 경우)
+    if (serverUser == null) {
+      await _firebaseUserService.initUserDocument(
+        uid: fbUser.uid,
+        email: fbUser.email ?? '',
+      );
+    }
+
+    // 3) 로컬 캐시 조회
+    final existingLocal = _userPrefs.loadUser();
+
+    final user = PaUser(
+      id: fbUser.uid,
+      displayName: fbUser.displayName ??
+          serverUser?.displayName ??
+          existingLocal?.displayName,
+      email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
+      photoUrl:
+          fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
+      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await _userPrefs.saveUser(user);
+    return user;
+  }
+
   /// 비밀번호 재설정 이메일을 전송합니다.
   Future<void> sendPasswordResetEmail(String email) async {
     await _authService.sendPasswordResetEmail(email);
@@ -419,6 +473,7 @@ class UserRepository {
   /// - Firebase 에서 로그아웃
   /// - 로컬에 저장된 유저 정보를 모두 삭제합니다.
   Future<void> signOut() async {
+    await _naverSsoService.signOut();
     await _kakaoSsoService.signOut();
     await _googleSsoService.signOut();
     await _authService.signOut();

@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'dart:typed_data';
-import 'package:parrokit/features/content/clip_editor/data/ports/asr_port.dart';
+import 'package:parrokit/features/content/clip-editor/data/ports/asr_port.dart';
 
 class TranscribeUseCase {
   final ASRPort asr;

@@ -14,7 +14,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:parrokit/features/content/clip_editor/data/ports/video_picker_port.dart';
+import 'package:parrokit/features/content/clip-editor/data/ports/video_picker_port.dart';
 
 /// Gallery(ImagePicker) 구현
 class VideoPickerGallery implements VideoPickerPort {

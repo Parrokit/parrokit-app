@@ -12,7 +12,9 @@ ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseCoreInternal.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseCrashlytics.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseFirestore.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseFirestoreInternal.framework
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseFunctions.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseInstallations.framework
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseMessagingInterop.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseRemoteConfigInterop.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseSessions.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseSharedSwift.framework
@@ -50,6 +52,7 @@ ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/flutter_email_sender.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/flutter_file_dialog.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/flutter_inappwebview_ios.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/flutter_native_splash.framework
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/flutter_naver_login.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/grpcpp.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/grpc.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/image_picker_ios.framework
@@ -73,3 +76,5 @@ ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/url_launcher_ios.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/video_player_avfoundation.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/video_thumbnail.framework
 ${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/webview_flutter_wkwebview.framework
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/NidCore.framework
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/NidThirdPartyLogin.framework
