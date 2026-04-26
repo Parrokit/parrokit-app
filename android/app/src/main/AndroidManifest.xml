@@ -23,11 +23,11 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
-    
 
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- (선택) 알림 권한: 알림을 쓸 경우에만 (Android 13+) -->
     <!-- <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> -->
@@ -51,18 +51,18 @@
 
             <!-- deep link / launcher intent-filter 그대로 유지 -->
             <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="parrokit"/>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="parrokit" />
             </intent-filter>
 
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
@@ -83,7 +83,7 @@
             android:value="2" />
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="@string/admob_app_id"/>
+            android:value="ca-app-pub-6519817120789589~3812220409" />
         <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"
             android:value="false" />
@@ -105,15 +105,15 @@
     <queries>
         <!-- Flutter 엔진용 PROCESS_TEXT -->
         <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
         </intent>
-        
+
         <intent>
             <action android:name="com.google.android.gms.ads.service.START" />
         </intent>
 
         <!-- Google Play (결제) 패키지 가시성 -->
-        <package android:name="com.android.vending"/>
+        <package android:name="com.android.vending" />
     </queries>
 </manifest>
