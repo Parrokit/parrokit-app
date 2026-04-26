@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/theme/app_radius.dart';
 import 'board_screen.dart';
 import 'question_screen.dart';
 import 'vote_screen.dart';
@@ -16,11 +18,11 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   String _selectedBoardFilter = '최신';
   String _selectedQuestionFilter = '답변 대기중';
-  String _selectedVoteFilter = '미정';
+  String _selectedVoteFilter = '랜덤 보기';
 
   final List<String> _boardFilters = ['최신', '자유', '추천해요', '일상', '분석'];
   final List<String> _questionFilters = ['채택 완료', '답변 대기중', '화제의 질문', '오래된 질문'];
-  final List<String> _voteFilters = ['미정'];
+  final List<String> _voteFilters = ['랜덤 보기', '한눈에 보기'];
 
   int _currentIndex = 0;
   bool _isFabExtended = true;
@@ -54,15 +56,17 @@ class _CommunityScreenState extends State<CommunityScreen>
             if (notification.metrics.axis == Axis.vertical) {
               if (notification is ScrollUpdateNotification) {
                 // 내부 리스트(피드)가 맨 위(0)에 도달했을 때만 펴기
-                if (notification.depth > 0 && notification.metrics.pixels <= 0) {
+                if (notification.depth > 0 &&
+                    notification.metrics.pixels <= 0) {
                   if (!_isFabExtended) {
                     setState(() {
                       _isFabExtended = true;
                     });
                   }
-                } 
+                }
                 // 스크롤을 내리면(어디서든) 무조건 접기
-                else if (notification.scrollDelta != null && notification.scrollDelta! > 0) {
+                else if (notification.scrollDelta != null &&
+                    notification.scrollDelta! > 0) {
                   if (_isFabExtended) {
                     setState(() {
                       _isFabExtended = false;
@@ -76,90 +80,93 @@ class _CommunityScreenState extends State<CommunityScreen>
           child: NestedScrollView(
             floatHeaderSlivers: true,
             headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverPersistentHeader(
-                floating: true,
-                delegate: _CommunityHeaderDelegate(
-                  titleWidget: Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 4.0, 4.0, 4.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          '커뮤니티',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+              return [
+                SliverPersistentHeader(
+                  floating: true,
+                  delegate: _CommunityHeaderDelegate(
+                    titleWidget: Padding(
+                      padding: const EdgeInsets.fromLTRB(16.0, 4.0, 4.0, 4.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            '커뮤니티',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
                           ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.search,
+                                    color: Colors.black),
+                                onPressed: () {},
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.notifications_none,
+                                    color: Colors.black),
+                                onPressed: () {},
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.menu, color: Colors.black),
+                                onPressed: () {},
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    zone1Widget: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      labelColor: Colors.black,
+                      labelStyle: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                      unselectedLabelColor: Colors.grey,
+                      unselectedLabelStyle: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                      indicatorColor: Colors.black,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      dividerColor: Colors.transparent,
+                      padding: EdgeInsets.zero,
+                      labelPadding:
+                          const EdgeInsets.symmetric(horizontal: 16.0),
+                      tabs: const [
+                        Tab(text: '게시판'),
+                        Tab(text: '질문'),
+                        Tab(text: '투표'),
+                      ],
+                    ),
+                    zone2Widget: Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 36,
+                          child: _buildZone2Filters(),
                         ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.search, color: Colors.black),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.notifications_none,
-                                  color: Colors.black),
-                              onPressed: () {},
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.menu, color: Colors.black),
-                              onPressed: () {},
-                            ),
-                          ],
-                        ),
+                        const SizedBox(height: 11),
+                        const Divider(color: Color(0xFFEEEEEE), height: 1),
                       ],
                     ),
                   ),
-                  zone1Widget: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    labelColor: Colors.black,
-                    labelStyle: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                    unselectedLabelColor: Colors.grey,
-                    unselectedLabelStyle: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                    indicatorColor: Colors.black,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    dividerColor: Colors.transparent,
-                    padding: EdgeInsets.zero,
-                    labelPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    tabs: const [
-                      Tab(text: '게시판'),
-                      Tab(text: '질문'),
-                      Tab(text: '투표'),
-                    ],
-                  ),
-                  zone2Widget: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 36,
-                        child: _buildZone2Filters(),
-                      ),
-                      const SizedBox(height: 11),
-                      const Divider(color: Color(0xFFEEEEEE), height: 1),
-                    ],
-                  ),
                 ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              BoardScreen(selectedFilter: _selectedBoardFilter),
-              QuestionScreen(selectedFilter: _selectedQuestionFilter),
-              VoteScreen(selectedFilter: _selectedVoteFilter),
-            ],
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                BoardScreen(selectedFilter: _selectedBoardFilter),
+                QuestionScreen(selectedFilter: _selectedQuestionFilter),
+                VoteScreen(selectedFilter: _selectedVoteFilter),
+              ],
+            ),
           ),
         ),
       ),
-    ),
       floatingActionButton: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
@@ -179,9 +186,10 @@ class _CommunityScreenState extends State<CommunityScreen>
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
-            onTap: () {},
+            onTap: _showWriteBottomSheet,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: _isFabExtended ? 20.0 : 16.0),
+              padding: EdgeInsets.symmetric(
+                  horizontal: _isFabExtended ? 20.0 : 16.0),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -246,18 +254,7 @@ class _CommunityScreenState extends State<CommunityScreen>
         },
       );
     } else {
-      return ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        itemCount: _voteFilters.length,
-        itemBuilder: (context, index) {
-          final filter = _voteFilters[index];
-          return Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: _buildQuestionSubTab(filter),
-          );
-        },
-      );
+      return _buildVoteToggle();
     }
   }
 
@@ -334,6 +331,203 @@ class _CommunityScreenState extends State<CommunityScreen>
               color: isSelected ? Colors.black : Colors.grey[500],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVoteToggle() {
+    final cs = Theme.of(context).colorScheme;
+    final isRandom = _selectedVoteFilter == '랜덤 보기';
+    const h = 36.0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: SizedBox(
+        height: h,
+        child: Stack(
+          children: [
+            // 슬라이딩 배경
+            AnimatedAlign(
+              alignment: isRandom ? Alignment.centerLeft : Alignment.centerRight,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              child: FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Container(
+                  height: h,
+                  decoration: BoxDecoration(
+                    color: cs.primary,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ),
+            // 버튼들
+            Row(
+              children: [
+                // 랜덤 보기
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedVoteFilter = '랜덤 보기'),
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.style_rounded, size: 16,
+                            color: isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          const SizedBox(width: 6),
+                          Text('랜덤 보기', style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold,
+                            color: isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4))),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // 한눈에 보기
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedVoteFilter = '한눈에 보기'),
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.menu, size: 16,
+                            color: !isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          const SizedBox(width: 6),
+                          Text('한눈에 보기', style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold,
+                            color: !isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4))),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showWriteBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding:
+                const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '커뮤니티 글쓰기',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildWriteOption(
+                  icon: Icons.edit_rounded,
+                  iconColor: Colors.blue[600]!,
+                  bgColor: Colors.blue[50]!,
+                  title: '게시판 작성',
+                  subtitle: '자유롭게 대화해보세요',
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildWriteOption(
+                  icon: Icons.live_help_rounded,
+                  iconColor: Colors.orange[500]!,
+                  bgColor: Colors.orange[50]!,
+                  title: '질문하기',
+                  subtitle: '모르는 지식을 습득해보세요',
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildWriteOption(
+                  icon: Icons.how_to_vote_rounded,
+                  iconColor: Colors.amber[500]!,
+                  bgColor: Colors.amber[50]!,
+                  title: '투표 만들기',
+                  subtitle: '투표를 진행하여 다양한 의견을 받아보세요',
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWriteOption({
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: iconColor, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey[400], size: 28),
+          ],
         ),
       ),
     );
