@@ -17,6 +17,7 @@ abstract class AppRoutes {
   // ─────────────────────────────────────────────────────────────────
 
   static const dashboard = 'dashboard';
+  static const community = 'community';
   static const explore = 'explore';
   static const library = 'library';
   static const more = 'more';
@@ -41,6 +42,7 @@ abstract class AppRoutes {
   // ─────────────────────────────────────────────────────────────────
 
   static const dashboardPath = '/dashboard';
+  static const communityPath = '/community';
   static const explorePath = '/explore';
   static const libraryPath = '/library';
   static const morePath = '/more';
