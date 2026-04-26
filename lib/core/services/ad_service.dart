@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/rendering.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -52,6 +53,7 @@ class AdService {
         onAdFailedToLoad: (error) {
           _isLoading = false;
           _ad = null;
+          debugPrint('❌ 전면 광고 로드 실패: ${error.code} - ${error.message}');
         },
       ),
     );
@@ -103,6 +105,7 @@ class AdService {
         onAdFailedToLoad: (error) {
           _isRewardedLoading = false;
           _rewardedAd = null;
+          debugPrint('❌ 보상형 광고 로드 실패: ${error.code} - ${error.message}');
         },
       ),
     );
