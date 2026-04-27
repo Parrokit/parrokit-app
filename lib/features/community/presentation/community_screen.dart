@@ -72,74 +72,72 @@ class _CommunityScreenState extends State<CommunityScreen>
               SliverPersistentHeader(
                 floating: true,
                 delegate: _CommunityHeaderDelegate(
-                    titleWidget: Padding(
-                      padding: const EdgeInsets.fromLTRB(16.0, 4.0, 4.0, 4.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            '커뮤니티',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.search,
-                                    color: Colors.black),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.notifications_none,
-                                    color: Colors.black),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.menu, color: Colors.black),
-                                onPressed: () {},
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    zone1Widget: TabBar(
-                      controller: _tabController,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      labelColor: Colors.black,
-                      labelStyle: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
-                      unselectedLabelColor: Colors.grey,
-                      unselectedLabelStyle: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
-                      indicatorColor: Colors.black,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      dividerColor: Colors.transparent,
-                      padding: EdgeInsets.zero,
-                      labelPadding:
-                          const EdgeInsets.symmetric(horizontal: 16.0),
-                      tabs: const [
-                        Tab(text: '게시판'),
-                        Tab(text: '질문'),
-                        Tab(text: '투표'),
-                      ],
-                    ),
-                    zone2Widget: Column(
+                  titleWidget: Padding(
+                    padding: const EdgeInsets.fromLTRB(16.0, 4.0, 4.0, 4.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 36,
-                          child: _buildZone2Filters(),
+                        const Text(
+                          '커뮤니티',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
-                        const SizedBox(height: 11),
-                        const Divider(color: Color(0xFFEEEEEE), height: 1),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon:
+                                  const Icon(Icons.search, color: Colors.black),
+                              onPressed: () {},
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.notifications_none,
+                                  color: Colors.black),
+                              onPressed: () {},
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.menu, color: Colors.black),
+                              onPressed: () {},
+                            ),
+                          ],
+                        ),
                       ],
                     ),
+                  ),
+                  zone1Widget: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    labelColor: Colors.black,
+                    labelStyle: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                    unselectedLabelColor: Colors.grey,
+                    unselectedLabelStyle: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                    indicatorColor: Colors.black,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    dividerColor: Colors.transparent,
+                    padding: EdgeInsets.zero,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    tabs: const [
+                      Tab(text: '게시판'),
+                      Tab(text: '질문'),
+                      Tab(text: '투표'),
+                    ],
+                  ),
+                  zone2Widget: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 36,
+                        child: _buildZone2Filters(),
+                      ),
+                      const SizedBox(height: 11),
+                      const Divider(color: Color(0xFFEEEEEE), height: 1),
+                    ],
+                  ),
                 ),
               ),
             ];
@@ -351,7 +349,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                 child: Container(
                   height: h,
                   decoration: BoxDecoration(
-                    color: cs.primary,
+                    color: Colors.blue[600],
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
@@ -363,8 +361,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                 // 랜덤 보기
                 Expanded(
                   child: GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedVoteFilter = CommunityFilters.vote[0]),
+                    onTap: () => setState(
+                        () => _selectedVoteFilter = CommunityFilters.vote[0]),
                     behavior: HitTestBehavior.opaque,
                     child: Center(
                       child: Row(
@@ -391,8 +389,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                 // 한눈에 보기
                 Expanded(
                   child: GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedVoteFilter = CommunityFilters.vote[1]),
+                    onTap: () => setState(
+                        () => _selectedVoteFilter = CommunityFilters.vote[1]),
                     behavior: HitTestBehavior.opaque,
                     child: Center(
                       child: Row(
