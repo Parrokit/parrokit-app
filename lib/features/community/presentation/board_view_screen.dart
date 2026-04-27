@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final int postId;
@@ -12,6 +13,44 @@ class BoardViewScreen extends StatefulWidget {
 class _BoardViewScreenState extends State<BoardViewScreen> {
   bool _liked = false;
   bool _scrapped = false;
+  final TextEditingController _commentController = TextEditingController();
+  final FocusNode _commentFocusNode = FocusNode();
+  final List<_CommentItem> _comments = [];
+
+  bool get _canSubmitComment => _commentController.text.trim().isNotEmpty;
+
+  void _focusCommentInput() {
+    FocusScope.of(context).requestFocus(_commentFocusNode);
+    Future<void>.delayed(const Duration(milliseconds: 20), () {
+      if (!mounted) return;
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    });
+  }
+
+  void _submitComment() {
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _comments.insert(
+        0,
+        _CommentItem(
+          author: '나',
+          timeAgo: '방금 전',
+          content: text,
+        ),
+      );
+      _commentController.clear();
+    });
+    _commentFocusNode.unfocus();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _commentFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +58,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     const textMuted = Color(0xFF8B8B8B);
     const likeAccent = Color(0xFF3F72C4); // blue[600] 느낌
     const scrapAccent = Color(0xFFC9AE58); // 부드러운 노랑 느낌
+    final sendAccent = Colors.blue[600]!;
 
     final likeMetaColor = _liked ? likeAccent : const Color(0xFF9F9F9F);
     final likeIconColor = _liked ? likeAccent : const Color(0xFFB2B2B2);
@@ -26,52 +66,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          decoration: const BoxDecoration(
-            color: backgroundColor,
-            border: Border(top: BorderSide(color: Color(0xFFDCDCDC))),
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.photo_outlined, size: 32),
-                color: const Color(0xFF707070),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Container(
-                  height: 52,
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 250, 250, 250),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '댓글을 입력해주세요.',
-                          style: TextStyle(
-                            color: Color(0xFF9B9B9B),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      Icon(Icons.subdirectory_arrow_left,
-                          color: Color(0xFF8A8A8A), size: 30),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
           children: [
@@ -98,6 +93,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
             ),
             Expanded(
               child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -237,7 +234,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                               : Icons.bookmark_outline,
                           label: '스크랩',
                           selected: _scrapped,
-                          accentColor: const Color.fromARGB(255, 255, 226, 130),
+                          accentColor: scrapAccent,
                           onTap: () => setState(() => _scrapped = !_scrapped),
                         ),
                       ],
@@ -247,59 +244,140 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                         height: 1,
                         thickness: 5,
                         color: Color.fromARGB(255, 239, 239, 239)),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(18, 18, 28, 0),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 28, 0),
                       child: Text(
-                        '댓글 0',
-                        style: TextStyle(
+                        '댓글 ${_comments.length}',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF6A6A6A),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 130),
-                    const Center(
-                      child: Text(
-                        '첫 댓글을 남겨보세요',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: textMuted,
-                          fontWeight: FontWeight.w500,
+                    if (_comments.isEmpty) ...[
+                      const SizedBox(height: 130),
+                      const Center(
+                        child: Text(
+                          '첫 댓글을 남겨보세요',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Center(
+                      const SizedBox(height: 24),
+                      Center(
+                        child: InkWell(
+                          onTap: _focusCommentInput,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 250, 250, 250),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.edit_outlined,
+                                    size: 24,
+                                    color: Color.fromARGB(255, 188, 188, 188)),
+                                SizedBox(width: 10),
+                                Text(
+                                  '댓글 쓰기',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF3F3F3F),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 8),
+                      ..._comments.map(_buildCommentItem),
+                    ],
+                    const SizedBox(height: 280),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              decoration: const BoxDecoration(
+                color: backgroundColor,
+                border: Border(top: BorderSide(color: Color(0xFFDCDCDC))),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.photo_outlined, size: 32),
+                    color: const Color(0xFF707070),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _focusCommentInput,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                        height: 52,
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
                         decoration: BoxDecoration(
                           color: const Color.fromARGB(255, 250, 250, 250),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(30),
                         ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Row(
                           children: [
-                            Icon(Icons.edit_outlined,
-                                size: 24,
-                                color: Color.fromARGB(255, 188, 188, 188)),
-                            SizedBox(width: 10),
-                            Text(
-                              '댓글 쓰기',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF3F3F3F),
+                            Expanded(
+                              child: TextField(
+                                controller: _commentController,
+                                focusNode: _commentFocusNode,
+                                onChanged: (_) => setState(() {}),
+                                onSubmitted: (_) => _submitComment(),
+                                style: const TextStyle(
+                                  color: Color(0xFF3F3F3F),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                decoration: const InputDecoration(
+                                  hintText: '댓글을 입력해주세요.',
+                                  fillColor: Color.fromARGB(255, 250, 250, 250),
+                                  hintStyle: TextStyle(
+                                    color: Color(0xFF9B9B9B),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                ),
+                                textInputAction: TextInputAction.send,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: _canSubmitComment ? _submitComment : null,
+                              child: Icon(
+                                Icons.keyboard_return_rounded,
+                                color: _canSubmitComment
+                                    ? sendAccent
+                                    : const Color(0xFF8A8A8A),
+                                size: 30,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 280),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -307,6 +385,108 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       ),
     );
   }
+
+  Widget _buildCommentItem(_CommentItem comment) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: const Color(0xFFE5E5E5),
+            child: Text(
+              comment.author.substring(0, 1),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF6A6A6A),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  comment.author,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1F1F1F),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  comment.timeAgo,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF8F96A3),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  comment.content,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF232323),
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: const [
+                    Icon(Icons.thumb_up_alt_outlined,
+                        size: 20, color: Color(0xFF8F96A3)),
+                    SizedBox(width: 6),
+                    Text(
+                      '좋아요',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF8F96A3),
+                      ),
+                    ),
+                    SizedBox(width: 20),
+                    Icon(Icons.chat_bubble_outline,
+                        size: 18, color: Color(0xFF8F96A3)),
+                    SizedBox(width: 6),
+                    Text(
+                      '답글쓰기',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF8F96A3),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.more_vert, color: Color(0xFF8F96A3)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommentItem {
+  final String author;
+  final String timeAgo;
+  final String content;
+
+  const _CommentItem({
+    required this.author,
+    required this.timeAgo,
+    required this.content,
+  });
 }
 
 class _ActionTile extends StatefulWidget {
