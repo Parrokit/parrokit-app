@@ -179,7 +179,10 @@ class _CommunityScreenState extends State<CommunityScreen>
               children: [
                 BoardScreen(selectedFilter: _selectedBoardFilter),
                 QuestionScreen(selectedFilter: _selectedQuestionFilter),
-                VoteScreen(selectedFilter: _selectedVoteFilter),
+                VoteScreen(
+                  selectedFilter: _selectedVoteFilter,
+                  swipeEnabled: !_headerVisible,
+                ),
               ],
             ),
           ),
@@ -366,7 +369,8 @@ class _CommunityScreenState extends State<CommunityScreen>
           children: [
             // 슬라이딩 배경
             AnimatedAlign(
-              alignment: isRandom ? Alignment.centerLeft : Alignment.centerRight,
+              alignment:
+                  isRandom ? Alignment.centerLeft : Alignment.centerRight,
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
               child: FractionallySizedBox(
@@ -392,12 +396,19 @@ class _CommunityScreenState extends State<CommunityScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.style_rounded, size: 16,
-                            color: isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          Icon(Icons.style_rounded,
+                              size: 16,
+                              color: isRandom
+                                  ? Colors.white
+                                  : cs.onSurface.withValues(alpha: 0.4)),
                           const SizedBox(width: 6),
-                          Text('랜덤 보기', style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold,
-                            color: isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4))),
+                          Text('랜덤 보기',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isRandom
+                                      ? Colors.white
+                                      : cs.onSurface.withValues(alpha: 0.4))),
                         ],
                       ),
                     ),
@@ -412,12 +423,19 @@ class _CommunityScreenState extends State<CommunityScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.menu, size: 16,
-                            color: !isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          Icon(Icons.menu,
+                              size: 16,
+                              color: !isRandom
+                                  ? Colors.white
+                                  : cs.onSurface.withValues(alpha: 0.4)),
                           const SizedBox(width: 6),
-                          Text('한눈에 보기', style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold,
-                            color: !isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4))),
+                          Text('한눈에 보기',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: !isRandom
+                                      ? Colors.white
+                                      : cs.onSurface.withValues(alpha: 0.4))),
                         ],
                       ),
                     ),

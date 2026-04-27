@@ -88,7 +88,8 @@ const _dummyVotes = [
 // ─── VoteScreen ────────────────────────────────────────────────────────────────
 class VoteScreen extends StatefulWidget {
   final String selectedFilter;
-  const VoteScreen({super.key, required this.selectedFilter});
+  final bool swipeEnabled;
+  const VoteScreen({super.key, required this.selectedFilter, this.swipeEnabled = true});
 
   @override
   State<VoteScreen> createState() => _VoteScreenState();
@@ -147,50 +148,53 @@ class _VoteScreenState extends State<VoteScreen> {
 
     return Column(
       key: key,
-      mainAxisSize: MainAxisSize.min,
       children: [
-        // 카드
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: _SwipeableCard(
-            key: ValueKey(_currentCardIndex),
-            onDismiss: () => setState(() => _currentCardIndex++),
-            child: _VoteCard(
-              item: _dummyVotes[_currentCardIndex],
-              selectedOption: _selectedOptions[_currentCardIndex],
-              showResult: _showResults[_currentCardIndex] ?? false,
-              onSelect: (idx) =>
-                  setState(() => _selectedOptions[_currentCardIndex] = idx),
-              onToggleResult: () => setState(() {
-                _showResults[_currentCardIndex] =
-                    !(_showResults[_currentCardIndex] ?? false);
-              }),
+        // 카드 영역 (고정 높이)
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: _SwipeableCard(
+              key: ValueKey(_currentCardIndex),
+              enabled: widget.swipeEnabled,
+              onDismiss: () => setState(() => _currentCardIndex++),
+              child: _VoteCard(
+                item: _dummyVotes[_currentCardIndex],
+                selectedOption: _selectedOptions[_currentCardIndex],
+                showResult: _showResults[_currentCardIndex] ?? false,
+                onSelect: (idx) =>
+                    setState(() => _selectedOptions[_currentCardIndex] = idx),
+                onToggleResult: () => setState(() {
+                  _showResults[_currentCardIndex] =
+                      !(_showResults[_currentCardIndex] ?? false);
+                }),
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 20),
-        // ← → 네비게이션 버튼
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _NavButton(
-              icon: Icons.arrow_back_ios_new_rounded,
-              enabled: _currentCardIndex > 0,
-              onTap: _currentCardIndex > 0
-                  ? () => setState(() => _currentCardIndex--)
-                  : null,
-            ),
-            SizedBox(width: 36),
-            _NavButton(
-              icon: Icons.arrow_forward_ios_rounded,
-              enabled: _currentCardIndex < _dummyVotes.length - 1,
-              onTap: _currentCardIndex < _dummyVotes.length - 1
-                  ? () => setState(() => _currentCardIndex++)
-                  : null,
-            ),
-          ],
+        // 하단 고정 네비게이션
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _NavButton(
+                icon: Icons.arrow_back_ios_new_rounded,
+                enabled: _currentCardIndex > 0,
+                onTap: _currentCardIndex > 0
+                    ? () => setState(() => _currentCardIndex--)
+                    : null,
+              ),
+              const SizedBox(width: 36),
+              _NavButton(
+                icon: Icons.arrow_forward_ios_rounded,
+                enabled: _currentCardIndex < _dummyVotes.length - 1,
+                onTap: _currentCardIndex < _dummyVotes.length - 1
+                    ? () => setState(() => _currentCardIndex++)
+                    : null,
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 24),
       ],
     );
   }
@@ -258,8 +262,9 @@ class _NavButton extends StatelessWidget {
 class _SwipeableCard extends StatefulWidget {
   final Widget child;
   final VoidCallback onDismiss;
+  final bool enabled;
   const _SwipeableCard(
-      {super.key, required this.child, required this.onDismiss});
+      {super.key, required this.child, required this.onDismiss, this.enabled = true});
 
   @override
   State<_SwipeableCard> createState() => _SwipeableCardState();
@@ -275,9 +280,9 @@ class _SwipeableCardState extends State<_SwipeableCard> {
     final angle = (_offset.dx / w).clamp(-1.0, 1.0) * 0.08;
 
     return GestureDetector(
-      onPanStart: (_) => setState(() => _dragging = true),
-      onPanUpdate: (d) => setState(() => _offset += d.delta),
-      onPanEnd: (details) {
+      onPanStart: widget.enabled ? (_) => setState(() => _dragging = true) : null,
+      onPanUpdate: widget.enabled ? (d) => setState(() => _offset += d.delta) : null,
+      onPanEnd: widget.enabled ? (details) {
         final velocity = details.velocity.pixelsPerSecond.dx.abs();
         // 화면의 20% 이상 드래그 or 빠른 flick(800px/s 이상)
         final shouldDismiss = _offset.dx.abs() > w * 0.10 || velocity > 800;
@@ -290,7 +295,7 @@ class _SwipeableCardState extends State<_SwipeableCard> {
             _dragging = false;
           });
         }
-      },
+      } : null,
       child: AnimatedContainer(
         duration: _dragging ? Duration.zero : const Duration(milliseconds: 300),
         curve: Curves.easeOut,
@@ -339,10 +344,12 @@ class _VoteCard extends StatelessWidget {
         ],
       ),
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
           // ── 타이머 + 메뉴 ──
           Row(
             children: [
@@ -466,6 +473,7 @@ class _VoteCard extends StatelessWidget {
             ],
           ),
         ],
+        ),
       ),
     );
   }
