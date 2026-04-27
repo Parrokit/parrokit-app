@@ -15,6 +15,7 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ScrollController _outerScrollController = ScrollController();
 
   String _selectedBoardFilter = '최신';
   String _selectedQuestionFilter = '답변 대기중';
@@ -26,6 +27,7 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   int _currentIndex = 0;
   bool _isFabExtended = true;
+  bool _headerVisible = true; // 헤더(탭바) 노출 여부
 
   @override
   void initState() {
@@ -38,10 +40,21 @@ class _CommunityScreenState extends State<CommunityScreen>
         });
       }
     });
+    _outerScrollController.addListener(_checkHeaderVisibility);
+  }
+
+  void _checkHeaderVisibility() {
+    // offset 0 = 헤더 완전히 펼쳐짐, offset > 0 = 헤더가 접히기 시작
+    final fullyVisible = _outerScrollController.offset <= 1.0;
+    if (_headerVisible != fullyVisible) {
+      setState(() => _headerVisible = fullyVisible);
+    }
   }
 
   @override
   void dispose() {
+    _outerScrollController.removeListener(_checkHeaderVisibility);
+    _outerScrollController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -78,6 +91,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             return false;
           },
           child: NestedScrollView(
+            controller: _outerScrollController,
             floatHeaderSlivers: true,
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
@@ -158,6 +172,10 @@ class _CommunityScreenState extends State<CommunityScreen>
             },
             body: TabBarView(
               controller: _tabController,
+              // 헤더가 완전히 보일 때만 탭 스와이프 허용
+              physics: _headerVisible
+                  ? const AlwaysScrollableScrollPhysics()
+                  : const NeverScrollableScrollPhysics(),
               children: [
                 BoardScreen(selectedFilter: _selectedBoardFilter),
                 QuestionScreen(selectedFilter: _selectedQuestionFilter),

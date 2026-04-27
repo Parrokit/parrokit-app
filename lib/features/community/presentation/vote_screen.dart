@@ -145,24 +145,53 @@ class _VoteScreenState extends State<VoteScreen> {
       );
     }
 
-    return SingleChildScrollView(
+    return Column(
       key: key,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: _SwipeableCard(
-        key: ValueKey(_currentCardIndex),
-        onDismiss: () => setState(() => _currentCardIndex++),
-        child: _VoteCard(
-          item: _dummyVotes[_currentCardIndex],
-          selectedOption: _selectedOptions[_currentCardIndex],
-          showResult: _showResults[_currentCardIndex] ?? false,
-          onSelect: (idx) =>
-              setState(() => _selectedOptions[_currentCardIndex] = idx),
-          onToggleResult: () => setState(() {
-            _showResults[_currentCardIndex] =
-                !(_showResults[_currentCardIndex] ?? false);
-          }),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 카드
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: _SwipeableCard(
+            key: ValueKey(_currentCardIndex),
+            onDismiss: () => setState(() => _currentCardIndex++),
+            child: _VoteCard(
+              item: _dummyVotes[_currentCardIndex],
+              selectedOption: _selectedOptions[_currentCardIndex],
+              showResult: _showResults[_currentCardIndex] ?? false,
+              onSelect: (idx) =>
+                  setState(() => _selectedOptions[_currentCardIndex] = idx),
+              onToggleResult: () => setState(() {
+                _showResults[_currentCardIndex] =
+                    !(_showResults[_currentCardIndex] ?? false);
+              }),
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 20),
+        // ← → 네비게이션 버튼
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _NavButton(
+              icon: Icons.arrow_back_ios_new_rounded,
+              enabled: _currentCardIndex > 0,
+              onTap: _currentCardIndex > 0
+                  ? () => setState(() => _currentCardIndex--)
+                  : null,
+            ),
+            SizedBox(width: 36),
+            _NavButton(
+              icon: Icons.arrow_forward_ios_rounded,
+              enabled: _currentCardIndex < _dummyVotes.length - 1,
+              onTap: _currentCardIndex < _dummyVotes.length - 1
+                  ? () => setState(() => _currentCardIndex++)
+                  : null,
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
     );
   }
 
@@ -188,6 +217,43 @@ class _VoteScreenState extends State<VoteScreen> {
   }
 }
 
+// ─── 네비게이션 버튼 (원형) ──────────────────────────────────────────────────────
+class _NavButton extends StatelessWidget {
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback? onTap;
+
+  const _NavButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: enabled ? 1.0 : 0.3,
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: enabled ? Colors.black87 : Colors.grey[200],
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: enabled ? Colors.white : Colors.grey,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── 스와이프 래퍼 ─────────────────────────────────────────────────────────────
 class _SwipeableCard extends StatefulWidget {
   final Widget child;
@@ -206,15 +272,18 @@ class _SwipeableCardState extends State<_SwipeableCard> {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    final angle = (_offset.dx / w).clamp(-1.0, 1.0) * 0.10;
+    final angle = (_offset.dx / w).clamp(-1.0, 1.0) * 0.08;
 
     return GestureDetector(
       onPanStart: (_) => setState(() => _dragging = true),
       onPanUpdate: (d) => setState(() => _offset += d.delta),
-      onPanEnd: (_) {
-        if (_offset.dx.abs() > w * 0.35) {
+      onPanEnd: (details) {
+        final velocity = details.velocity.pixelsPerSecond.dx.abs();
+        // 화면의 20% 이상 드래그 or 빠른 flick(800px/s 이상)
+        final shouldDismiss = _offset.dx.abs() > w * 0.10 || velocity > 800;
+        if (shouldDismiss) {
           setState(() => _offset = Offset(_offset.dx > 0 ? 900 : -900, 0));
-          Future.delayed(const Duration(milliseconds: 180), widget.onDismiss);
+          Future.delayed(const Duration(milliseconds: 160), widget.onDismiss);
         } else {
           setState(() {
             _offset = Offset.zero;
@@ -223,10 +292,10 @@ class _SwipeableCardState extends State<_SwipeableCard> {
         }
       },
       child: AnimatedContainer(
-        duration: _dragging ? Duration.zero : const Duration(milliseconds: 260),
+        duration: _dragging ? Duration.zero : const Duration(milliseconds: 300),
         curve: Curves.easeOut,
         transform: Matrix4.identity()
-          ..translate(_offset.dx, _offset.dy * 0.25)
+          ..translate(_offset.dx, _offset.dy * 0.2)
           ..rotateZ(angle),
         transformAlignment: Alignment.bottomCenter,
         child: widget.child,
