@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import '../domain/data/community_filters.dart';
 import 'board_screen.dart';
@@ -455,6 +457,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                   subtitle: '자유롭게 대화해보세요',
                   onTap: () {
                     Navigator.pop(context);
+                    context.push(AppRoutes.communityBoardWritePath);
                   },
                 ),
                 const SizedBox(height: 12),

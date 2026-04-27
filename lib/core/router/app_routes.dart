@@ -37,6 +37,7 @@ abstract class AppRoutes {
   static const paymentSuccess = 'payment_success';
   static const paymentFail = 'payment_fail';
   static const communityBoardView = 'community_board_view';
+  static const communityBoardWrite = 'community_board_write';
 
   // ─────────────────────────────────────────────────────────────────
   // Route Paths
@@ -45,6 +46,7 @@ abstract class AppRoutes {
   static const dashboardPath = '/dashboard';
   static const communityPath = '/community';
   static const communityBoardViewPath = '/community/board/:postId';
+  static const communityBoardWritePath = '/community/board/write';
   static const explorePath = '/explore';
   static const libraryPath = '/library';
   static const morePath = '/more';

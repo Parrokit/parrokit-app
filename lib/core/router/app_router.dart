@@ -22,6 +22,7 @@ import 'package:parrokit/features/auth/find-pw/find_pw_screen.dart';
 import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/community/presentation/community_screen.dart';
 import 'package:parrokit/features/community/presentation/board_view_screen.dart';
+import 'package:parrokit/features/community/presentation/board_write_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/content/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
@@ -57,6 +58,11 @@ GoRouter buildAppRouter({
       // 단독 라우트 (쉘 외부)
       // ─────────────────────────────────────────────────────────────────
       _authRoute,
+      GoRoute(
+        path: AppRoutes.communityBoardWritePath,
+        name: AppRoutes.communityBoardWrite,
+        builder: (context, state) => const BoardWriteScreen(),
+      ),
       GoRoute(
         path: AppRoutes.communityBoardViewPath,
         name: AppRoutes.communityBoardView,

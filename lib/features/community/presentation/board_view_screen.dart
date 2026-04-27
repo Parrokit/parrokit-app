@@ -45,6 +45,45 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     _commentFocusNode.unfocus();
   }
 
+  void _showCommentOptionsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _CommentSheetAction(
+                  label: '수정',
+                  onTap: () => Navigator.pop(context),
+                ),
+                _CommentSheetAction(
+                  label: '신고',
+                  onTap: () => Navigator.pop(context),
+                ),
+                _CommentSheetAction(
+                  label: '삭제',
+                  isDestructive: true,
+                  onTap: () => Navigator.pop(context),
+                ),
+                _CommentSheetAction(
+                  label: '닫기',
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _commentController.dispose();
@@ -468,7 +507,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: _showCommentOptionsSheet,
             icon: const Icon(Icons.more_vert, color: Color(0xFF8F96A3)),
           ),
         ],
@@ -487,6 +526,42 @@ class _CommentItem {
     required this.timeAgo,
     required this.content,
   });
+}
+
+class _CommentSheetAction extends StatelessWidget {
+  final String label;
+  final bool isDestructive;
+  final VoidCallback onTap;
+
+  const _CommentSheetAction({
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor =
+        isDestructive ? const Color(0xFFD34B4B) : const Color(0xFF222222);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: textColor,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ActionTile extends StatefulWidget {
