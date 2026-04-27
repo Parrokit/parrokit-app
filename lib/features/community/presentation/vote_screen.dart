@@ -201,8 +201,8 @@ class _VoteScreenState extends State<VoteScreen> {
               const SizedBox(width: 36),
               _NavButton(
                 icon: Icons.arrow_forward_ios_rounded,
-                enabled: _currentCardIndex < _dummyVotes.length - 1,
-                onTap: _currentCardIndex < _dummyVotes.length - 1
+                enabled: _currentCardIndex < _dummyVotes.length,
+                onTap: _currentCardIndex < _dummyVotes.length
                     ? () => setState(() => _currentCardIndex++)
                     : null,
               ),
