@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../domain/data/community_filters.dart';
 
 // ─── 더미 데이터 ───────────────────────────────────────────────────────────────
 class _VoteItem {
@@ -89,7 +90,8 @@ const _dummyVotes = [
 class VoteScreen extends StatefulWidget {
   final String selectedFilter;
   final bool swipeEnabled;
-  const VoteScreen({super.key, required this.selectedFilter, this.swipeEnabled = true});
+  const VoteScreen(
+      {super.key, required this.selectedFilter, this.swipeEnabled = true});
 
   @override
   State<VoteScreen> createState() => _VoteScreenState();
@@ -106,7 +108,7 @@ class _VoteScreenState extends State<VoteScreen> {
       duration: const Duration(milliseconds: 220),
       transitionBuilder: (child, anim) =>
           FadeTransition(opacity: anim, child: child),
-      child: widget.selectedFilter == '랜덤 보기'
+      child: widget.selectedFilter == CommunityFilters.vote[0]
           ? _buildRandomView(key: const ValueKey('random'))
           : _buildListView(key: const ValueKey('list')),
     );
@@ -149,26 +151,38 @@ class _VoteScreenState extends State<VoteScreen> {
     return Column(
       key: key,
       children: [
-        // 카드 영역 (고정 높이)
+        // 카드 영역 (구역 높이 고정, 카드는 내용에 맞춤)
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: _SwipeableCard(
-              key: ValueKey(_currentCardIndex),
-              enabled: widget.swipeEnabled,
-              onDismiss: () => setState(() => _currentCardIndex++),
-              child: _VoteCard(
-                item: _dummyVotes[_currentCardIndex],
-                selectedOption: _selectedOptions[_currentCardIndex],
-                showResult: _showResults[_currentCardIndex] ?? false,
-                onSelect: (idx) =>
-                    setState(() => _selectedOptions[_currentCardIndex] = idx),
-                onToggleResult: () => setState(() {
-                  _showResults[_currentCardIndex] =
-                      !(_showResults[_currentCardIndex] ?? false);
-                }),
-              ),
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: constraints.maxHeight - 16,
+                    ),
+                    child: _SwipeableCard(
+                      key: ValueKey(_currentCardIndex),
+                      enabled: widget.swipeEnabled,
+                      onDismiss: () => setState(() => _currentCardIndex++),
+                      child: _VoteCard(
+                        item: _dummyVotes[_currentCardIndex],
+                        selectedOption: _selectedOptions[_currentCardIndex],
+                        showResult: _showResults[_currentCardIndex] ?? false,
+                        onSelect: (idx) => setState(
+                            () => _selectedOptions[_currentCardIndex] = idx),
+                        onToggleResult: () => setState(() {
+                          _showResults[_currentCardIndex] =
+                              !(_showResults[_currentCardIndex] ?? false);
+                        }),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
         // 하단 고정 네비게이션
@@ -264,7 +278,10 @@ class _SwipeableCard extends StatefulWidget {
   final VoidCallback onDismiss;
   final bool enabled;
   const _SwipeableCard(
-      {super.key, required this.child, required this.onDismiss, this.enabled = true});
+      {super.key,
+      required this.child,
+      required this.onDismiss,
+      this.enabled = true});
 
   @override
   State<_SwipeableCard> createState() => _SwipeableCardState();
@@ -280,22 +297,29 @@ class _SwipeableCardState extends State<_SwipeableCard> {
     final angle = (_offset.dx / w).clamp(-1.0, 1.0) * 0.08;
 
     return GestureDetector(
-      onPanStart: widget.enabled ? (_) => setState(() => _dragging = true) : null,
-      onPanUpdate: widget.enabled ? (d) => setState(() => _offset += d.delta) : null,
-      onPanEnd: widget.enabled ? (details) {
-        final velocity = details.velocity.pixelsPerSecond.dx.abs();
-        // 화면의 20% 이상 드래그 or 빠른 flick(800px/s 이상)
-        final shouldDismiss = _offset.dx.abs() > w * 0.10 || velocity > 800;
-        if (shouldDismiss) {
-          setState(() => _offset = Offset(_offset.dx > 0 ? 900 : -900, 0));
-          Future.delayed(const Duration(milliseconds: 160), widget.onDismiss);
-        } else {
-          setState(() {
-            _offset = Offset.zero;
-            _dragging = false;
-          });
-        }
-      } : null,
+      onPanStart:
+          widget.enabled ? (_) => setState(() => _dragging = true) : null,
+      onPanUpdate:
+          widget.enabled ? (d) => setState(() => _offset += d.delta) : null,
+      onPanEnd: widget.enabled
+          ? (details) {
+              final velocity = details.velocity.pixelsPerSecond.dx.abs();
+              // 화면의 20% 이상 드래그 or 빠른 flick(800px/s 이상)
+              final shouldDismiss =
+                  _offset.dx.abs() > w * 0.10 || velocity > 800;
+              if (shouldDismiss) {
+                setState(
+                    () => _offset = Offset(_offset.dx > 0 ? 900 : -900, 0));
+                Future.delayed(
+                    const Duration(milliseconds: 160), widget.onDismiss);
+              } else {
+                setState(() {
+                  _offset = Offset.zero;
+                  _dragging = false;
+                });
+              }
+            }
+          : null,
       child: AnimatedContainer(
         duration: _dragging ? Duration.zero : const Duration(milliseconds: 300),
         curve: Curves.easeOut,
@@ -350,129 +374,129 @@ class _VoteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-          // ── 타이머 + 메뉴 ──
-          Row(
-            children: [
-              const Spacer(),
-              Text(
-                item.expiresIn,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.orange[600],
-                ),
-              ),
-              const Spacer(),
-              const Icon(Icons.more_horiz, size: 22, color: Colors.grey),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // ── 작성자 행 ──
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.grey[300],
-                child: const Icon(Icons.person, color: Colors.white),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.author,
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold)),
-                    Text(item.time,
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[500])),
-                  ],
-                ),
-              ),
-              Text(
-                '${item.totalVotes}명 참여',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[500],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // ── 제목 ──
-          Text(
-            item.title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-
-          // ── 설명 ──
-          Text(
-            item.description,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // ── 옵션 or 결과 ──
-          !showResult ? _buildOptions(cs) : _buildResults(cs),
-          const SizedBox(height: 16),
-
-          // ── 결과 보기 / 리셋 버튼 ──
-          Center(
-            child: SizedBox(
-              width: 180,
-              height: 46,
-              child: OutlinedButton(
-                onPressed: onToggleResult,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.black87,
-                  side: const BorderSide(color: Colors.black54, width: 1.2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
+            // ── 타이머 + 메뉴 ──
+            Row(
+              children: [
+                const Spacer(),
+                Text(
+                  item.expiresIn,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange[600],
                   ),
                 ),
-                child: showResult
-                    ? const Icon(Icons.refresh_rounded,
-                        color: Colors.black87, size: 22)
-                    : const Text('결과 보기',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                const Icon(Icons.more_horiz, size: 22, color: Colors.grey),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // ── 작성자 행 ──
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.grey[300],
+                  child: const Icon(Icons.person, color: Colors.white),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.author,
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.bold)),
+                      Text(item.time,
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[500])),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${item.totalVotes}명 참여',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // ── 제목 ──
+            Text(
+              item.title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+                height: 1.3,
               ),
             ),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 6),
 
-          // ── 좋아요 + 댓글 ──
-          Row(
-            children: [
-              const Icon(Icons.favorite_border,
-                  size: 24, color: Colors.black87),
-              const SizedBox(width: 6),
-              Text('${item.likes}',
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600)),
-              const SizedBox(width: 16),
-              const Icon(Icons.chat_bubble_outline,
-                  size: 22, color: Colors.black87),
-              const SizedBox(width: 6),
-              Text('${item.comments}',
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ],
+            // ── 설명 ──
+            Text(
+              item.description,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── 옵션 or 결과 ──
+            !showResult ? _buildOptions(cs) : _buildResults(cs),
+            const SizedBox(height: 16),
+
+            // ── 결과 보기 / 리셋 버튼 ──
+            Center(
+              child: SizedBox(
+                width: 180,
+                height: 46,
+                child: OutlinedButton(
+                  onPressed: onToggleResult,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black87,
+                    side: const BorderSide(color: Colors.black54, width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: showResult
+                      ? const Icon(Icons.refresh_rounded,
+                          color: Colors.black87, size: 22)
+                      : const Text('결과 보기',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // ── 좋아요 + 댓글 ──
+            Row(
+              children: [
+                const Icon(Icons.favorite_border,
+                    size: 24, color: Colors.black87),
+                const SizedBox(width: 6),
+                Text('${item.likes}',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 16),
+                const Icon(Icons.chat_bubble_outline,
+                    size: 22, color: Colors.black87),
+                const SizedBox(width: 6),
+                Text('${item.comments}',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ],
         ),
       ),
     );

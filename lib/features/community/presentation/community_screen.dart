@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import '../domain/data/community_filters.dart';
 import 'board_screen.dart';
 import 'question_screen.dart';
 import 'vote_screen.dart';
@@ -17,13 +17,9 @@ class _CommunityScreenState extends State<CommunityScreen>
   late TabController _tabController;
   final ScrollController _outerScrollController = ScrollController();
 
-  String _selectedBoardFilter = '최신';
-  String _selectedQuestionFilter = '답변 대기중';
-  String _selectedVoteFilter = '랜덤 보기';
-
-  final List<String> _boardFilters = ['최신', '자유', '추천해요', '일상', '분석'];
-  final List<String> _questionFilters = ['채택 완료', '답변 대기중', '화제의 질문', '오래된 질문'];
-  final List<String> _voteFilters = ['랜덤 보기', '한눈에 보기'];
+  String _selectedBoardFilter = CommunityFilters.defaultBoard;
+  String _selectedQuestionFilter = CommunityFilters.defaultQuestion;
+  String _selectedVoteFilter = CommunityFilters.defaultVote;
 
   int _currentIndex = 0;
   bool _isFabExtended = true;
@@ -47,7 +43,11 @@ class _CommunityScreenState extends State<CommunityScreen>
     // offset 0 = 헤더 완전히 펼쳐짐, offset > 0 = 헤더가 접히기 시작
     final fullyVisible = _outerScrollController.offset <= 1.0;
     if (_headerVisible != fullyVisible) {
-      setState(() => _headerVisible = fullyVisible);
+      setState(() {
+        _headerVisible = fullyVisible;
+        // FAB 텍스트는 헤더 완전 노출 상태와 동일하게 동기화
+        _isFabExtended = fullyVisible;
+      });
     }
   }
 
@@ -64,40 +64,14 @@ class _CommunityScreenState extends State<CommunityScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification.metrics.axis == Axis.vertical) {
-              if (notification is ScrollUpdateNotification) {
-                // 내부 리스트(피드)가 맨 위(0)에 도달했을 때만 펴기
-                if (notification.depth > 0 &&
-                    notification.metrics.pixels <= 0) {
-                  if (!_isFabExtended) {
-                    setState(() {
-                      _isFabExtended = true;
-                    });
-                  }
-                }
-                // 스크롤을 내리면(어디서든) 무조건 접기
-                else if (notification.scrollDelta != null &&
-                    notification.scrollDelta! > 0) {
-                  if (_isFabExtended) {
-                    setState(() {
-                      _isFabExtended = false;
-                    });
-                  }
-                }
-              }
-            }
-            return false;
-          },
-          child: NestedScrollView(
-            controller: _outerScrollController,
-            floatHeaderSlivers: true,
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverPersistentHeader(
-                  floating: true,
-                  delegate: _CommunityHeaderDelegate(
+        child: NestedScrollView(
+          controller: _outerScrollController,
+          floatHeaderSlivers: true,
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverPersistentHeader(
+                floating: true,
+                delegate: _CommunityHeaderDelegate(
                     titleWidget: Padding(
                       padding: const EdgeInsets.fromLTRB(16.0, 4.0, 4.0, 4.0),
                       child: Row(
@@ -166,25 +140,24 @@ class _CommunityScreenState extends State<CommunityScreen>
                         const Divider(color: Color(0xFFEEEEEE), height: 1),
                       ],
                     ),
-                  ),
                 ),
-              ];
-            },
-            body: TabBarView(
-              controller: _tabController,
-              // 헤더가 완전히 보일 때만 탭 스와이프 허용
-              physics: _headerVisible
-                  ? const AlwaysScrollableScrollPhysics()
-                  : const NeverScrollableScrollPhysics(),
-              children: [
-                BoardScreen(selectedFilter: _selectedBoardFilter),
-                QuestionScreen(selectedFilter: _selectedQuestionFilter),
-                VoteScreen(
-                  selectedFilter: _selectedVoteFilter,
-                  swipeEnabled: !_headerVisible,
-                ),
-              ],
-            ),
+              ),
+            ];
+          },
+          body: TabBarView(
+            controller: _tabController,
+            // 헤더가 완전히 보일 때만 탭 스와이프 허용
+            physics: _headerVisible
+                ? const AlwaysScrollableScrollPhysics()
+                : const NeverScrollableScrollPhysics(),
+            children: [
+              BoardScreen(selectedFilter: _selectedBoardFilter),
+              QuestionScreen(selectedFilter: _selectedQuestionFilter),
+              VoteScreen(
+                selectedFilter: _selectedVoteFilter,
+                swipeEnabled: !_headerVisible,
+              ),
+            ],
           ),
         ),
       ),
@@ -252,9 +225,9 @@ class _CommunityScreenState extends State<CommunityScreen>
       return ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        itemCount: _boardFilters.length,
+        itemCount: CommunityFilters.board.length,
         itemBuilder: (context, index) {
-          final filter = _boardFilters[index];
+          final filter = CommunityFilters.board[index];
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: _buildBoardChip(filter),
@@ -265,9 +238,9 @@ class _CommunityScreenState extends State<CommunityScreen>
       return ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        itemCount: _questionFilters.length,
+        itemCount: CommunityFilters.question.length,
         itemBuilder: (context, index) {
-          final filter = _questionFilters[index];
+          final filter = CommunityFilters.question[index];
           return Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: _buildQuestionSubTab(filter),
@@ -359,7 +332,7 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   Widget _buildVoteToggle() {
     final cs = Theme.of(context).colorScheme;
-    final isRandom = _selectedVoteFilter == '랜덤 보기';
+    final isRandom = _selectedVoteFilter == CommunityFilters.vote[0];
     const h = 36.0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -390,7 +363,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                 // 랜덤 보기
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => _selectedVoteFilter = '랜덤 보기'),
+                    onTap: () =>
+                        setState(() => _selectedVoteFilter = CommunityFilters.vote[0]),
                     behavior: HitTestBehavior.opaque,
                     child: Center(
                       child: Row(
@@ -402,7 +376,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                   ? Colors.white
                                   : cs.onSurface.withValues(alpha: 0.4)),
                           const SizedBox(width: 6),
-                          Text('랜덤 보기',
+                          Text(CommunityFilters.vote[0],
                               style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
@@ -417,7 +391,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                 // 한눈에 보기
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() => _selectedVoteFilter = '한눈에 보기'),
+                    onTap: () =>
+                        setState(() => _selectedVoteFilter = CommunityFilters.vote[1]),
                     behavior: HitTestBehavior.opaque,
                     child: Center(
                       child: Row(
@@ -429,7 +404,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                   ? Colors.white
                                   : cs.onSurface.withValues(alpha: 0.4)),
                           const SizedBox(width: 6),
-                          Text('한눈에 보기',
+                          Text(CommunityFilters.vote[1],
                               style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
