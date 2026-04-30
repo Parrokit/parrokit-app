@@ -39,6 +39,7 @@ abstract class AppRoutes {
   static const communityBoardView = 'community_board_view';
   static const communityBoardWrite = 'community_board_write';
   static const communityMenu = 'community_menu';
+  static const communityNotification = 'community_notification';
 
   // ─────────────────────────────────────────────────────────────────
   // Route Paths
@@ -49,6 +50,7 @@ abstract class AppRoutes {
   static const communityBoardViewPath = '/community/board/:postId';
   static const communityBoardWritePath = '/community/board/write';
   static const communityMenuPath = '/community/menu';
+  static const communityNotificationPath = '/community/notification';
   static const explorePath = '/explore';
   static const libraryPath = '/library';
   static const morePath = '/more';

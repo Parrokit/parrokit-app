@@ -97,7 +97,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                             IconButton(
                               icon: const Icon(Icons.notifications_none,
                                   color: Colors.black),
-                              onPressed: () {},
+                              onPressed: () => context
+                                  .push(AppRoutes.communityNotificationPath),
                             ),
                             IconButton(
                               icon: const Icon(Icons.menu, color: Colors.black),

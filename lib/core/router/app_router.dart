@@ -24,6 +24,7 @@ import 'package:parrokit/features/community/presentation/community_screen.dart';
 import 'package:parrokit/features/community/presentation/board_view_screen.dart';
 import 'package:parrokit/features/community/presentation/board_write_screen.dart';
 import 'package:parrokit/features/community/presentation/community_menu_screen.dart';
+import 'package:parrokit/features/community/presentation/community_notification_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/content/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
@@ -68,6 +69,11 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityMenuPath,
         name: AppRoutes.communityMenu,
         builder: (context, state) => const CommunityMenuScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityNotificationPath,
+        name: AppRoutes.communityNotification,
+        builder: (context, state) => const CommunityNotificationScreen(),
       ),
       GoRoute(
         path: AppRoutes.communityBoardViewPath,

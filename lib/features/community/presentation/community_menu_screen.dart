@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/router/app_routes.dart';
 
 class CommunityMenuScreen extends StatelessWidget {
   const CommunityMenuScreen({super.key});
@@ -97,6 +99,7 @@ class CommunityMenuScreen extends StatelessWidget {
     required Color iconColor,
     required Color bgColor,
     required String title,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -119,7 +122,7 @@ class CommunityMenuScreen extends StatelessWidget {
       ),
       trailing: const Icon(Icons.chevron_right_rounded,
           color: Color(0xFFB0B7C3), size: 24),
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 }
