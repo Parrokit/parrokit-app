@@ -11,6 +11,7 @@ class CommunityNotificationScreen extends StatefulWidget {
 class _CommunityNotificationScreenState
     extends State<CommunityNotificationScreen> {
   late final List<_NotificationItem> _items;
+  bool _isDeleteMode = false;
 
   @override
   void initState() {
@@ -65,7 +66,6 @@ class _CommunityNotificationScreenState
                 InkWell(
                   onTap: () {
                     Navigator.of(context).pop();
-                    setState(() => _items.removeAt(index));
                   },
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
@@ -128,7 +128,7 @@ class _CommunityNotificationScreenState
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => setState(() => _isDeleteMode = true),
             icon: const Icon(Icons.delete_outline_rounded,
                 size: 24, color: Colors.black87),
           ),
@@ -144,85 +144,157 @@ class _CommunityNotificationScreenState
           child: Divider(height: 1, color: Color(0xFFEDEDED)),
         ),
       ),
-      body: ListView.separated(
-        itemCount: _items.length,
-        separatorBuilder: (_, __) =>
-            const Divider(height: 1, color: Color(0xFFF2F3F5)),
-        itemBuilder: (context, index) {
-          final item = _items[index];
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 12, 18),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: item.iconBgColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(item.icon, size: 20, color: item.iconColor),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        children: [
+          if (_isDeleteMode)
+            Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFFEDEDED))),
+              ),
+              child: Row(
+                children: [
+                  const Spacer(),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.category,
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF9CA3AF),
-                              ),
-                            ),
+                      TextButton(
+                        onPressed: _items.isEmpty
+                            ? null
+                            : () => setState(() => _items.clear()),
+                        child: const Text(
+                          '전체삭제',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFE34D4D),
                           ),
-                          Row(
-                            children: [
-                              Text(
-                                item.timeAgo,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF9CA3AF),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () => _showItemActionSheet(index),
-                                splashRadius: 18,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                icon: const Icon(Icons.more_vert_rounded,
-                                    size: 24, color: Color(0xFF9CA3AF)),
-                              ),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
-                      Text(
-                        item.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 1.4,
-                          color: Color(0xFF111827),
+                      TextButton(
+                        onPressed: () => setState(() => _isDeleteMode = false),
+                        child: const Text(
+                          '닫기',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF6B7280),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
+          Expanded(
+            child: _items.isEmpty
+                ? const Center(
+                    child: Text(
+                      '알림이 없습니다.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: _items.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, color: Color(0xFFF2F3F5)),
+                    itemBuilder: (context, index) {
+                      final item = _items[index];
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 18, 12, 18),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: item.iconBgColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                child:
+                                    Icon(item.icon, size: 20, color: item.iconColor),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          item.category,
+                                          style: const TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF9CA3AF),
+                                          ),
+                                        ),
+                                      ),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            item.timeAgo,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF9CA3AF),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () {
+                                              if (_isDeleteMode) {
+                                                setState(
+                                                    () => _items.removeAt(index));
+                                              } else {
+                                                _showItemActionSheet(index);
+                                              }
+                                            },
+                                            splashRadius: 18,
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            icon: Icon(
+                                              _isDeleteMode
+                                                  ? Icons.close_rounded
+                                                  : Icons.more_vert_rounded,
+                                              size: 24,
+                                              color: const Color(0xFF9CA3AF),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    item.title,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.4,
+                                      color: Color(0xFF111827),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
