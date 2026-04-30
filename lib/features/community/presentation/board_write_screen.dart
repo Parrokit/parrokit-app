@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../domain/data/community_filters.dart';
 
 class BoardWriteScreen extends StatefulWidget {
   const BoardWriteScreen({super.key});
@@ -10,8 +11,82 @@ class BoardWriteScreen extends StatefulWidget {
 class _BoardWriteScreenState extends State<BoardWriteScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  String? _selectedBoardTopic;
 
+  bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _hasContent => _contentController.text.trim().isNotEmpty;
+  bool get _canComplete => _hasTitle && _hasContent;
+
+  void _showBoardTopicSheet() {
+    final blue600 = Colors.blue[600]!;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    '게시판 주제 선택',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF202225),
+                    ),
+                  ),
+                ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: CommunityFilters.board.map((topic) {
+                    final selected = topic == _selectedBoardTopic;
+                    return ChoiceChip(
+                      label: Text(topic),
+                      selected: selected,
+                      showCheckmark: false,
+                      onSelected: (_) {
+                        setState(() => _selectedBoardTopic = topic);
+                        Navigator.pop(context);
+                      },
+                      selectedColor: blue600,
+                      backgroundColor: const Color.fromARGB(255, 250, 250, 250),
+                      labelStyle: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            selected ? Colors.white : const Color(0xFF4A4F57),
+                      ),
+                      side: BorderSide(
+                          width: 1,
+                          color: selected
+                              ? blue600
+                              : const Color.fromARGB(255, 255, 255, 255),
+                        ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
+
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -48,13 +123,15 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () {},
-                    child: const Text(
+                    onPressed: _canComplete ? () {} : null,
+                    child: Text(
                       '완료',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFD3D6DB),
+                        color: _canComplete
+                            ? const Color(0xFF2F67BF)
+                            : const Color(0xFFD3D6DB),
                       ),
                     ),
                   ),
@@ -71,13 +148,13 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     InkWell(
-                      onTap: () {},
-                      child: const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 24, 16, 24),
+                      onTap: _showBoardTopicSheet,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
                         child: Row(
                           children: [
                             Text(
-                              '주제를 선택해주세요.',
+                              _selectedBoardTopic ?? '주제를 선택해주세요.',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w500,
@@ -98,6 +175,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 20, 32, 0),
                       child: TextField(
                         controller: _titleController,
+                        onChanged: (_) => setState(() {}),
                         decoration: const InputDecoration(
                           hintText: '제목을 입력하세요.',
                           hintStyle: TextStyle(
@@ -197,7 +275,8 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                             ),
                             SizedBox(height: 14),
                             _TipBullet(
-                              text: '저작권을 침해하거나 학습 커뮤니티 성격에 맞지 않는 글은 제한될 수 있어요.',
+                              text:
+                                  '저작권을 침해하거나 학습 커뮤니티 성격에 맞지 않는 글은 제한될 수 있어요.',
                             ),
                           ],
                         ),
