@@ -471,6 +471,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                   subtitle: '모르는 지식을 습득해보세요',
                   onTap: () {
                     Navigator.pop(context);
+                    context.push(AppRoutes.communityQuestionWritePath);
                   },
                 ),
                 const SizedBox(height: 12),

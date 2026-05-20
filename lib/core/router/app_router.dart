@@ -23,6 +23,8 @@ import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/community/presentation/community_screen.dart';
 import 'package:parrokit/features/community/presentation/board_view_screen.dart';
 import 'package:parrokit/features/community/presentation/board_write_screen.dart';
+import 'package:parrokit/features/community/presentation/qeustion_wirte_screen.dart';
+import 'package:parrokit/features/community/presentation/question_view_screen.dart';
 import 'package:parrokit/features/community/presentation/community_menu_screen.dart';
 import 'package:parrokit/features/community/presentation/community_notification_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
@@ -64,6 +66,26 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityBoardWritePath,
         name: AppRoutes.communityBoardWrite,
         builder: (context, state) => const BoardWriteScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityQuestionWritePath,
+        name: AppRoutes.communityQuestionWrite,
+        builder: (context, state) => const QuestionWriteScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityQuestionViewPath,
+        name: AppRoutes.communityQuestionView,
+        builder: (context, state) {
+          final questionId = int.tryParse(state.pathParameters['questionId'] ?? '');
+          if (questionId == null) {
+            return const Scaffold(
+              body: Center(
+                child: Text('questionId가 필요합니다.'),
+              ),
+            );
+          }
+          return QuestionViewScreen(questionId: questionId);
+        },
       ),
       GoRoute(
         path: AppRoutes.communityMenuPath,

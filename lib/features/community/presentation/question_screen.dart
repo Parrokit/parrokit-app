@@ -1,5 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/router/app_routes.dart';
 
 class QuestionScreen extends StatefulWidget {
   final String selectedFilter;
@@ -22,7 +24,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
   void _generateDummyQuestions() {
     final random = Random();
     final nicknames = ['플러터초보', '다트마스터', '질문봇', '코딩하는고양이', '개발자지망생'];
-    
+
     String getRandomNickname() => nicknames[random.nextInt(nicknames.length)];
     String getRandomTimeAgo() => '${random.nextInt(23) + 1}시간 전';
 
@@ -30,13 +32,16 @@ class _QuestionScreenState extends State<QuestionScreen> {
       final isResolved = random.nextBool();
       // Dummy image for Instagram feed style
       final hasImage = random.nextBool();
-      final imageUrl = hasImage ? 'https://picsum.photos/seed/${random.nextInt(1000)}/400/300' : null;
+      final imageUrl = hasImage
+          ? 'https://picsum.photos/seed/${random.nextInt(1000)}/400/300'
+          : null;
 
       return _QuestionData(
         author: getRandomNickname(),
         timeAgo: getRandomTimeAgo(),
         title: '플러터 상태관리는 어떤 걸 쓰는 게 좋을까요? ($index)',
-        content: '프로젝트를 새로 시작하려고 하는데 Provider, Riverpod, Bloc 중에 고민입니다. 현업에서는 주로 어떤 걸 많이 사용하시나요? 각각의 장단점이 궁금합니다.',
+        content:
+            '프로젝트를 새로 시작하려고 하는데 Provider, Riverpod, Bloc 중에 고민입니다. 현업에서는 주로 어떤 걸 많이 사용하시나요? 각각의 장단점이 궁금합니다.',
         imageUrl: imageUrl,
         likeCount: random.nextInt(100),
         commentCount: random.nextInt(30),
@@ -71,7 +76,13 @@ class _QuestionScreenState extends State<QuestionScreen> {
         thickness: 8,
       ),
       itemBuilder: (context, index) {
-        return _buildFeedItem(filteredQuestions[index]);
+        return GestureDetector(
+          onTap: () {
+            context.push(AppRoutes.communityQuestionViewPathOf(index));
+          },
+          behavior: HitTestBehavior.opaque,
+          child: _buildFeedItem(filteredQuestions[index]),
+        );
       },
     );
   }
@@ -115,9 +126,12 @@ class _QuestionScreenState extends State<QuestionScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: question.isResolved ? Colors.grey[200] : Colors.blue[50],
+                    color: question.isResolved
+                        ? Colors.grey[200]
+                        : Colors.blue[50],
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -125,7 +139,9 @@ class _QuestionScreenState extends State<QuestionScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: question.isResolved ? Colors.grey[600] : Colors.blue[600],
+                      color: question.isResolved
+                          ? Colors.grey[600]
+                          : Colors.blue[600],
                     ),
                   ),
                 ),
@@ -182,21 +198,26 @@ class _QuestionScreenState extends State<QuestionScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                const Icon(Icons.favorite_border, size: 24, color: Colors.black87),
+                const Icon(Icons.favorite_border,
+                    size: 24, color: Colors.black87),
                 const SizedBox(width: 6),
                 Text(
                   '${question.likeCount}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 16),
-                const Icon(Icons.chat_bubble_outline, size: 22, color: Colors.black87),
+                const Icon(Icons.chat_bubble_outline,
+                    size: 22, color: Colors.black87),
                 const SizedBox(width: 6),
                 Text(
                   '${question.commentCount}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const Spacer(),
-                const Icon(Icons.bookmark_border, size: 24, color: Colors.black87),
+                const Icon(Icons.bookmark_border,
+                    size: 24, color: Colors.black87),
               ],
             ),
           ),
