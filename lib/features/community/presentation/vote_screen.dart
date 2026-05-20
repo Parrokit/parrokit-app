@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/router/app_routes.dart';
 import '../domain/data/community_filters.dart';
 
 // ─── 더미 데이터 ───────────────────────────────────────────────────────────────
-class _VoteItem {
+class VoteItem {
+  final int id;
   final String title;
   final String description;
   final List<String> options;
@@ -13,7 +16,8 @@ class _VoteItem {
   final int likes;
   final int comments;
 
-  const _VoteItem({
+  const VoteItem({
+    required this.id,
     required this.title,
     required this.description,
     required this.options,
@@ -28,8 +32,9 @@ class _VoteItem {
   int get totalVotes => votes.fold(0, (a, b) => a + b);
 }
 
-const _dummyVotes = [
-  _VoteItem(
+const dummyVotes = [
+  VoteItem(
+    id: 1,
     title: '재택 vs 사무실',
     description: '어느 환경에서 일할 때 생산성이 더 높다고 느끼시나요?',
     options: ['재택 근무', '사무실 출근', '혼합 근무'],
@@ -40,7 +45,8 @@ const _dummyVotes = [
     likes: 9,
     comments: 4,
   ),
-  _VoteItem(
+  VoteItem(
+    id: 2,
     title: 'Flutter vs React Native, 2025년엔?',
     description: '크로스플랫폼 앱 개발을 시작한다면 어떤 프레임워크를 선택하시겠어요?',
     options: ['Flutter', 'React Native'],
@@ -51,7 +57,8 @@ const _dummyVotes = [
     likes: 12,
     comments: 7,
   ),
-  _VoteItem(
+  VoteItem(
+    id: 3,
     title: '사이드 프로젝트 스택 선택',
     description: '새로운 사이드 프로젝트를 시작한다면 어떤 웹 프레임워크를 고르시겠어요?',
     options: ['Next.js', 'Nuxt.js', 'SvelteKit'],
@@ -62,7 +69,8 @@ const _dummyVotes = [
     likes: 5,
     comments: 3,
   ),
-  _VoteItem(
+  VoteItem(
+    id: 4,
     title: '코드 리뷰 주기, 어떻게 생각해요?',
     description: '팀에서 코드 리뷰를 어느 주기로 진행하는 게 가장 효율적일까요?',
     options: ['PR마다', '매일 1회', '주 1회'],
@@ -73,7 +81,8 @@ const _dummyVotes = [
     likes: 9,
     comments: 4,
   ),
-  _VoteItem(
+  VoteItem(
+    id: 5,
     title: '개발할 때 음악 듣나요?',
     description: '코딩할 때 배경 음악을 틀어놓는 편인가요?',
     options: ['항상 들어요', '가끔만', '안 들어요'],
@@ -116,7 +125,7 @@ class _VoteScreenState extends State<VoteScreen> {
 
   // ── 랜덤 보기 (스와이프) ─────────────────────────────────────────────────────
   Widget _buildRandomView({Key? key}) {
-    if (_currentCardIndex >= _dummyVotes.length) {
+    if (_currentCardIndex >= dummyVotes.length) {
       return Center(
         key: key,
         child: Column(
@@ -167,16 +176,21 @@ class _VoteScreenState extends State<VoteScreen> {
                       key: ValueKey(_currentCardIndex),
                       enabled: widget.swipeEnabled,
                       onDismiss: () => setState(() => _currentCardIndex++),
-                      child: _VoteCard(
-                        item: _dummyVotes[_currentCardIndex],
-                        selectedOption: _selectedOptions[_currentCardIndex],
-                        showResult: _showResults[_currentCardIndex] ?? false,
-                        onSelect: (idx) => setState(
-                            () => _selectedOptions[_currentCardIndex] = idx),
-                        onToggleResult: () => setState(() {
-                          _showResults[_currentCardIndex] =
-                              !(_showResults[_currentCardIndex] ?? false);
-                        }),
+                      child: GestureDetector(
+                        onTap: () {
+                          context.push(AppRoutes.communityVoteViewPathOf(dummyVotes[_currentCardIndex].id));
+                        },
+                        child: VoteCard(
+                          item: dummyVotes[_currentCardIndex],
+                          selectedOption: _selectedOptions[_currentCardIndex],
+                          showResult: _showResults[_currentCardIndex] ?? false,
+                          onSelect: (idx) => setState(
+                              () => _selectedOptions[_currentCardIndex] = idx),
+                          onToggleResult: () => setState(() {
+                            _showResults[_currentCardIndex] =
+                                !(_showResults[_currentCardIndex] ?? false);
+                          }),
+                        ),
                       ),
                     ),
                   ),
@@ -201,8 +215,8 @@ class _VoteScreenState extends State<VoteScreen> {
               const SizedBox(width: 36),
               _NavButton(
                 icon: Icons.arrow_forward_ios_rounded,
-                enabled: _currentCardIndex < _dummyVotes.length,
-                onTap: _currentCardIndex < _dummyVotes.length
+                enabled: _currentCardIndex < dummyVotes.length,
+                onTap: _currentCardIndex < dummyVotes.length
                     ? () => setState(() => _currentCardIndex++)
                     : null,
               ),
@@ -218,17 +232,22 @@ class _VoteScreenState extends State<VoteScreen> {
     return ListView.builder(
       key: key,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      itemCount: _dummyVotes.length,
+      itemCount: dummyVotes.length,
       itemBuilder: (context, i) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: _VoteCard(
-          item: _dummyVotes[i],
-          selectedOption: _selectedOptions[i],
-          showResult: _showResults[i] ?? false,
-          onSelect: (idx) => setState(() => _selectedOptions[i] = idx),
-          onToggleResult: () => setState(() {
-            _showResults[i] = !(_showResults[i] ?? false);
-          }),
+        child: GestureDetector(
+          onTap: () {
+            context.push(AppRoutes.communityVoteViewPathOf(dummyVotes[i].id));
+          },
+          child: VoteCard(
+            item: dummyVotes[i],
+            selectedOption: _selectedOptions[i],
+            showResult: _showResults[i] ?? false,
+            onSelect: (idx) => setState(() => _selectedOptions[i] = idx),
+            onToggleResult: () => setState(() {
+              _showResults[i] = !(_showResults[i] ?? false);
+            }),
+          ),
         ),
       ),
     );
@@ -334,14 +353,14 @@ class _SwipeableCardState extends State<_SwipeableCard> {
 }
 
 // ─── 투표 카드 (이미지 1:1 매치, 테두리 없음) ──────────────────────────────────
-class _VoteCard extends StatelessWidget {
-  final _VoteItem item;
+class VoteCard extends StatelessWidget {
+  final VoteItem item;
   final int? selectedOption;
   final bool showResult;
   final ValueChanged<int> onSelect;
   final VoidCallback onToggleResult;
 
-  const _VoteCard({
+  const VoteCard({
     super.key,
     required this.item,
     required this.selectedOption,

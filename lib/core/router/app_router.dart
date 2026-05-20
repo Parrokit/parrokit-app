@@ -26,6 +26,7 @@ import 'package:parrokit/features/community/presentation/board_write_screen.dart
 import 'package:parrokit/features/community/presentation/qeustion_wirte_screen.dart';
 import 'package:parrokit/features/community/presentation/question_view_screen.dart';
 import 'package:parrokit/features/community/presentation/vote_write_screen.dart';
+import 'package:parrokit/features/community/presentation/vote_view_screen.dart';
 import 'package:parrokit/features/community/presentation/community_menu_screen.dart';
 import 'package:parrokit/features/community/presentation/community_notification_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
@@ -77,6 +78,21 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityVoteWritePath,
         name: AppRoutes.communityVoteWrite,
         builder: (context, state) => const VoteWriteScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityVoteViewPath,
+        name: AppRoutes.communityVoteView,
+        builder: (context, state) {
+          final voteId = int.tryParse(state.pathParameters['voteId'] ?? '');
+          if (voteId == null) {
+            return const Scaffold(
+              body: Center(
+                child: Text('voteId가 필요합니다.'),
+              ),
+            );
+          }
+          return VoteViewScreen(voteId: voteId);
+        },
       ),
       GoRoute(
         path: AppRoutes.communityQuestionViewPath,

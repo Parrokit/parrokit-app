@@ -41,6 +41,7 @@ abstract class AppRoutes {
   static const communityQuestionWrite = 'community_question_write';
   static const communityQuestionView = 'community_question_view';
   static const communityVoteWrite = 'community_vote_write';
+  static const communityVoteView = 'community_vote_view';
   static const communityMenu = 'community_menu';
   static const communityNotification = 'community_notification';
 
@@ -55,6 +56,7 @@ abstract class AppRoutes {
   static const communityQuestionWritePath = '/community/question/write';
   static const communityQuestionViewPath = '/community/question/:questionId';
   static const communityVoteWritePath = '/community/vote/write';
+  static const communityVoteViewPath = '/community/vote/:voteId';
   static const communityMenuPath = '/community/menu';
   static const communityNotificationPath = '/community/notification';
   static const explorePath = '/explore';
@@ -79,4 +81,7 @@ abstract class AppRoutes {
 
   static String communityQuestionViewPathOf(int questionId) =>
       '/community/question/$questionId';
+
+  static String communityVoteViewPathOf(int voteId) =>
+      '/community/vote/$voteId';
 }
