@@ -25,6 +25,7 @@ import 'package:parrokit/features/community/presentation/board_view_screen.dart'
 import 'package:parrokit/features/community/presentation/board_write_screen.dart';
 import 'package:parrokit/features/community/presentation/qeustion_wirte_screen.dart';
 import 'package:parrokit/features/community/presentation/question_view_screen.dart';
+import 'package:parrokit/features/community/presentation/vote_write_screen.dart';
 import 'package:parrokit/features/community/presentation/community_menu_screen.dart';
 import 'package:parrokit/features/community/presentation/community_notification_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
@@ -71,6 +72,11 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityQuestionWritePath,
         name: AppRoutes.communityQuestionWrite,
         builder: (context, state) => const QuestionWriteScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityVoteWritePath,
+        name: AppRoutes.communityVoteWrite,
+        builder: (context, state) => const VoteWriteScreen(),
       ),
       GoRoute(
         path: AppRoutes.communityQuestionViewPath,

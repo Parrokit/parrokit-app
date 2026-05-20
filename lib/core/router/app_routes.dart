@@ -40,6 +40,7 @@ abstract class AppRoutes {
   static const communityBoardWrite = 'community_board_write';
   static const communityQuestionWrite = 'community_question_write';
   static const communityQuestionView = 'community_question_view';
+  static const communityVoteWrite = 'community_vote_write';
   static const communityMenu = 'community_menu';
   static const communityNotification = 'community_notification';
 
@@ -53,6 +54,7 @@ abstract class AppRoutes {
   static const communityBoardWritePath = '/community/board/write';
   static const communityQuestionWritePath = '/community/question/write';
   static const communityQuestionViewPath = '/community/question/:questionId';
+  static const communityVoteWritePath = '/community/vote/write';
   static const communityMenuPath = '/community/menu';
   static const communityNotificationPath = '/community/notification';
   static const explorePath = '/explore';

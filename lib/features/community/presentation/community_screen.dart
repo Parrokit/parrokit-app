@@ -483,6 +483,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                   subtitle: '투표를 진행하여 다양한 의견을 받아보세요',
                   onTap: () {
                     Navigator.pop(context);
+                    context.push(AppRoutes.communityVoteWritePath);
                   },
                 ),
               ],
