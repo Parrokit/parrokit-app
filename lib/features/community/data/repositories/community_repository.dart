@@ -6,7 +6,7 @@ class CommunityRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Add a new post
-  Future<void> addPost(Post post) async {
+  Future<Post> addPost(Post post) async {
     try {
       final docRef = _firestore.collection('posts').doc();
       final newPost = post.copyWith(
@@ -16,6 +16,7 @@ class CommunityRepository {
       );
       
       await docRef.set(newPost.toJson());
+      return newPost;
     } catch (e) {
       throw Exception('게시글 등록에 실패했습니다: $e');
     }

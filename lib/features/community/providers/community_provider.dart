@@ -64,8 +64,12 @@ class CommunityProvider with ChangeNotifier {
 
       await _repository.addPost(newPost);
       
-      // 작성 성공 후 목록 새로고침
+      // 로딩 상태를 풀어주어야 fetchPosts 내부의 방어 로직(if isLoading return)을 통과합니다.
+      _isLoading = false; 
+      
+      // 최신 데이터를 서버에서 깔끔하게 다시 가져옵니다. (다른 유저의 새 글 포함)
       await fetchPosts(refresh: true);
+      
       return true;
     } catch (e) {
       _errorMessage = e.toString();
