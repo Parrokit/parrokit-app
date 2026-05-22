@@ -24,7 +24,8 @@
   "uid": "user1234",
   "nickname": "파로킷유저",
   "avatarUrl": "https://...",
-  "createdAt": "2026-05-20T10:00:00Z"
+  "createdAt": "2026-05-20T10:00:00Z",
+  "blockedUserIds": ["badUser1", "spamUser2"]
 }
 ```
 
@@ -144,3 +145,35 @@ Flutter(클라이언트)에서는 `comments`를 한 번의 쿼리로 몽땅 가�
 1. **페이징 (Pagination):** 게시글을 피드에 표시할 때 한 번에 10~20개씩 가져오도록 `limit()`과 `startAfterDocument()`를 활용합니다.
 2. **트랜잭션 (Transaction) / 배치 (Batch):** 사용자가 좋아요를 누르거나 댓글을 쓸 때 `likes`나 `comments` 하위 컬렉션에 문서를 생성함과 동시에 `posts` 문서의 `likeCount`나 `commentCount`를 `1` 증가시켜야 합니다. 이때 일관성을 유지하기 위해 트랜잭션이나 배치를 사용합니다.
 3. **닉네임 변경 동기화:** 사용자가 닉네임을 변경할 때 기존 작성한 글(`posts`)과 댓글(`comments`)의 `authorNickname`을 일괄 업데이트할지, 혹은 Cloud Functions를 통해 백그라운드에서 동기화할지 기획적 결정이 필요합니다.
+
+---
+
+## 5. 앱 심사 필수 기능: 차단(Block) 및 신고(Report)
+
+앱스토어/플레이스토어 심사 통과를 위해 커뮤니티 앱에는 반드시 사용자 차단과 신고 기능이 필요합니다.
+
+### 5.1. 사용자 차단 (Block)
+Firestore는 `not-in` 쿼리에 최대 10개의 제한이 있으므로, 클라이언트(Flutter) 단에서 필터링하는 것이 정석입니다.
+```json
+// Path: users/{uid}
+{
+  "nickname": "파로킷유저",
+  "blockedUserIds": ["badUser1", "spamUser2"] // 내가 차단한 유저 UID 배열
+}
+```
+- **구현 방식:** 피드를 몽땅 불러온 뒤, Dart 코드에서 `allPosts.where((post) => !myBlockedUserIds.contains(post.authorId))` 로 차단한 사람의 글을 걸러내고 보여줍니다.
+
+### 5.2. 신고 (Report) 및 자동 숨김
+중복 신고 방지 및 관리자 확인을 위해 `reports` 라는 최상위 컬렉션을 만듭니다.
+```json
+// Path: reports/{reportId} (최상위 컬렉션)
+{
+  "reporterId": "user1234",          // 신고자 UID
+  "targetType": "post",              // 신고 대상 (post, comment, user)
+  "targetId": "postId_9999",         // 신고 대상의 ID
+  "reportedUserId": "badUser5678",   // 신고당한 유저 UID
+  "reason": "욕설/비하",               // 신고 사유
+  "createdAt": "2026-05-20T12:00:00Z"
+}
+```
+- **구현 방식:** 유저가 신고를 하면 `reports`에 문서를 생성함과 동시에, 해당 `posts` 문서의 `reportCount`를 1 올립니다. 누적 신고 수가 5회가 넘어가면 `status`를 `"hidden"`으로 변경합니다. 앱은 피드를 불러올 때 항상 `where('status', '==', 'active')`인 글만 가져오도록 설정해두면 자연스럽게 블라인드 처리가 완료됩니다.
