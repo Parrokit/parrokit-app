@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class BoardViewScreen extends StatefulWidget {
-  final int postId;
+  final String postId;
 
   const BoardViewScreen({super.key, required this.postId});
 

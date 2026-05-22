@@ -76,12 +76,12 @@ abstract class AppRoutes {
   static const paymentSuccessPath = '/payment/success';
   static const paymentFailPath = '/payment/fail';
 
-  static String communityBoardViewPathOf(int postId) =>
+  static String communityBoardViewPathOf(String postId) =>
       '/community/board/$postId';
 
-  static String communityQuestionViewPathOf(int questionId) =>
+  static String communityQuestionViewPathOf(String questionId) =>
       '/community/question/$questionId';
 
-  static String communityVoteViewPathOf(int voteId) =>
+  static String communityVoteViewPathOf(String voteId) =>
       '/community/vote/$voteId';
 }

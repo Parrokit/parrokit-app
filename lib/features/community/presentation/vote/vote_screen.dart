@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/router/app_routes.dart';
-import '../domain/data/community_filters.dart';
+import 'package:parrokit/core/router/app_routes.dart';
+import 'package:parrokit/features/community/domain/data/community_filters.dart';
 
 // ─── 더미 데이터 ───────────────────────────────────────────────────────────────
 class VoteItem {
-  final int id;
+  final String id;
   final String title;
   final String description;
   final List<String> options;
@@ -34,7 +34,7 @@ class VoteItem {
 
 const dummyVotes = [
   VoteItem(
-    id: 1,
+    id: '1',
     title: '재택 vs 사무실',
     description: '어느 환경에서 일할 때 생산성이 더 높다고 느끼시나요?',
     options: ['재택 근무', '사무실 출근', '혼합 근무'],
@@ -46,7 +46,7 @@ const dummyVotes = [
     comments: 4,
   ),
   VoteItem(
-    id: 2,
+    id: '2',
     title: 'Flutter vs React Native, 2025년엔?',
     description: '크로스플랫폼 앱 개발을 시작한다면 어떤 프레임워크를 선택하시겠어요?',
     options: ['Flutter', 'React Native'],
@@ -58,7 +58,7 @@ const dummyVotes = [
     comments: 7,
   ),
   VoteItem(
-    id: 3,
+    id: '3',
     title: '사이드 프로젝트 스택 선택',
     description: '새로운 사이드 프로젝트를 시작한다면 어떤 웹 프레임워크를 고르시겠어요?',
     options: ['Next.js', 'Nuxt.js', 'SvelteKit'],
@@ -70,7 +70,7 @@ const dummyVotes = [
     comments: 3,
   ),
   VoteItem(
-    id: 4,
+    id: '4',
     title: '코드 리뷰 주기, 어떻게 생각해요?',
     description: '팀에서 코드 리뷰를 어느 주기로 진행하는 게 가장 효율적일까요?',
     options: ['PR마다', '매일 1회', '주 1회'],
@@ -82,7 +82,7 @@ const dummyVotes = [
     comments: 4,
   ),
   VoteItem(
-    id: 5,
+    id: '5',
     title: '개발할 때 음악 듣나요?',
     description: '코딩할 때 배경 음악을 틀어놓는 편인가요?',
     options: ['항상 들어요', '가끔만', '안 들어요'],

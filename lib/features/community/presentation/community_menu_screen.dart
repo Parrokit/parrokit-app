@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/app_routes.dart';
 
 class CommunityMenuScreen extends StatelessWidget {
   const CommunityMenuScreen({super.key});

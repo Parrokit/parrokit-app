@@ -21,12 +21,12 @@ import 'package:parrokit/features/auth/sign-up/sign_up_screen.dart';
 import 'package:parrokit/features/auth/find-pw/find_pw_screen.dart';
 import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/community/presentation/community_screen.dart';
-import 'package:parrokit/features/community/presentation/board_view_screen.dart';
-import 'package:parrokit/features/community/presentation/board_write_screen.dart';
-import 'package:parrokit/features/community/presentation/qeustion_wirte_screen.dart';
-import 'package:parrokit/features/community/presentation/question_view_screen.dart';
-import 'package:parrokit/features/community/presentation/vote_write_screen.dart';
-import 'package:parrokit/features/community/presentation/vote_view_screen.dart';
+import 'package:parrokit/features/community/presentation/board/board_view_screen.dart';
+import 'package:parrokit/features/community/presentation/board/board_write_screen.dart';
+import 'package:parrokit/features/community/presentation/qeustion/qeustion_wirte_screen.dart';
+import 'package:parrokit/features/community/presentation/qeustion/question_view_screen.dart';
+import 'package:parrokit/features/community/presentation/vote/vote_write_screen.dart';
+import 'package:parrokit/features/community/presentation/vote/vote_view_screen.dart';
 import 'package:parrokit/features/community/presentation/community_menu_screen.dart';
 import 'package:parrokit/features/community/presentation/community_notification_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
@@ -83,8 +83,8 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityVoteViewPath,
         name: AppRoutes.communityVoteView,
         builder: (context, state) {
-          final voteId = int.tryParse(state.pathParameters['voteId'] ?? '');
-          if (voteId == null) {
+          final voteId = state.pathParameters['voteId'];
+          if (voteId == null || voteId.isEmpty) {
             return const Scaffold(
               body: Center(
                 child: Text('voteId가 필요합니다.'),
@@ -98,8 +98,8 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityQuestionViewPath,
         name: AppRoutes.communityQuestionView,
         builder: (context, state) {
-          final questionId = int.tryParse(state.pathParameters['questionId'] ?? '');
-          if (questionId == null) {
+          final questionId = state.pathParameters['questionId'];
+          if (questionId == null || questionId.isEmpty) {
             return const Scaffold(
               body: Center(
                 child: Text('questionId가 필요합니다.'),
@@ -123,8 +123,8 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityBoardViewPath,
         name: AppRoutes.communityBoardView,
         builder: (context, state) {
-          final postId = int.tryParse(state.pathParameters['postId'] ?? '');
-          if (postId == null) {
+          final postId = state.pathParameters['postId'];
+          if (postId == null || postId.isEmpty) {
             return const Scaffold(
               body: Center(
                 child: Text('postId가 필요합니다. (/community/board/:postId)'),

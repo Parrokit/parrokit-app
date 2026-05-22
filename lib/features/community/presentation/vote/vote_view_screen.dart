@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 import 'vote_screen.dart';
 
 class VoteViewScreen extends StatefulWidget {
-  final int voteId;
+  final String voteId;
 
   const VoteViewScreen({super.key, required this.voteId});
 
@@ -51,7 +51,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
 
   void _loadMockComments() {
     // 주제별 맞춤 댓글 생성
-    if (_voteItem.id == 1) {
+    if (_voteItem.id == '1') {
       _comments = [
         _VoteComment(
           author: '워라밸러',
@@ -78,7 +78,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
           likes: 5,
         ),
       ];
-    } else if (_voteItem.id == 2) {
+    } else if (_voteItem.id == '2') {
       _comments = [
         _VoteComment(
           author: '플러터덕후',

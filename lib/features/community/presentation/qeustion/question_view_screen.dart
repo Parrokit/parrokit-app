@@ -14,7 +14,7 @@
 import 'package:flutter/material.dart';
 
 class QuestionViewScreen extends StatefulWidget {
-  final int questionId;
+  final String questionId;
 
   const QuestionViewScreen({super.key, required this.questionId});
 
@@ -41,40 +41,44 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
   }
 
   void _loadMockQuestionDetail() {
-    final isResolved = widget.questionId % 2 == 0;
+    final isResolved = widget.questionId.hashCode % 2 == 0;
     _question = _TwitterQuestionData(
       id: widget.questionId,
-      author: '플러터초보_${widget.questionId}',
-      handle: '@flutter_novice_${widget.questionId}',
-      authorAvatar: 'https://picsum.photos/seed/user${widget.questionId}/100/100',
+      author: '플러터초보_${widget.questionId.hashCode}',
+      handle: '@flutter_novice_${widget.questionId.hashCode}',
+      authorAvatar:
+          'https://picsum.photos/seed/user${widget.questionId.hashCode}/100/100',
       timeAgo: '오후 5:32 · 2026년 5월 20일',
       title: '영국식 발음과 미국식 발음 중 어떤 것을 쉐도잉하는 게 좋을까요?',
-      content: '비즈니스 영어 실력을 기르려고 쉐도잉을 새로 시작하려 합니다. 영드 셜록이나 미드 오피스 중 무엇을 골라야 할지 고민입니다. 주로 비즈니스 실무에서는 어떤 억양이 더 널리 쓰이나요?',
+      content:
+          '비즈니스 영어 실력을 기르려고 쉐도잉을 새로 시작하려 합니다. 영드 셜록이나 미드 오피스 중 무엇을 골라야 할지 고민입니다. 주로 비즈니스 실무에서는 어떤 억양이 더 널리 쓰이나요?',
       targetExpression: 'Business Accents (UK vs US)',
       category: '발음/스피킹',
-      views: 148 + widget.questionId * 12,
+      views: 148 + (widget.questionId.hashCode % 10) * 12,
       upvotes: 24,
       isResolved: isResolved,
     );
 
     _answers = [
       _TwitterAnswerData(
-        id: 201,
+        id: '201',
         author: '영어마스터_킴',
         handle: '@eng_master_kim',
         authorAvatar: 'https://picsum.photos/seed/ans1/100/100',
-        content: '국제 비즈니스 표준으로는 미국식 영어가 거래처 등에서 가장 널리 통용되지만, 유럽권이나 싱가포르 등 영연방 출신들과 일할 때는 영국식 영어 억양이 매우 큰 신뢰를 줍니다. 셜록은 대사가 지나치게 빠르므로 오피스로 시작해 미국식 기초 발음을 다진 후 영국 뉴스로 귀를 트시는 걸 추천합니다.',
+        content:
+            '국제 비즈니스 표준으로는 미국식 영어가 거래처 등에서 가장 널리 통용되지만, 유럽권이나 싱가포르 등 영연방 출신들과 일할 때는 영국식 영어 억양이 매우 큰 신뢰를 줍니다. 셜록은 대사가 지나치게 빠르므로 오피스로 시작해 미국식 기초 발음을 다진 후 영국 뉴스로 귀를 트시는 걸 추천합니다.',
         timeAgo: '2시간 전',
         upvotes: 18,
         isAdopted: isResolved,
         commentsCount: 3,
       ),
       _TwitterAnswerData(
-        id: 202,
+        id: '202',
         author: '실무영어코치',
         handle: '@biz_eng_coach',
         authorAvatar: 'https://picsum.photos/seed/ans2/100/100',
-        content: '현직 대기업 통역사입니다. 실제 실무에서는 억양 자체보다 끊어 읽기(Phrasing)와 강세가 훨씬 중요합니다. 영국식이든 미국식이든 본인 목소리 톤에 잘 맞는 캐릭터를 선정해서 시작해 보세요. 남성분이면 오피스의 짐(Jim)을 추천하고, 여성분이면 다양한 비즈니스 롤이 나오는 시트콤이 좋습니다.',
+        content:
+            '현직 대기업 통역사입니다. 실제 실무에서는 억양 자체보다 끊어 읽기(Phrasing)와 강세가 훨씬 중요합니다. 영국식이든 미국식이든 본인 목소리 톤에 잘 맞는 캐릭터를 선정해서 시작해 보세요. 남성분이면 오피스의 짐(Jim)을 추천하고, 여성분이면 다양한 비즈니스 롤이 나오는 시트콤이 좋습니다.',
         timeAgo: '1시간 전',
         upvotes: 7,
         isAdopted: false,
@@ -92,7 +96,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
 
     setState(() {
       _answers.add(_TwitterAnswerData(
-        id: DateTime.now().millisecondsSinceEpoch,
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         author: '나의계정',
         handle: '@my_account',
         authorAvatar: 'https://picsum.photos/seed/composer/100/100',
@@ -110,7 +114,8 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
 
   void _upvoteAnswer(int index) {
     setState(() {
-      _answers[index] = _answers[index].copyWith(upvotes: _answers[index].upvotes + 1);
+      _answers[index] =
+          _answers[index].copyWith(upvotes: _answers[index].upvotes + 1);
     });
   }
 
@@ -148,12 +153,14 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
       elevation: 0,
       scrolledUnderElevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+            color: Colors.black, size: 20),
         onPressed: () => Navigator.maybePop(context),
       ),
       title: const Text(
         '질문 스레드',
-        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+        style: TextStyle(
+            color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
       ),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
@@ -185,11 +192,15 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                       children: [
                         Text(
                           _question.author,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF212529)),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF212529)),
                         ),
                         if (_question.isResolved) ...[
                           const SizedBox(width: 4),
-                          const Icon(Icons.verified, color: Colors.green, size: 16),
+                          const Icon(Icons.verified,
+                              color: Colors.green, size: 16),
                         ],
                       ],
                     ),
@@ -231,7 +242,6 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
           ),
           const SizedBox(height: 16),
 
-
           // Date & Stats View (Twitter Thread Style)
           Text(
             '${_question.timeAgo} · 조회 ${_question.views}회',
@@ -244,17 +254,25 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
             children: [
               Text(
                 '${_question.upvotes}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF212529)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(0xFF212529)),
               ),
               const SizedBox(width: 4),
-              Text('유용해요', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+              Text('유용해요',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 14)),
               const SizedBox(width: 16),
               Text(
                 '${_answers.length}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF212529)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(0xFF212529)),
               ),
               const SizedBox(width: 4),
-              Text('답글', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+              Text('답글',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 14)),
             ],
           ),
           const Divider(height: 24, color: Color(0xFFF1F3F5)),
@@ -264,7 +282,8 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               IconButton(
-                icon: const Icon(Icons.mode_comment_outlined, size: 20, color: Color(0xFF65676B)),
+                icon: const Icon(Icons.mode_comment_outlined,
+                    size: 20, color: Color(0xFF65676B)),
                 onPressed: () {
                   FocusScope.of(context).requestFocus(FocusNode());
                 },
@@ -273,24 +292,31 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                 icon: Icon(
                   _isLiked ? Icons.bolt : Icons.bolt_outlined,
                   size: 22,
-                  color: _isLiked ? Colors.orange[600] : const Color(0xFF65676B),
+                  color:
+                      _isLiked ? Colors.orange[600] : const Color(0xFF65676B),
                 ),
                 onPressed: () {
                   setState(() {
                     _isLiked = !_isLiked;
                     if (_isLiked) {
-                      _question = _question.copyWith(upvotes: _question.upvotes + 1);
+                      _question =
+                          _question.copyWith(upvotes: _question.upvotes + 1);
                     } else {
-                      _question = _question.copyWith(upvotes: _question.upvotes - 1);
+                      _question =
+                          _question.copyWith(upvotes: _question.upvotes - 1);
                     }
                   });
                 },
               ),
               IconButton(
                 icon: Icon(
-                  _isBookmarked ? Icons.bookmark : Icons.bookmark_border_rounded,
+                  _isBookmarked
+                      ? Icons.bookmark
+                      : Icons.bookmark_border_rounded,
                   size: 20,
-                  color: _isBookmarked ? Colors.orange[600] : const Color(0xFF65676B),
+                  color: _isBookmarked
+                      ? Colors.orange[600]
+                      : const Color(0xFF65676B),
                 ),
                 onPressed: () {
                   setState(() {
@@ -299,7 +325,8 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.ios_share_rounded, size: 20, color: Color(0xFF65676B)),
+                icon: const Icon(Icons.ios_share_rounded,
+                    size: 20, color: Color(0xFF65676B)),
                 onPressed: () {},
               ),
             ],
@@ -332,16 +359,19 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
 
     // Sort to place Adopted Answer at the top
     final sortedReplies = List<_TwitterAnswerData>.from(_answers);
-    sortedReplies.sort((a, b) => (b.isAdopted ? 1 : 0).compareTo(a.isAdopted ? 1 : 0));
+    sortedReplies
+        .sort((a, b) => (b.isAdopted ? 1 : 0).compareTo(a.isAdopted ? 1 : 0));
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: sortedReplies.length,
-      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F3F5)),
+      separatorBuilder: (context, index) =>
+          const Divider(height: 1, color: Color(0xFFF1F3F5)),
       itemBuilder: (context, index) {
         final answer = sortedReplies[index];
-        final originalIndex = _answers.indexWhere((element) => element.id == answer.id);
+        final originalIndex =
+            _answers.indexWhere((element) => element.id == answer.id);
         return _buildReplyItem(answer, originalIndex);
       },
     );
@@ -383,7 +413,10 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                   children: [
                     Text(
                       answer.author,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF212529)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Color(0xFF212529)),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -403,7 +436,8 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                 if (answer.isAdopted) ...[
                   Container(
                     margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.green[50],
                       borderRadius: BorderRadius.circular(6),
@@ -416,7 +450,10 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                         SizedBox(width: 4),
                         Text(
                           '채택된 답변',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green),
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green),
                         ),
                       ],
                     ),
@@ -427,7 +464,8 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                 // Reply text
                 Text(
                   answer.content,
-                  style: const TextStyle(fontSize: 15, color: Color(0xFF343A40), height: 1.45),
+                  style: const TextStyle(
+                      fontSize: 15, color: Color(0xFF343A40), height: 1.45),
                 ),
                 const SizedBox(height: 12),
 
@@ -438,7 +476,8 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.mode_comment_outlined, size: 16, color: Color(0xFF65676B)),
+                          icon: const Icon(Icons.mode_comment_outlined,
+                              size: 16, color: Color(0xFF65676B)),
                           onPressed: () {},
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -446,14 +485,16 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                         const SizedBox(width: 4),
                         Text(
                           '${answer.commentsCount}',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 12),
                         ),
                       ],
                     ),
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.bolt_outlined, size: 18, color: Color(0xFF65676B)),
+                          icon: const Icon(Icons.bolt_outlined,
+                              size: 18, color: Color(0xFF65676B)),
                           onPressed: () => _upvoteAnswer(originalIndex),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -461,12 +502,14 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                         const SizedBox(width: 4),
                         Text(
                           '${answer.upvotes}',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 12),
                         ),
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.ios_share_rounded, size: 16, color: Color(0xFF65676B)),
+                      icon: const Icon(Icons.ios_share_rounded,
+                          size: 16, color: Color(0xFF65676B)),
                       onPressed: () {},
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -478,18 +521,23 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                         onTap: () {
                           setState(() {
                             _question = _question.copyWith(isResolved: true);
-                            _answers[originalIndex] = _answers[originalIndex].copyWith(isAdopted: true);
+                            _answers[originalIndex] = _answers[originalIndex]
+                                .copyWith(isAdopted: true);
                           });
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.green[50],
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
                             '채택하기',
-                            style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.green,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -515,7 +563,8 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
           children: [
             const CircleAvatar(
               radius: 14,
-              backgroundImage: NetworkImage('https://picsum.photos/seed/composer/100/100'),
+              backgroundImage:
+                  NetworkImage('https://picsum.photos/seed/composer/100/100'),
               backgroundColor: Color(0xFFF1F3F5),
             ),
             const SizedBox(width: 12),
@@ -553,7 +602,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TwitterQuestionData {
-  final int id;
+  final String id;
   final String author;
   final String handle;
   final String authorAvatar;
@@ -582,7 +631,7 @@ class _TwitterQuestionData {
   });
 
   _TwitterQuestionData copyWith({
-    int? id,
+    String? id,
     String? author,
     String? handle,
     String? authorAvatar,
@@ -613,7 +662,7 @@ class _TwitterQuestionData {
 }
 
 class _TwitterAnswerData {
-  final int id;
+  final String id;
   final String author;
   final String handle;
   final String authorAvatar;
@@ -636,7 +685,7 @@ class _TwitterAnswerData {
   });
 
   _TwitterAnswerData copyWith({
-    int? id,
+    String? id,
     String? author,
     String? handle,
     String? authorAvatar,

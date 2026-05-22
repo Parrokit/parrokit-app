@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../domain/data/community_filters.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/features/community/domain/data/community_filters.dart';
 
 class BoardWriteScreen extends StatefulWidget {
   const BoardWriteScreen({super.key});
@@ -88,6 +90,22 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
     );
   }
 
+  Future<void> _submitPost() async {
+    final provider = context.read<CommunityProvider>();
+    final success = await provider.addPost(
+      _titleController.text.trim(),
+      _contentController.text.trim(),
+      _selectedBoardTopic ?? '자유',
+    );
+    if (success && mounted) {
+      Navigator.maybePop(context);
+    } else if (mounted && provider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage!)),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -123,17 +141,23 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: _canComplete ? () {} : null,
-                    child: Text(
-                      '완료',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: _canComplete
-                            ? const Color(0xFF2F67BF)
-                            : const Color(0xFFD3D6DB),
-                      ),
-                    ),
+                    onPressed: _canComplete ? _submitPost : null,
+                    child: context.watch<CommunityProvider>().isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            '완료',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: _canComplete
+                                  ? const Color(0xFF2F67BF)
+                                  : const Color(0xFFD3D6DB),
+                            ),
+                          ),
                   ),
                 ],
               ),

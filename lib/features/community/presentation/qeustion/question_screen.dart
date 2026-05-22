@@ -78,7 +78,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
       itemBuilder: (context, index) {
         return GestureDetector(
           onTap: () {
-            context.push(AppRoutes.communityQuestionViewPathOf(index));
+            context.push(AppRoutes.communityQuestionViewPathOf(index.toString()));
           },
           behavior: HitTestBehavior.opaque,
           child: _buildFeedItem(filteredQuestions[index]),
