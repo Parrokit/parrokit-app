@@ -95,6 +95,57 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     );
   }
 
+  void _showPostOptionsSheet(Post post) {
+    // 임시 로그인 구현 (현재 작성 시 temp_user_id를 사용함)
+    final isMyPost = post.authorId == 'temp_user_id';
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isMyPost)
+                  _CommentSheetAction(
+                    label: '삭제하기',
+                    isDestructive: true,
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: 게시글 삭제 기능 구현
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('게시글 삭제 기능은 준비 중입니다.')),
+                      );
+                    },
+                  ),
+                _CommentSheetAction(
+                  label: '신고하기',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: 게시글 신고 기능 구현
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('신고가 접수되었습니다.')),
+                    );
+                  },
+                ),
+                _CommentSheetAction(
+                  label: '닫기',
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _commentController.dispose();
@@ -151,7 +202,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                         const Icon(Icons.notifications_off_outlined, size: 24),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => _showPostOptionsSheet(post),
                     icon: const Icon(Icons.more_vert, size: 24),
                   ),
                 ],
