@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/data/models/post.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
@@ -25,6 +28,14 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       if (!mounted) return;
       SystemChannels.textInput.invokeMethod<void>('TextInput.show');
     });
+  }
+  String _formatTimeAgo(DateTime? time) {
+    if (time == null) return '';
+    final diff = DateTime.now().difference(time);
+    if (diff.inDays > 0) return '${diff.inDays}일 전';
+    if (diff.inHours > 0) return '${diff.inHours}시간 전';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}분 전';
+    return '방금 전';
   }
 
   void _submitComment() {
@@ -103,6 +114,22 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     final likeIconColor = _liked ? likeAccent : const Color(0xFFB2B2B2);
     final likeCount = _liked ? 19 : 18;
 
+    final provider = context.watch<CommunityProvider>();
+    final post = provider.posts.firstWhere(
+      (p) => p.id == widget.postId,
+      orElse: () => Post(
+        id: widget.postId,
+        postType: 'board',
+        category: '알 수 없음',
+        title: '게시글을 찾을 수 없습니다.',
+        content: '삭제되었거나 접근할 수 없는 게시글입니다.',
+        authorId: '',
+        authorNickname: '알 수 없음',
+        snippet: '',
+        createdAt: DateTime.now(),
+      ),
+    );
+
     return Scaffold(
       backgroundColor: backgroundColor,
       resizeToAvoidBottomInset: true,
@@ -149,11 +176,11 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                               color: const Color.fromARGB(255, 245, 245, 245),
                               borderRadius: BorderRadius.circular(24),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
                                 Text(
-                                  '추천해요',
-                                  style: TextStyle(
+                                  post.category,
+                                  style: const TextStyle(
                                     fontSize: 30 / 2,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF6E6E6E),
@@ -169,9 +196,9 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           const Icon(Icons.remove_red_eye_outlined,
                               color: Color(0xFFB2B2B2), size: 24),
                           const SizedBox(width: 6),
-                          const Text(
-                            '894',
-                            style: TextStyle(
+                          Text(
+                            '${post.viewCount}',
+                            style: const TextStyle(
                                 color: Color(0xFF9F9F9F),
                                 fontSize: 30 / 2,
                                 fontWeight: FontWeight.w700),
@@ -191,32 +218,32 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       ),
                     ),
                     const SizedBox(height: 26),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
                       child: Row(
                         children: [
-                          CircleAvatar(
+                          const CircleAvatar(
                             radius: 24,
                             backgroundColor: Color.fromARGB(255, 220, 220, 220),
                             child: Icon(Icons.person,
                                 size: 30,
                                 color: Color.fromARGB(255, 255, 255, 255)),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'dd',
-                                style: TextStyle(
+                                post.authorNickname,
+                                style: const TextStyle(
                                   fontSize: 34 / 2,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
-                                '4시간 전',
-                                style: TextStyle(
+                                _formatTimeAgo(post.createdAt),
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF6E6E6E),
@@ -228,11 +255,11 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       ),
                     ),
                     const SizedBox(height: 28),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        '플래시 시즌 2 13화 부분에서 괜찮은 문장 찾음',
-                        style: TextStyle(
+                        post.title,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           height: 1.25,
@@ -240,14 +267,11 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        '친구랑 밥먹으러가자고 할 때, 나는 보통 뭐라고\n'
-                        '할지 잘 생각 안나는데 여기 나와 있는 대사들이 정말\n'
-                        '실생활에서 쓰기 좋고 자연스럽게 느껴졌어요. 꼭 한 번\n'
-                        '다시 보면서 따라해보고 싶네요.',
-                        style: TextStyle(
+                        post.content,
+                        style: const TextStyle(
                           fontSize: 20 / 1.2,
                           fontWeight: FontWeight.w500,
                           height: 1.6,
