@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:parrokit/data/models/post.dart';
+import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/features/community/data/repositories/community_repository.dart';
 
 class CommunityProvider with ChangeNotifier {
@@ -17,6 +18,9 @@ class CommunityProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   DocumentSnapshot? _lastDocument;
+
+  List<Comment> _currentPostComments = [];
+  List<Comment> get currentPostComments => _currentPostComments;
 
   // 게시글 목록 가져오기
   Future<void> fetchPosts({bool refresh = false}) async {
@@ -74,6 +78,50 @@ class CommunityProvider with ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 특정 게시글의 댓글 목록 가져오기
+  Future<void> fetchComments(String postId) async {
+    _currentPostComments.clear();
+    try {
+      final comments = await _repository.getComments(postId);
+      _currentPostComments.addAll(comments);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // 댓글 추가하기
+  Future<bool> addComment(String postId, String content) async {
+    try {
+      final newComment = Comment(
+        id: '', // Repository에서 자동 생성
+        authorId: 'temp_user_id', // 임시 유저
+        authorNickname: '파로킷테스터',
+        content: content,
+      );
+
+      final createdComment = await _repository.addComment(postId, newComment);
+      
+      // 낙관적 업데이트: 화면 맨 아래에 즉시 추가
+      _currentPostComments.add(createdComment);
+      
+      // 게시글의 총 댓글 수 로컬 증가
+      final postIndex = _posts.indexWhere((p) => p.id == postId);
+      if (postIndex != -1) {
+        final p = _posts[postIndex];
+        _posts[postIndex] = p.copyWith(commentCount: p.commentCount + 1);
+      }
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
       notifyListeners();
       return false;
     }

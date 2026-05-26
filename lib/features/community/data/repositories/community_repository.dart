@@ -1,6 +1,7 @@
 // lib/features/community/data/repositories/community_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:parrokit/data/models/post.dart';
+import 'package:parrokit/data/models/comment.dart';
 
 class CommunityRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -43,6 +44,54 @@ class CommunityRepository {
       }).toList();
     } catch (e) {
       throw Exception('게시글을 불러오는데 실패했습니다: $e');
+    }
+  }
+
+  // Fetch comments for a specific post
+  Future<List<Comment>> getComments(String postId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('comments')
+          .orderBy('createdAt', descending: false) // 오래된 댓글이 위로
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Comment.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw Exception('댓글을 불러오는데 실패했습니다: $e');
+    }
+  }
+
+  // Add a comment to a post
+  Future<Comment> addComment(String postId, Comment comment) async {
+    try {
+      final docRef = _firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('comments')
+          .doc();
+          
+      final newComment = comment.copyWith(
+        id: docRef.id,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      await docRef.set(newComment.toJson());
+      
+      // Update comment count on the post document
+      await _firestore.collection('posts').doc(postId).update({
+        'commentCount': FieldValue.increment(1),
+      });
+
+      return newComment;
+    } catch (e) {
+      throw Exception('댓글 등록에 실패했습니다: $e');
     }
   }
 }

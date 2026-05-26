@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/data/models/post.dart';
+import 'package:parrokit/data/models/comment.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
@@ -18,9 +19,16 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
   bool _scrapped = false;
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
-  final List<_CommentItem> _comments = [];
 
   bool get _canSubmitComment => _commentController.text.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CommunityProvider>().fetchComments(widget.postId);
+    });
+  }
 
   void _focusCommentInput() {
     FocusScope.of(context).requestFocus(_commentFocusNode);
@@ -29,6 +37,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       SystemChannels.textInput.invokeMethod<void>('TextInput.show');
     });
   }
+
   String _formatTimeAgo(DateTime? time) {
     if (time == null) return '';
     final diff = DateTime.now().difference(time);
@@ -38,22 +47,21 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     return '방금 전';
   }
 
-  void _submitComment() {
+  void _submitComment() async {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
 
-    setState(() {
-      _comments.insert(
-        0,
-        _CommentItem(
-          author: '나',
-          timeAgo: '방금 전',
-          content: text,
-        ),
-      );
-      _commentController.clear();
-    });
+    _commentController.clear();
     _commentFocusNode.unfocus();
+
+    final provider = context.read<CommunityProvider>();
+    final success = await provider.addComment(widget.postId, text);
+    
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage ?? '댓글 등록에 실패했습니다.')),
+      );
+    }
   }
 
   void _showCommentOptionsSheet() {
@@ -114,7 +122,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
               children: [
                 if (isMyPost)
                   _CommentSheetAction(
-                    label: '삭제하기',
+                    label: '삭제',
                     isDestructive: true,
                     onTap: () {
                       Navigator.pop(context);
@@ -125,7 +133,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                     },
                   ),
                 _CommentSheetAction(
-                  label: '신고하기',
+                  label: '신고',
                   onTap: () {
                     Navigator.pop(context);
                     // TODO: 게시글 신고 기능 구현
@@ -180,6 +188,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
         createdAt: DateTime.now(),
       ),
     );
+    final comments = provider.currentPostComments;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -361,7 +370,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(18, 18, 28, 0),
                       child: Text(
-                        '댓글 ${_comments.length}',
+                        '댓글 ${comments.length}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -369,7 +378,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                         ),
                       ),
                     ),
-                    if (_comments.isEmpty) ...[
+                    if (comments.isEmpty) ...[
                       const SizedBox(height: 130),
                       const Center(
                         child: Text(
@@ -415,7 +424,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       ),
                     ] else ...[
                       const SizedBox(height: 8),
-                      ..._comments.map(_buildCommentItem),
+                      ...comments.map((comment) => _buildCommentItem(comment)),
                     ],
                     const SizedBox(height: 280),
                   ],
@@ -500,7 +509,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     );
   }
 
-  Widget _buildCommentItem(_CommentItem comment) {
+  Widget _buildCommentItem(Comment comment) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
       child: Row(
@@ -510,7 +519,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
             radius: 22,
             backgroundColor: const Color(0xFFE5E5E5),
             child: Text(
-              comment.author.substring(0, 1),
+              comment.authorNickname.isNotEmpty ? comment.authorNickname.substring(0, 1) : '?',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -524,7 +533,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  comment.author,
+                  comment.authorNickname,
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
@@ -533,7 +542,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  comment.timeAgo,
+                  _formatTimeAgo(comment.createdAt),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -589,18 +598,6 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       ),
     );
   }
-}
-
-class _CommentItem {
-  final String author;
-  final String timeAgo;
-  final String content;
-
-  const _CommentItem({
-    required this.author,
-    required this.timeAgo,
-    required this.content,
-  });
 }
 
 class _CommentSheetAction extends StatelessWidget {
