@@ -18,7 +18,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
 
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _hasContent => _contentController.text.trim().isNotEmpty;
-  bool get _canComplete => _hasTitle && _hasContent;
+  bool get _canComplete => _hasTitle && _hasContent && _selectedBoardTopic != null;
 
   void _showBoardTopicSheet() {
     final blue600 = Colors.blue[600]!;
@@ -106,7 +106,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
     final success = await provider.addPost(
       _titleController.text.trim(),
       _contentController.text.trim(),
-      _selectedBoardTopic ?? '자유',
+      _selectedBoardTopic!, // _canComplete 검사를 통과했으므로 null이 아님 보장
       authorId: currentUser.id,
       authorNickname: currentUser.displayName ?? '알 수 없음',
     );
