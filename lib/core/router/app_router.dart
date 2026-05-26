@@ -15,10 +15,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 
-// Features - Screens
 import 'package:parrokit/features/auth/sign-in/sign_in_screen.dart';
 import 'package:parrokit/features/auth/sign-up/sign_up_screen.dart';
 import 'package:parrokit/features/auth/find-pw/find_pw_screen.dart';
+import 'package:parrokit/features/auth/onboarding/onboarding_screen.dart';
 import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/community/presentation/community_screen.dart';
 import 'package:parrokit/features/community/presentation/board/board_view_screen.dart';
@@ -136,6 +136,15 @@ GoRouter buildAppRouter({
       ),
 
       // ─────────────────────────────────────────────────────────────────
+      // Onboarding Route (소셜 로그인 후 닉네임 설정용)
+      // ─────────────────────────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.onboardingPath,
+        name: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+
+      // ─────────────────────────────────────────────────────────────────
       // ShellRoute (하단 네비바 + 자식 화면)
       // ─────────────────────────────────────────────────────────────────
       _shellRoute,
@@ -165,8 +174,20 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
     return '${AppRoutes.authPath}/${AppRoutes.signInPath}';
   }
 
-  if (user.isLoggedIn && isOnAuth) {
-    return AppRoutes.dashboardPath;
+  // 3) 닉네임 체크 방어막 (로그인 상태)
+  if (user.isLoggedIn) {
+    final hasNickname = user.currentUser?.displayName != null && user.currentUser!.displayName!.isNotEmpty;
+    final isOnOnboarding = loc == AppRoutes.onboardingPath;
+
+    // 닉네임이 없는데 온보딩 화면이 아니면 -> 강제로 온보딩 이동
+    if (!hasNickname && !isOnOnboarding) {
+      return AppRoutes.onboardingPath;
+    }
+    
+    // 닉네임이 있는데 온보딩 화면이나 Auth 화면에 있으면 -> 대시보드로
+    if (hasNickname && (isOnOnboarding || isOnAuth)) {
+      return AppRoutes.dashboardPath;
+    }
   }
 
   // Handle bare /auth redirect to /auth/sign-in

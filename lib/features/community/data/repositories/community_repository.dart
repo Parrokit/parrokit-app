@@ -6,6 +6,26 @@ import 'package:parrokit/data/models/comment.dart';
 class CommunityRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // 작성자 ID 목록을 받아서 최신 닉네임 Map을 반환하는 헬퍼 함수
+  Future<Map<String, String>> _getAuthorNicknames(Set<String> authorIds) async {
+    final Map<String, String> nicknames = {};
+    if (authorIds.isEmpty) return nicknames;
+
+    // Firestore 'whereIn' 쿼리는 한 번에 최대 10개까지만 가능하므로 분할 처리
+    final idsList = authorIds.toList();
+    for (var i = 0; i < idsList.length; i += 10) {
+      final chunk = idsList.sublist(i, i + 10 > idsList.length ? idsList.length : i + 10);
+      final snap = await _firestore.collection('users').where(FieldPath.documentId, whereIn: chunk).get();
+      for (var doc in snap.docs) {
+        final displayName = doc.data()['displayName'] as String?;
+        if (displayName != null && displayName.isNotEmpty) {
+          nicknames[doc.id] = displayName;
+        }
+      }
+    }
+    return nicknames;
+  }
+
   // Add a new post
   Future<Post> addPost(Post post) async {
     try {
@@ -36,10 +56,28 @@ class CommunityRepository {
       }
 
       final snapshot = await query.get();
-      return snapshot.docs.map((doc) {
+      final docs = snapshot.docs;
+
+      // 1) 모든 글의 작성자 ID 수집
+      final Set<String> authorIds = {};
+      for (var doc in docs) {
         final data = doc.data() as Map<String, dynamic>;
-        // 파이어베이스에서 바로 가져온 문서 ID를 주입하여 안전하게 변환
+        if (data['authorId'] != null) {
+          authorIds.add(data['authorId'] as String);
+        }
+      }
+
+      // 2) 최신 닉네임 일괄 조회
+      final nicknames = await _getAuthorNicknames(authorIds);
+
+      // 3) 각 게시글에 최신 닉네임 덮어씌우기
+      return docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
         data['id'] = doc.id;
+        final authorId = data['authorId'] as String?;
+        if (authorId != null && nicknames.containsKey(authorId)) {
+          data['authorNickname'] = nicknames[authorId];
+        }
         return Post.fromJson(data);
       }).toList();
     } catch (e) {
@@ -56,10 +94,29 @@ class CommunityRepository {
           .collection('comments')
           .orderBy('createdAt', descending: false) // 오래된 댓글이 위로
           .get();
+          
+      final docs = snapshot.docs;
 
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
+      // 1) 모든 댓글의 작성자 ID 수집
+      final Set<String> authorIds = {};
+      for (var doc in docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['authorId'] != null) {
+          authorIds.add(data['authorId'] as String);
+        }
+      }
+
+      // 2) 최신 닉네임 일괄 조회
+      final nicknames = await _getAuthorNicknames(authorIds);
+
+      // 3) 각 댓글에 최신 닉네임 덮어씌우기
+      return docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
         data['id'] = doc.id;
+        final authorId = data['authorId'] as String?;
+        if (authorId != null && nicknames.containsKey(authorId)) {
+          data['authorNickname'] = nicknames[authorId];
+        }
         return Comment.fromJson(data);
       }).toList();
     } catch (e) {

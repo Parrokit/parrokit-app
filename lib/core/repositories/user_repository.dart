@@ -450,17 +450,19 @@ class UserRepository {
     // 1. Firebase Auth 업데이트
     await _authService.updateDisplayName(displayName);
 
-    // 2. Firestore 업데이트
+    final current = await getCurrentUser() ?? _userPrefs.loadUser();
+
+    // 2. Firestore 업데이트 (닉네임 중복 레지스트리 반영)
     final user = _authService.currentUser;
     if (user != null) {
       await _firebaseUserService.updateUserDisplayName(
         uid: user.uid,
-        displayName: displayName,
+        newNickname: displayName,
+        oldNickname: current?.displayName,
       );
     }
 
     // 3. 로컬 캐시 업데이트
-    final current = await getCurrentUser() ?? _userPrefs.loadUser();
     if (current != null) {
       final updated = current.copyWith(
         displayName: displayName,
@@ -469,6 +471,11 @@ class UserRepository {
       );
       await _userPrefs.saveUser(updated);
     }
+  }
+
+  /// 닉네임 중복 여부를 확인합니다.
+  Future<bool> isNicknameAvailable(String nickname) async {
+    return _firebaseUserService.isNicknameAvailable(nickname);
   }
 
   /// 로그아웃/유저 초기화.

@@ -33,6 +33,7 @@ abstract class AppRoutes {
   static const signIn = 'sign_in';
   static const signUp = 'sign_up';
   static const findPw = 'find_pw';
+  static const onboarding = 'onboarding';
   static const payment = 'payment';
   static const paymentSuccess = 'payment_success';
   static const paymentFail = 'payment_fail';
@@ -72,6 +73,7 @@ abstract class AppRoutes {
   static const signInPath = 'sign-in';
   static const signUpPath = 'sign-up';
   static const findPwPath = 'find-pw';
+  static const onboardingPath = '/onboarding';
   static const paymentPath = '/payment';
   static const paymentSuccessPath = '/payment/success';
   static const paymentFailPath = '/payment/fail';

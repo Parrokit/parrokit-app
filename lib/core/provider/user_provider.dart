@@ -74,6 +74,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> signUpWithEmail({
     required String email,
     required String password,
+    String? nickname,
     bool sendEmailVerification = true,
   }) async {
     _setLoading(true);
@@ -83,8 +84,21 @@ class UserProvider extends ChangeNotifier {
         password: password,
         sendEmailVerification: sendEmailVerification,
       );
-      _currentUser = user;
-      unawaited(Purchases.logIn(user.id));
+      
+      // 회원가입 직후 닉네임 설정이 있다면 연달아 세팅
+      if (nickname != null && nickname.isNotEmpty) {
+        await _userRepository.updateDisplayName(nickname);
+      }
+      
+      // 최신 상태 다시 불러오기
+      final updatedUser = await _userRepository.getCurrentUser();
+      if (updatedUser != null) {
+        _currentUser = updatedUser;
+      } else {
+        _currentUser = user;
+      }
+      
+      unawaited(Purchases.logIn(_currentUser!.id));
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -251,6 +265,11 @@ class UserProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// 닉네임 중복 여부를 확인합니다.
+  Future<bool> isNicknameAvailable(String nickname) async {
+    return await _userRepository.isNicknameAvailable(nickname);
   }
 
   /// 회원탈퇴.
