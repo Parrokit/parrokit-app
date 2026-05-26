@@ -161,6 +161,55 @@ class CommunityRepository {
     }
   }
 
+  // Delete a comment
+  Future<void> deleteComment(String postId, String commentId) async {
+    try {
+      await _firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('comments')
+          .doc(commentId)
+          .delete();
+          
+      // Update comment count on the post document
+      await _firestore.collection('posts').doc(postId).update({
+        'commentCount': FieldValue.increment(-1),
+      });
+    } catch (e) {
+      throw Exception('댓글 삭제에 실패했습니다: $e');
+    }
+  }
+
+  // Toggle Comment Like
+  Future<void> toggleCommentLike(String postId, String commentId, String userId, bool isLiked) async {
+    try {
+      final commentRef = _firestore.collection('posts').doc(postId).collection('comments').doc(commentId);
+      final likeRef = _firestore.collection('users').doc(userId).collection('comment_likes').doc(commentId);
+
+      await _firestore.runTransaction((transaction) async {
+        if (isLiked) {
+          transaction.set(likeRef, {'createdAt': FieldValue.serverTimestamp()});
+          transaction.update(commentRef, {'likeCount': FieldValue.increment(1)});
+        } else {
+          transaction.delete(likeRef);
+          transaction.update(commentRef, {'likeCount': FieldValue.increment(-1)});
+        }
+      });
+    } catch (e) {
+      throw Exception('댓글 좋아요 처리에 실패했습니다: $e');
+    }
+  }
+
+  // Get liked comments for a user in a specific post (for UI state)
+  Future<Set<String>> getLikedCommentIds(String userId) async {
+    try {
+      final snap = await _firestore.collection('users').doc(userId).collection('comment_likes').get();
+      return snap.docs.map((doc) => doc.id).toSet();
+    } catch (e) {
+      return {};
+    }
+  }
+
   // Increment view count
   Future<void> incrementViewCount(String postId) async {
     try {

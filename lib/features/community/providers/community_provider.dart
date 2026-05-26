@@ -23,6 +23,17 @@ class CommunityProvider with ChangeNotifier {
   List<Comment> _currentPostComments = [];
   List<Comment> get currentPostComments => _currentPostComments;
 
+  Set<String> _likedCommentIds = {};
+  Set<String> get likedCommentIds => _likedCommentIds;
+
+  Comment? _replyingTo;
+  Comment? get replyingTo => _replyingTo;
+
+  void setReplyingTo(Comment? comment) {
+    _replyingTo = comment;
+    notifyListeners();
+  }
+
   bool _isCurrentPostLiked = false;
   bool get isCurrentPostLiked => _isCurrentPostLiked;
 
@@ -117,12 +128,21 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  // 특정 게시글의 댓글 목록 가져오기
-  Future<void> fetchComments(String postId) async {
+  // 특정 게시글의 댓글 목록 가져오기 (현재 로그인된 유저 ID도 받아와서 좋아요 상태 셋팅)
+  Future<void> fetchComments(String postId, {String? currentUserId}) async {
     _currentPostComments.clear();
+    _replyingTo = null; // 초기화
+    
     try {
       final comments = await _repository.getComments(postId);
       _currentPostComments.addAll(comments);
+
+      if (currentUserId != null) {
+        _likedCommentIds = await _repository.getLikedCommentIds(currentUserId);
+      } else {
+        _likedCommentIds.clear();
+      }
+
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
@@ -131,18 +151,28 @@ class CommunityProvider with ChangeNotifier {
   }
 
   // 댓글 추가하기
-  Future<bool> addComment(String postId, String content) async {
+  Future<bool> addComment(
+    String postId, 
+    String content, {
+    required String authorId,
+    required String authorNickname,
+  }) async {
     try {
       final newComment = Comment(
         id: '', // Repository에서 자동 생성
-        authorId: 'temp_user_id', // 임시 유저
-        authorNickname: '파로킷테스터',
+        authorId: authorId,
+        authorNickname: authorNickname,
         content: content,
+        parentId: _replyingTo?.parentId ?? _replyingTo?.id,
+        replyToNickname: _replyingTo != null ? _replyingTo!.authorNickname : null,
       );
 
       final createdComment = await _repository.addComment(postId, newComment);
       
-      // 낙관적 업데이트: 화면 맨 아래에 즉시 추가
+      // 대댓글 입력 상태 초기화
+      _replyingTo = null;
+
+      // 낙관적 업데이트: 화면 리스트에 추가 (대댓글이면 부모 바로 밑으로 가야하지만, 단순 추가 후 UI에서 정렬)
       _currentPostComments.add(createdComment);
       
       // 게시글의 총 댓글 수 로컬 증가
@@ -158,6 +188,67 @@ class CommunityProvider with ChangeNotifier {
       _errorMessage = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  // 댓글 삭제
+  Future<bool> deleteComment(String postId, String commentId) async {
+    try {
+      await _repository.deleteComment(postId, commentId);
+      
+      // 로컬 제거
+      _currentPostComments.removeWhere((c) => c.id == commentId);
+      
+      // 게시글 총 댓글 수 로컬 감소
+      final postIndex = _posts.indexWhere((p) => p.id == postId);
+      if (postIndex != -1) {
+        final p = _posts[postIndex];
+        _posts[postIndex] = p.copyWith(commentCount: (p.commentCount > 0 ? p.commentCount - 1 : 0));
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 댓글 좋아요 토글
+  Future<void> toggleCommentLike(String postId, String commentId, String userId) async {
+    final isLiked = _likedCommentIds.contains(commentId);
+    final targetState = !isLiked;
+
+    // 낙관적 업데이트 (UI 먼저 즉각 반영)
+    if (targetState) {
+      _likedCommentIds.add(commentId);
+    } else {
+      _likedCommentIds.remove(commentId);
+    }
+    
+    final commentIndex = _currentPostComments.indexWhere((c) => c.id == commentId);
+    if (commentIndex != -1) {
+      final c = _currentPostComments[commentIndex];
+      _currentPostComments[commentIndex] = c.copyWith(likeCount: c.likeCount + (targetState ? 1 : -1));
+    }
+    notifyListeners();
+
+    try {
+      await _repository.toggleCommentLike(postId, commentId, userId, targetState);
+    } catch (e) {
+      // 롤백
+      if (!targetState) {
+        _likedCommentIds.add(commentId);
+      } else {
+        _likedCommentIds.remove(commentId);
+      }
+      if (commentIndex != -1) {
+        final c = _currentPostComments[commentIndex];
+        _currentPostComments[commentIndex] = c.copyWith(likeCount: c.likeCount + (!targetState ? 1 : -1));
+      }
+      _errorMessage = e.toString();
+      notifyListeners();
     }
   }
 
