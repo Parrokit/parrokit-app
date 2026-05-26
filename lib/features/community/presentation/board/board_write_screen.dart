@@ -114,6 +114,39 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
       return;
     }
 
+    // 다이얼로그 텍스트와 퍼센티지를 업데이트하기 위한 변수 및 함수
+    String statusText = _selectedImages.isEmpty 
+        ? '게시글을 등록하는 중입니다...' 
+        : '사진 업로드 준비 중...';
+    double? currentProgress;
+    StateSetter? dialogSetState;
+
+    // 사진 업로드 대기 시간 동안 화면 멈춤(렉) 현상 방지를 위해 강제 로딩 다이얼로그 띄우기
+    showDialog(
+      context: context,
+      barrierDismissible: false, // 바깥 영역 터치해도 안 닫히게 막기
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          dialogSetState = setState;
+          return PopScope(
+            canPop: false, // 안드로이드 뒤로가기 버튼으로도 안 닫히게 막기
+            child: AlertDialog(
+              content: Row(
+                children: [
+                  if (currentProgress == null)
+                    const CircularProgressIndicator()
+                  else
+                    CircularProgressIndicator(value: currentProgress),
+                  const SizedBox(width: 24),
+                  Expanded(child: Text(statusText)),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
     final provider = context.read<CommunityProvider>();
     final success = await provider.addPost(
       _titleController.text.trim(),
@@ -123,9 +156,24 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
       authorNickname: currentUser.displayName ?? '알 수 없음',
       tags: _tags,
       imageFiles: _selectedImages.map((x) => File(x.path)).toList(),
+      onImageProgress: (current, total, progress) {
+        if (dialogSetState != null) {
+          dialogSetState!((){
+            statusText = '사진 업로드 중... ($current/$total)\n${(progress * 100).toInt()}% 완료';
+            currentProgress = progress;
+          });
+        }
+      },
     );
+
+    // 1. 등록 처리가 끝났으므로 로딩 다이얼로그 먼저 닫기
+    if (mounted) {
+      Navigator.pop(context);
+    }
+
+    // 2. 결과 처리
     if (success && mounted) {
-      Navigator.maybePop(context);
+      Navigator.maybePop(context); // 글쓰기 화면 닫고 메인으로 돌아가기
     } else if (mounted && provider.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(provider.errorMessage!)),
