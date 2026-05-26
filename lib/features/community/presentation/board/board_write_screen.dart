@@ -428,7 +428,11 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                         }
                       });
                     },
-                    child: const _BottomTool(icon: Icons.tag_rounded, label: '태그'),
+                    child: _BottomTool(
+                      icon: Icons.tag_rounded,
+                      label: '태그',
+                      isActive: _isTagInputActive,
+                    ),
                   ),
                 ],
               ),
@@ -497,25 +501,28 @@ class _TipBullet extends StatelessWidget {
 class _BottomTool extends StatelessWidget {
   final IconData icon;
   final String label;
+  final bool isActive;
 
   const _BottomTool({
     required this.icon,
     required this.label,
+    this.isActive = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = isActive ? const Color(0xFF2F67BF) : const Color(0xFF9EA4AF);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 28, color: const Color(0xFF9EA4AF)),
+        Icon(icon, size: 28, color: color),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF9EA4AF),
+            color: color,
           ),
         ),
       ],
