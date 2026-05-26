@@ -37,10 +37,18 @@ class CommunityRepository {
     }
   }
 
+  // 빈 문서 ID 미리 발급받기 (스토리지 폴더명 등에 활용)
+  String generatePostId() {
+    return _firestore.collection('posts').doc().id;
+  }
+
   // Add a new post
   Future<Post> addPost(Post post) async {
     try {
-      final docRef = _firestore.collection('posts').doc();
+      final docRef = post.id.isEmpty 
+          ? _firestore.collection('posts').doc()
+          : _firestore.collection('posts').doc(post.id);
+          
       final newPost = post.copyWith(
         id: docRef.id,
         createdAt: DateTime.now(),

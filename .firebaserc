@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "parrokit-45126"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

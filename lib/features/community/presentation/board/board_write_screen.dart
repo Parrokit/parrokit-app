@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:parrokit/features/community/domain/data/community_filters.dart';
 
 class BoardWriteScreen extends StatefulWidget {
@@ -17,13 +19,17 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
   final TextEditingController _tagController = TextEditingController();
   final FocusNode _tagFocusNode = FocusNode();
   String? _selectedBoardTopic;
-  
+
   List<String> _tags = [];
   bool _isTagInputActive = false;
+  bool _isImageUploading = false;
+  final ImagePicker _picker = ImagePicker();
+  List<XFile> _selectedImages = [];
 
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _hasContent => _contentController.text.trim().isNotEmpty;
-  bool get _canComplete => _hasTitle && _hasContent && _selectedBoardTopic != null;
+  bool get _canComplete =>
+      _hasTitle && _hasContent && _selectedBoardTopic != null;
 
   void _showBoardTopicSheet() {
     final blue600 = Colors.blue[600]!;
@@ -57,7 +63,9 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: CommunityFilters.board.where((t) => t != '전체').map((topic) {
+                  children: CommunityFilters.board
+                      .where((t) => t != '전체')
+                      .map((topic) {
                     final selected = topic == _selectedBoardTopic;
                     return ChoiceChip(
                       label: Text(topic),
@@ -76,14 +84,13 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                             selected ? Colors.white : const Color(0xFF4A4F57),
                       ),
                       side: BorderSide(
-                          width: 1,
-                          color: selected
-                              ? blue600
-                              : const Color.fromARGB(255, 255, 255, 255),
-                        ),
+                        width: 1,
+                        color: selected
+                            ? blue600
+                            : const Color.fromARGB(255, 255, 255, 255),
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(50),
-
                       ),
                     );
                   }).toList(),
@@ -115,6 +122,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
       authorId: currentUser.id,
       authorNickname: currentUser.displayName ?? '알 수 없음',
       tags: _tags,
+      imageFiles: _selectedImages.map((x) => File(x.path)).toList(),
     );
     if (success && mounted) {
       Navigator.maybePop(context);
@@ -145,301 +153,419 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
     final contentFieldHeight =
         _hasContent ? contentBaseHeight + tipAreaHeight : contentBaseHeight;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 18, 18, 10),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.maybePop(context),
-                    icon:
-                        const Icon(Icons.close, size: 34, color: Colors.black),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.white,
+          resizeToAvoidBottomInset: true,
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 18, 18, 10),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.maybePop(context),
+                        icon: const Icon(Icons.close,
+                            size: 34, color: Colors.black),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: _canComplete ? _submitPost : null,
+                        child: context.watch<CommunityProvider>().isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Text(
+                                '완료',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: _canComplete
+                                      ? const Color(0xFF2F67BF)
+                                      : const Color(0xFFD3D6DB),
+                                ),
+                              ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _canComplete ? _submitPost : null,
-                    child: context.watch<CommunityProvider>().isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(
-                            '완료',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: _canComplete
-                                  ? const Color(0xFF2F67BF)
-                                  : const Color(0xFFD3D6DB),
+                ),
+                const Divider(height: 1, thickness: 1, color: lineColor),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InkWell(
+                          onTap: _showBoardTopicSheet,
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
+                            child: Row(
+                              children: [
+                                Text(
+                                  _selectedBoardTopic ?? '주제를 선택해주세요.',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF202225),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Icon(Icons.keyboard_arrow_down_rounded,
+                                    size: 32),
+                              ],
                             ),
                           ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1, thickness: 1, color: lineColor),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    InkWell(
-                      onTap: _showBoardTopicSheet,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        child: Row(
-                          children: [
-                            Text(
-                              _selectedBoardTopic ?? '주제를 선택해주세요.',
-                              style: TextStyle(
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Divider(
+                              height: 1, thickness: 1, color: lineColor),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 20, 32, 0),
+                          child: TextField(
+                            controller: _titleController,
+                            onChanged: (_) => setState(() {}),
+                            decoration: const InputDecoration(
+                              hintText: '제목을 입력하세요.',
+                              hintStyle: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: mutedText,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF202225),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 18, 32, 0),
+                          child: SizedBox(
+                            height: contentFieldHeight,
+                            child: TextField(
+                              controller: _contentController,
+                              onChanged: (_) => setState(() {}),
+                              minLines: null,
+                              maxLines: null,
+                              expands: true,
+                              textAlignVertical: TextAlignVertical.top,
+                              decoration: const InputDecoration(
+                                hintText:
+                                    '쉐도잉에 도움 된 표현, 자막 활용 팁, 학습 루틴을 자유롭게 나눠보세요.\n#자막 #쉐도잉 #발음 #미드추천',
+                                hintStyle: TextStyle(
+                                  fontSize: 16,
+                                  height: 1.6,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFFB8BEC9),
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              style: const TextStyle(
                                 fontSize: 18,
+                                height: 1.6,
                                 fontWeight: FontWeight.w500,
                                 color: Color(0xFF202225),
                               ),
                             ),
-                            SizedBox(width: 8),
-                            Icon(Icons.keyboard_arrow_down_rounded, size: 32),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Divider(height: 1, thickness: 1, color: lineColor),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 32, 0),
-                      child: TextField(
-                        controller: _titleController,
-                        onChanged: (_) => setState(() {}),
-                        decoration: const InputDecoration(
-                          hintText: '제목을 입력하세요.',
-                          hintStyle: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: mutedText,
                           ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
                         ),
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF202225),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 18, 32, 0),
-                      child: SizedBox(
-                        height: contentFieldHeight,
-                        child: TextField(
-                          controller: _contentController,
-                          onChanged: (_) => setState(() {}),
-                          minLines: null,
-                          maxLines: null,
-                          expands: true,
-                          textAlignVertical: TextAlignVertical.top,
-                          decoration: const InputDecoration(
-                            hintText:
-                                '쉐도잉에 도움 된 표현, 자막 활용 팁, 학습 루틴을 자유롭게 나눠보세요.\n#자막 #쉐도잉 #발음 #미드추천',
-                            hintStyle: TextStyle(
-                              fontSize: 16,
-                              height: 1.6,
-                              fontWeight: FontWeight.w500,
-                              color: mutedText,
+                        if (!_hasContent) ...[
+                          const SizedBox(height: 20),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: const [
+                                _TipBadge(),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '쉐도잉 학습과 영상 자막 활용 경험을 나눠보세요',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: tipBlue,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
                           ),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            height: 1.6,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF202225),
+                          const SizedBox(height: 14),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
+                            decoration: BoxDecoration(
+                              color: panelBg,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _TipBullet(
+                                  text: '영상 자막 자동 생성, 쉐도잉 팁, 학습 루틴을 자유롭게 공유해요.',
+                                ),
+                                SizedBox(height: 14),
+                                _TipBullet(
+                                  text:
+                                      '외국어 표현, 추천 콘텐츠, 발음 연습 경험처럼 학습에 도움이 되는 이야기를 나눠요.',
+                                ),
+                                SizedBox(height: 14),
+                                _TipBullet(
+                                  text:
+                                      '저작권을 침해하거나 학습 커뮤니티 성격에 맞지 않는 글은 제한될 수 있어요.',
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                // 등록된 태그 칩들을 보여주는 횡스크롤 영역
+                if (_tags.isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _tags
+                            .map((tag) => Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: InputChip(
+                                    label: Text('#$tag'),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _tags.remove(tag);
+                                      });
+                                    },
+                                    backgroundColor: const Color(0xFFEAF2FF),
+                                    deleteIconColor: const Color(0xFF2F67BF),
+                                    labelStyle: const TextStyle(
+                                      color: Color(0xFF2F67BF),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      side: const BorderSide(
+                                          color: Colors.transparent),
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
                       ),
                     ),
-                    if (!_hasContent) ...[
-                      const SizedBox(height: 20),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: const [
-                            _TipBadge(),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                '쉐도잉 학습과 영상 자막 활용 경험을 나눠보세요',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: tipBlue,
+                  ),
+
+                // 태그 입력창 (활성화 시에만 보임)
+                if (_isTagInputActive)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF9F9F9),
+                      border: Border(top: BorderSide(color: lineColor)),
+                    ),
+                    child: TextField(
+                      controller: _tagController,
+                      focusNode: _tagFocusNode,
+                      decoration: InputDecoration(
+                        hintText: '태그를 입력하고 엔터를 누르세요',
+                        hintStyle: const TextStyle(
+                            color: Color(0xFF9EA4AF), fontSize: 15),
+                        border: InputBorder.none,
+                        isDense: true,
+                        suffixText: '${_tags.length}/20',
+                        suffixStyle: const TextStyle(
+                            color: Color(0xFF9EA4AF),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (val) {
+                        final text = val.trim();
+                        if (text.isNotEmpty && !_tags.contains(text)) {
+                          if (text.length > 10) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('태그는 10글자 이하로 입력해주세요.')),
+                            );
+                            return;
+                          }
+                          if (_tags.length >= 20) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('태그는 최대 20개까지만 등록할 수 있습니다.')),
+                            );
+                            return;
+                          }
+
+                          setState(() {
+                            _tags.add(text);
+                          });
+                          _tagController.clear();
+                          _tagFocusNode.requestFocus(); // 계속 입력할 수 있도록 포커스 유지
+                        }
+                      },
+                    ),
+                  ),
+                if (_selectedImages.isNotEmpty)
+                  Container(
+                    height: 100, // 잘림 방지를 위해 높이 증가
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    margin: const EdgeInsets.only(top: 16, bottom: 16),
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none, // 스크롤 시 잘림 방지
+                      itemCount: _selectedImages.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(width: 6), // 우측 패딩을 고려하여 간격 축소
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 10, right: 10),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  File(_selectedImages[index].path),
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                              Positioned(
+                                top: -8,
+                                right: -8,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedImages.removeAt(index);
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                Container(
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: lineColor)),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(28, 16, 28, 18),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                                final int remainingSlot = 5 - _selectedImages.length;
+                                if (remainingSlot <= 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('사진은 최대 5장까지만 첨부할 수 있습니다.')),
+                                  );
+                                  return;
+                                }
+
+                                List<XFile>? images;
+                                try {
+                                  images = await _picker.pickMultiImage(
+                                    limit: remainingSlot, // 갤러리 자체에서 선택 개수 제한
+                                    requestFullMetadata:
+                                        false, // 아이클라우드 및 메타데이터 로드 실패 버그 우회용
+                                  );
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              '지원하지 않는 형식이거나 깨진 이미지입니다. 다른 사진을 골라주세요.')),
+                                    );
+                                  }
+                                  return;
+                                }
+                                if (images == null || images.isEmpty) return;
+
+                                setState(() {
+                                  _selectedImages.addAll(images!);
+                                });
+                              },
+                        child: _BottomTool(
+                            icon: Icons.image_outlined,
+                            label: '사진 (${_selectedImages.length}/5)'),
                       ),
-                      const SizedBox(height: 14),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
-                        decoration: BoxDecoration(
-                          color: panelBg,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _TipBullet(
-                              text: '영상 자막 자동 생성, 쉐도잉 팁, 학습 루틴을 자유롭게 공유해요.',
-                            ),
-                            SizedBox(height: 14),
-                            _TipBullet(
-                              text:
-                                  '외국어 표현, 추천 콘텐츠, 발음 연습 경험처럼 학습에 도움이 되는 이야기를 나눠요.',
-                            ),
-                            SizedBox(height: 14),
-                            _TipBullet(
-                              text:
-                                  '저작권을 침해하거나 학습 커뮤니티 성격에 맞지 않는 글은 제한될 수 있어요.',
-                            ),
-                          ],
+                      const SizedBox(width: 28),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isTagInputActive = !_isTagInputActive;
+                            if (_isTagInputActive) {
+                              _tagFocusNode.requestFocus();
+                            }
+                          });
+                        },
+                        child: _BottomTool(
+                          icon: Icons.tag_rounded,
+                          label: '태그',
+                          isActive: _isTagInputActive,
                         ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            // 등록된 태그 칩들을 보여주는 횡스크롤 영역
-            if (_tags.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _tags.map((tag) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: InputChip(
-                        label: Text('#$tag'),
-                        onDeleted: () {
-                          setState(() {
-                            _tags.remove(tag);
-                          });
-                        },
-                        backgroundColor: const Color(0xFFEAF2FF),
-                        deleteIconColor: const Color(0xFF2F67BF),
-                        labelStyle: const TextStyle(
-                          color: Color(0xFF2F67BF),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          side: const BorderSide(color: Colors.transparent),
-                        ),
-                      ),
-                    )).toList(),
-                  ),
-                ),
-              ),
-              
-            // 태그 입력창 (활성화 시에만 보임)
-            if (_isTagInputActive)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF9F9F9),
-                  border: Border(top: BorderSide(color: lineColor)),
-                ),
-                child: TextField(
-                  controller: _tagController,
-                  focusNode: _tagFocusNode,
-                  decoration: InputDecoration(
-                    hintText: '태그를 입력하고 엔터를 누르세요',
-                    hintStyle: const TextStyle(color: Color(0xFF9EA4AF), fontSize: 15),
-                    border: InputBorder.none,
-                    isDense: true,
-                    suffixText: '${_tags.length}/20',
-                    suffixStyle: const TextStyle(color: Color(0xFF9EA4AF), fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (val) {
-                    final text = val.trim();
-                    if (text.isNotEmpty && !_tags.contains(text)) {
-                      if (text.length > 10) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('태그는 10글자 이하로 입력해주세요.')),
-                        );
-                        return;
-                      }
-                      if (_tags.length >= 20) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('태그는 최대 20개까지만 등록할 수 있습니다.')),
-                        );
-                        return;
-                      }
-                      
-                      setState(() {
-                        _tags.add(text);
-                      });
-                      _tagController.clear();
-                      _tagFocusNode.requestFocus(); // 계속 입력할 수 있도록 포커스 유지
-                    }
-                  },
-                ),
-              ),
-              
-            Container(
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: lineColor)),
-              ),
-              padding: const EdgeInsets.fromLTRB(28, 16, 28, 18),
-              child: Row(
-                children: [
-                  const _BottomTool(icon: Icons.image_outlined, label: '사진'),
-                  const SizedBox(width: 28),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isTagInputActive = !_isTagInputActive;
-                        if (_isTagInputActive) {
-                          _tagFocusNode.requestFocus();
-                        }
-                      });
-                    },
-                    child: _BottomTool(
-                      icon: Icons.tag_rounded,
-                      label: '태그',
-                      isActive: _isTagInputActive,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        if (_isImageUploading)
+          Container(
+            color: Colors.black.withOpacity(0.5),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+      ],
     );
   }
 }

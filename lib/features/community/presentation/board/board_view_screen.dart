@@ -6,6 +6,7 @@ import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
@@ -454,13 +455,34 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        post.content,
-                        style: const TextStyle(
-                          fontSize: 20 / 1.2,
-                          fontWeight: FontWeight.w500,
-                          height: 1.6,
+                      child: MarkdownBody(
+                        data: post.content,
+                        styleSheet: MarkdownStyleSheet(
+                          p: const TextStyle(
+                            fontSize: 20 / 1.2,
+                            fontWeight: FontWeight.w500,
+                            height: 1.6,
+                            color: Colors.black,
+                          ),
                         ),
+                        imageBuilder: (uri, title, alt) {
+                          final urlString = uri.toString();
+                          String finalUrl = urlString;
+                          if (urlString.startsWith('img_')) {
+                            final indexStr = urlString.replaceFirst('img_', '');
+                            final index = int.tryParse(indexStr);
+                            if (index != null && index >= 0 && post.imageUrls.length > index) {
+                              finalUrl = post.imageUrls[index];
+                            }
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(finalUrl),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 44),

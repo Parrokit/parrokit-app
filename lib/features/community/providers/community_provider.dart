@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/features/community/data/repositories/community_repository.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class CommunityProvider with ChangeNotifier {
   final CommunityRepository _repository = CommunityRepository();
@@ -88,19 +90,36 @@ class CommunityProvider with ChangeNotifier {
     required String authorId,
     required String authorNickname,
     List<String> tags = const [],
+    List<File> imageFiles = const [],
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      final String postId = _repository.generatePostId();
+
+      List<String> uploadedUrls = [];
+      for (final file in imageFiles) {
+        final url = await uploadImageToStorage(
+          file, 
+          userId: authorId, 
+          postId: postId
+        );
+        if (url != null) {
+          uploadedUrls.add(url);
+        }
+      }
+
       final newPost = Post(
-        id: '', // Repository에서 생성됨
+        id: postId, // 발급받은 ID 사용
         postType: 'board',
         category: category,
         title: title,
         content: content,
         tags: tags,
+        hasImage: uploadedUrls.isNotEmpty,
+        imageUrls: uploadedUrls,
         authorId: authorId,
         authorNickname: authorNickname,
         snippet: content.length > 50 ? '${content.substring(0, 50)}...' : content,
@@ -141,6 +160,34 @@ class CommunityProvider with ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
+      return false;
+    }
+  }
+
+  // 이미지 업로드 로직 (폴더 구조화)
+  Future<String?> uploadImageToStorage(File imageFile, {required String userId, required String postId}) async {
+    try {
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final String path = 'users/$userId/posts/$postId/$fileName';
+      final Reference ref = FirebaseStorage.instance.ref().child(path);
+      final UploadTask uploadTask = ref.putFile(imageFile);
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      debugPrint('Error uploading image: $e');
+      return null;
+    }
+  }
+
+  // 이미지 삭제 로직
+  Future<bool> deleteImageFromStorage(String imageUrl) async {
+    try {
+      final Reference ref = FirebaseStorage.instance.refFromURL(imageUrl);
+      await ref.delete();
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting image: $e');
       return false;
     }
   }

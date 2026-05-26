@@ -106,6 +106,8 @@ dependencies:
   cloud_functions: ^6.2.0
   flutter_naver_login: ^2.1.1
   sign_in_with_apple: ^7.0.1
+  firebase_storage: ^13.4.1
+  flutter_markdown: ^0.7.7+1
 
 # -----------------------------------------------------------
 # Dependency Overrides
