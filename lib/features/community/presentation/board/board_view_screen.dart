@@ -5,6 +5,7 @@ import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
@@ -106,8 +107,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
   }
 
   void _showPostOptionsSheet(Post post) {
-    // 임시 로그인 구현 (현재 작성 시 temp_user_id를 사용함)
-    final isMyPost = post.authorId == 'temp_user_id';
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyPost = currentUser != null && post.authorId == currentUser.id;
 
     showModalBottomSheet<void>(
       context: context,
