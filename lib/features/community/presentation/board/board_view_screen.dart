@@ -455,36 +455,65 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: MarkdownBody(
-                        data: post.content,
-                        styleSheet: MarkdownStyleSheet(
-                          p: const TextStyle(
-                            fontSize: 20 / 1.2,
-                            fontWeight: FontWeight.w500,
-                            height: 1.6,
-                            color: Colors.black,
-                          ),
+                      child: Text(
+                        // 과거 마크다운 이미지 태그가 남아있다면 깔끔하게 제거
+                        post.content.replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '').trim(),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          height: 1.6,
+                          color: Colors.black87,
                         ),
-                        imageBuilder: (uri, title, alt) {
-                          final urlString = uri.toString();
-                          String finalUrl = urlString;
-                          if (urlString.startsWith('img_')) {
-                            final indexStr = urlString.replaceFirst('img_', '');
-                            final index = int.tryParse(indexStr);
-                            if (index != null && index >= 0 && post.imageUrls.length > index) {
-                              finalUrl = post.imageUrls[index];
-                            }
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(finalUrl),
-                            ),
-                          );
-                        },
                       ),
                     ),
+                    if (post.hasImage && post.imageUrls.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        height: 240,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          scrollDirection: Axis.horizontal,
+                          itemCount: post.imageUrls.length,
+                          separatorBuilder: (context, index) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: Image.network(
+                                  post.imageUrls[index],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                                      ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                    if (post.tags.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.start,
+                          children: post.tags.map((tag) => Text(
+                            '#$tag',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF8F96A3),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 44),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -509,25 +538,6 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                         ),
                       ],
                     ),
-                    if (post.tags.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.start,
-                          children: post.tags.map((tag) => Text(
-                            '#$tag',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF8F96A3),
-                            ),
-                          )).toList(),
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 40),
                     const Divider(
                         height: 1,
