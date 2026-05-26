@@ -1,6 +1,7 @@
 // lib/features/community/providers/community_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/features/community/data/repositories/community_repository.dart';
@@ -21,6 +22,12 @@ class CommunityProvider with ChangeNotifier {
 
   List<Comment> _currentPostComments = [];
   List<Comment> get currentPostComments => _currentPostComments;
+
+  bool _isCurrentPostLiked = false;
+  bool get isCurrentPostLiked => _isCurrentPostLiked;
+
+  bool _isCurrentPostScrapped = false;
+  bool get isCurrentPostScrapped => _isCurrentPostScrapped;
 
   // 게시글 목록 가져오기
   Future<void> fetchPosts({bool refresh = false}) async {
@@ -124,6 +131,112 @@ class CommunityProvider with ChangeNotifier {
       _errorMessage = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  // 뷰 화면 진입 시 사용자 액션(좋아요, 스크랩 여부) 로드
+  Future<void> loadUserActions(String postId) async {
+    _isCurrentPostLiked = false;
+    _isCurrentPostScrapped = false;
+    // UI 초기화를 위해 먼저 리스너 호출
+    notifyListeners();
+    
+    try {
+      final actions = await _repository.getUserPostActions(postId, 'temp_user_id');
+      _isCurrentPostLiked = actions['isLiked'] ?? false;
+      _isCurrentPostScrapped = actions['isScrapped'] ?? false;
+      notifyListeners();
+    } catch (e) {
+      // 조용히 넘어감
+    }
+  }
+
+  // 조회수 증가 로직 (24시간 로컬 캐싱)
+  Future<void> incrementViewCount(String postId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'viewed_$postId';
+      final lastViewedStr = prefs.getString(key);
+      
+      bool shouldIncrement = false;
+      
+      if (lastViewedStr == null) {
+        shouldIncrement = true;
+      } else {
+        final lastViewed = DateTime.parse(lastViewedStr);
+        if (DateTime.now().difference(lastViewed).inHours >= 24) {
+          shouldIncrement = true;
+        }
+      }
+      
+      if (shouldIncrement) {
+        await _repository.incrementViewCount(postId);
+        await prefs.setString(key, DateTime.now().toIso8601String());
+        
+        // 로컬 상태 즉시 업데이트
+        final postIndex = _posts.indexWhere((p) => p.id == postId);
+        if (postIndex != -1) {
+          final p = _posts[postIndex];
+          _posts[postIndex] = p.copyWith(viewCount: p.viewCount + 1);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      // 조회수 증가는 에러가 나도 조용히 넘어감
+    }
+  }
+
+  // 좋아요 토글 (낙관적 업데이트 적용)
+  Future<void> toggleLike(String postId) async {
+    final originalState = _isCurrentPostLiked;
+    _isCurrentPostLiked = !_isCurrentPostLiked;
+    
+    // 로컬 상태 즉시 업데이트
+    final postIndex = _posts.indexWhere((p) => p.id == postId);
+    if (postIndex != -1) {
+      final p = _posts[postIndex];
+      _posts[postIndex] = p.copyWith(likeCount: p.likeCount + (_isCurrentPostLiked ? 1 : -1));
+    }
+    notifyListeners();
+    
+    try {
+      await _repository.toggleLike(postId, 'temp_user_id', _isCurrentPostLiked);
+    } catch (e) {
+      // 실패 시 롤백
+      _isCurrentPostLiked = originalState;
+      if (postIndex != -1) {
+        final p = _posts[postIndex];
+        _posts[postIndex] = p.copyWith(likeCount: p.likeCount + (_isCurrentPostLiked ? 1 : -1));
+      }
+      _errorMessage = '추천 처리에 실패했습니다.';
+      notifyListeners();
+    }
+  }
+
+  // 스크랩 토글 (낙관적 업데이트 적용)
+  Future<void> toggleScrap(String postId) async {
+    final originalState = _isCurrentPostScrapped;
+    _isCurrentPostScrapped = !_isCurrentPostScrapped;
+    
+    // 로컬 상태 즉시 업데이트
+    final postIndex = _posts.indexWhere((p) => p.id == postId);
+    if (postIndex != -1) {
+      final p = _posts[postIndex];
+      _posts[postIndex] = p.copyWith(scrapCount: p.scrapCount + (_isCurrentPostScrapped ? 1 : -1));
+    }
+    notifyListeners();
+    
+    try {
+      await _repository.toggleScrap(postId, 'temp_user_id', _isCurrentPostScrapped);
+    } catch (e) {
+      // 실패 시 롤백
+      _isCurrentPostScrapped = originalState;
+      if (postIndex != -1) {
+        final p = _posts[postIndex];
+        _posts[postIndex] = p.copyWith(scrapCount: p.scrapCount + (_isCurrentPostScrapped ? 1 : -1));
+      }
+      _errorMessage = '스크랩 처리에 실패했습니다.';
+      notifyListeners();
     }
   }
 }

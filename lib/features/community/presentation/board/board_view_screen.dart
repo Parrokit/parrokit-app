@@ -15,8 +15,6 @@ class BoardViewScreen extends StatefulWidget {
 }
 
 class _BoardViewScreenState extends State<BoardViewScreen> {
-  bool _liked = false;
-  bool _scrapped = false;
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
 
@@ -26,7 +24,10 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommunityProvider>().fetchComments(widget.postId);
+      final provider = context.read<CommunityProvider>();
+      provider.fetchComments(widget.postId);
+      provider.loadUserActions(widget.postId);
+      provider.incrementViewCount(widget.postId);
     });
   }
 
@@ -169,11 +170,13 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     const scrapAccent = Color(0xFFC9AE58); // 부드러운 노랑 느낌
     final sendAccent = Colors.blue[600]!;
 
+    final provider = context.watch<CommunityProvider>();
+    final _liked = provider.isCurrentPostLiked;
+    final _scrapped = provider.isCurrentPostScrapped;
+
     final likeMetaColor = _liked ? likeAccent : const Color(0xFF9F9F9F);
     final likeIconColor = _liked ? likeAccent : const Color(0xFFB2B2B2);
-    final likeCount = _liked ? 19 : 18;
-
-    final provider = context.watch<CommunityProvider>();
+    
     final post = provider.posts.firstWhere(
       (p) => p.id == widget.postId,
       orElse: () => Post(
@@ -268,7 +271,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                               color: likeIconColor, size: 24),
                           const SizedBox(width: 6),
                           Text(
-                            '$likeCount',
+                            '${post.likeCount}',
                             style: TextStyle(
                                 color: likeMetaColor,
                                 fontSize: 30 / 2,
@@ -348,7 +351,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           label: '공감',
                           selected: _liked,
                           accentColor: likeAccent,
-                          onTap: () => setState(() => _liked = !_liked),
+                          onTap: () => provider.toggleLike(widget.postId),
                         ),
                         const SizedBox(width: 26),
                         _ActionTile(
@@ -358,7 +361,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           label: '스크랩',
                           selected: _scrapped,
                           accentColor: scrapAccent,
-                          onTap: () => setState(() => _scrapped = !_scrapped),
+                          onTap: () => provider.toggleScrap(widget.postId),
                         ),
                       ],
                     ),
