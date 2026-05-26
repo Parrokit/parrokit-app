@@ -22,15 +22,28 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
   bool get _canSubmitComment => _commentController.text.trim().isNotEmpty;
 
+  bool _isFetchingDetails = true;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final user = context.read<UserProvider>().currentUser;
       final provider = context.read<CommunityProvider>();
-      provider.fetchComments(widget.postId, currentUserId: user?.id);
-      provider.loadUserActions(widget.postId);
+      
+      await Future.wait([
+        provider.fetchPostDetails(widget.postId),
+        provider.fetchComments(widget.postId, currentUserId: user?.id),
+        provider.loadUserActions(widget.postId),
+      ]);
+      
       provider.incrementViewCount(widget.postId);
+      
+      if (mounted) {
+        setState(() {
+          _isFetchingDetails = false;
+        });
+      }
     });
   }
 
@@ -292,6 +305,15 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       ),
     );
     final comments = provider.currentPostComments;
+
+    if (_isFetchingDetails) {
+      return Scaffold(
+        backgroundColor: backgroundColor,
+        body: const Center(
+          child: CircularProgressIndicator(color: likeAccent),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: backgroundColor,

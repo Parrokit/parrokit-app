@@ -65,6 +65,21 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
+  // 단일 게시글 1개 로드 (딥링크 등으로 접근했거나 강제 로드 시)
+  Future<void> fetchPostDetails(String postId) async {
+    if (_posts.any((p) => p.id == postId)) return;
+    
+    try {
+      final post = await _repository.getPostById(postId);
+      if (post != null) {
+        _posts = List.from(_posts)..add(post);
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+  }
+
   // 게시글 추가하기
   Future<bool> addPost(
     String title,
@@ -172,8 +187,8 @@ class CommunityProvider with ChangeNotifier {
       // 대댓글 입력 상태 초기화
       _replyingTo = null;
 
-      // 낙관적 업데이트: 화면 리스트에 추가 (대댓글이면 부모 바로 밑으로 가야하지만, 단순 추가 후 UI에서 정렬)
-      _currentPostComments.add(createdComment);
+      // 낙관적 업데이트: 화면 리스트에 추가 (새로운 리스트 객체로 할당하여 확실하게 UI 갱신 유도)
+      _currentPostComments = List.from(_currentPostComments)..add(createdComment);
       
       // 게시글의 총 댓글 수 로컬 증가
       final postIndex = _posts.indexWhere((p) => p.id == postId);
@@ -196,8 +211,8 @@ class CommunityProvider with ChangeNotifier {
     try {
       await _repository.deleteComment(postId, commentId);
       
-      // 로컬 제거
-      _currentPostComments.removeWhere((c) => c.id == commentId);
+      // 로컬 제거 (새로운 리스트로 재할당)
+      _currentPostComments = _currentPostComments.where((c) => c.id != commentId).toList();
       
       // 게시글 총 댓글 수 로컬 감소
       final postIndex = _posts.indexWhere((p) => p.id == postId);

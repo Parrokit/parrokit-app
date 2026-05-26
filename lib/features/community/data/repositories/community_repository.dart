@@ -26,6 +26,17 @@ class CommunityRepository {
     return nicknames;
   }
 
+  // 특정 게시글 1개 조회
+  Future<Post?> getPostById(String postId) async {
+    try {
+      final doc = await _firestore.collection('posts').doc(postId).get();
+      if (!doc.exists) return null;
+      return Post.fromJson(doc.data() as Map<String, dynamic>);
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Add a new post
   Future<Post> addPost(Post post) async {
     try {
