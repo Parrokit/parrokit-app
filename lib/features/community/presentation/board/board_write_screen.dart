@@ -14,7 +14,12 @@ class BoardWriteScreen extends StatefulWidget {
 class _BoardWriteScreenState extends State<BoardWriteScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final TextEditingController _tagController = TextEditingController();
+  final FocusNode _tagFocusNode = FocusNode();
   String? _selectedBoardTopic;
+  
+  List<String> _tags = [];
+  bool _isTagInputActive = false;
 
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _hasContent => _contentController.text.trim().isNotEmpty;
@@ -109,6 +114,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
       _selectedBoardTopic!, // _canComplete 검사를 통과했으므로 null이 아님 보장
       authorId: currentUser.id,
       authorNickname: currentUser.displayName ?? '알 수 없음',
+      tags: _tags,
     );
     if (success && mounted) {
       Navigator.maybePop(context);
@@ -123,6 +129,8 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _tagController.dispose();
+    _tagFocusNode.dispose();
     super.dispose();
   }
 
@@ -323,16 +331,99 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                 ),
               ),
             ),
+            // 등록된 태그 칩들을 보여주는 횡스크롤 영역
+            if (_tags.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _tags.map((tag) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: InputChip(
+                        label: Text('#$tag'),
+                        onDeleted: () {
+                          setState(() {
+                            _tags.remove(tag);
+                          });
+                        },
+                        backgroundColor: const Color(0xFFEAF2FF),
+                        deleteIconColor: const Color(0xFF2F67BF),
+                        labelStyle: const TextStyle(
+                          color: Color(0xFF2F67BF),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                          side: const BorderSide(color: Colors.transparent),
+                        ),
+                      ),
+                    )).toList(),
+                  ),
+                ),
+              ),
+              
+            // 태그 입력창 (활성화 시에만 보임)
+            if (_isTagInputActive)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF9F9F9),
+                  border: Border(top: BorderSide(color: lineColor)),
+                ),
+                child: TextField(
+                  controller: _tagController,
+                  focusNode: _tagFocusNode,
+                  decoration: InputDecoration(
+                    hintText: '태그를 입력하고 엔터를 누르세요',
+                    hintStyle: const TextStyle(color: Color(0xFF9EA4AF), fontSize: 15),
+                    border: InputBorder.none,
+                    isDense: true,
+                    suffixText: '${_tags.length}/20',
+                    suffixStyle: const TextStyle(color: Color(0xFF9EA4AF), fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (val) {
+                    final text = val.trim();
+                    if (text.isNotEmpty && !_tags.contains(text)) {
+                      if (_tags.length >= 20) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('태그는 최대 20개까지만 등록할 수 있습니다.')),
+                        );
+                        return;
+                      }
+                      
+                      setState(() {
+                        _tags.add(text);
+                      });
+                      _tagController.clear();
+                      _tagFocusNode.requestFocus(); // 계속 입력할 수 있도록 포커스 유지
+                    }
+                  },
+                ),
+              ),
+              
             Container(
               decoration: const BoxDecoration(
                 border: Border(top: BorderSide(color: lineColor)),
               ),
               padding: const EdgeInsets.fromLTRB(28, 16, 28, 18),
               child: Row(
-                children: const [
-                  _BottomTool(icon: Icons.image_outlined, label: '사진'),
-                  SizedBox(width: 28),
-                  _BottomTool(icon: Icons.tag_rounded, label: '태그'),
+                children: [
+                  const _BottomTool(icon: Icons.image_outlined, label: '사진'),
+                  const SizedBox(width: 28),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isTagInputActive = !_isTagInputActive;
+                        if (_isTagInputActive) {
+                          _tagFocusNode.requestFocus();
+                        }
+                      });
+                    },
+                    child: const _BottomTool(icon: Icons.tag_rounded, label: '태그'),
+                  ),
                 ],
               ),
             ),

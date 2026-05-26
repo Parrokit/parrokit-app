@@ -87,6 +87,7 @@ class CommunityProvider with ChangeNotifier {
     String category, {
     required String authorId,
     required String authorNickname,
+    List<String> tags = const [],
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -99,6 +100,7 @@ class CommunityProvider with ChangeNotifier {
         category: category,
         title: title,
         content: content,
+        tags: tags,
         authorId: authorId,
         authorNickname: authorNickname,
         snippet: content.length > 50 ? '${content.substring(0, 50)}...' : content,
