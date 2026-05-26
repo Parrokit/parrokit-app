@@ -43,6 +43,15 @@ class CommunityRepository {
     }
   }
 
+  // 게시글 삭제
+  Future<void> deletePost(String postId) async {
+    try {
+      await _firestore.collection('posts').doc(postId).delete();
+    } catch (e) {
+      throw Exception('게시글 삭제에 실패했습니다: $e');
+    }
+  }
+
   // Fetch posts (basic version, ordered by createdAt desc)
   Future<List<Post>> getPosts({int limit = 10, DocumentSnapshot? startAfter}) async {
     try {

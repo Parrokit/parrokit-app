@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
+import 'package:go_router/go_router.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
@@ -114,7 +115,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -125,18 +126,55 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                   _CommentSheetAction(
                     label: '삭제',
                     isDestructive: true,
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: 게시글 삭제 기능 구현
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('게시글 삭제 기능은 준비 중입니다.')),
+                    onTap: () async {
+                      Navigator.pop(sheetContext); // 바텀시트만 안전하게 닫기
+                      
+                      // 1. 확인 다이얼로그 띄우기 (부모 화면의 context 사용)
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          title: const Text('게시글 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
+                          content: const Text('정말로 이 게시글을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('삭제', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
                       );
+
+                      if (confirm != true) return; // 취소했거나 그냥 닫은 경우 중단
+                      
+                      // 2. 삭제 실행 (부모 화면의 context 사용)
+                      if (!context.mounted) return;
+                      final provider = context.read<CommunityProvider>();
+                      final success = await provider.deletePost(post.id);
+                      
+                      if (!context.mounted) return;
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                        );
+                        context.pop(); // 게시글 상세 화면 닫기 (이전 화면으로)
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(provider.errorMessage ?? '삭제에 실패했습니다.')),
+                        );
+                      }
                     },
                   ),
                 _CommentSheetAction(
                   label: '신고',
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     // TODO: 게시글 신고 기능 구현
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('신고가 접수되었습니다.')),
@@ -145,7 +183,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                 ),
                 _CommentSheetAction(
                   label: '닫기',
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Navigator.pop(sheetContext),
                 ),
               ],
             ),

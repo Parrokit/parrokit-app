@@ -90,6 +90,28 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
+  // 게시글 삭제하기
+  Future<bool> deletePost(String postId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.deletePost(postId);
+      // 로컬 리스트에서도 즉시 제거 (낙관적 업데이트)
+      _posts.removeWhere((post) => post.id == postId);
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // 특정 게시글의 댓글 목록 가져오기
   Future<void> fetchComments(String postId) async {
     _currentPostComments.clear();
