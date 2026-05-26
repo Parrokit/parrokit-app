@@ -149,8 +149,26 @@ class CommunityProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // 1. 스토리지에 저장된 이미지 먼저 모두 삭제
+      try {
+        final postToDelete = _posts.firstWhere((p) => p.id == postId);
+        if (postToDelete.hasImage && postToDelete.imageUrls != null) {
+          for (final url in postToDelete.imageUrls!) {
+            try {
+              final ref = FirebaseStorage.instance.refFromURL(url);
+              await ref.delete();
+            } catch (e) {
+              debugPrint('스토리지 이미지 삭제 실패: $url, $e');
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('로컬에서 게시글을 찾지 못해 이미지 삭제 건너뜀: $e');
+      }
+
+      // 2. 파이어스토어에서 게시글 데이터 삭제
       await _repository.deletePost(postId);
-      // 로컬 리스트에서도 즉시 제거 (낙관적 업데이트)
+      // 3. 로컬 리스트에서도 즉시 제거 (낙관적 업데이트)
       _posts.removeWhere((post) => post.id == postId);
       
       _isLoading = false;
