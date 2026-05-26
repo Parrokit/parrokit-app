@@ -387,6 +387,12 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                   onSubmitted: (val) {
                     final text = val.trim();
                     if (text.isNotEmpty && !_tags.contains(text)) {
+                      if (text.length > 10) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('태그는 10글자 이하로 입력해주세요.')),
+                        );
+                        return;
+                      }
                       if (_tags.length >= 20) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('태그는 최대 20개까지만 등록할 수 있습니다.')),

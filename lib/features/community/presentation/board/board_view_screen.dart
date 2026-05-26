@@ -487,6 +487,25 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                         ),
                       ],
                     ),
+                    if (post.tags.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.start,
+                          children: post.tags.map((tag) => Text(
+                            '#$tag',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF8F96A3),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 40),
                     const Divider(
                         height: 1,
