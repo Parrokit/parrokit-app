@@ -52,7 +52,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: CommunityFilters.board.map((topic) {
+                  children: CommunityFilters.board.where((t) => t != '전체').map((topic) {
                     final selected = topic == _selectedBoardTopic;
                     return ChoiceChip(
                       label: Text(topic),

@@ -40,7 +40,7 @@ class _BoardScreenState extends State<BoardScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final filteredPosts = widget.selectedFilter == '최신'
+    final filteredPosts = widget.selectedFilter == '전체'
         ? provider.posts
         : provider.posts.where((p) => p.category == widget.selectedFilter).toList();
 
