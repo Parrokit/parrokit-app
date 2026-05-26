@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/community/domain/data/community_filters.dart';
 
 class BoardWriteScreen extends StatefulWidget {
@@ -91,11 +92,23 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
   }
 
   Future<void> _submitPost() async {
+    final userProvider = context.read<UserProvider>();
+    final currentUser = userProvider.currentUser;
+
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      return;
+    }
+
     final provider = context.read<CommunityProvider>();
     final success = await provider.addPost(
       _titleController.text.trim(),
       _contentController.text.trim(),
       _selectedBoardTopic ?? '자유',
+      authorId: currentUser.id,
+      authorNickname: currentUser.displayName ?? '알 수 없음',
     );
     if (success && mounted) {
       Navigator.maybePop(context);

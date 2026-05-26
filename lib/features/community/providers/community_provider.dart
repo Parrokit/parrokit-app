@@ -55,21 +55,26 @@ class CommunityProvider with ChangeNotifier {
   }
 
   // 게시글 추가하기
-  Future<bool> addPost(String title, String content, String category) async {
+  Future<bool> addPost(
+    String title,
+    String content,
+    String category, {
+    required String authorId,
+    required String authorNickname,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // 임시 작성자 데이터 (MVP 용 하드코딩)
       final newPost = Post(
         id: '', // Repository에서 생성됨
         postType: 'board',
         category: category,
         title: title,
         content: content,
-        authorId: 'temp_user_id',
-        authorNickname: '파로킷테스터',
+        authorId: authorId,
+        authorNickname: authorNickname,
         snippet: content.length > 50 ? '${content.substring(0, 50)}...' : content,
       );
 
