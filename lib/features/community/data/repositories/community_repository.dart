@@ -172,7 +172,7 @@ class CommunityRepository {
     }
   }
 
-  // Delete a comment
+  // Delete a comment (Soft delete)
   Future<void> deleteComment(String postId, String commentId) async {
     try {
       await _firestore
@@ -180,12 +180,13 @@ class CommunityRepository {
           .doc(postId)
           .collection('comments')
           .doc(commentId)
-          .delete();
-          
-      // Update comment count on the post document
-      await _firestore.collection('posts').doc(postId).update({
-        'commentCount': FieldValue.increment(-1),
+          .update({
+        'status': 'deleted',
+        'content': '이 댓글은 삭제된 댓글입니다.',
+        'updatedAt': DateTime.now().toIso8601String(),
       });
+      
+      // Note: Soft delete에서는 게시글의 commentCount를 감소시키지 않습니다.
     } catch (e) {
       throw Exception('댓글 삭제에 실패했습니다: $e');
     }

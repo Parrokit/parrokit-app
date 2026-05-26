@@ -206,20 +206,23 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  // 댓글 삭제
+  // 댓글 삭제 (소프트 딜리트)
   Future<bool> deleteComment(String postId, String commentId) async {
     try {
       await _repository.deleteComment(postId, commentId);
       
-      // 로컬 제거 (새로운 리스트로 재할당)
-      _currentPostComments = _currentPostComments.where((c) => c.id != commentId).toList();
-      
-      // 게시글 총 댓글 수 로컬 감소
-      final postIndex = _posts.indexWhere((p) => p.id == postId);
-      if (postIndex != -1) {
-        final p = _posts[postIndex];
-        _posts[postIndex] = p.copyWith(commentCount: (p.commentCount > 0 ? p.commentCount - 1 : 0));
+      // 로컬 제거 대신 내용 변경 (새로운 리스트로 재할당)
+      final index = _currentPostComments.indexWhere((c) => c.id == commentId);
+      if (index != -1) {
+        final deletedComment = _currentPostComments[index].copyWith(
+          status: 'deleted',
+          content: '이 댓글은 삭제된 댓글입니다.',
+        );
+        _currentPostComments = List.from(_currentPostComments)
+          ..[index] = deletedComment;
       }
+      
+      // Note: 소프트 딜리트이므로 게시글 총 댓글 수(commentCount)는 로컬에서 감소시키지 않음
 
       notifyListeners();
       return true;

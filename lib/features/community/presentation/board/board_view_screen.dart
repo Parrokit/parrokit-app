@@ -686,6 +686,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     final currentUser = context.read<UserProvider>().currentUser;
     final isMyComment = currentUser != null && comment.authorId == currentUser.id;
     final isAuthor = comment.authorId == postAuthorId;
+    final isDeleted = comment.status == 'deleted';
     
     final provider = context.watch<CommunityProvider>();
     final isLiked = provider.likedCommentIds.contains(comment.id);
@@ -706,7 +707,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
             radius: isReply ? 18 : 22,
             backgroundColor: const Color(0xFFE5E5E5),
             child: Text(
-              comment.authorNickname.isNotEmpty ? comment.authorNickname.substring(0, 1) : '?',
+              isDeleted ? '' : (comment.authorNickname.isNotEmpty ? comment.authorNickname.substring(0, 1) : '?'),
               style: TextStyle(
                 fontSize: isReply ? 14 : 16,
                 fontWeight: FontWeight.w800,
@@ -722,14 +723,14 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                 Row(
                   children: [
                     Text(
-                      comment.authorNickname,
-                      style: const TextStyle(
+                      isDeleted ? '(삭제됨)' : comment.authorNickname,
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1F1F1F),
+                        color: isDeleted ? const Color(0xFFB0B0B0) : const Color(0xFF1F1F1F),
                       ),
                     ),
-                    if (isAuthor) ...[
+                    if (!isDeleted && isAuthor) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -740,7 +741,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                         child: const Text('작성자', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF3F72C4))),
                       ),
                     ],
-                    if (isMyComment && !isAuthor) ...[
+                    if (!isDeleted && isMyComment && !isAuthor) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -754,16 +755,17 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  _formatTimeAgo(comment.createdAt),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF8F96A3),
+                if (!isDeleted)
+                  Text(
+                    _formatTimeAgo(comment.createdAt),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF8F96A3),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 8),
-                if (isReply && comment.replyToNickname != null)
+                if (!isDeleted && isReply && comment.replyToNickname != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
@@ -777,71 +779,75 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                   ),
                 Text(
                   comment.content,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF232323),
+                    color: isDeleted ? const Color(0xFFB0B0B0) : const Color(0xFF232323),
                     height: 1.35,
                   ),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        if (currentUser == null) return;
-                        context.read<CommunityProvider>().toggleCommentLike(widget.postId, comment.id, currentUser.id);
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            size: 18,
-                            color: isLiked ? Colors.redAccent : const Color(0xFF8F96A3),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            comment.likeCount > 0 ? '${comment.likeCount}' : '좋아요',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                if (!isDeleted)
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          if (currentUser == null) return;
+                          context.read<CommunityProvider>().toggleCommentLike(widget.postId, comment.id, currentUser.id);
+                        },
+                        child: Row(
+                          children: [
+                            Icon(
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              size: 18,
                               color: isLiked ? Colors.redAccent : const Color(0xFF8F96A3),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    GestureDetector(
-                      onTap: () {
-                        context.read<CommunityProvider>().setReplyingTo(comment);
-                        _focusCommentInput();
-                      },
-                      child: Row(
-                        children: const [
-                          Icon(Icons.chat_bubble_outline,
-                              size: 16, color: Color(0xFF8F96A3)),
-                          SizedBox(width: 4),
-                          Text(
-                            '답글쓰기',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF8F96A3),
+                            const SizedBox(width: 4),
+                            Text(
+                              comment.likeCount > 0 ? '${comment.likeCount}' : '좋아요',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isLiked ? Colors.redAccent : const Color(0xFF8F96A3),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 20),
+                      GestureDetector(
+                        onTap: () {
+                          context.read<CommunityProvider>().setReplyingTo(comment);
+                          _focusCommentInput();
+                        },
+                        child: Row(
+                          children: const [
+                            Icon(Icons.chat_bubble_outline,
+                                size: 16, color: Color(0xFF8F96A3)),
+                            SizedBox(width: 4),
+                            Text(
+                              '답글쓰기',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF8F96A3),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
-          IconButton(
-            onPressed: () => _showCommentOptionsSheet(comment),
-            icon: const Icon(Icons.more_vert, color: Color(0xFF8F96A3), size: 20),
-          ),
+          if (!isDeleted)
+            IconButton(
+              onPressed: () => _showCommentOptionsSheet(comment),
+              icon: const Icon(Icons.more_vert, color: Color(0xFF8F96A3), size: 20),
+            )
+          else
+            const SizedBox(width: 48), // 메뉴 버튼 공간 비워두기
         ],
       ),
     );
