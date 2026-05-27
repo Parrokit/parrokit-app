@@ -11,7 +11,7 @@ import 'package:parrokit/core/utils/app_logger.dart';
 ///
 /// 역할:
 /// - 앱 시작 시 로컬(UserPrefs)에서 유저를 복원하거나, 없으면 게스트 유저 생성
-/// - 현재 유저(PaUser)와 코인 값을 UI에 노출
+/// - 현재 유저(AppUser)와 코인 값을 UI에 노출
 /// - 코인 증감, 로그아웃 등의 액션을 AuthService를 통해 위임
 ///
 /// 현재는 외부 인증/서버 연동 없이 로컬 전용 동작만 하지만,
@@ -20,7 +20,7 @@ import 'package:parrokit/core/utils/app_logger.dart';
 class UserProvider extends ChangeNotifier {
   final UserRepository _userRepository;
 
-  PaUser? _currentUser;
+  AppUser? _currentUser;
   bool _isLoading = false;
 
   /// 라우터 새로고침 전용 Notifier (로그인 상태, 온보딩 상태 변경 시에만 호출)
@@ -33,7 +33,7 @@ class UserProvider extends ChangeNotifier {
   UserProvider(this._userRepository);
 
   /// 현재 로그인된 유저(없을 수도 있음)
-  PaUser? get currentUser => _currentUser;
+  AppUser? get currentUser => _currentUser;
 
   /// 유저 정보를 로딩 중인지 여부
   bool get isLoading => _isLoading;
@@ -86,7 +86,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   /// 유저 정보를 외부(서버, 프로필 편집 화면 등)에서 갱신했을 때 호출합니다.
-  Future<void> updateUser(PaUser user) async {
+  Future<void> updateUser(AppUser user) async {
     await _userRepository.saveUser(user);
     _currentUser = user;
     notifyListeners();

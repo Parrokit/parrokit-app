@@ -27,9 +27,9 @@ class UserPrefs {
 
   UserPrefs(this._prefs);
 
-  /// 현재 로컬에 저장된 유저가 있다면 PaUser로 복원합니다.
+  /// 현재 로컬에 저장된 유저가 있다면 AppUser로 복원합니다.
   /// userId가 없으면 "로그인된 유저 없음"으로 간주하고 null을 반환합니다.
-  PaUser? loadUser() {
+  AppUser? loadUser() {
     final id = _prefs.getString(_keyUserId);
     if (id == null || id.isEmpty) {
       return null;
@@ -44,7 +44,7 @@ class UserPrefs {
     final lastNicknameStr = _prefs.getString(_keyLastNicknameChangedAt);
     final lastNicknameChangedAt = lastNicknameStr != null ? DateTime.tryParse(lastNicknameStr) : null;
 
-    return PaUser(
+    return AppUser(
       id: id,
       displayName: displayName,
       email: email,
@@ -56,7 +56,7 @@ class UserPrefs {
   }
 
   /// 현재 유저 정보를 통째로 저장합니다.
-  Future<void> saveUser(PaUser user) async {
+  Future<void> saveUser(AppUser user) async {
     await _prefs.setString(_keyUserId, user.id);
     if (user.displayName != null) {
       await _prefs.setString(_keyDisplayName, user.displayName!);

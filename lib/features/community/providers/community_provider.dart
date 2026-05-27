@@ -14,9 +14,9 @@ class CommunityProvider with ChangeNotifier {
   final CommunityRepository _repository = CommunityRepository();
   final FirebaseUserService _userService = FirebaseUserService();
 
-  final Map<String, PaUser> _userCache = {};
+  final Map<String, AppUser> _userCache = {};
 
-  PaUser? getCachedUser(String uid) => _userCache[uid];
+  AppUser? getCachedUser(String uid) => _userCache[uid];
 
   Future<void> _fetchMissingUsers(Iterable<String> uids) async {
     final missingUids = uids
@@ -31,7 +31,7 @@ class CommunityProvider with ChangeNotifier {
           _userCache[uid] = user;
         } else {
           // 유저를 찾지 못했어도 계속 호출하는 것을 막기 위해 임시 객체를 캐싱
-          _userCache[uid] = PaUser(id: uid, displayName: '알 수 없음', email: '');
+          _userCache[uid] = AppUser(id: uid, displayName: '알 수 없음', email: '');
         }
       } catch (_) {
         // 에러 발생 시 캐싱 생략 (다음 번에 재시도 가능하도록)

@@ -96,7 +96,7 @@ class FirebaseUserService {
     return !doc.exists;
   }
 
-  Future<PaUser?> loadUserDocument({required String uid}) async {
+  Future<AppUser?> loadUserDocument({required String uid}) async {
     final snap = await _firestore
         .collection('users')
         .doc(uid)
@@ -107,7 +107,7 @@ class FirebaseUserService {
     }
 
     final data = snap.data()!;
-    return PaUser(
+    return AppUser(
       id: uid,
       displayName: data['displayName'],
       email: data['email'],

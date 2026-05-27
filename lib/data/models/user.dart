@@ -8,7 +8,7 @@
 /// - coins       : 유저가 보유한 코인 수 (기본값 0)
 /// - createdAt   : 계정이 처음 생성된 시각 (없으면 null)
 /// - updatedAt   : 마지막으로 정보가 갱신된 시각 (없으면 null)
-class PaUser {
+class AppUser {
   final String id;
   final String? displayName;
   final String? email;
@@ -23,7 +23,7 @@ class PaUser {
   final DateTime? updatedAt;
   final DateTime? lastNicknameChangedAt;
 
-  const PaUser({
+  const AppUser({
     required this.id,
     this.displayName,
     this.email,
@@ -36,19 +36,19 @@ class PaUser {
   });
 
   /// 재화 증감이 적용된 새 인스턴스를 반환합니다.
-  PaUser addParrots(int delta) {
+  AppUser addParrots(int delta) {
     return copyWith(parrots: parrots + delta);
   }
 
-  PaUser addCrackers(int delta) {
+  AppUser addCrackers(int delta) {
     return copyWith(crackers: crackers + delta);
   }
 
   // 기존 호환용 메서드
-  PaUser addCoins(int delta) => addParrots(delta);
+  AppUser addCoins(int delta) => addParrots(delta);
 
   /// 일부 필드만 변경해서 새 인스턴스를 만들기 위한 헬퍼입니다.
-  PaUser copyWith({
+  AppUser copyWith({
     String? id,
     String? displayName,
     bool clearDisplayName = false,
@@ -61,7 +61,7 @@ class PaUser {
     DateTime? updatedAt,
     DateTime? lastNicknameChangedAt,
   }) {
-    return PaUser(
+    return AppUser(
       id: id ?? this.id,
       displayName: clearDisplayName ? null : (displayName ?? this.displayName),
       email: email ?? this.email,
@@ -75,10 +75,10 @@ class PaUser {
     );
   }
 
-  /// JSON → PaUser
+  /// JSON → AppUser
   /// Firestore, REST API 등에서 내려오는 JSON을 그대로 매핑할 때 사용합니다.
-  factory PaUser.fromJson(Map<String, dynamic> json) {
-    return PaUser(
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    return AppUser(
       id: json['id'] as String,
       displayName: json['displayName'] as String?,
       email: json['email'] as String?,
@@ -93,7 +93,7 @@ class PaUser {
     );
   }
 
-  /// PaUser → JSON
+  /// AppUser → JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -128,13 +128,13 @@ class PaUser {
 
   @override
   String toString() {
-    return 'PaUser(id: $id, displayName: $displayName, email: $email, photoUrl: $photoUrl, parrots: $parrots, crackers: $crackers)';
+    return 'AppUser(id: $id, displayName: $displayName, email: $email, photoUrl: $photoUrl, parrots: $parrots, crackers: $crackers)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is PaUser &&
+    return other is AppUser &&
         other.id == id &&
         other.displayName == displayName &&
         other.email == email &&

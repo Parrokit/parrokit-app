@@ -14,7 +14,7 @@ import 'package:parrokit/core/services/sso/naver_sso_service.dart';
 ///
 /// 책임:
 /// - FirebaseAuthService 를 이용해 이메일 회원가입/로그인 수행
-/// - UserPrefs 를 통해 로컬에 PaUser 저장/로드
+/// - UserPrefs 를 통해 로컬에 AppUser 저장/로드
 /// - 코인/게스트 유저/이메일 인증 상태 등 **앱에서 쓰는 유저 상태 관리**
 class UserRepository {
   final UserPrefs _userPrefs;
@@ -41,10 +41,10 @@ class UserRepository {
   /// 현재 로컬에 저장된 유저를 반환합니다.
   /// 저장된 유저가 없으면 null을 반환합니다.
   /// 현재 로그인된 Firebase 유저 + Firestore 유저 문서를 기준으로
-  /// 최신 PaUser 를 만들어서 반환합니다.
+  /// 최신 AppUser 를 만들어서 반환합니다.
   /// - 로그인 안 되어 있으면 null
   /// - Firestore 문서가 없으면 최소한 Auth 정보 + 로컬 캐시로 구성
-  Future<PaUser?> getCurrentUser() async {
+  Future<AppUser?> getCurrentUser() async {
     // 1. Firebase Auth 에 현재 로그인된 유저가 있는지 확인
     final fbUser = _authService.currentUser;
     if (fbUser == null) {
@@ -53,7 +53,7 @@ class UserRepository {
     }
 
     // 2. Firestore 기준 유저 문서 조회 (timeout 시 로컬 캐시로 폴백)
-    PaUser? serverUser;
+    AppUser? serverUser;
     try {
       serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
     } catch (_) {
@@ -63,8 +63,8 @@ class UserRepository {
     // 3. 로컬 캐시(SharedPreferences)에 저장된 유저 (폴백용)
     final localUser = _userPrefs.loadUser();
 
-    // 4. 최종적으로 앱에서 쓸 PaUser 조합
-    final user = PaUser(
+    // 4. 최종적으로 앱에서 쓸 AppUser 조합
+    final user = AppUser(
       id: fbUser.uid,
       displayName: fbUser.displayName ??
           serverUser?.displayName ??
@@ -85,7 +85,7 @@ class UserRepository {
   }
 
   /// 특정 UID의 유저 정보를 단건으로 불러옵니다. (주로 다른 유저 프로필 조회용)
-  Future<PaUser?> getUserById(String uid) async {
+  Future<AppUser?> getUserById(String uid) async {
     try {
       return await _firebaseUserService.loadUserDocument(uid: uid);
     } catch (_) {
@@ -95,10 +95,10 @@ class UserRepository {
 
   /// 이메일 + 비밀번호로 회원가입을 수행합니다.
   /// - Firebase Auth 에 사용자 생성
-  /// - 생성된 사용자 정보를 기반으로 PaUser 생성
+  /// - 생성된 사용자 정보를 기반으로 AppUser 생성
   /// - 로컬(UserPrefs)에 저장
   /// - 필요시 이메일 인증 메일 발송
-  Future<PaUser> signUpWithEmail({
+  Future<AppUser> signUpWithEmail({
     required String email,
     required String password,
     bool sendEmailVerification = true,
@@ -123,7 +123,7 @@ class UserRepository {
     }
 
     final now = DateTime.now();
-    final user = PaUser(
+    final user = AppUser(
       id: fbUser.uid,
       displayName: fbUser.displayName,
       email: fbUser.email,
@@ -139,9 +139,9 @@ class UserRepository {
 
   /// 이메일 + 비밀번호로 로그인합니다.
   /// - Firebase Auth 에 로그인 요청
-  /// - 로그인된 Firebase User 로부터 PaUser 를 구성
+  /// - 로그인된 Firebase User 로부터 AppUser 를 구성
   /// - 로컬(UserPrefs)에 저장
-  Future<PaUser> signInWithEmail({
+  Future<AppUser> signInWithEmail({
     required String email,
     required String password,
   }) async {
@@ -157,14 +157,14 @@ class UserRepository {
 
     // 1) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
     // FirebaseUserService 쪽에 uid로 유저 문서를 로드하는 메서드가 있다고 가정합니다.
-    // 예: Future<PaUser?> loadUserDocument({required String uid});
+    // 예: Future<AppUser?> loadUserDocument({required String uid});
     final serverUser =
         await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
 
     // 2) 로컬에 저장된 유저는 캐시/폴백 용도로만 사용
     final existingLocal = _userPrefs.loadUser();
 
-    final user = PaUser(
+    final user = AppUser(
       id: fbUser.uid,
       displayName: fbUser.displayName ??
           serverUser?.displayName ??
@@ -183,7 +183,7 @@ class UserRepository {
   }
 
   /// Google 계정으로 로그인 (또는 회원가입)을 수행합니다.
-  Future<PaUser?> signInWithGoogle() async {
+  Future<AppUser?> signInWithGoogle() async {
     // 1. Google OAuth 인증 얻기
     final googleCred = await _googleSsoService.getCredential();
     if (googleCred == null) {
@@ -200,7 +200,7 @@ class UserRepository {
     }
 
     // 3) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
-    PaUser? serverUser;
+    AppUser? serverUser;
     try {
       serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
     } catch (_) {
@@ -218,7 +218,7 @@ class UserRepository {
     // 4) 로컬 캐시 조회
     final existingLocal = _userPrefs.loadUser();
 
-    final user = PaUser(
+    final user = AppUser(
       id: fbUser.uid,
       displayName: fbUser.displayName ??
           serverUser?.displayName ??
@@ -237,7 +237,7 @@ class UserRepository {
   }
 
   /// Kakao 계정으로 로그인 (또는 회원가입)을 수행합니다.
-  Future<PaUser?> signInWithKakao() async {
+  Future<AppUser?> signInWithKakao() async {
     // 1. Kakao OAuth 인증 얻기
     final kakaoCred = await _kakaoSsoService.getCredential();
     if (kakaoCred == null) {
@@ -254,7 +254,7 @@ class UserRepository {
     }
 
     // 3) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
-    PaUser? serverUser;
+    AppUser? serverUser;
     try {
       serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
     } catch (_) {
@@ -272,7 +272,7 @@ class UserRepository {
     // 4) 로컬 캐시 조회
     final existingLocal = _userPrefs.loadUser();
 
-    final user = PaUser(
+    final user = AppUser(
       id: fbUser.uid,
       displayName: fbUser.displayName ??
           serverUser?.displayName ??
@@ -291,7 +291,7 @@ class UserRepository {
   }
 
   /// Naver 계정으로 로그인 (또는 회원가입)을 수행합니다.
-  Future<PaUser?> signInWithNaver() async {
+  Future<AppUser?> signInWithNaver() async {
     // 1. Naver OAuth 인증 + Cloud Functions 호출하여 Firebase 로그인
     final cred = await _naverSsoService.getCredentialAndSignIn();
     if (cred == null) {
@@ -305,7 +305,7 @@ class UserRepository {
     }
 
     // 2) 서버(Firestore) 기준으로 유저 문서를 먼저 조회
-    PaUser? serverUser;
+    AppUser? serverUser;
     try {
       serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
     } catch (_) {
@@ -323,7 +323,7 @@ class UserRepository {
     // 3) 로컬 캐시 조회
     final existingLocal = _userPrefs.loadUser();
 
-    final user = PaUser(
+    final user = AppUser(
       id: fbUser.uid,
       displayName: fbUser.displayName ??
           serverUser?.displayName ??
@@ -363,9 +363,9 @@ class UserRepository {
   }
 
   /// Firebase 에서 현재 유저 정보를 새로고침하고,
-  /// 그 결과를 기반으로 PaUser 를 갱신합니다.
+  /// 그 결과를 기반으로 AppUser 를 갱신합니다.
   /// (예: 이메일 인증을 완료하고 앱으로 돌아온 경우)
-  Future<PaUser?> reloadFirebaseUser() async {
+  Future<AppUser?> reloadFirebaseUser() async {
     final fbUser = _authService.currentUser;
     if (fbUser == null) {
       return null;
@@ -382,7 +382,7 @@ class UserRepository {
         await _firebaseUserService.loadUserDocument(uid: refreshed.uid);
 
     final existingLocal = _userPrefs.loadUser();
-    final user = PaUser(
+    final user = AppUser(
       id: refreshed.uid,
       displayName: refreshed.displayName ??
           serverUser?.displayName ??
@@ -403,7 +403,7 @@ class UserRepository {
 
   /// 유저 정보를 저장(업데이트)합니다.
   /// 예: 서버에서 프로필/코인 값을 받아온 경우 등에 사용.
-  Future<void> saveUser(PaUser user) async {
+  Future<void> saveUser(AppUser user) async {
     final updated = user.copyWith(updatedAt: DateTime.now());
     await _userPrefs.saveUser(updated);
   }
@@ -411,7 +411,7 @@ class UserRepository {
   /// 코인을 delta 만큼 증감시키고, 갱신된 유저를 반환합니다.
   /// - delta는 음수도 허용됩니다.
   /// - 유저가 없으면 null을 반환합니다.
-  Future<PaUser?> addCoins(int delta) async {
+  Future<AppUser?> addCoins(int delta) async {
     final current = _userPrefs.loadUser();
     if (current == null) {
       return null;
@@ -524,7 +524,7 @@ class UserRepository {
   }
 
   /// Apple SSO 로그인 연동
-  Future<PaUser?> signInWithApple() async {
+  Future<AppUser?> signInWithApple() async {
     final cred = await _appleSsoService.getCredentialAndSignIn();
     if (cred == null) {
       return null;
@@ -535,7 +535,7 @@ class UserRepository {
       throw StateError('FirebaseAuth: user is null after signInWithApple');
     }
 
-    PaUser? serverUser;
+    AppUser? serverUser;
     try {
       serverUser = await _firebaseUserService.loadUserDocument(uid: fbUser.uid);
     } catch (_) {
@@ -551,7 +551,7 @@ class UserRepository {
 
     final existingLocal = _userPrefs.loadUser();
 
-    final user = PaUser(
+    final user = AppUser(
       id: fbUser.uid,
       displayName: fbUser.displayName ??
           serverUser?.displayName ??
