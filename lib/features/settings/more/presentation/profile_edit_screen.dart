@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:provider/provider.dart';
@@ -121,9 +123,34 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       
       // 사진이 변경되었을 때만 업데이트
       if (currentUser?.photoUrl != _selectedPhotoUrl) {
+        String? finalPhotoUrl = _selectedPhotoUrl;
+
+        // 1. 기존 프사가 Firebase Storage URL 이라면 미리 삭제 처리 (용량 절약)
+        if (currentUser?.photoUrl != null && 
+            currentUser!.photoUrl!.contains('firebasestorage.googleapis.com')) {
+          try {
+            final oldRef = FirebaseStorage.instance.refFromURL(currentUser.photoUrl!);
+            await oldRef.delete();
+          } catch (e) {
+            // 삭제 실패하더라도 (이미 없거나 권한문제 등) 진행은 계속되도록 catch 처리
+            debugPrint('Failed to delete old profile photo: $e');
+          }
+        }
+
+        // 2. 로컬 경로일 경우 (기기에서 갤러리로 선택한 경우) Storage 에 새로 업로드
+        if (finalPhotoUrl != null && (finalPhotoUrl.startsWith('/') || finalPhotoUrl.startsWith('file://'))) {
+          final file = File(finalPhotoUrl);
+          // 파일명에 타임스탬프를 붙여 중복 방지 (확장자는 편의상 jpg 처리, 원한다면 추출 로직 추가 가능)
+          final ref = FirebaseStorage.instance.ref().child(
+              'users/${currentUser!.id}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg');
+          
+          await ref.putFile(file);
+          finalPhotoUrl = await ref.getDownloadURL();
+        }
+
         // 빈 문자열 '' 은 기본 프사(제거)를 의미합니다
         await userProvider.updatePhotoUrl(
-            _selectedPhotoUrl == '' ? null : _selectedPhotoUrl);
+            finalPhotoUrl == '' ? null : finalPhotoUrl);
       }
       
       // 닉네임이 실제로 변경되었을 때만 업데이트 (null과 빈 문자열 동일 취급)
