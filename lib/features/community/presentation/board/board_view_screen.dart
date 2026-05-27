@@ -87,6 +87,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       text,
       authorId: currentUser.id,
       authorNickname: currentUser.displayName ?? '알 수 없음',
+      authorAvatarUrl: currentUser.photoUrl,
     );
     
     if (!success && mounted) {
@@ -422,12 +423,27 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 18),
                       child: Row(
                         children: [
-                          const CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Color.fromARGB(255, 220, 220, 220),
-                            child: Icon(Icons.person,
-                                size: 30,
-                                color: Color.fromARGB(255, 255, 255, 255)),
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color.fromARGB(255, 220, 220, 220),
+                            ),
+                            child: ClipOval(
+                              child: post.authorAvatarUrl != null && post.authorAvatarUrl!.isNotEmpty
+                                  ? Image.network(
+                                      post.authorAvatarUrl!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => const Icon(
+                                          Icons.person,
+                                          size: 30,
+                                          color: Color.fromARGB(255, 255, 255, 255)),
+                                    )
+                                  : const Icon(Icons.person,
+                                      size: 30,
+                                      color: Color.fromARGB(255, 255, 255, 255)),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Column(
@@ -786,16 +802,39 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: isReply ? 18 : 22,
-            backgroundColor: const Color(0xFFE5E5E5),
-            child: Text(
-              isDeleted ? '' : (comment.authorNickname.isNotEmpty ? comment.authorNickname.substring(0, 1) : '?'),
-              style: TextStyle(
-                fontSize: isReply ? 14 : 16,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF6A6A6A),
-              ),
+          Container(
+            width: isReply ? 36 : 44,
+            height: isReply ? 36 : 44,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFE5E5E5),
+            ),
+            child: ClipOval(
+              child: comment.authorAvatarUrl != null && comment.authorAvatarUrl!.isNotEmpty && !isDeleted
+                  ? Image.network(
+                      comment.authorAvatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Text(
+                          comment.authorNickname.isNotEmpty ? comment.authorNickname.substring(0, 1) : '?',
+                          style: TextStyle(
+                            fontSize: isReply ? 14 : 16,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF6A6A6A),
+                          ),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        isDeleted ? '' : (comment.authorNickname.isNotEmpty ? comment.authorNickname.substring(0, 1) : '?'),
+                        style: TextStyle(
+                          fontSize: isReply ? 14 : 16,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF6A6A6A),
+                        ),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 12),

@@ -199,6 +199,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
         _selectedBoardTopic!,
         authorId: currentUser.id,
         authorNickname: currentUser.displayName ?? '알 수 없음',
+        authorAvatarUrl: currentUser.photoUrl,
         tags: _tags,
         imageFiles: _selectedImages.map((x) => File(x.path)).toList(),
         onImageProgress: (current, total, progress) {

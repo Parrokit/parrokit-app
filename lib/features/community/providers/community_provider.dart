@@ -104,6 +104,7 @@ class CommunityProvider with ChangeNotifier {
     String category, {
     required String authorId,
     required String authorNickname,
+    String? authorAvatarUrl,
     List<String> tags = const [],
     List<File> imageFiles = const [],
     void Function(int current, int total, double progress)? onImageProgress,
@@ -144,10 +145,9 @@ class CommunityProvider with ChangeNotifier {
         imageUrls: uploadedUrls,
         authorId: authorId,
         authorNickname: authorNickname,
-        snippet:
-            content.length > 50 ? '${content.substring(0, 50)}...' : content,
+        authorAvatarUrl: authorAvatarUrl,
+        snippet: content.length > 50 ? '${content.substring(0, 50)}...' : content,
       );
-
       await _repository.addPost(newPost);
 
       // 로딩 상태를 풀어주어야 fetchPosts 내부의 방어 로직(if isLoading return)을 통과합니다.
@@ -359,12 +359,14 @@ class CommunityProvider with ChangeNotifier {
     String content, {
     required String authorId,
     required String authorNickname,
+    String? authorAvatarUrl,
   }) async {
     try {
       final newComment = Comment(
         id: '', // Repository에서 자동 생성
         authorId: authorId,
         authorNickname: authorNickname,
+        authorAvatarUrl: authorAvatarUrl,
         content: content,
         parentId: _replyingTo?.parentId ?? _replyingTo?.id,
         replyToNickname:
