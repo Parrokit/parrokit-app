@@ -89,6 +89,7 @@ class CommunityRepository {
     try {
       Query query = _firestore
           .collection('posts')
+          .where('postType', isEqualTo: 'board')
           .orderBy('createdAt', descending: true)
           .limit(limit);
 
