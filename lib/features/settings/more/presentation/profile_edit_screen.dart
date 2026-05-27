@@ -21,6 +21,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   int _remainingDays = 0;
   DateTime? _lastChangedAt;
 
+  // 프로필 사진 로컬 상태
+  String? _selectedPhotoUrl;
+
   // 중복 확인 관련 상태
   bool _isCheckingDuplicate = false;
   bool _isNicknameAvailable = false;
@@ -36,6 +39,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _checkedNickname = user.displayName;
         _isNicknameAvailable = true; // 본인의 기존 닉네임은 항상 통과 상태
         _lastChangedAt = user.lastNicknameChangedAt;
+        _selectedPhotoUrl = user.photoUrl;
         
         // 30일 쿨타임 계산
         if (_lastChangedAt != null) {
@@ -115,8 +119,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       final userProvider = context.read<UserProvider>();
       final currentUser = userProvider.currentUser;
       
-      // 닉네임이 실제로 변경되었을 때만 업데이트
-      if (currentUser?.displayName != newNickname) {
+      // 사진이 변경되었을 때만 업데이트
+      if (currentUser?.photoUrl != _selectedPhotoUrl) {
+        // 빈 문자열 '' 은 기본 프사(제거)를 의미합니다
+        await userProvider.updatePhotoUrl(
+            _selectedPhotoUrl == '' ? null : _selectedPhotoUrl);
+      }
+      
+      // 닉네임이 실제로 변경되었을 때만 업데이트 (null과 빈 문자열 동일 취급)
+      final currentDisplayName = currentUser?.displayName ?? '';
+      if (currentDisplayName != newNickname) {
         await userProvider.updateDisplayName(newNickname);
       }
       
@@ -138,9 +150,22 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     final userProvider = context.watch<UserProvider>();
     final user = userProvider.currentUser;
 
-    // 현재 텍스트 필드 값과 확인 완료된 값이 같은지 판별
-    final isVerified = _isNicknameAvailable && 
-        _checkedNickname == _nicknameController.text.trim();
+    final currentInput = _nicknameController.text.trim();
+    final effectivePhotoUrl = _selectedPhotoUrl == '' ? null : _selectedPhotoUrl;
+
+    // 각각 변경되었는지 여부 확인
+    final hasNicknameChanged = (user?.displayName ?? '') != currentInput;
+    final hasPhotoChanged = user?.photoUrl != effectivePhotoUrl;
+    final hasChanges = hasNicknameChanged || hasPhotoChanged;
+
+    // 닉네임 저장이 가능한 상태인지 판별
+    final isVerified = _isNicknameAvailable && (_checkedNickname ?? '') == currentInput;
+    // 1) 닉네임이 안 바뀌었으면 조건 통과
+    // 2) 닉네임이 바뀌었다면 -> 중복확인 완료(isVerified) + 쿨타임 통과(_canChangeNickname) 둘 다 만족해야 함
+    final isNicknameValidToSave = !hasNicknameChanged || (isVerified && _canChangeNickname);
+
+    // 저장 버튼 활성화 조건: 변경 사항이 있고, 닉네임 저장 조건이 충족될 때
+    final canSave = hasChanges && isNicknameValidToSave;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -151,7 +176,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: (_isLoading || !isVerified || !_canChangeNickname)
+            onPressed: (_isLoading || !canSave)
                 ? null
                 : _saveProfile,
             child: _isLoading
@@ -165,7 +190,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: (!isVerified || !_canChangeNickname)
+                      color: !canSave
                           ? cs.onSurface.withValues(alpha: 0.3)
                           : cs.primary,
                     ),
@@ -174,19 +199,26 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. 프로필 사진 수정 (EditableAvatar 재사용)
-              Center(
-                child: EditableAvatar(
-                  photoUrl: user?.photoUrl,
-                  size: 100, // 더 크게 표시
-                ),
-              ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. 프로필 사진 수정 (EditableAvatar 재사용)
+                  Center(
+                    child: EditableAvatar(
+                      photoUrl: _selectedPhotoUrl == '' ? null : _selectedPhotoUrl,
+                      size: 100, // 더 크게 표시
+                      onSelected: (url) {
+                        setState(() {
+                          _selectedPhotoUrl = url;
+                        });
+                      },
+                    ),
+                  ),
               const SizedBox(height: 12),
               Center(
                 child: Text(
@@ -300,6 +332,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
         ),
       ),
+      if (_isLoading)
+        Container(
+          color: Colors.black.withValues(alpha: 0.3),
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ],
+    ),
     );
   }
 }

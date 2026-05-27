@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
@@ -73,15 +74,26 @@ class AccountSection extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: cs.surfaceContainerHighest,
-                    backgroundImage: user?.photoUrl != null
-                        ? NetworkImage(user!.photoUrl!)
-                        : null,
-                    child: user?.photoUrl == null
-                        ? const Icon(Icons.person, size: 30)
-                        : null,
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: cs.surfaceContainerHighest,
+                    ),
+                    child: ClipOval(
+                      child: user?.photoUrl != null
+                          ? SvgPicture.network(
+                              user!.photoUrl!,
+                              fit: BoxFit.cover,
+                              placeholderBuilder: (context) => const Padding(
+                                padding: EdgeInsets.all(12),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                          : const Icon(Icons.person, size: 30),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -141,7 +153,7 @@ class AccountSection extends StatelessWidget {
                     size: 20,
                     color: cs.onSurface.withValues(alpha: 0.6),
                   ),
-                  onPressed: () => context.push(AppRoutes.profileEdit),
+                  onPressed: () => context.pushNamed(AppRoutes.profileEdit),
                 ),
               ),
             ],

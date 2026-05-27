@@ -22,10 +22,14 @@ class EditableAvatar extends StatelessWidget {
   /// 아바타 크기
   final double size;
 
+  /// 편집 후 선택된 URL을 돌려주는 콜백 (빈 문자열 ''은 제거를 의미)
+  final Function(String)? onSelected;
+
   const EditableAvatar({
     super.key,
     required this.photoUrl,
     this.size = 72,
+    this.onSelected,
   });
 
   @override
@@ -33,12 +37,16 @@ class EditableAvatar extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      onTap: () {
-        showModalBottomSheet(
+      onTap: () async {
+        if (onSelected == null) return;
+        final result = await showModalBottomSheet<String>(
           context: context,
           builder: (context) => const AvatarSelectionSheet(),
           showDragHandle: true,
         );
+        if (result != null) {
+          onSelected!(result);
+        }
       },
       child: Stack(
         children: [

@@ -59,7 +59,7 @@ GoRouter buildAppRouter({
     debugLogDiagnostics: true,
     initialLocation: AppRoutes.dashboardPath,
     redirect: _handleRedirect,
-    refreshListenable: userProvider,
+    refreshListenable: userProvider.routerRefreshNotifier,
     routes: [
       // ─────────────────────────────────────────────────────────────────
       // 단독 라우트 (쉘 외부)
