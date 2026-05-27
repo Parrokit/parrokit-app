@@ -175,7 +175,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
     final questions = provider.posts.where((p) => p.id == widget.questionId);
     final question = questions.isNotEmpty ? questions.first : null;
 
-    if (_isFetchingDetails && question == null) {
+    if (_isFetchingDetails) {
       return const Center(child: CircularProgressIndicator(color: Colors.orange));
     }
 
