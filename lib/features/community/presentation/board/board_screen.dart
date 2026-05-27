@@ -53,14 +53,17 @@ class _BoardScreenState extends State<BoardScreen> {
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 80), // Fab 여백
-      itemCount: filteredPosts.length,
-      separatorBuilder: (context, index) =>
-          const Divider(color: Color(0xFFEEEEEE), height: 1),
-      itemBuilder: (context, index) {
-        return _buildPostItem(filteredPosts[index]);
-      },
+    return RefreshIndicator(
+      onRefresh: () => context.read<CommunityProvider>().fetchPosts(refresh: true),
+      child: ListView.separated(
+        padding: const EdgeInsets.only(bottom: 80), // Fab 여백
+        itemCount: filteredPosts.length,
+        separatorBuilder: (context, index) =>
+            const Divider(color: Color(0xFFEEEEEE), height: 1),
+        itemBuilder: (context, index) {
+          return _buildPostItem(filteredPosts[index]);
+        },
+      ),
     );
   }
 
