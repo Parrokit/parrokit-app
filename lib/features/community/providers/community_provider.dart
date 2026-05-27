@@ -42,6 +42,20 @@ class CommunityProvider with ChangeNotifier {
   bool _isCurrentPostScrapped = false;
   bool get isCurrentPostScrapped => _isCurrentPostScrapped;
 
+  // 로그아웃 시 모든 데이터 초기화
+  void clear() {
+    _posts.clear();
+    _isLoading = false;
+    _errorMessage = null;
+    _lastDocument = null;
+    _currentPostComments.clear();
+    _likedCommentIds.clear();
+    _replyingTo = null;
+    _isCurrentPostLiked = false;
+    _isCurrentPostScrapped = false;
+    notifyListeners();
+  }
+
   // 게시글 목록 가져오기
   Future<void> fetchPosts({bool refresh = false}) async {
     if (_isLoading) return;
@@ -452,15 +466,17 @@ class CommunityProvider with ChangeNotifier {
   }
 
   // 뷰 화면 진입 시 사용자 액션(좋아요, 스크랩 여부) 로드
-  Future<void> loadUserActions(String postId) async {
+  Future<void> loadUserActions(String postId, {String? userId}) async {
     _isCurrentPostLiked = false;
     _isCurrentPostScrapped = false;
     // UI 초기화를 위해 먼저 리스너 호출
     notifyListeners();
 
+    if (userId == null) return;
+
     try {
       final actions =
-          await _repository.getUserPostActions(postId, 'temp_user_id');
+          await _repository.getUserPostActions(postId, userId);
       _isCurrentPostLiked = actions['isLiked'] ?? false;
       _isCurrentPostScrapped = actions['isScrapped'] ?? false;
       notifyListeners();
@@ -470,10 +486,10 @@ class CommunityProvider with ChangeNotifier {
   }
 
   // 조회수 증가 로직 (24시간 로컬 캐싱)
-  Future<void> incrementViewCount(String postId) async {
+  Future<void> incrementViewCount(String postId, {String? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final key = 'viewed_$postId';
+      final key = 'viewed_${userId ?? "guest"}_$postId';
       final lastViewedStr = prefs.getString(key);
 
       bool shouldIncrement = false;
@@ -505,7 +521,7 @@ class CommunityProvider with ChangeNotifier {
   }
 
   // 좋아요 토글 (낙관적 업데이트 적용)
-  Future<void> toggleLike(String postId) async {
+  Future<void> toggleLike(String postId, String userId) async {
     final originalState = _isCurrentPostLiked;
     _isCurrentPostLiked = !_isCurrentPostLiked;
 
@@ -519,7 +535,7 @@ class CommunityProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repository.toggleLike(postId, 'temp_user_id', _isCurrentPostLiked);
+      await _repository.toggleLike(postId, userId, _isCurrentPostLiked);
     } catch (e) {
       // 실패 시 롤백
       _isCurrentPostLiked = originalState;
@@ -534,7 +550,7 @@ class CommunityProvider with ChangeNotifier {
   }
 
   // 스크랩 토글 (낙관적 업데이트 적용)
-  Future<void> toggleScrap(String postId) async {
+  Future<void> toggleScrap(String postId, String userId) async {
     final originalState = _isCurrentPostScrapped;
     _isCurrentPostScrapped = !_isCurrentPostScrapped;
 
@@ -549,7 +565,7 @@ class CommunityProvider with ChangeNotifier {
 
     try {
       await _repository.toggleScrap(
-          postId, 'temp_user_id', _isCurrentPostScrapped);
+          postId, userId, _isCurrentPostScrapped);
     } catch (e) {
       // 실패 시 롤백
       _isCurrentPostScrapped = originalState;

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/features/settings/more/presentation/widgets/editable_avatar.dart';
 import 'package:provider/provider.dart';
 
+import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/core/config/app_config.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
@@ -36,8 +37,15 @@ class _AccountSectionState extends State<AccountSection> {
 
   Future<void> _onLogout() async {
     final userProvider = context.read<UserProvider>();
+    final communityProvider = context.read<CommunityProvider>();
+    
     try {
+      // 1. 커뮤니티 전역 상태(글 목록, 스크랩, 조회수 등) 초기화
+      communityProvider.clear();
+      
+      // 2. 실제 인증 로그아웃 처리
       await userProvider.signOut();
+      
       if (!mounted) return;
       showToast('로그아웃되었습니다.');
     } catch (e) {

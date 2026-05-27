@@ -36,10 +36,10 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       await Future.wait([
         provider.fetchPostDetails(widget.postId),
         provider.fetchComments(widget.postId, currentUserId: user?.id),
-        provider.loadUserActions(widget.postId),
+        provider.loadUserActions(widget.postId, userId: user?.id),
       ]);
       
-      provider.incrementViewCount(widget.postId);
+      provider.incrementViewCount(widget.postId, userId: user?.id);
       
       if (mounted) {
         setState(() {
@@ -538,7 +538,16 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           label: '공감',
                           selected: _liked,
                           accentColor: likeAccent,
-                          onTap: () => provider.toggleLike(widget.postId),
+                          onTap: () {
+                            final user = context.read<UserProvider>().currentUser;
+                            if (user == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('로그인이 필요합니다.')),
+                              );
+                              return;
+                            }
+                            provider.toggleLike(widget.postId, user.id);
+                          },
                         ),
                         const SizedBox(width: 26),
                         _ActionTile(
@@ -548,7 +557,16 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           label: '스크랩',
                           selected: _scrapped,
                           accentColor: scrapAccent,
-                          onTap: () => provider.toggleScrap(widget.postId),
+                          onTap: () {
+                            final user = context.read<UserProvider>().currentUser;
+                            if (user == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('로그인이 필요합니다.')),
+                              );
+                              return;
+                            }
+                            provider.toggleScrap(widget.postId, user.id);
+                          },
                         ),
                       ],
                     ),
