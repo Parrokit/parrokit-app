@@ -83,6 +83,15 @@ class UserRepository {
     return user;
   }
 
+  /// 특정 UID의 유저 정보를 단건으로 불러옵니다. (주로 다른 유저 프로필 조회용)
+  Future<PaUser?> getUserById(String uid) async {
+    try {
+      return await _firebaseUserService.loadUserDocument(uid: uid);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 이메일 + 비밀번호로 회원가입을 수행합니다.
   /// - Firebase Auth 에 사용자 생성
   /// - 생성된 사용자 정보를 기반으로 PaUser 생성

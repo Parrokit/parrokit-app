@@ -4,6 +4,7 @@ import 'package:parrokit/core/router/app_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 
 class BoardScreen extends StatefulWidget {
   final String selectedFilter;
@@ -42,7 +43,9 @@ class _BoardScreenState extends State<BoardScreen> {
 
     final filteredPosts = widget.selectedFilter == '전체'
         ? provider.posts
-        : provider.posts.where((p) => p.category == widget.selectedFilter).toList();
+        : provider.posts
+            .where((p) => p.category == widget.selectedFilter)
+            .toList();
 
     if (filteredPosts.isEmpty) {
       return Center(
@@ -54,7 +57,8 @@ class _BoardScreenState extends State<BoardScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => context.read<CommunityProvider>().fetchPosts(refresh: true),
+      onRefresh: () =>
+          context.read<CommunityProvider>().fetchPosts(refresh: true),
       child: ListView.separated(
         padding: const EdgeInsets.only(bottom: 80), // Fab 여백
         itemCount: filteredPosts.length,
@@ -68,6 +72,10 @@ class _BoardScreenState extends State<BoardScreen> {
   }
 
   Widget _buildPostItem(Post post) {
+    final provider = context.watch<CommunityProvider>();
+    final currentUser = context.watch<UserProvider>().currentUser;
+    final isMe = currentUser != null && post.authorId == currentUser.id;
+    
     return InkWell(
       onTap: () => context.push(AppRoutes.communityBoardViewPathOf(post.id)),
       child: Padding(
@@ -114,7 +122,7 @@ class _BoardScreenState extends State<BoardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${post.authorNickname} · ${_formatTimeAgo(post.createdAt)}',
+                  '${isMe ? (currentUser.displayName ?? post.authorNickname) : ((post.authorId != null ? provider.getCachedUser(post.authorId!)?.displayName : null) ?? post.authorNickname)} · ${_formatTimeAgo(post.createdAt)}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[500],

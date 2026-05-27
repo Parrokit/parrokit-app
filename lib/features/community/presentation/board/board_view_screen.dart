@@ -320,7 +320,12 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
         createdAt: DateTime.now(),
       ),
     );
+
+    final currentUser = context.watch<UserProvider>().currentUser;
+    final isMe = currentUser != null && post.authorId == currentUser.id;
+
     final comments = provider.currentPostComments;
+    final commentCount = comments.length;
 
     if (_isFetchingDetails) {
       return Scaffold(
@@ -431,9 +436,10 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                               color: Color.fromARGB(255, 220, 220, 220),
                             ),
                             child: ClipOval(
-                              child: post.authorAvatarUrl != null && post.authorAvatarUrl!.isNotEmpty
+                              child: ((isMe ? currentUser?.photoUrl : (post.authorId != null ? provider.getCachedUser(post.authorId!)?.photoUrl : null)) ?? post.authorAvatarUrl) != null && 
+                                     ((isMe ? currentUser?.photoUrl : (post.authorId != null ? provider.getCachedUser(post.authorId!)?.photoUrl : null)) ?? post.authorAvatarUrl)!.isNotEmpty
                                   ? Image.network(
-                                      post.authorAvatarUrl!,
+                                      (isMe ? currentUser?.photoUrl : (post.authorId != null ? provider.getCachedUser(post.authorId!)?.photoUrl : null)) ?? post.authorAvatarUrl!,
                                       fit: BoxFit.cover,
                                       errorBuilder: (context, error, stackTrace) => const Icon(
                                           Icons.person,
@@ -450,7 +456,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                post.authorNickname,
+                                (isMe ? currentUser?.displayName : (post.authorId != null ? provider.getCachedUser(post.authorId!)?.displayName : null)) ?? post.authorNickname,
                                 style: const TextStyle(
                                   fontSize: 34 / 2,
                                   fontWeight: FontWeight.w800,
@@ -810,9 +816,11 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
               color: Color(0xFFE5E5E5),
             ),
             child: ClipOval(
-              child: comment.authorAvatarUrl != null && comment.authorAvatarUrl!.isNotEmpty && !isDeleted
+              child: ((isMyComment ? currentUser?.photoUrl : (comment.authorId != null ? provider.getCachedUser(comment.authorId!)?.photoUrl : null)) ?? comment.authorAvatarUrl) != null && 
+                     ((isMyComment ? currentUser?.photoUrl : (comment.authorId != null ? provider.getCachedUser(comment.authorId!)?.photoUrl : null)) ?? comment.authorAvatarUrl)!.isNotEmpty && 
+                     !isDeleted
                   ? Image.network(
-                      comment.authorAvatarUrl!,
+                      (isMyComment ? currentUser?.photoUrl : (comment.authorId != null ? provider.getCachedUser(comment.authorId!)?.photoUrl : null)) ?? comment.authorAvatarUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Center(
                         child: Icon(
@@ -841,7 +849,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                 Row(
                   children: [
                     Text(
-                      isDeleted ? '(삭제됨)' : comment.authorNickname,
+                      isDeleted ? '(삭제됨)' : ((isMyComment ? currentUser?.displayName : (comment.authorId != null ? provider.getCachedUser(comment.authorId!)?.displayName : null)) ?? comment.authorNickname),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,

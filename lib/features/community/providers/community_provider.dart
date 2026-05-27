@@ -1,15 +1,43 @@
 // lib/features/community/providers/community_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/features/community/data/repositories/community_repository.dart';
+import 'package:parrokit/data/models/user.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class CommunityProvider with ChangeNotifier {
   final CommunityRepository _repository = CommunityRepository();
+  final FirebaseUserService _userService = FirebaseUserService();
+
+  final Map<String, PaUser> _userCache = {};
+
+  PaUser? getCachedUser(String uid) => _userCache[uid];
+
+  Future<void> _fetchMissingUsers(Iterable<String> uids) async {
+    final missingUids = uids
+        .where((uid) => !_userCache.containsKey(uid) && uid.isNotEmpty)
+        .toSet();
+    if (missingUids.isEmpty) return;
+
+    await Future.wait(missingUids.map((uid) async {
+      try {
+        final user = await _userService.loadUserDocument(uid: uid);
+        if (user != null) {
+          _userCache[uid] = user;
+        } else {
+          // 유저를 찾지 못했어도 계속 호출하는 것을 막기 위해 임시 객체를 캐싱
+          _userCache[uid] = PaUser(id: uid, displayName: '알 수 없음', email: '');
+        }
+      } catch (_) {
+        // 에러 발생 시 캐싱 생략 (다음 번에 재시도 가능하도록)
+      }
+    }));
+  }
 
   List<Post> _posts = [];
   List<Post> get posts => _posts;
@@ -63,6 +91,7 @@ class CommunityProvider with ChangeNotifier {
     if (refresh) {
       _lastDocument = null;
       _posts.clear();
+      _userCache.clear(); // 새로고침 시 유저 캐시도 비워서 최신 프사를 가져오도록 함
     }
 
     _isLoading = true;
@@ -73,6 +102,11 @@ class CommunityProvider with ChangeNotifier {
       final fetchedPosts =
           await _repository.getPosts(limit: 20, startAfter: _lastDocument);
       _posts.addAll(fetchedPosts);
+
+      // 게시글 목록에 포함된 작성자들의 프로필 정보 동적으로 불러오기 (캐시)
+      await _fetchMissingUsers(
+          fetchedPosts.map((p) => p.authorId).whereType<String>());
+
       // MVP 단계에서는 단순 갱신을 위해 lastDocument를 엄격하게 다루지 않습니다.
     } catch (e) {
       _errorMessage = e.toString();
@@ -90,6 +124,12 @@ class CommunityProvider with ChangeNotifier {
       final post = await _repository.getPostById(postId);
       if (post != null) {
         _posts = List.from(_posts)..add(post);
+
+        // 단일 게시글 작성자 프로필 정보 동적으로 불러오기
+        if (post.authorId != null) {
+          await _fetchMissingUsers([post.authorId!]);
+        }
+
         notifyListeners();
       }
     } catch (e) {
@@ -146,7 +186,8 @@ class CommunityProvider with ChangeNotifier {
         authorId: authorId,
         authorNickname: authorNickname,
         authorAvatarUrl: authorAvatarUrl,
-        snippet: content.length > 50 ? '${content.substring(0, 50)}...' : content,
+        snippet:
+            content.length > 50 ? '${content.substring(0, 50)}...' : content,
       );
       await _repository.addPost(newPost);
 
@@ -173,7 +214,7 @@ class CommunityProvider with ChangeNotifier {
     required String category,
     required List<String> tags,
     required List<String> existingImageUrls, // UI에서 삭제되지 않고 남은 기존 네트워크 이미지들
-    required List<File> newImageFiles,       // 갤러리에서 새로 추가한 로컬 파일들
+    required List<File> newImageFiles, // 갤러리에서 새로 추가한 로컬 파일들
     required String authorId,
     void Function(int current, int total, double progress)? onImageProgress,
   }) async {
@@ -184,9 +225,11 @@ class CommunityProvider with ChangeNotifier {
     try {
       // 1. 기존 게시글 데이터를 로컬에서 찾기
       final postToEdit = _posts.firstWhere((p) => p.id == postId);
-      
+
       // 2. 사용자가 X를 눌러 삭제한 기존 이미지들을 스토리지에서 지우기
-      final deletedImageUrls = postToEdit.imageUrls.where((url) => !existingImageUrls.contains(url)).toList();
+      final deletedImageUrls = postToEdit.imageUrls
+          .where((url) => !existingImageUrls.contains(url))
+          .toList();
       for (final url in deletedImageUrls) {
         try {
           final ref = FirebaseStorage.instance.refFromURL(url);
@@ -226,7 +269,8 @@ class CommunityProvider with ChangeNotifier {
         'tags': tags,
         'hasImage': finalImageUrls.isNotEmpty,
         'imageUrls': finalImageUrls,
-        'snippet': content.length > 50 ? '${content.substring(0, 50)}...' : content,
+        'snippet':
+            content.length > 50 ? '${content.substring(0, 50)}...' : content,
       };
 
       // 6. 리포지토리를 통해 Firestore 업데이트 (이때 editHistory 타임스탬프가 추가됨)
@@ -303,8 +347,8 @@ class CommunityProvider with ChangeNotifier {
 
       if (onProgress != null) {
         uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          final double progress = snapshot.totalBytes == 0 
-              ? 0.0 
+          final double progress = snapshot.totalBytes == 0
+              ? 0.0
               : snapshot.bytesTransferred / snapshot.totalBytes;
           onProgress(progress);
         });
@@ -339,6 +383,10 @@ class CommunityProvider with ChangeNotifier {
     try {
       final comments = await _repository.getComments(postId);
       _currentPostComments.addAll(comments);
+
+      // 댓글 및 대댓글 작성자들의 프로필 정보 동적으로 불러오기
+      await _fetchMissingUsers(
+          comments.map((c) => c.authorId).whereType<String>());
 
       if (currentUserId != null) {
         _likedCommentIds = await _repository.getLikedCommentIds(currentUserId);
@@ -477,8 +525,7 @@ class CommunityProvider with ChangeNotifier {
     if (userId == null) return;
 
     try {
-      final actions =
-          await _repository.getUserPostActions(postId, userId);
+      final actions = await _repository.getUserPostActions(postId, userId);
       _isCurrentPostLiked = actions['isLiked'] ?? false;
       _isCurrentPostScrapped = actions['isScrapped'] ?? false;
       notifyListeners();
@@ -566,8 +613,7 @@ class CommunityProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repository.toggleScrap(
-          postId, userId, _isCurrentPostScrapped);
+      await _repository.toggleScrap(postId, userId, _isCurrentPostScrapped);
     } catch (e) {
       // 실패 시 롤백
       _isCurrentPostScrapped = originalState;

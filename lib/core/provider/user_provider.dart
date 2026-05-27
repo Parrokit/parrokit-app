@@ -188,6 +188,7 @@ class UserProvider extends ChangeNotifier {
       if (user != null) {
         _currentUser = user;
         unawaited(Purchases.logIn(user.id));
+        _checkAndNotifyRouter();
         notifyListeners();
       }
     } finally {
@@ -202,6 +203,7 @@ class UserProvider extends ChangeNotifier {
       if (user != null) {
         _currentUser = user;
         unawaited(Purchases.logIn(user.id));
+        _checkAndNotifyRouter();
         notifyListeners();
       }
     } finally {
@@ -323,6 +325,7 @@ class UserProvider extends ChangeNotifier {
       await _userRepository.signOut();
       () async { try { await Purchases.logOut(); } catch (_) {} }();
       _currentUser = null;
+      _checkAndNotifyRouter();
       notifyListeners();
     } finally {
       _setLoading(false);
