@@ -341,10 +341,6 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                 icon: Icon(isBookmarked ? Icons.bookmark : Icons.bookmark_border_rounded, size: 20, color: isBookmarked ? Colors.orange[600] : const Color(0xFF65676B)),
                 onPressed: () => context.read<CommunityProvider>().toggleScrap(question.id, currentUser?.id ?? ''),
               ),
-              IconButton(
-                icon: const Icon(Icons.ios_share_rounded, size: 20, color: Color(0xFF65676B)),
-                onPressed: () {},
-              ),
             ],
           ),
         ],
@@ -457,7 +453,22 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                   children: [
                     Row(
                       children: [
-                        IconButton(icon: const Icon(Icons.bolt_outlined, size: 18, color: Color(0xFF65676B)), onPressed: () {}, padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                        IconButton(
+                          icon: Icon(
+                            provider.likedCommentIds.contains(answer.id) ? Icons.bolt : Icons.bolt_outlined, 
+                            size: 18, 
+                            color: provider.likedCommentIds.contains(answer.id) ? Colors.orange[600] : const Color(0xFF65676B)
+                          ), 
+                          onPressed: () {
+                            if (currentUser != null) {
+                              provider.toggleCommentLike(question.id, answer.id, currentUser.id);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
+                            }
+                          }, 
+                          padding: EdgeInsets.zero, 
+                          constraints: const BoxConstraints()
+                        ),
                         const SizedBox(width: 4),
                         Text('${answer.likeCount}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                       ],
