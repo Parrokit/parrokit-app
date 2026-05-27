@@ -1,7 +1,7 @@
 package com.bull.parrokit
 
-import com.ryanheise.audioservice.AudioServiceActivity
+import com.ryanheise.audioservice.AudioServiceFragmentActivity
 
-class MainActivity : AudioServiceActivity() {
+class MainActivity : AudioServiceFragmentActivity() {
     // 따로 커스텀 코드 없으면 이대로 비어 있어도 됩니다.
 }

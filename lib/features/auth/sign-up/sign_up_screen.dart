@@ -16,27 +16,58 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
+  final _nicknameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  bool _isNicknameAvailable = false;
+  bool _hasCheckedNickname = false;
+  String? _nicknameCheckMessage;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _passwordConfirmController.dispose();
+    _nicknameController.dispose();
     super.dispose();
   }
 
   bool get _isLoading => context.watch<UserProvider>().isLoading;
 
+  Future<void> _checkNickname() async {
+    final nickname = _nicknameController.text.trim();
+    if (nickname.isEmpty) {
+      setState(() {
+        _nicknameCheckMessage = '닉네임을 입력해주세요.';
+        _isNicknameAvailable = false;
+        _hasCheckedNickname = true;
+      });
+      return;
+    }
+
+    final isAvailable = await context.read<UserProvider>().isNicknameAvailable(nickname);
+    setState(() {
+      _isNicknameAvailable = isAvailable;
+      _hasCheckedNickname = true;
+      _nicknameCheckMessage = isAvailable ? '사용 가능한 닉네임입니다.' : '이미 사용 중인 닉네임입니다.';
+    });
+  }
+
   Future<void> _onSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    if (!_hasCheckedNickname || !_isNicknameAvailable) {
+      showToast('닉네임 중복 확인을 먼저 해주세요.');
+      return;
+    }
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final nickname = _nicknameController.text.trim();
     final userProvider = context.read<UserProvider>();
 
     try {
-      await userProvider.signUpWithEmail(email: email, password: password);
+      await userProvider.signUpWithEmail(email: email, password: password, nickname: nickname);
       if (!mounted) return;
       showToast('회원가입이 완료되었습니다. 이메일로 전송된 인증 메일을 확인해 주세요.');
       context.pop(); // Go back to sign in
@@ -150,14 +181,80 @@ class _SignUpScreenState extends State<SignUpScreen> {
               borderSide: BorderSide(color: Color(0xFF0066FF), width: 2),
             ),
           ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) return '이메일을 입력해주세요.';
-            if (!value.contains('@')) return '올바른 이메일 형식이 아닙니다.';
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        // 비밀번호
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return '이메일을 입력해주세요.';
+              if (!value.contains('@')) return '올바른 이메일 형식이 아닙니다.';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          // 닉네임 입력 및 중복 확인
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _nicknameController,
+                  onChanged: (val) {
+                    setState(() {
+                      _hasCheckedNickname = false;
+                      _nicknameCheckMessage = null;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: '닉네임',
+                    labelStyle: TextStyle(
+                        color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                    floatingLabelStyle: const TextStyle(
+                        color: Color(0xFF0066FF), fontWeight: FontWeight.bold),
+                    prefixIconColor: iconColor,
+                    prefixIcon: const Icon(Icons.badge),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF0066FF), width: 2),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return '닉네임을 입력해주세요.';
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: ElevatedButton(
+                  onPressed: _nicknameController.text.trim().isEmpty ? null : _checkNickname,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0066FF),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('중복 확인'),
+                ),
+              ),
+            ],
+          ),
+          if (_hasCheckedNickname && _nicknameCheckMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _nicknameCheckMessage!,
+                  style: TextStyle(
+                    color: _isNicknameAvailable ? Colors.green : Colors.red,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+          // 비밀번호
         TextFormField(
           controller: _passwordController,
           obscureText: true,

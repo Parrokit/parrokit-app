@@ -3,11 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/theme/app_radius.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import 'package:parrokit/features/settings/more/data/avatar_presets.dart';
-import 'package:provider/provider.dart';
 
 class AvatarSelectionSheet extends StatelessWidget {
   const AvatarSelectionSheet({super.key});
@@ -53,9 +51,8 @@ class AvatarSelectionSheet extends StatelessWidget {
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return GestureDetector(
-                    onTap: () async {
-                      context.pop();
-                      await context.read<UserProvider>().updatePhotoUrl(null);
+                    onTap: () {
+                      context.pop(''); // 빈 문자열로 리턴하여 제거를 알림
                     },
                     child: Container(
                       decoration: BoxDecoration(
@@ -75,10 +72,8 @@ class AvatarSelectionSheet extends StatelessWidget {
                 }
                 final url = avatarPresets[index - 1];
                 return GestureDetector(
-                  onTap: () async {
-                    context.pop(); // 닫기 먼저
-                    // 업데이트 호출
-                    await context.read<UserProvider>().updatePhotoUrl(url);
+                  onTap: () {
+                    context.pop(url); // url 리턴
                   },
                   child: Container(
                     decoration: BoxDecoration(

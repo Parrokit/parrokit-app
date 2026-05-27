@@ -3,7 +3,7 @@ description: "Parrokit: 애니메이션 클립으로 즐기는 언어 학습 앱
 # Private Project - Do not publish to pub.dev
 publish_to: 'none'
 
-version: 1.0.4+74
+version: 1.0.5+82
 
 environment:
   sdk: ^3.6.1
@@ -106,6 +106,8 @@ dependencies:
   cloud_functions: ^6.2.0
   flutter_naver_login: ^2.1.1
   sign_in_with_apple: ^7.0.1
+  firebase_storage: ^13.4.1
+  flutter_markdown: ^0.7.7+1
 
 # -----------------------------------------------------------
 # Dependency Overrides

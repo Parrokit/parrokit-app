@@ -166,7 +166,7 @@ Future<void> _initKakao() async {
   try {
     final nativeAppKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
     final javaScriptAppKey = dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'];
-    
+
     if (nativeAppKey != null && nativeAppKey.isNotEmpty) {
       KakaoSdk.init(
         nativeAppKey: nativeAppKey,

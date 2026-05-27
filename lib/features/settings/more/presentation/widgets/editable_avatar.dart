@@ -10,9 +10,10 @@
 // Presentation Layer > Widgets
 // ============================================================================
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'avatar_selection_sheet.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// 편집 가능한 사용자 아바타.
 class EditableAvatar extends StatelessWidget {
@@ -22,10 +23,14 @@ class EditableAvatar extends StatelessWidget {
   /// 아바타 크기
   final double size;
 
+  /// 편집 후 선택된 URL을 돌려주는 콜백 (빈 문자열 ''은 제거를 의미)
+  final Function(String)? onSelected;
+
   const EditableAvatar({
     super.key,
     required this.photoUrl,
     this.size = 72,
+    this.onSelected,
   });
 
   @override
@@ -33,12 +38,42 @@ class EditableAvatar extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      onTap: () {
-        showModalBottomSheet(
+      onTap: () async {
+        if (onSelected == null) return;
+        
+        final hasPhoto = photoUrl != null && photoUrl!.isNotEmpty;
+        
+        final choice = await showModalBottomSheet<int>(
           context: context,
-          builder: (context) => const AvatarSelectionSheet(),
           showDragHandle: true,
+          builder: (context) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('사진에서 선택'),
+                  onTap: () => Navigator.pop(context, 1),
+                ),
+                if (hasPhoto)
+                  ListTile(
+                    leading: const Icon(Icons.delete_outline, color: Colors.red),
+                    title: const Text('현재 사진 삭제', style: TextStyle(color: Colors.red)),
+                    onTap: () => Navigator.pop(context, 2),
+                  ),
+              ],
+            ),
+          ),
         );
+
+        if (choice == 1) {
+          final picker = ImagePicker();
+          final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+          if (pickedFile != null) {
+            onSelected!(pickedFile.path); // 로컬 파일 경로 리턴
+          }
+        } else if (choice == 2) {
+          onSelected!(''); // 삭제(초기화)를 의미하는 빈 문자열 리턴
+        }
       },
       child: Stack(
         children: [
@@ -87,7 +122,7 @@ class EditableAvatar extends StatelessWidget {
   }
 
   Widget _buildAvatar(String? photoUrl, ColorScheme cs) {
-    if (photoUrl == null) {
+    if (photoUrl == null || photoUrl.isEmpty) {
       return Center(
         child: Icon(
           Icons.person_outline,
@@ -96,15 +131,43 @@ class EditableAvatar extends StatelessWidget {
         ),
       );
     }
-
-    return SvgPicture.network(
+    if (photoUrl.startsWith('assets/avatars/')) {
+      return SvgPicture.asset(
+        photoUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      );
+    }
+    if (photoUrl.startsWith('/') || photoUrl.startsWith('file://')) {
+      return Image.file(
+        File(photoUrl),
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      );
+    }
+    
+    // 그 외 일반 이미지 (Firebase Storage에서 가져온 JPG/PNG 등)
+    // 과거에 저장된 SVG(Dicebear) URL일 경우 에러가 나면서 자동으로 errorBuilder가 실행되어 기본 아이콘을 보여줌
+    return Image.network(
       photoUrl,
       fit: BoxFit.cover,
       width: size,
       height: size,
-      placeholderBuilder: (context) => const Center(
-        child: CircularProgressIndicator(strokeWidth: 2),
+      errorBuilder: (context, error, stackTrace) => Center(
+        child: Icon(
+          Icons.person_outline,
+          size: size * 0.55,
+          color: cs.onSurfaceVariant,
+        ),
       ),
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return const Center(
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
+      },
     );
   }
 }

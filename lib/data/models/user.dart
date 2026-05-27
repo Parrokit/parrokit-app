@@ -16,6 +16,7 @@ class PaUser {
   final int coins;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? lastNicknameChangedAt;
 
   const PaUser({
     required this.id,
@@ -25,6 +26,7 @@ class PaUser {
     this.coins = 20,
     this.createdAt,
     this.updatedAt,
+    this.lastNicknameChangedAt,
   });
 
   /// 코인 증감이 적용된 새 인스턴스를 반환합니다.
@@ -43,6 +45,7 @@ class PaUser {
     int? coins,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastNicknameChangedAt,
   }) {
     return PaUser(
       id: id ?? this.id,
@@ -52,6 +55,7 @@ class PaUser {
       coins: coins ?? this.coins,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastNicknameChangedAt: lastNicknameChangedAt ?? this.lastNicknameChangedAt,
     );
   }
 
@@ -66,6 +70,7 @@ class PaUser {
       coins: (json['coins'] as num?)?.toInt() ?? 0,
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
+      lastNicknameChangedAt: _parseDateTime(json['lastNicknameChangedAt']),
     );
   }
 
@@ -79,6 +84,7 @@ class PaUser {
       'coins': coins,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'lastNicknameChangedAt': lastNicknameChangedAt?.toIso8601String(),
     };
   }
 

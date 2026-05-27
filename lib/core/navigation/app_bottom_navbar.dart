@@ -34,6 +34,7 @@ class AppBottomNavBar extends StatelessWidget {
       onTap: onTap,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '홈'),
+        BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
         BottomNavigationBarItem(
             icon: Icon(Icons.slow_motion_video), label: '쇼츠'),
         BottomNavigationBarItem(icon: Icon(Icons.bookmarks), label: '라이브러리'),

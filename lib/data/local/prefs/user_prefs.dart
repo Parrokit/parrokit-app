@@ -22,6 +22,7 @@ class UserPrefs {
   static const _keyEmail = 'user.email';
   static const _keyPhotoUrl = 'user.photoUrl';
   static const _keyCoins = 'user.coins';
+  static const _keyLastNicknameChangedAt = 'user.lastNicknameChangedAt';
 
   final SharedPreferences _prefs;
 
@@ -39,6 +40,9 @@ class UserPrefs {
     final email = _prefs.getString(_keyEmail);
     final photoUrl = _prefs.getString(_keyPhotoUrl);
     final coins = _prefs.getInt(_keyCoins) ?? 0;
+    
+    final lastNicknameStr = _prefs.getString(_keyLastNicknameChangedAt);
+    final lastNicknameChangedAt = lastNicknameStr != null ? DateTime.tryParse(lastNicknameStr) : null;
 
     return PaUser(
       id: id,
@@ -46,6 +50,7 @@ class UserPrefs {
       email: email,
       photoUrl: photoUrl,
       coins: coins,
+      lastNicknameChangedAt: lastNicknameChangedAt,
     );
   }
 
@@ -71,6 +76,12 @@ class UserPrefs {
     }
 
     await _prefs.setInt(_keyCoins, user.coins);
+
+    if (user.lastNicknameChangedAt != null) {
+      await _prefs.setString(_keyLastNicknameChangedAt, user.lastNicknameChangedAt!.toIso8601String());
+    } else {
+      await _prefs.remove(_keyLastNicknameChangedAt);
+    }
   }
 
   /// 유저의 코인 값만 갱신합니다.
@@ -95,6 +106,7 @@ class UserPrefs {
       _prefs.remove(_keyEmail),
       _prefs.remove(_keyPhotoUrl),
       _prefs.remove(_keyCoins),
+      _prefs.remove(_keyLastNicknameChangedAt),
     ]);
   }
 }

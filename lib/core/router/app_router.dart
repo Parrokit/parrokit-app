@@ -15,14 +15,24 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 
-// Features - Screens
 import 'package:parrokit/features/auth/sign-in/sign_in_screen.dart';
 import 'package:parrokit/features/auth/sign-up/sign_up_screen.dart';
 import 'package:parrokit/features/auth/find-pw/find_pw_screen.dart';
+import 'package:parrokit/features/auth/onboarding/onboarding_screen.dart';
 import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:parrokit/features/community/presentation/community_screen.dart';
+import 'package:parrokit/features/community/presentation/board/board_view_screen.dart';
+import 'package:parrokit/features/community/presentation/board/board_write_screen.dart';
+import 'package:parrokit/features/community/presentation/qeustion/qeustion_wirte_screen.dart';
+import 'package:parrokit/features/community/presentation/qeustion/question_view_screen.dart';
+import 'package:parrokit/features/community/presentation/vote/vote_write_screen.dart';
+import 'package:parrokit/features/community/presentation/vote/vote_view_screen.dart';
+import 'package:parrokit/features/community/presentation/community_menu_screen.dart';
+import 'package:parrokit/features/community/presentation/community_notification_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/content/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
+import 'package:parrokit/features/settings/more/presentation/profile_edit_screen.dart';
 import 'package:parrokit/features/discovery/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/content/clip-editor/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
@@ -49,12 +59,91 @@ GoRouter buildAppRouter({
     debugLogDiagnostics: true,
     initialLocation: AppRoutes.dashboardPath,
     redirect: _handleRedirect,
-    refreshListenable: userProvider,
+    refreshListenable: userProvider.routerRefreshNotifier,
     routes: [
       // ─────────────────────────────────────────────────────────────────
       // 단독 라우트 (쉘 외부)
       // ─────────────────────────────────────────────────────────────────
       _authRoute,
+      GoRoute(
+        path: AppRoutes.communityBoardWritePath,
+        name: AppRoutes.communityBoardWrite,
+        builder: (context, state) => const BoardWriteScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityQuestionWritePath,
+        name: AppRoutes.communityQuestionWrite,
+        builder: (context, state) => const QuestionWriteScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityVoteWritePath,
+        name: AppRoutes.communityVoteWrite,
+        builder: (context, state) => const VoteWriteScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityVoteViewPath,
+        name: AppRoutes.communityVoteView,
+        builder: (context, state) {
+          final voteId = state.pathParameters['voteId'];
+          if (voteId == null || voteId.isEmpty) {
+            return const Scaffold(
+              body: Center(
+                child: Text('voteId가 필요합니다.'),
+              ),
+            );
+          }
+          return VoteViewScreen(voteId: voteId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.communityQuestionViewPath,
+        name: AppRoutes.communityQuestionView,
+        builder: (context, state) {
+          final questionId = state.pathParameters['questionId'];
+          if (questionId == null || questionId.isEmpty) {
+            return const Scaffold(
+              body: Center(
+                child: Text('questionId가 필요합니다.'),
+              ),
+            );
+          }
+          return QuestionViewScreen(questionId: questionId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.communityMenuPath,
+        name: AppRoutes.communityMenu,
+        builder: (context, state) => const CommunityMenuScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityNotificationPath,
+        name: AppRoutes.communityNotification,
+        builder: (context, state) => const CommunityNotificationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityBoardViewPath,
+        name: AppRoutes.communityBoardView,
+        builder: (context, state) {
+          final postId = state.pathParameters['postId'];
+          if (postId == null || postId.isEmpty) {
+            return const Scaffold(
+              body: Center(
+                child: Text('postId가 필요합니다. (/community/board/:postId)'),
+              ),
+            );
+          }
+          return BoardViewScreen(postId: postId);
+        },
+      ),
+
+      // ─────────────────────────────────────────────────────────────────
+      // Onboarding Route (소셜 로그인 후 닉네임 설정용)
+      // ─────────────────────────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.onboardingPath,
+        name: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(),
+      ),
 
       // ─────────────────────────────────────────────────────────────────
       // ShellRoute (하단 네비바 + 자식 화면)
@@ -86,8 +175,20 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
     return '${AppRoutes.authPath}/${AppRoutes.signInPath}';
   }
 
-  if (user.isLoggedIn && isOnAuth) {
-    return AppRoutes.dashboardPath;
+  // 3) 닉네임 체크 방어막 (로그인 상태)
+  if (user.isLoggedIn) {
+    final hasNickname = user.currentUser?.displayName != null && user.currentUser!.displayName!.isNotEmpty;
+    final isOnOnboarding = loc == AppRoutes.onboardingPath;
+
+    // 닉네임이 없는데 온보딩 화면이 아니면 -> 강제로 온보딩 이동
+    if (!hasNickname && !isOnOnboarding) {
+      return AppRoutes.onboardingPath;
+    }
+    
+    // 닉네임이 있는데 온보딩 화면이나 Auth 화면에 있으면 -> 대시보드로
+    if (hasNickname && (isOnOnboarding || isOnAuth)) {
+      return AppRoutes.dashboardPath;
+    }
   }
 
   // Handle bare /auth redirect to /auth/sign-in
@@ -156,6 +257,16 @@ ShellRoute get _shellRoute => ShellRoute(
           ),
         ),
 
+        // Community
+        GoRoute(
+          path: AppRoutes.communityPath,
+          name: AppRoutes.community,
+          pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.community,
+            child: CommunityScreen(),
+          ),
+        ),
+
         // Explore (Shorts)
         GoRoute(
           path: AppRoutes.explorePath,
@@ -188,6 +299,14 @@ ShellRoute get _shellRoute => ShellRoute(
             name: AppRoutes.more,
             child: MoreScreen(),
           ),
+          routes: [
+            GoRoute(
+              path: AppRoutes.profileEditPath,
+              name: AppRoutes.profileEdit,
+              parentNavigatorKey: rootNavigatorKey,
+              builder: (context, state) => const ProfileEditScreen(),
+            ),
+          ],
         ),
 
         // Recents

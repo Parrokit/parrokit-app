@@ -23,6 +23,13 @@ class UserProvider extends ChangeNotifier {
   PaUser? _currentUser;
   bool _isLoading = false;
 
+  /// 라우터 새로고침 전용 Notifier (로그인 상태, 온보딩 상태 변경 시에만 호출)
+  final ChangeNotifier routerRefreshNotifier = ChangeNotifier();
+  
+  // 라우팅 상태 캐싱용 변수
+  bool _lastIsLoggedIn = false;
+  bool _lastHasNickname = false;
+
   UserProvider(this._userRepository);
 
   /// 현재 로그인된 유저(없을 수도 있음)
@@ -51,6 +58,20 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// 내부적으로 라우팅에 영향을 주는 상태가 바뀌었는지 확인하고 알림
+  void _checkAndNotifyRouter() {
+    final currentIsLoggedIn = isLoggedIn;
+    final currentHasNickname = _currentUser?.displayName != null && 
+        _currentUser!.displayName!.isNotEmpty;
+        
+    if (_lastIsLoggedIn != currentIsLoggedIn || _lastHasNickname != currentHasNickname) {
+      _lastIsLoggedIn = currentIsLoggedIn;
+      _lastHasNickname = currentHasNickname;
+      // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+      routerRefreshNotifier.notifyListeners();
+    }
+  }
+
   /// 코인을 delta 만큼 증감시키고, 변경 사항을 UI에 반영합니다.
   /// - delta는 음수도 허용됩니다.
   Future<void> addCoins(int delta) async {
@@ -60,6 +81,7 @@ class UserProvider extends ChangeNotifier {
     if (updated != null) {
       _currentUser = updated;
       notifyListeners();
+      _checkAndNotifyRouter();
     }
   }
 
@@ -68,12 +90,14 @@ class UserProvider extends ChangeNotifier {
     await _userRepository.saveUser(user);
     _currentUser = user;
     notifyListeners();
+    _checkAndNotifyRouter();
   }
 
   /// 이메일 + 비밀번호 회원가입 래핑
   Future<void> signUpWithEmail({
     required String email,
     required String password,
+    String? nickname,
     bool sendEmailVerification = true,
   }) async {
     _setLoading(true);
@@ -83,9 +107,23 @@ class UserProvider extends ChangeNotifier {
         password: password,
         sendEmailVerification: sendEmailVerification,
       );
-      _currentUser = user;
-      unawaited(Purchases.logIn(user.id));
+      
+      // 회원가입 직후 닉네임 설정이 있다면 연달아 세팅
+      if (nickname != null && nickname.isNotEmpty) {
+        await _userRepository.updateDisplayName(nickname);
+      }
+      
+      // 최신 상태 다시 불러오기
+      final updatedUser = await _userRepository.getCurrentUser();
+      if (updatedUser != null) {
+        _currentUser = updatedUser;
+      } else {
+        _currentUser = user;
+      }
+      
+      unawaited(Purchases.logIn(_currentUser!.id));
       notifyListeners();
+      _checkAndNotifyRouter();
     } finally {
       _setLoading(false);
     }
@@ -105,6 +143,7 @@ class UserProvider extends ChangeNotifier {
       _currentUser = user;
       unawaited(Purchases.logIn(user.id));
       notifyListeners();
+      _checkAndNotifyRouter();
     } finally {
       _setLoading(false);
     }
@@ -119,6 +158,7 @@ class UserProvider extends ChangeNotifier {
         _currentUser = user;
         unawaited(Purchases.logIn(user.id));
         notifyListeners();
+        _checkAndNotifyRouter();
       }
     } finally {
       _setLoading(false);
@@ -148,6 +188,7 @@ class UserProvider extends ChangeNotifier {
       if (user != null) {
         _currentUser = user;
         unawaited(Purchases.logIn(user.id));
+        _checkAndNotifyRouter();
         notifyListeners();
       }
     } finally {
@@ -162,6 +203,7 @@ class UserProvider extends ChangeNotifier {
       if (user != null) {
         _currentUser = user;
         unawaited(Purchases.logIn(user.id));
+        _checkAndNotifyRouter();
         notifyListeners();
       }
     } finally {
@@ -192,6 +234,7 @@ class UserProvider extends ChangeNotifier {
       if (refreshed != null) {
         _currentUser = refreshed;
         notifyListeners();
+        _checkAndNotifyRouter();
       }
     } finally {
       _setLoading(false);
@@ -210,6 +253,7 @@ class UserProvider extends ChangeNotifier {
         clearPhotoUrl: photoUrl == null,
       );
       notifyListeners();
+      _checkAndNotifyRouter();
     }
 
     _setLoading(true);
@@ -241,6 +285,7 @@ class UserProvider extends ChangeNotifier {
         clearDisplayName: displayName == null,
       );
       notifyListeners();
+      _checkAndNotifyRouter();
     }
 
     _setLoading(true);
@@ -251,6 +296,11 @@ class UserProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// 닉네임 중복 여부를 확인합니다.
+  Future<bool> isNicknameAvailable(String nickname) async {
+    return await _userRepository.isNicknameAvailable(nickname);
   }
 
   /// 회원탈퇴.
@@ -275,6 +325,7 @@ class UserProvider extends ChangeNotifier {
       await _userRepository.signOut();
       () async { try { await Purchases.logOut(); } catch (_) {} }();
       _currentUser = null;
+      _checkAndNotifyRouter();
       notifyListeners();
     } finally {
       _setLoading(false);
