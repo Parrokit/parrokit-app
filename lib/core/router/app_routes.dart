@@ -21,6 +21,7 @@ abstract class AppRoutes {
   static const explore = 'explore';
   static const library = 'library';
   static const more = 'more';
+  static const profileEdit = 'profile_edit';
   static const clips = 'clips';
   static const recom = 'recom';
   static const recomResult = 'recom_result';
@@ -63,6 +64,7 @@ abstract class AppRoutes {
   static const explorePath = '/explore';
   static const libraryPath = '/library';
   static const morePath = '/more';
+  static const profileEditPath = 'profile_edit';
   static const clipsPath = '/clips';
   static const recentsPath = '/recents';
   static const clipsCreatePath = 'create';

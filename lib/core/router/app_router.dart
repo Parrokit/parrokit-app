@@ -32,6 +32,7 @@ import 'package:parrokit/features/community/presentation/community_notification_
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/content/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
+import 'package:parrokit/features/settings/more/presentation/profile_edit_screen.dart';
 import 'package:parrokit/features/discovery/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/content/clip-editor/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
@@ -298,6 +299,14 @@ ShellRoute get _shellRoute => ShellRoute(
             name: AppRoutes.more,
             child: MoreScreen(),
           ),
+          routes: [
+            GoRoute(
+              path: AppRoutes.profileEditPath,
+              name: AppRoutes.profileEdit,
+              parentNavigatorKey: rootNavigatorKey,
+              builder: (context, state) => const ProfileEditScreen(),
+            ),
+          ],
         ),
 
         // Recents

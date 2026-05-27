@@ -110,9 +110,16 @@ class FirebaseUserService {
       displayName: data['displayName'],
       email: data['email'],
       photoUrl: data['photoUrl'],
-      coins: data['coins'] ?? 0,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      updatedAt: DateTime.now(),
+      coins: (data['coins'] as num?)?.toInt() ?? 0,
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : null,
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
+      lastNicknameChangedAt: data['lastNicknameChangedAt'] != null
+          ? (data['lastNicknameChangedAt'] as Timestamp).toDate()
+          : null,
     );
   }
 

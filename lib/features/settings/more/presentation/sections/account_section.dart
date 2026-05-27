@@ -8,73 +8,41 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:parrokit/features/settings/more/presentation/widgets/editable_avatar.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
-import 'package:parrokit/features/community/providers/community_provider.dart';
-import 'package:parrokit/core/config/app_config.dart';
+import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'email_verification_section.dart';
-import 'package:parrokit/features/settings/more/presentation/widgets/nickname_edit_dialog.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
 
 /// 계정 섹션.
-class AccountSection extends StatefulWidget {
+class AccountSection extends StatelessWidget {
   const AccountSection({super.key});
 
-  @override
-  State<AccountSection> createState() => _AccountSectionState();
-}
-
-class _AccountSectionState extends State<AccountSection> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  Future<void> _onLogout() async {
-    final userProvider = context.read<UserProvider>();
-    final communityProvider = context.read<CommunityProvider>();
-    
-    try {
-      // 1. 커뮤니티 전역 상태(글 목록, 스크랩, 조회수 등) 초기화
-      communityProvider.clear();
-      
-      // 2. 실제 인증 로그아웃 처리
-      await userProvider.signOut();
-      
-      if (!mounted) return;
-      showToast('로그아웃되었습니다.');
-    } catch (e) {
-      if (!mounted) return;
-      showToast('로그아웃 중 오류가 발생했습니다: $e');
-    }
-  }
-
-  Future<void> _checkEmailVerification() async {
+  Future<void> _checkEmailVerification(BuildContext context) async {
     final userProvider = context.read<UserProvider>();
     try {
       await userProvider.reloadFirebaseUser();
       final verified = await userProvider.isEmailVerified();
-      if (!mounted) return;
+      if (!context.mounted) return;
       showToast(verified ? '이메일 인증이 완료되었습니다.' : '아직 이메일 인증이 완료되지 않았습니다.');
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       showToast('이메일 인증 상태 확인 중 오류가 발생했습니다: $e');
     }
   }
 
-  Future<void> _resendVerificationEmail() async {
+  Future<void> _resendVerificationEmail(BuildContext context) async {
     final userProvider = context.read<UserProvider>();
     try {
       await userProvider.sendEmailVerification();
-      if (!mounted) return;
+      if (!context.mounted) return;
       showToast('인증 메일을 전송했습니다. 메일이 보이지 않는다면 스팸 메일함도 확인해 주세요.');
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       showToast('인증 메일 재전송 중 오류가 발생했습니다: $e');
     }
   }
@@ -101,37 +69,32 @@ class _AccountSectionState extends State<AccountSection> {
           gradient: isDark
               ? AppColors.accountCardGradientDark
               : AppColors.accountCardGradient,
-          child: Column(
+          child: Stack(
             children: [
               Row(
                 children: [
-                  EditableAvatar(photoUrl: user?.photoUrl, size: 56),
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: cs.surfaceContainerHighest,
+                    backgroundImage: user?.photoUrl != null
+                        ? NetworkImage(user!.photoUrl!)
+                        : null,
+                    child: user?.photoUrl == null
+                        ? const Icon(Icons.person, size: 30)
+                        : null,
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              user?.displayName ?? user?.email ?? '-',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: () => showNicknameEditDialog(
-                                  context, user?.displayName),
-                              child: Icon(
-                                Icons.edit_rounded,
-                                size: 16,
-                                color: cs.onSurface.withValues(alpha: 0.4),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          user?.displayName ?? user?.email ?? '-',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
                         Wrap(
@@ -168,13 +131,17 @@ class _AccountSectionState extends State<AccountSection> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.tonalIcon(
-                  onPressed: userProvider.isLoading ? null : _onLogout,
-                  icon: const Icon(Icons.logout_rounded, size: 16),
-                  label: const Text('로그아웃'),
+              // 프로필 통합 편집 버튼 (우측 상단)
+              Positioned(
+                top: -8,
+                right: -8,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.edit_rounded,
+                    size: 20,
+                    color: cs.onSurface.withValues(alpha: 0.6),
+                  ),
+                  onPressed: () => context.push(AppRoutes.profileEdit),
                 ),
               ),
             ],
@@ -186,8 +153,8 @@ class _AccountSectionState extends State<AccountSection> {
           const SizedBox(height: 12),
           EmailVerificationSection(
             isLoading: userProvider.isLoading,
-            onCheckVerification: _checkEmailVerification,
-            onResendEmail: _resendVerificationEmail,
+            onCheckVerification: () => _checkEmailVerification(context),
+            onResendEmail: () => _resendVerificationEmail(context),
           ),
         ],
       ],

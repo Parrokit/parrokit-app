@@ -74,6 +74,7 @@ class UserRepository {
       coins: serverUser?.coins ?? localUser?.coins ?? 0,
       createdAt: serverUser?.createdAt ?? localUser?.createdAt,
       updatedAt: DateTime.now(),
+      lastNicknameChangedAt: serverUser?.lastNicknameChangedAt ?? localUser?.lastNicknameChangedAt,
     );
 
     // 5. 최신 상태를 로컬에도 다시 캐싱
@@ -468,6 +469,7 @@ class UserRepository {
         displayName: displayName,
         clearDisplayName: displayName == null,
         updatedAt: DateTime.now(),
+        lastNicknameChangedAt: DateTime.now(),
       );
       await _userPrefs.saveUser(updated);
     }
