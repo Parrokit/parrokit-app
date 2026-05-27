@@ -84,9 +84,15 @@ class CommunityProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  String _currentPostType = 'board';
+
   // 게시글 목록 가져오기
-  Future<void> fetchPosts({bool refresh = false}) async {
+  Future<void> fetchPosts({String? postType, bool refresh = false}) async {
     if (_isLoading) return;
+
+    if (postType != null) {
+      _currentPostType = postType;
+    }
 
     if (refresh) {
       _lastDocument = null;
@@ -100,7 +106,7 @@ class CommunityProvider with ChangeNotifier {
 
     try {
       final fetchedPosts =
-          await _repository.getPosts(limit: 20, startAfter: _lastDocument);
+          await _repository.getPosts(postType: _currentPostType, limit: 20, startAfter: _lastDocument);
       _posts.addAll(fetchedPosts);
 
       // 게시글 목록에 포함된 작성자들의 프로필 정보 동적으로 불러오기 (캐시)

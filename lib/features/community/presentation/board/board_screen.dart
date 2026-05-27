@@ -20,7 +20,7 @@ class _BoardScreenState extends State<BoardScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommunityProvider>().fetchPosts(refresh: true);
+      context.read<CommunityProvider>().fetchPosts(postType: 'board', refresh: true);
     });
   }
 
@@ -58,7 +58,7 @@ class _BoardScreenState extends State<BoardScreen> {
 
     return RefreshIndicator(
       onRefresh: () =>
-          context.read<CommunityProvider>().fetchPosts(refresh: true),
+          context.read<CommunityProvider>().fetchPosts(postType: 'board', refresh: true),
       child: ListView.separated(
         padding: const EdgeInsets.only(bottom: 80), // Fab 여백
         itemCount: filteredPosts.length,

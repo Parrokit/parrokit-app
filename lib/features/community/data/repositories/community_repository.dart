@@ -85,11 +85,11 @@ class CommunityRepository {
   }
 
   // Fetch posts (basic version, ordered by createdAt desc)
-  Future<List<Post>> getPosts({int limit = 10, DocumentSnapshot? startAfter}) async {
+  Future<List<Post>> getPosts({String postType = 'board', int limit = 10, DocumentSnapshot? startAfter}) async {
     try {
       Query query = _firestore
           .collection('posts')
-          .where('postType', isEqualTo: 'board')
+          .where('postType', isEqualTo: postType)
           .orderBy('createdAt', descending: true)
           .limit(limit);
 

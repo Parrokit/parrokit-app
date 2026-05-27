@@ -21,7 +21,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommunityProvider>().fetchPosts(refresh: true);
+      context.read<CommunityProvider>().fetchPosts(postType: 'question', refresh: true);
     });
   }
 
@@ -63,7 +63,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => context.read<CommunityProvider>().fetchPosts(refresh: true),
+      onRefresh: () => context.read<CommunityProvider>().fetchPosts(postType: 'question', refresh: true),
       child: ListView.separated(
         padding: const EdgeInsets.only(bottom: 80), // Fab space
         itemCount: questionPosts.length,
