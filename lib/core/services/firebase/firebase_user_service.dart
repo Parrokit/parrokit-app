@@ -32,12 +32,14 @@ class FirebaseUserService {
     return snap.data();
   }
 
-  Future<void> updateUserCoins({
+  Future<void> updateUserEconomy({
     required String uid,
-    required int coins,
+    required int parrots,
+    required int crackers,
   }) async {
     await _firestore.collection('users').doc(uid).update({
-      'coins': coins,
+      'parrots': parrots,
+      'crackers': crackers,
       'lastPurchaseAt': FieldValue.serverTimestamp(),
     });
   }
@@ -110,7 +112,8 @@ class FirebaseUserService {
       displayName: data['displayName'],
       email: data['email'],
       photoUrl: data['photoUrl'],
-      coins: (data['coins'] as num?)?.toInt() ?? 0,
+      parrots: (data['parrots'] as num?)?.toInt() ?? 0,
+      crackers: (data['crackers'] as num?)?.toInt() ?? 0,
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : null,

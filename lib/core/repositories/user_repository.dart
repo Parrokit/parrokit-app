@@ -71,7 +71,8 @@ class UserRepository {
           localUser?.displayName,
       email: fbUser.email ?? serverUser?.email ?? localUser?.email,
       photoUrl: fbUser.photoURL ?? serverUser?.photoUrl ?? localUser?.photoUrl,
-      coins: serverUser?.coins ?? localUser?.coins ?? 0,
+      parrots: serverUser?.parrots ?? localUser?.parrots ?? 0,
+      crackers: serverUser?.crackers ?? localUser?.crackers ?? 0,
       createdAt: serverUser?.createdAt ?? localUser?.createdAt,
       updatedAt: DateTime.now(),
       lastNicknameChangedAt: serverUser?.lastNicknameChangedAt ?? localUser?.lastNicknameChangedAt,
@@ -126,7 +127,8 @@ class UserRepository {
       id: fbUser.uid,
       displayName: fbUser.displayName,
       email: fbUser.email,
-      coins: 0, // 코인은 이후 Firestore 연동 시 확장
+      parrots: 0,
+      crackers: 0,
       createdAt: now,
       updatedAt: now,
     );
@@ -170,7 +172,8 @@ class UserRepository {
       email: fbUser.email ?? serverUser?.email ?? existingLocal?.email,
       photoUrl:
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
-      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
+      crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -223,7 +226,8 @@ class UserRepository {
       email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
       photoUrl:
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
-      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
+      crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -276,7 +280,8 @@ class UserRepository {
       email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
       photoUrl:
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
-      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
+      crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -326,7 +331,8 @@ class UserRepository {
       email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
       photoUrl:
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
-      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
+      crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -384,7 +390,8 @@ class UserRepository {
       email: refreshed.email ?? serverUser?.email ?? existingLocal?.email,
       photoUrl:
           refreshed.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
-      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
+      crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -416,9 +423,10 @@ class UserRepository {
     await _userPrefs.saveUser(updated);
 
     // 2) Firestore 갱신 (예시 코드)
-    await _firebaseUserService.updateUserCoins(
+    await _firebaseUserService.updateUserEconomy(
       uid: updated.id,
-      coins: updated.coins,
+      parrots: updated.parrots,
+      crackers: updated.crackers,
     );
 
     return updated;
@@ -551,7 +559,8 @@ class UserRepository {
       email: fbUser.email ?? serverUser?.email ?? existingLocal?.email ?? '',
       photoUrl:
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
-      coins: serverUser?.coins ?? existingLocal?.coins ?? 0,
+      parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 20,
+      crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 1000,
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );

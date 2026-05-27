@@ -1,9 +1,6 @@
 // lib/data/local/prefs/user_prefs.dart
 
-// lib/data/local/prefs/user_prefs.dart
-
 import 'package:shared_preferences/shared_preferences.dart';
-// clip_item not used here
 import 'package:parrokit/data/models/user.dart';
 
 /// 앱 로컬에 "현재 유저"의 최소 정보를 저장/로드하는 헬퍼.
@@ -12,16 +9,18 @@ import 'package:parrokit/data/models/user.dart';
 /// - userId
 /// - displayName
 /// - email
-/// - coins
+/// - parrots (패롯)
+/// - crackers (크래커)
 /// 정도만 다룹니다.
-/// 실제 도메인(클립, 에피소드, 결제 내역 등)은 drift / 서버 쪽에서 관리하고,
-/// 이 클래스는 로그인/식별 및 코인 표시를 위한 가벼운 설정 저장용으로 사용합니다.
+/// 실제 도메인 데이터는 Firestore 등에서 관리하고,
+/// 이 클래스는 로그인/식별 및 UI 초기 로딩 속도 향상을 위한 로컬 캐시로 사용합니다.
 class UserPrefs {
   static const _keyUserId = 'user.id';
   static const _keyDisplayName = 'user.displayName';
   static const _keyEmail = 'user.email';
   static const _keyPhotoUrl = 'user.photoUrl';
-  static const _keyCoins = 'user.coins';
+  static const _keyParrots = 'user.parrots';
+  static const _keyCrackers = 'user.crackers';
   static const _keyLastNicknameChangedAt = 'user.lastNicknameChangedAt';
 
   final SharedPreferences _prefs;
@@ -39,7 +38,8 @@ class UserPrefs {
     final displayName = _prefs.getString(_keyDisplayName);
     final email = _prefs.getString(_keyEmail);
     final photoUrl = _prefs.getString(_keyPhotoUrl);
-    final coins = _prefs.getInt(_keyCoins) ?? 0;
+    final parrots = _prefs.getInt(_keyParrots) ?? 0;
+    final crackers = _prefs.getInt(_keyCrackers) ?? 0;
     
     final lastNicknameStr = _prefs.getString(_keyLastNicknameChangedAt);
     final lastNicknameChangedAt = lastNicknameStr != null ? DateTime.tryParse(lastNicknameStr) : null;
@@ -49,7 +49,8 @@ class UserPrefs {
       displayName: displayName,
       email: email,
       photoUrl: photoUrl,
-      coins: coins,
+      parrots: parrots,
+      crackers: crackers,
       lastNicknameChangedAt: lastNicknameChangedAt,
     );
   }
@@ -75,27 +76,14 @@ class UserPrefs {
       await _prefs.remove(_keyPhotoUrl);
     }
 
-    await _prefs.setInt(_keyCoins, user.coins);
+    await _prefs.setInt(_keyParrots, user.parrots);
+    await _prefs.setInt(_keyCrackers, user.crackers);
 
     if (user.lastNicknameChangedAt != null) {
       await _prefs.setString(_keyLastNicknameChangedAt, user.lastNicknameChangedAt!.toIso8601String());
     } else {
       await _prefs.remove(_keyLastNicknameChangedAt);
     }
-  }
-
-  /// 유저의 코인 값만 갱신합니다.
-  Future<void> setCoins(int coins) async {
-    await _prefs.setInt(_keyCoins, coins);
-  }
-
-  /// 코인을 delta 만큼 증감시킵니다. (음수도 허용)
-  /// 현재 저장된 코인이 없다면 0을 기준으로 더합니다.
-  Future<int> addCoins(int delta) async {
-    final current = _prefs.getInt(_keyCoins) ?? 0;
-    final updated = current + delta;
-    await _prefs.setInt(_keyCoins, updated);
-    return updated;
   }
 
   /// 로컬에 저장된 유저 정보를 모두 제거합니다.
@@ -105,7 +93,8 @@ class UserPrefs {
       _prefs.remove(_keyDisplayName),
       _prefs.remove(_keyEmail),
       _prefs.remove(_keyPhotoUrl),
-      _prefs.remove(_keyCoins),
+      _prefs.remove(_keyParrots),
+      _prefs.remove(_keyCrackers),
       _prefs.remove(_keyLastNicknameChangedAt),
     ]);
   }

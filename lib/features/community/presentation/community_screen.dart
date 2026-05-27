@@ -4,7 +4,7 @@ import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import '../domain/data/community_filters.dart';
 import 'board/board_screen.dart';
-import 'qeustion/question_screen.dart';
+import 'question/question_screen.dart';
 import 'vote/vote_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
