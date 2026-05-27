@@ -10,7 +10,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
@@ -18,6 +17,8 @@ import 'package:parrokit/core/utils/show_toast.dart';
 import 'email_verification_section.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// 계정 섹션.
 class AccountSection extends StatelessWidget {
@@ -83,18 +84,16 @@ class AccountSection extends StatelessWidget {
                     ),
                     child: ClipOval(
                       child: user?.photoUrl != null
-                          ? Image.network(
-                              user!.photoUrl!,
+                          ? CachedNetworkImage(
+                              imageUrl: user!.photoUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
+                              placeholder: (context, url) => Shimmer.fromColors(
+                                baseColor: Colors.grey[300]!,
+                                highlightColor: Colors.grey[100]!,
+                                child: Container(color: Colors.white),
+                              ),
+                              errorWidget: (context, url, error) =>
                                   const Icon(Icons.person, size: 30),
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Padding(
-                                  padding: EdgeInsets.all(12),
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                );
-                              },
                             )
                           : const Icon(Icons.person, size: 30),
                     ),

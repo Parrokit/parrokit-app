@@ -6,8 +6,9 @@ import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:parrokit/features/community/presentation/board/board_write_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
@@ -32,15 +33,15 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final user = context.read<UserProvider>().currentUser;
       final provider = context.read<CommunityProvider>();
-      
+
       await Future.wait([
         provider.fetchPostDetails(widget.postId),
         provider.fetchComments(widget.postId, currentUserId: user?.id),
         provider.loadUserActions(widget.postId, userId: user?.id),
       ]);
-      
+
       provider.incrementViewCount(widget.postId, userId: user?.id);
-      
+
       if (mounted) {
         setState(() {
           _isFetchingDetails = false;
@@ -83,13 +84,13 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
     final provider = context.read<CommunityProvider>();
     final success = await provider.addComment(
-      widget.postId, 
+      widget.postId,
       text,
       authorId: currentUser.id,
       authorNickname: currentUser.displayName ?? '알 수 없음',
       authorAvatarUrl: currentUser.photoUrl,
     );
-    
+
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(provider.errorMessage ?? '댓글 등록에 실패했습니다.')),
@@ -99,7 +100,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
   void _showCommentOptionsSheet(Comment comment) {
     final currentUser = context.read<UserProvider>().currentUser;
-    final isMyComment = currentUser != null && comment.authorId == currentUser.id;
+    final isMyComment =
+        currentUser != null && comment.authorId == currentUser.id;
 
     showModalBottomSheet<void>(
       context: context,
@@ -128,16 +130,22 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          title: const Text('댓글 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
-                          content: const Text('정말로 이 댓글을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.'),
+                          title: const Text('댓글 삭제',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          content: const Text(
+                              '정말로 이 댓글을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                              child: const Text('취소',
+                                  style: TextStyle(color: Colors.grey)),
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('삭제', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                              child: const Text('삭제',
+                                  style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
@@ -147,7 +155,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
                       if (!context.mounted) return;
                       final provider = context.read<CommunityProvider>();
-                      final success = await provider.deleteComment(widget.postId, comment.id);
+                      final success = await provider.deleteComment(
+                          widget.postId, comment.id);
 
                       if (!context.mounted) return;
                       if (success) {
@@ -156,7 +165,9 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(provider.errorMessage ?? '삭제에 실패했습니다.')),
+                          SnackBar(
+                              content:
+                                  Text(provider.errorMessage ?? '삭제에 실패했습니다.')),
                         );
                       }
                     },
@@ -208,7 +219,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => BoardWriteScreen(editPost: post),
+                          builder: (context) =>
+                              BoardWriteScreen(editPost: post),
                         ),
                       );
                     },
@@ -218,7 +230,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                     isDestructive: true,
                     onTap: () async {
                       Navigator.pop(sheetContext); // 바텀시트만 안전하게 닫기
-                      
+
                       // 1. 확인 다이얼로그 띄우기 (부모 화면의 context 사용)
                       final confirm = await showDialog<bool>(
                         context: context,
@@ -226,28 +238,34 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          title: const Text('게시글 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
-                          content: const Text('정말로 이 게시글을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.'),
+                          title: const Text('게시글 삭제',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          content: const Text(
+                              '정말로 이 게시글을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                              child: const Text('취소',
+                                  style: TextStyle(color: Colors.grey)),
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('삭제', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                              child: const Text('삭제',
+                                  style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
                       );
 
                       if (confirm != true) return; // 취소했거나 그냥 닫은 경우 중단
-                      
+
                       // 2. 삭제 실행 (부모 화면의 context 사용)
                       if (!context.mounted) return;
                       final provider = context.read<CommunityProvider>();
                       final success = await provider.deletePost(post.id);
-                      
+
                       if (!context.mounted) return;
                       if (success) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -256,7 +274,9 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                         context.pop(); // 게시글 상세 화면 닫기 (이전 화면으로)
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(provider.errorMessage ?? '삭제에 실패했습니다.')),
+                          SnackBar(
+                              content:
+                                  Text(provider.errorMessage ?? '삭제에 실패했습니다.')),
                         );
                       }
                     },
@@ -305,7 +325,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
     final likeMetaColor = _liked ? likeAccent : const Color(0xFF9F9F9F);
     final likeIconColor = _liked ? likeAccent : const Color(0xFFB2B2B2);
-    
+
     final post = provider.posts.firstWhere(
       (p) => p.id == widget.postId,
       orElse: () => Post(
@@ -436,19 +456,53 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                               color: Color.fromARGB(255, 220, 220, 220),
                             ),
                             child: ClipOval(
-                              child: ((isMe ? currentUser?.photoUrl : (post.authorId != null ? provider.getCachedUser(post.authorId!)?.photoUrl : null)) ?? post.authorAvatarUrl) != null && 
-                                     ((isMe ? currentUser?.photoUrl : (post.authorId != null ? provider.getCachedUser(post.authorId!)?.photoUrl : null)) ?? post.authorAvatarUrl)!.isNotEmpty
-                                  ? Image.network(
-                                      (isMe ? currentUser?.photoUrl : (post.authorId != null ? provider.getCachedUser(post.authorId!)?.photoUrl : null)) ?? post.authorAvatarUrl!,
+                              child: ((isMe
+                                                  ? currentUser?.photoUrl
+                                                  : (post.authorId != null
+                                                      ? provider
+                                                          .getCachedUser(
+                                                              post.authorId!)
+                                                          ?.photoUrl
+                                                      : null)) ??
+                                              post.authorAvatarUrl) !=
+                                          null &&
+                                      ((isMe
+                                                  ? currentUser?.photoUrl
+                                                  : (post.authorId != null
+                                                      ? provider
+                                                          .getCachedUser(
+                                                              post.authorId!)
+                                                          ?.photoUrl
+                                                      : null)) ??
+                                              post.authorAvatarUrl)!
+                                          .isNotEmpty
+                                  ? CachedNetworkImage(
+                                      imageUrl: (isMe
+                                              ? currentUser?.photoUrl
+                                              : (post.authorId != null
+                                                  ? provider
+                                                      .getCachedUser(
+                                                          post.authorId!)
+                                                      ?.photoUrl
+                                                  : null)) ??
+                                          post.authorAvatarUrl!,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => const Icon(
-                                          Icons.person,
-                                          size: 30,
-                                          color: Color.fromARGB(255, 255, 255, 255)),
+                                      placeholder: (context, url) =>
+                                          Shimmer.fromColors(
+                                        baseColor: Colors.grey[300]!,
+                                        highlightColor: Colors.grey[100]!,
+                                        child: Container(color: Colors.white),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          const Icon(Icons.person,
+                                              size: 30,
+                                              color: Color.fromARGB(
+                                                  255, 255, 255, 255)),
                                     )
                                   : const Icon(Icons.person,
                                       size: 30,
-                                      color: Color.fromARGB(255, 255, 255, 255)),
+                                      color:
+                                          Color.fromARGB(255, 255, 255, 255)),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -456,7 +510,14 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                (isMe ? currentUser?.displayName : (post.authorId != null ? provider.getCachedUser(post.authorId!)?.displayName : null)) ?? post.authorNickname,
+                                (isMe
+                                        ? currentUser?.displayName
+                                        : (post.authorId != null
+                                            ? provider
+                                                .getCachedUser(post.authorId!)
+                                                ?.displayName
+                                            : null)) ??
+                                    post.authorNickname,
                                 style: const TextStyle(
                                   fontSize: 34 / 2,
                                   fontWeight: FontWeight.w800,
@@ -493,7 +554,9 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         // 과거 마크다운 이미지 태그가 남아있다면 깔끔하게 제거
-                        post.content.replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '').trim(),
+                        post.content
+                            .replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '')
+                            .trim(),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -510,20 +573,28 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           scrollDirection: Axis.horizontal,
                           itemCount: post.imageUrls.length,
-                          separatorBuilder: (context, index) => const SizedBox(width: 12),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 12),
                           itemBuilder: (context, index) {
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: AspectRatio(
                                 aspectRatio: 1,
-                                child: Image.network(
-                                  post.imageUrls[index],
+                                child: CachedNetworkImage(
+                                  imageUrl: post.imageUrls[index],
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
+                                  placeholder: (context, url) =>
+                                      Shimmer.fromColors(
+                                    baseColor: Colors.grey[300]!,
+                                    highlightColor: Colors.grey[100]!,
+                                    child: Container(color: Colors.white),
+                                  ),
+                                  errorWidget: (context, url, error) =>
                                       Container(
-                                        color: Colors.grey[200],
-                                        child: const Icon(Icons.broken_image, color: Colors.grey),
-                                      ),
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.broken_image,
+                                        color: Colors.grey),
+                                  ),
                                 ),
                               ),
                             );
@@ -539,14 +610,16 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           spacing: 8,
                           runSpacing: 8,
                           alignment: WrapAlignment.start,
-                          children: post.tags.map((tag) => Text(
-                            '#$tag',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF8F96A3),
-                            ),
-                          )).toList(),
+                          children: post.tags
+                              .map((tag) => Text(
+                                    '#$tag',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF8F96A3),
+                                    ),
+                                  ))
+                              .toList(),
                         ),
                       ),
                     ],
@@ -561,7 +634,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           selected: _liked,
                           accentColor: likeAccent,
                           onTap: () {
-                            final user = context.read<UserProvider>().currentUser;
+                            final user =
+                                context.read<UserProvider>().currentUser;
                             if (user == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('로그인이 필요합니다.')),
@@ -580,7 +654,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           selected: _scrapped,
                           accentColor: scrapAccent,
                           onTap: () {
-                            final user = context.read<UserProvider>().currentUser;
+                            final user =
+                                context.read<UserProvider>().currentUser;
                             if (user == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('로그인이 필요합니다.')),
@@ -672,7 +747,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                   if (provider.replyingTo != null)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
                       color: const Color(0xFFF6F6F6),
                       child: Row(
                         children: [
@@ -688,7 +764,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                           ),
                           GestureDetector(
                             onTap: () => provider.setReplyingTo(null),
-                            child: const Icon(Icons.close, size: 18, color: Color(0xFF888888)),
+                            child: const Icon(Icons.close,
+                                size: 18, color: Color(0xFF888888)),
                           ),
                         ],
                       ),
@@ -708,7 +785,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                             onTap: _focusCommentInput,
                             child: Container(
                               height: 52,
-                              padding: const EdgeInsets.symmetric(horizontal: 18),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 18),
                               decoration: BoxDecoration(
                                 color: const Color.fromARGB(255, 250, 250, 250),
                                 borderRadius: BorderRadius.circular(30),
@@ -728,7 +806,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                                       ),
                                       decoration: const InputDecoration(
                                         hintText: '댓글을 입력해주세요.',
-                                        fillColor: Color.fromARGB(255, 250, 250, 250),
+                                        fillColor:
+                                            Color.fromARGB(255, 250, 250, 250),
                                         hintStyle: TextStyle(
                                           color: Color(0xFF9B9B9B),
                                           fontSize: 18,
@@ -744,7 +823,9 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                                     ),
                                   ),
                                   GestureDetector(
-                                    onTap: _canSubmitComment ? _submitComment : null,
+                                    onTap: _canSubmitComment
+                                        ? _submitComment
+                                        : null,
                                     child: Icon(
                                       Icons.keyboard_return_rounded,
                                       color: _canSubmitComment
@@ -770,16 +851,19 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     );
   }
 
-  List<Widget> _buildStructuredComments(List<Comment> allComments, String postAuthorId) {
+  List<Widget> _buildStructuredComments(
+      List<Comment> allComments, String postAuthorId) {
     // 1-Depth 구조 만들기
-    final parentComments = allComments.where((c) => c.parentId == null).toList();
+    final parentComments =
+        allComments.where((c) => c.parentId == null).toList();
     final childComments = allComments.where((c) => c.parentId != null).toList();
-    
+
     final List<Widget> widgets = [];
     for (var parent in parentComments) {
       widgets.add(_buildCommentItem(parent, postAuthorId, isReply: false));
-      
-      final children = childComments.where((c) => c.parentId == parent.id).toList();
+
+      final children =
+          childComments.where((c) => c.parentId == parent.id).toList();
       for (var child in children) {
         widgets.add(_buildCommentItem(child, postAuthorId, isReply: true));
       }
@@ -787,12 +871,14 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     return widgets;
   }
 
-  Widget _buildCommentItem(Comment comment, String postAuthorId, {required bool isReply}) {
+  Widget _buildCommentItem(Comment comment, String postAuthorId,
+      {required bool isReply}) {
     final currentUser = context.read<UserProvider>().currentUser;
-    final isMyComment = currentUser != null && comment.authorId == currentUser.id;
+    final isMyComment =
+        currentUser != null && comment.authorId == currentUser.id;
     final isAuthor = comment.authorId == postAuthorId;
     final isDeleted = comment.status == 'deleted';
-    
+
     final provider = context.watch<CommunityProvider>();
     final isLiked = provider.likedCommentIds.contains(comment.id);
 
@@ -816,13 +902,41 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
               color: Color(0xFFE5E5E5),
             ),
             child: ClipOval(
-              child: ((isMyComment ? currentUser?.photoUrl : (comment.authorId != null ? provider.getCachedUser(comment.authorId!)?.photoUrl : null)) ?? comment.authorAvatarUrl) != null && 
-                     ((isMyComment ? currentUser?.photoUrl : (comment.authorId != null ? provider.getCachedUser(comment.authorId!)?.photoUrl : null)) ?? comment.authorAvatarUrl)!.isNotEmpty && 
-                     !isDeleted
-                  ? Image.network(
-                      (isMyComment ? currentUser?.photoUrl : (comment.authorId != null ? provider.getCachedUser(comment.authorId!)?.photoUrl : null)) ?? comment.authorAvatarUrl!,
+              child: ((isMyComment
+                                  ? currentUser?.photoUrl
+                                  : (comment.authorId != null
+                                      ? provider
+                                          .getCachedUser(comment.authorId!)
+                                          ?.photoUrl
+                                      : null)) ??
+                              comment.authorAvatarUrl) !=
+                          null &&
+                      ((isMyComment
+                                  ? currentUser?.photoUrl
+                                  : (comment.authorId != null
+                                      ? provider
+                                          .getCachedUser(comment.authorId!)
+                                          ?.photoUrl
+                                      : null)) ??
+                              comment.authorAvatarUrl)!
+                          .isNotEmpty &&
+                      !isDeleted
+                  ? CachedNetworkImage(
+                      imageUrl: (isMyComment
+                              ? currentUser?.photoUrl
+                              : (comment.authorId != null
+                                  ? provider
+                                      .getCachedUser(comment.authorId!)
+                                      ?.photoUrl
+                                  : null)) ??
+                          comment.authorAvatarUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Center(
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(color: Colors.white),
+                      ),
+                      errorWidget: (context, url, error) => Center(
                         child: Icon(
                           Icons.person,
                           size: isReply ? 20 : 26,
@@ -849,33 +963,54 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                 Row(
                   children: [
                     Text(
-                      isDeleted ? '(삭제됨)' : ((isMyComment ? currentUser?.displayName : (comment.authorId != null ? provider.getCachedUser(comment.authorId!)?.displayName : null)) ?? comment.authorNickname),
+                      isDeleted
+                          ? '(삭제됨)'
+                          : ((isMyComment
+                                  ? currentUser?.displayName
+                                  : (comment.authorId != null
+                                      ? provider
+                                          .getCachedUser(comment.authorId!)
+                                          ?.displayName
+                                      : null)) ??
+                              comment.authorNickname),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: isDeleted ? const Color(0xFFB0B0B0) : const Color(0xFF1F1F1F),
+                        color: isDeleted
+                            ? const Color(0xFFB0B0B0)
+                            : const Color(0xFF1F1F1F),
                       ),
                     ),
                     if (!isDeleted && isAuthor) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE6F0FF),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('작성자', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF3F72C4))),
+                        child: const Text('작성자',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF3F72C4))),
                       ),
                     ],
                     if (!isDeleted && isMyComment && !isAuthor) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0F0F0),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('내 댓글', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF7A7A7A))),
+                        child: const Text('내 댓글',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF7A7A7A))),
                       ),
                     ],
                   ],
@@ -908,7 +1043,9 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: isDeleted ? const Color(0xFFB0B0B0) : const Color(0xFF232323),
+                    color: isDeleted
+                        ? const Color(0xFFB0B0B0)
+                        : const Color(0xFF232323),
                     height: 1.35,
                   ),
                 ),
@@ -919,22 +1056,29 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       GestureDetector(
                         onTap: () {
                           if (currentUser == null) return;
-                          context.read<CommunityProvider>().toggleCommentLike(widget.postId, comment.id, currentUser.id);
+                          context.read<CommunityProvider>().toggleCommentLike(
+                              widget.postId, comment.id, currentUser.id);
                         },
                         child: Row(
                           children: [
                             Icon(
                               isLiked ? Icons.favorite : Icons.favorite_border,
                               size: 18,
-                              color: isLiked ? Colors.redAccent : const Color(0xFF8F96A3),
+                              color: isLiked
+                                  ? Colors.redAccent
+                                  : const Color(0xFF8F96A3),
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              comment.likeCount > 0 ? '${comment.likeCount}' : '좋아요',
+                              comment.likeCount > 0
+                                  ? '${comment.likeCount}'
+                                  : '좋아요',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: isLiked ? Colors.redAccent : const Color(0xFF8F96A3),
+                                color: isLiked
+                                    ? Colors.redAccent
+                                    : const Color(0xFF8F96A3),
                               ),
                             ),
                           ],
@@ -943,7 +1087,9 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       const SizedBox(width: 20),
                       GestureDetector(
                         onTap: () {
-                          context.read<CommunityProvider>().setReplyingTo(comment);
+                          context
+                              .read<CommunityProvider>()
+                              .setReplyingTo(comment);
                           _focusCommentInput();
                         },
                         child: Row(
@@ -970,7 +1116,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
           if (!isDeleted)
             IconButton(
               onPressed: () => _showCommentOptionsSheet(comment),
-              icon: const Icon(Icons.more_vert, color: Color(0xFF8F96A3), size: 20),
+              icon: const Icon(Icons.more_vert,
+                  color: Color(0xFF8F96A3), size: 20),
             )
           else
             const SizedBox(width: 48), // 메뉴 버튼 공간 비워두기

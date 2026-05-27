@@ -108,6 +108,8 @@ dependencies:
   sign_in_with_apple: ^7.0.1
   firebase_storage: ^13.4.1
   flutter_markdown: ^0.7.7+1
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
 
 # -----------------------------------------------------------
 # Dependency Overrides

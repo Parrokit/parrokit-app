@@ -14,6 +14,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// 편집 가능한 사용자 아바타.
 class EditableAvatar extends StatelessWidget {
@@ -150,24 +152,23 @@ class EditableAvatar extends StatelessWidget {
     
     // 그 외 일반 이미지 (Firebase Storage에서 가져온 JPG/PNG 등)
     // 과거에 저장된 SVG(Dicebear) URL일 경우 에러가 나면서 자동으로 errorBuilder가 실행되어 기본 아이콘을 보여줌
-    return Image.network(
-      photoUrl,
+    return CachedNetworkImage(
+      imageUrl: photoUrl,
       fit: BoxFit.cover,
       width: size,
       height: size,
-      errorBuilder: (context, error, stackTrace) => Center(
+      placeholder: (context, url) => Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Container(color: Colors.white),
+      ),
+      errorWidget: (context, url, error) => Center(
         child: Icon(
           Icons.person_outline,
           size: size * 0.55,
           color: cs.onSurfaceVariant,
         ),
       ),
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
-        );
-      },
     );
   }
 }
