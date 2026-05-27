@@ -151,6 +151,88 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
+  // 게시글 수정하기
+  Future<bool> editPost(
+    String postId, {
+    required String title,
+    required String content,
+    required String category,
+    required List<String> tags,
+    required List<String> existingImageUrls, // UI에서 삭제되지 않고 남은 기존 네트워크 이미지들
+    required List<File> newImageFiles,       // 갤러리에서 새로 추가한 로컬 파일들
+    required String authorId,
+    void Function(int current, int total, double progress)? onImageProgress,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // 1. 기존 게시글 데이터를 로컬에서 찾기
+      final postToEdit = _posts.firstWhere((p) => p.id == postId);
+      
+      // 2. 사용자가 X를 눌러 삭제한 기존 이미지들을 스토리지에서 지우기
+      final deletedImageUrls = postToEdit.imageUrls.where((url) => !existingImageUrls.contains(url)).toList();
+      for (final url in deletedImageUrls) {
+        try {
+          final ref = FirebaseStorage.instance.refFromURL(url);
+          await ref.delete();
+        } catch (e) {
+          debugPrint('기존 스토리지 이미지 삭제 실패: $url, $e');
+        }
+      }
+
+      // 3. 새로 추가된 이미지 파일 업로드
+      List<String> newUploadedUrls = [];
+      for (int i = 0; i < newImageFiles.length; i++) {
+        final file = newImageFiles[i];
+        final url = await uploadImageToStorage(
+          file,
+          userId: authorId,
+          postId: postId,
+          onProgress: (progress) {
+            if (onImageProgress != null) {
+              onImageProgress(i + 1, newImageFiles.length, progress);
+            }
+          },
+        );
+        if (url != null) {
+          newUploadedUrls.add(url);
+        }
+      }
+
+      // 4. 최종 합쳐진 이미지 URL 목록 생성
+      final finalImageUrls = [...existingImageUrls, ...newUploadedUrls];
+
+      // 5. 업데이트할 데이터 Map 묶기
+      final updateData = {
+        'title': title,
+        'content': content,
+        'category': category,
+        'tags': tags,
+        'hasImage': finalImageUrls.isNotEmpty,
+        'imageUrls': finalImageUrls,
+        'snippet': content.length > 50 ? '${content.substring(0, 50)}...' : content,
+      };
+
+      // 6. 리포지토리를 통해 Firestore 업데이트 (이때 editHistory 타임스탬프가 추가됨)
+      await _repository.updatePost(postId, updateData);
+
+      // 로딩 상태를 풀어주어야 fetchPosts 내부의 방어 로직(if isLoading return)을 통과합니다.
+      _isLoading = false;
+
+      // 7. 로컬 리스트 다시 가져오기 (데이터 동기화)
+      await fetchPosts(refresh: true);
+
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // 게시글 삭제하기
   Future<bool> deletePost(String postId) async {
     _isLoading = true;

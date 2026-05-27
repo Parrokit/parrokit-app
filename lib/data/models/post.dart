@@ -23,6 +23,7 @@ class Post {
   final int reportCount;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final List<DateTime> editHistory;
   final List<VoteOption>? voteOptions;
   final DateTime? voteEndTime;
 
@@ -48,6 +49,7 @@ class Post {
     this.reportCount = 0,
     this.createdAt,
     this.updatedAt,
+    this.editHistory = const [],
     this.voteOptions,
     this.voteEndTime,
   });
@@ -76,6 +78,7 @@ class Post {
     int? reportCount,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<DateTime>? editHistory,
     List<VoteOption>? voteOptions,
     DateTime? voteEndTime,
     bool clearVoteEndTime = false,
@@ -102,6 +105,7 @@ class Post {
       reportCount: reportCount ?? this.reportCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      editHistory: editHistory ?? this.editHistory,
       voteOptions: voteOptions ?? this.voteOptions,
       voteEndTime: clearVoteEndTime ? null : (voteEndTime ?? this.voteEndTime),
     );
@@ -130,6 +134,11 @@ class Post {
       reportCount: (json['reportCount'] as num?)?.toInt() ?? 0,
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
+      editHistory: (json['editHistory'] as List<dynamic>?)
+              ?.map((e) => _parseDateTime(e))
+              .whereType<DateTime>()
+              .toList() ?? 
+          [],
       voteOptions: (json['voteOptions'] as List<dynamic>?)
           ?.map((e) => VoteOption.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -160,6 +169,7 @@ class Post {
       'reportCount': reportCount,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'editHistory': editHistory.map((e) => e.toIso8601String()).toList(),
       if (voteOptions != null) 'voteOptions': voteOptions!.map((e) => e.toJson()).toList(),
       if (voteEndTime != null) 'voteEndTime': voteEndTime!.toIso8601String(),
     };

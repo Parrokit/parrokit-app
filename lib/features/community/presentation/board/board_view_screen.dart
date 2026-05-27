@@ -7,6 +7,7 @@ import 'package:parrokit/data/models/comment.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:parrokit/features/community/presentation/board/board_write_screen.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
@@ -198,7 +199,19 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isMyPost)
+                if (isMyPost) ...[
+                  _CommentSheetAction(
+                    label: '수정',
+                    onTap: () {
+                      Navigator.pop(sheetContext); // 바텀시트 닫기
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BoardWriteScreen(editPost: post),
+                        ),
+                      );
+                    },
+                  ),
                   _CommentSheetAction(
                     label: '삭제',
                     isDestructive: true,
@@ -247,6 +260,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       }
                     },
                   ),
+                ],
                 _CommentSheetAction(
                   label: '신고',
                   onTap: () {
@@ -428,7 +442,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                _formatTimeAgo(post.createdAt),
+                                '${_formatTimeAgo(post.createdAt)}${post.editHistory.isNotEmpty ? ' (수정됨)' : ''}',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,

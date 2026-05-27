@@ -6,8 +6,12 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:parrokit/features/community/domain/data/community_filters.dart';
 
+import 'package:parrokit/data/models/post.dart';
+
 class BoardWriteScreen extends StatefulWidget {
-  const BoardWriteScreen({super.key});
+  final Post? editPost;
+  
+  const BoardWriteScreen({super.key, this.editPost});
 
   @override
   State<BoardWriteScreen> createState() => _BoardWriteScreenState();
@@ -24,12 +28,31 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
   bool _isTagInputActive = false;
   bool _isImageUploading = false;
   final ImagePicker _picker = ImagePicker();
+  
+  // 수정 모드일 때 유지되는 기존 파이어베이스 이미지 URL들
+  List<String> _existingImageUrls = [];
+  // 갤러리에서 새로 추가한 로컬 파일들
   List<XFile> _selectedImages = [];
+
+  bool get _isEditMode => widget.editPost != null;
 
   bool get _hasTitle => _titleController.text.trim().isNotEmpty;
   bool get _hasContent => _contentController.text.trim().isNotEmpty;
   bool get _canComplete =>
       _hasTitle && _hasContent && _selectedBoardTopic != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEditMode) {
+      final post = widget.editPost!;
+      _titleController.text = post.title;
+      _contentController.text = post.content;
+      _selectedBoardTopic = post.category;
+      _tags = List.from(post.tags);
+      _existingImageUrls = List.from(post.imageUrls);
+    }
+  }
 
   void _showBoardTopicSheet() {
     final blue600 = Colors.blue[600]!;
@@ -116,7 +139,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
 
     // 다이얼로그 텍스트와 퍼센티지를 업데이트하기 위한 변수 및 함수
     String statusText = _selectedImages.isEmpty 
-        ? '게시글을 등록하는 중입니다...' 
+        ? (_isEditMode ? '게시글을 수정하는 중입니다...' : '게시글을 등록하는 중입니다...') 
         : '사진 업로드 준비 중...';
     double? currentProgress;
     StateSetter? dialogSetState;
@@ -148,23 +171,46 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
     );
 
     final provider = context.read<CommunityProvider>();
-    final success = await provider.addPost(
-      _titleController.text.trim(),
-      _contentController.text.trim(),
-      _selectedBoardTopic!, // _canComplete 검사를 통과했으므로 null이 아님 보장
-      authorId: currentUser.id,
-      authorNickname: currentUser.displayName ?? '알 수 없음',
-      tags: _tags,
-      imageFiles: _selectedImages.map((x) => File(x.path)).toList(),
-      onImageProgress: (current, total, progress) {
-        if (dialogSetState != null) {
-          dialogSetState!((){
-            statusText = '사진 업로드 중... ($current/$total)\n${(progress * 100).toInt()}% 완료';
-            currentProgress = progress;
-          });
-        }
-      },
-    );
+    bool success;
+    
+    if (_isEditMode) {
+      success = await provider.editPost(
+        widget.editPost!.id,
+        title: _titleController.text.trim(),
+        content: _contentController.text.trim(),
+        category: _selectedBoardTopic!,
+        authorId: currentUser.id,
+        tags: _tags,
+        existingImageUrls: _existingImageUrls,
+        newImageFiles: _selectedImages.map((x) => File(x.path)).toList(),
+        onImageProgress: (current, total, progress) {
+          if (dialogSetState != null) {
+            dialogSetState!((){
+              statusText = '새 사진 업로드 중... ($current/$total)\n${(progress * 100).toInt()}% 완료';
+              currentProgress = progress;
+            });
+          }
+        },
+      );
+    } else {
+      success = await provider.addPost(
+        _titleController.text.trim(),
+        _contentController.text.trim(),
+        _selectedBoardTopic!,
+        authorId: currentUser.id,
+        authorNickname: currentUser.displayName ?? '알 수 없음',
+        tags: _tags,
+        imageFiles: _selectedImages.map((x) => File(x.path)).toList(),
+        onImageProgress: (current, total, progress) {
+          if (dialogSetState != null) {
+            dialogSetState!((){
+              statusText = '사진 업로드 중... ($current/$total)\n${(progress * 100).toInt()}% 완료';
+              currentProgress = progress;
+            });
+          }
+        },
+      );
+    }
 
     // 1. 등록 처리가 끝났으므로 로딩 다이얼로그 먼저 닫기
     if (mounted) {
@@ -229,7 +275,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                     CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Text(
-                                '완료',
+                                _isEditMode ? '수정' : '완료',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -481,7 +527,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                       },
                     ),
                   ),
-                if (_selectedImages.isNotEmpty)
+                if (_existingImageUrls.isNotEmpty || _selectedImages.isNotEmpty)
                   Container(
                     height: 100, // 잘림 방지를 위해 높이 증가
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -489,10 +535,12 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       clipBehavior: Clip.none, // 스크롤 시 잘림 방지
-                      itemCount: _selectedImages.length,
+                      itemCount: _existingImageUrls.length + _selectedImages.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(width: 6), // 우측 패딩을 고려하여 간격 축소
                       itemBuilder: (context, index) {
+                        final bool isExisting = index < _existingImageUrls.length;
+                        
                         return Padding(
                           padding: const EdgeInsets.only(top: 10, right: 10),
                           child: Stack(
@@ -500,12 +548,19 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  File(_selectedImages[index].path),
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                ),
+                                child: isExisting 
+                                  ? Image.network(
+                                      _existingImageUrls[index],
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.file(
+                                      File(_selectedImages[index - _existingImageUrls.length].path),
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                    ),
                               ),
                               Positioned(
                                 top: -8,
@@ -513,7 +568,11 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                 child: GestureDetector(
                                   onTap: () {
                                     setState(() {
-                                      _selectedImages.removeAt(index);
+                                      if (isExisting) {
+                                        _existingImageUrls.removeAt(index);
+                                      } else {
+                                        _selectedImages.removeAt(index - _existingImageUrls.length);
+                                      }
                                     });
                                   },
                                   child: Container(
@@ -546,7 +605,8 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                     children: [
                       GestureDetector(
                         onTap: () async {
-                                final int remainingSlot = 5 - _selectedImages.length;
+                                final int currentCount = _existingImageUrls.length + _selectedImages.length;
+                                final int remainingSlot = 5 - currentCount;
                                 if (remainingSlot <= 0) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -581,7 +641,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                               },
                         child: _BottomTool(
                             icon: Icons.image_outlined,
-                            label: '사진 (${_selectedImages.length}/5)'),
+                            label: '사진 (${_existingImageUrls.length + _selectedImages.length}/5)'),
                       ),
                       const SizedBox(width: 28),
                       GestureDetector(
