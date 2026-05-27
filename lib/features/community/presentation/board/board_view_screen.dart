@@ -815,25 +815,21 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                       comment.authorAvatarUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Center(
-                        child: Text(
-                          comment.authorNickname.isNotEmpty ? comment.authorNickname.substring(0, 1) : '?',
-                          style: TextStyle(
-                            fontSize: isReply ? 14 : 16,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF6A6A6A),
-                          ),
+                        child: Icon(
+                          Icons.person,
+                          size: isReply ? 20 : 26,
+                          color: const Color(0xFF9E9E9E), // 조금 더 진한 회색
                         ),
                       ),
                     )
                   : Center(
-                      child: Text(
-                        isDeleted ? '' : (comment.authorNickname.isNotEmpty ? comment.authorNickname.substring(0, 1) : '?'),
-                        style: TextStyle(
-                          fontSize: isReply ? 14 : 16,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF6A6A6A),
-                        ),
-                      ),
+                      child: isDeleted
+                          ? const SizedBox() // 삭제된 댓글이면 아무것도 안 보여줌
+                          : Icon(
+                              Icons.person,
+                              size: isReply ? 20 : 26,
+                              color: const Color(0xFF9E9E9E),
+                            ),
                     ),
             ),
           ),
