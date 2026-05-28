@@ -373,7 +373,8 @@ class CommunityRepository {
       final answererRef = _firestore.collection('users').doc(answererId);
 
       await _firestore.runTransaction((transaction) async {
-        // 질문글 상태 확인
+        // --- [모든 READ(읽기) 작업 우선 수행] ---
+        // 1. 질문글 상태 확인
         final postSnapshot = await transaction.get(postRef);
         if (!postSnapshot.exists) {
           throw Exception('게시글을 찾을 수 없습니다.');
@@ -387,7 +388,11 @@ class CommunityRepository {
           throw Exception('마감 기한이 지난 질문입니다.');
         }
 
-        // 상태 업데이트
+        // 2. 답변자 정보 가져오기
+        final answererSnapshot = await transaction.get(answererRef);
+
+        // --- [READ 이후 모든 WRITE(쓰기) 작업 수행] ---
+        // 3. 상태 업데이트
         transaction.update(postRef, {
           'questionStatus': 'resolved',
           'acceptedCommentId': commentId,
@@ -399,8 +404,7 @@ class CommunityRepository {
           'updatedAt': DateTime.now().toIso8601String(),
         });
 
-        // 답변자에게 크래커 지급 (답변자 정보가 존재할 경우에만)
-        final answererSnapshot = await transaction.get(answererRef);
+        // 4. 답변자에게 크래커 지급 (답변자 정보가 존재할 경우에만)
         if (answererSnapshot.exists) {
           transaction.update(answererRef, {
             'crackers': FieldValue.increment(rewardCrackers),
