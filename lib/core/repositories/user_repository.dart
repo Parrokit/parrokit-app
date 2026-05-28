@@ -503,10 +503,22 @@ class UserRepository {
   /// - Firebase 에서 로그아웃
   /// - 로컬에 저장된 유저 정보를 모두 삭제합니다.
   Future<void> signOut() async {
-    await _naverSsoService.signOut();
-    await _kakaoSsoService.signOut();
-    await _googleSsoService.signOut();
-    await _authService.signOut();
+    try {
+      await _naverSsoService.signOut();
+    } catch (_) {}
+    
+    try {
+      await _kakaoSsoService.signOut();
+    } catch (_) {}
+    
+    try {
+      await _googleSsoService.signOut();
+    } catch (_) {}
+    
+    try {
+      await _authService.signOut();
+    } catch (_) {}
+    
     await _userPrefs.clear();
   }
 
