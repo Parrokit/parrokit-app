@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import 'sections/account_section.dart';
 import 'sections/ad_reward_section.dart';
+import 'sections/exchange_section.dart';
 import 'sections/app_settings_section.dart';
 import 'sections/backup_section.dart';
 import 'sections/cache_section.dart';
@@ -56,6 +57,10 @@ class MoreScreen extends StatelessWidget {
 
             // 광고 보기
             const AdRewardSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
+
+            // 환전소
+            const ExchangeSection(),
             const SizedBox(height: AppSpacing.sectionGap),
 
             // // 결제 (광고 제거 + 코인 충전 + 구매 내역)

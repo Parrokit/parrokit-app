@@ -44,6 +44,46 @@ class FirebaseUserService {
     });
   }
 
+  Future<void> exchangeCurrency({
+    required String uid,
+    required int amountToDeduct,
+    required int amountToAdd,
+    required bool isParrotsToCrackers,
+  }) async {
+    final userRef = _firestore.collection('users').doc(uid);
+    
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(userRef);
+      if (!snapshot.exists) {
+        throw Exception('유저 정보를 찾을 수 없습니다.');
+      }
+      
+      final data = snapshot.data()!;
+      int currentParrots = (data['parrots'] as num?)?.toInt() ?? 0;
+      int currentCrackers = (data['crackers'] as num?)?.toInt() ?? 0;
+      
+      if (isParrotsToCrackers) {
+        if (currentParrots < amountToDeduct) {
+          throw Exception('보유하신 패롯이 부족합니다.');
+        }
+        currentParrots -= amountToDeduct;
+        currentCrackers += amountToAdd;
+      } else {
+        if (currentCrackers < amountToDeduct) {
+          throw Exception('보유하신 크래커가 부족합니다.');
+        }
+        currentCrackers -= amountToDeduct;
+        currentParrots += amountToAdd;
+      }
+      
+      transaction.update(userRef, {
+        'parrots': currentParrots,
+        'crackers': currentCrackers,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
   Future<void> updateUserPhoto({
     required String uid,
     required String? photoUrl,

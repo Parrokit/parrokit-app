@@ -274,6 +274,49 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// 패롯과 크래커 상호 환전
+  Future<void> exchangeCurrency({
+    required int amountToDeduct,
+    required int amountToAdd,
+    required bool isParrotsToCrackers,
+  }) async {
+    if (_currentUser == null) return;
+    
+    // 1. Optimistic Update (화면에 남은 돈/받은 돈 즉시 반영)
+    int newParrots = _currentUser!.parrots;
+    int newCrackers = _currentUser!.crackers;
+    
+    if (isParrotsToCrackers) {
+      newParrots -= amountToDeduct;
+      newCrackers += amountToAdd;
+    } else {
+      newCrackers -= amountToDeduct;
+      newParrots += amountToAdd;
+    }
+    
+    _currentUser = _currentUser!.copyWith(
+      parrots: newParrots,
+      crackers: newCrackers,
+    );
+    notifyListeners();
+
+    _setLoading(true);
+    try {
+      await _userRepository.exchangeCurrency(
+        amountToDeduct: amountToDeduct,
+        amountToAdd: amountToAdd,
+        isParrotsToCrackers: isParrotsToCrackers,
+      );
+    } catch (e) {
+      // 롤백 (실패 시 데이터베이스에서 유저 정보를 다시 가져와 복구)
+      AppLogger.e('[UserProvider] Exchange failed: $e');
+      await reloadFirebaseUser();
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 닉네임(DisplayName) 업데이트
   Future<void> updateDisplayName(String? displayName) async {
     AppLogger.d('[UserProvider] updateDisplayName requested: $displayName');

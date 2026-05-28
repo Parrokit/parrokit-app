@@ -463,6 +463,23 @@ class UserRepository {
     }
   }
 
+  /// 패롯과 크래커를 교환합니다.
+  Future<void> exchangeCurrency({
+    required int amountToDeduct,
+    required int amountToAdd,
+    required bool isParrotsToCrackers,
+  }) async {
+    final uid = _authService.currentUser?.uid;
+    if (uid == null) throw Exception('로그인이 필요합니다.');
+
+    await _firebaseUserService.exchangeCurrency(
+      uid: uid,
+      amountToDeduct: amountToDeduct,
+      amountToAdd: amountToAdd,
+      isParrotsToCrackers: isParrotsToCrackers,
+    );
+  }
+
   /// 닉네임(DisplayName)을 업데이트합니다.
   Future<void> updateDisplayName(String? displayName) async {
     // 1. Firebase Auth 업데이트
