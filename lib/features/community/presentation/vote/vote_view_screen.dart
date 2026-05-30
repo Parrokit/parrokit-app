@@ -60,7 +60,6 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
         setState(() {
           _isFetchingDetails = false;
         });
-        _scrollToBottom();
       }
     });
   }

@@ -47,7 +47,6 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
         setState(() {
           _isFetchingDetails = false;
         });
-        _scrollToBottom();
       }
     });
   }

@@ -42,7 +42,6 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
         setState(() {
           _isFetchingDetails = false;
         });
-        _scrollToBottom();
       }
     });
   }
