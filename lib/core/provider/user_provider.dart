@@ -53,6 +53,7 @@ class UserProvider extends ChangeNotifier {
 
     try {
       _currentUser = await _userRepository.getCurrentUser();
+      _checkAndNotifyRouter();
     } finally {
       _setLoading(false);
     }
@@ -354,6 +355,7 @@ class UserProvider extends ChangeNotifier {
       await _userRepository.deleteAccount();
       () async { try { await Purchases.logOut(); } catch (_) {} }();
       _currentUser = null;
+      _checkAndNotifyRouter();
       notifyListeners();
     } finally {
       _setLoading(false);
