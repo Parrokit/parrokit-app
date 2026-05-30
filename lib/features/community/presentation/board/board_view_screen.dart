@@ -22,6 +22,7 @@ class BoardViewScreen extends StatefulWidget {
 class _BoardViewScreenState extends State<BoardViewScreen> {
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
 
   bool get _canSubmitComment => _commentController.text.trim().isNotEmpty;
 
@@ -46,6 +47,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
         setState(() {
           _isFetchingDetails = false;
         });
+        _scrollToBottom();
       }
     });
   }
@@ -91,11 +93,29 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       authorAvatarUrl: currentUser.photoUrl,
     );
 
-    if (!success && mounted) {
+    if (success) {
+      _scrollToBottom();
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(provider.errorMessage ?? '댓글 등록에 실패했습니다.')),
       );
     }
+  }
+
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (animated) {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
+      }
+    });
   }
 
   void _showCommentOptionsSheet(Comment comment) {
@@ -308,6 +328,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
   void dispose() {
     _commentController.dispose();
     _commentFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -385,6 +406,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
             ),
             Expanded(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 child: Column(

@@ -18,6 +18,7 @@ class QuestionViewScreen extends StatefulWidget {
 class _QuestionViewScreenState extends State<QuestionViewScreen> {
   final TextEditingController _replyController = TextEditingController();
   final FocusNode _replyFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
 
   bool _isFetchingDetails = true;
   bool _isAccepting = false;
@@ -41,6 +42,31 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
         setState(() {
           _isFetchingDetails = false;
         });
+        _scrollToBottom();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _replyController.dispose();
+    _replyFocusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (animated) {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
       }
     });
   }
@@ -69,7 +95,9 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
       authorAvatarUrl: currentUser.photoUrl,
     );
 
-    if (!success && mounted) {
+    if (success) {
+      _scrollToBottom();
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(provider.errorMessage ?? '답글 등록에 실패했습니다.')),
       );
@@ -201,6 +229,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
           children: [
             Expanded(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

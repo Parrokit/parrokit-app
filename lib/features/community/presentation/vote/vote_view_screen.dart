@@ -32,6 +32,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
   bool _isFetchingDetails = true;
 
   bool get _canSubmitComment => _commentController.text.trim().isNotEmpty;
@@ -59,6 +60,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
         setState(() {
           _isFetchingDetails = false;
         });
+        _scrollToBottom();
       }
     });
   }
@@ -67,7 +69,24 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   void dispose() {
     _commentController.dispose();
     _commentFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (animated) {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
+      }
+    });
   }
 
   void _focusCommentInput() {
@@ -99,7 +118,9 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
       authorAvatarUrl: user.photoUrl,
     );
 
-    if (!success) {
+    if (success) {
+      _scrollToBottom();
+    } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(provider.errorMessage ?? '댓글 등록 실패')),
@@ -156,6 +177,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
         children: [
           Expanded(
             child: SingleChildScrollView(
+              controller: _scrollController,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
