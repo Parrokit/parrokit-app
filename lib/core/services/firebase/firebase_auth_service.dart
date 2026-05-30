@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 /// FirebaseAuth 를 얇게 감싼 서비스.
 /// - 외부 SDK 호출(FirebaseAuth.instance.*)만 담당.
-/// - PaUser, UserPrefs 같은 앱 도메인에는 관여하지 않음.
+/// - AppUser, UserPrefs 같은 앱 도메인에는 관여하지 않음.
 class FirebaseAuthService {
   final fb.FirebaseAuth _auth;
 

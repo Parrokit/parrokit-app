@@ -7,6 +7,7 @@ import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/features/community/data/repositories/community_repository.dart';
 import 'package:parrokit/data/models/user.dart';
+import 'package:parrokit/data/models/vote_option.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -14,9 +15,9 @@ class CommunityProvider with ChangeNotifier {
   final CommunityRepository _repository = CommunityRepository();
   final FirebaseUserService _userService = FirebaseUserService();
 
-  final Map<String, PaUser> _userCache = {};
+  final Map<String, AppUser> _userCache = {};
 
-  PaUser? getCachedUser(String uid) => _userCache[uid];
+  AppUser? getCachedUser(String uid) => _userCache[uid];
 
   Future<void> _fetchMissingUsers(Iterable<String> uids) async {
     final missingUids = uids
@@ -31,7 +32,7 @@ class CommunityProvider with ChangeNotifier {
           _userCache[uid] = user;
         } else {
           // 유저를 찾지 못했어도 계속 호출하는 것을 막기 위해 임시 객체를 캐싱
-          _userCache[uid] = PaUser(id: uid, displayName: '알 수 없음', email: '');
+          _userCache[uid] = AppUser(id: uid, displayName: '알 수 없음', email: '');
         }
       } catch (_) {
         // 에러 발생 시 캐싱 생략 (다음 번에 재시도 가능하도록)
@@ -55,6 +56,9 @@ class CommunityProvider with ChangeNotifier {
 
   Set<String> _likedCommentIds = {};
   Set<String> get likedCommentIds => _likedCommentIds;
+
+  // 내 투표 기록 캐시 (postId -> 선택한 optionIndex)
+  Map<String, int> myVotes = {};
 
   Comment? _replyingTo;
   Comment? get replyingTo => _replyingTo;
@@ -81,12 +85,19 @@ class CommunityProvider with ChangeNotifier {
     _replyingTo = null;
     _isCurrentPostLiked = false;
     _isCurrentPostScrapped = false;
+    myVotes.clear();
     notifyListeners();
   }
 
+  String _currentPostType = 'board';
+
   // 게시글 목록 가져오기
-  Future<void> fetchPosts({bool refresh = false}) async {
+  Future<void> fetchPosts({String? postType, bool refresh = false}) async {
     if (_isLoading) return;
+
+    if (postType != null) {
+      _currentPostType = postType;
+    }
 
     if (refresh) {
       _lastDocument = null;
@@ -100,7 +111,7 @@ class CommunityProvider with ChangeNotifier {
 
     try {
       final fetchedPosts =
-          await _repository.getPosts(limit: 20, startAfter: _lastDocument);
+          await _repository.getPosts(postType: _currentPostType, limit: 20, startAfter: _lastDocument);
       _posts.addAll(fetchedPosts);
 
       // 게시글 목록에 포함된 작성자들의 프로필 정보 동적으로 불러오기 (캐시)
@@ -142,11 +153,14 @@ class CommunityProvider with ChangeNotifier {
     String title,
     String content,
     String category, {
+    String postType = 'board',
     required String authorId,
     required String authorNickname,
     String? authorAvatarUrl,
     List<String> tags = const [],
     List<File> imageFiles = const [],
+    List<VoteOption>? voteOptions,
+    DateTime? voteEndTime,
     void Function(int current, int total, double progress)? onImageProgress,
   }) async {
     _isLoading = true;
@@ -176,7 +190,7 @@ class CommunityProvider with ChangeNotifier {
 
       final newPost = Post(
         id: postId, // 발급받은 ID 사용
-        postType: 'board',
+        postType: postType,
         category: category,
         title: title,
         content: content,
@@ -186,6 +200,8 @@ class CommunityProvider with ChangeNotifier {
         authorId: authorId,
         authorNickname: authorNickname,
         authorAvatarUrl: authorAvatarUrl,
+        voteOptions: voteOptions,
+        voteEndTime: voteEndTime,
         snippet:
             content.length > 50 ? '${content.substring(0, 50)}...' : content,
       );
@@ -326,6 +342,60 @@ class CommunityProvider with ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // =======================================================================
+  // 투표(Vote) 관련 기능
+  // =======================================================================
+
+  // 여러 투표글에 대한 내 투표 기록 일괄 조회 및 캐싱
+  Future<void> fetchMyVotes(String userId) async {
+    final votePosts = _posts.where((p) => p.postType == 'vote').map((p) => p.id).toList();
+    if (votePosts.isEmpty) return;
+
+    final fetchedVotes = await _repository.getMyVotes(userId, votePosts);
+    myVotes.addAll(fetchedVotes);
+    notifyListeners();
+  }
+
+  // 투표하기 (낙관적 UI 업데이트 포함)
+  Future<bool> votePost(String postId, int optionIndex, String userId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.votePost(postId, userId, optionIndex);
+      
+      // 1. 로컬 캐시에 즉각 반영
+      myVotes[postId] = optionIndex;
+      
+      // 2. 게시글 목록 내의 옵션 카운트를 즉각 1 증가시켜 낙관적 업데이트
+      final postIndex = _posts.indexWhere((p) => p.id == postId);
+      if (postIndex != -1) {
+        final post = _posts[postIndex];
+        if (post.voteOptions != null) {
+          final newOptions = List<VoteOption>.from(post.voteOptions!);
+          if (optionIndex >= 0 && optionIndex < newOptions.length) {
+            newOptions[optionIndex] = VoteOption(
+              id: newOptions[optionIndex].id,
+              text: newOptions[optionIndex].text,
+              count: newOptions[optionIndex].count + 1,
+            );
+            _posts[postIndex] = post.copyWith(voteOptions: newOptions);
+          }
+        }
+      }
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
       notifyListeners();
       return false;
     }
@@ -624,6 +694,122 @@ class CommunityProvider with ChangeNotifier {
       }
       _errorMessage = '스크랩 처리에 실패했습니다.';
       notifyListeners();
+    }
+  }
+
+  // --- Q&A 전용 로직 ---
+  Future<bool> addQuestion({
+    required String title,
+    required String content,
+    required String category,
+    required String authorId,
+    required String authorNickname,
+    required int rewardCrackers,
+    required DateTime expireAt,
+    String? authorAvatarUrl,
+    List<String> tags = const [],
+    List<File> imageFiles = const [],
+    void Function(int current, int total, double progress)? onImageProgress,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final String postId = _repository.generatePostId();
+
+      List<String> uploadedUrls = [];
+      for (int i = 0; i < imageFiles.length; i++) {
+        final file = imageFiles[i];
+        final url = await uploadImageToStorage(
+          file,
+          userId: authorId,
+          postId: postId,
+          onProgress: (progress) {
+            if (onImageProgress != null) {
+              onImageProgress(i + 1, imageFiles.length, progress);
+            }
+          },
+        );
+        if (url != null) {
+          uploadedUrls.add(url);
+        }
+      }
+
+      final newPost = Post(
+        id: postId,
+        postType: 'question',
+        category: category,
+        title: title,
+        content: content,
+        tags: tags,
+        hasImage: uploadedUrls.isNotEmpty,
+        imageUrls: uploadedUrls,
+        authorId: authorId,
+        authorNickname: authorNickname,
+        authorAvatarUrl: authorAvatarUrl,
+        snippet: content.length > 50 ? '${content.substring(0, 50)}...' : content,
+        rewardCrackers: rewardCrackers,
+        expireAt: expireAt,
+        questionStatus: 'waiting',
+      );
+
+      await _repository.addQuestion(newPost, authorId, rewardCrackers);
+
+      _isLoading = false;
+      await fetchPosts(refresh: true);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> acceptAnswer({
+    required String postId,
+    required String commentId,
+    required String answererId,
+    required int rewardCrackers,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.acceptAnswer(
+        postId: postId,
+        commentId: commentId,
+        answererId: answererId,
+        rewardCrackers: rewardCrackers,
+      );
+
+      _isLoading = false;
+      
+      // 로컬 데이터 즉각 갱신
+      final postIndex = _posts.indexWhere((p) => p.id == postId);
+      if (postIndex != -1) {
+        _posts[postIndex] = _posts[postIndex].copyWith(
+          questionStatus: 'resolved',
+          acceptedCommentId: commentId,
+        );
+      }
+      
+      final commentIndex = _currentPostComments.indexWhere((c) => c.id == commentId);
+      if (commentIndex != -1) {
+        _currentPostComments[commentIndex] = _currentPostComments[commentIndex].copyWith(
+          isAccepted: true,
+        );
+      }
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 }

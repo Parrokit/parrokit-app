@@ -1,0 +1,731 @@
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/data/models/post.dart';
+import 'package:parrokit/data/models/comment.dart';
+
+class QuestionViewScreen extends StatefulWidget {
+  final String questionId;
+
+  const QuestionViewScreen({super.key, required this.questionId});
+
+  @override
+  State<QuestionViewScreen> createState() => _QuestionViewScreenState();
+}
+
+class _QuestionViewScreenState extends State<QuestionViewScreen> {
+  final TextEditingController _replyController = TextEditingController();
+  final FocusNode _replyFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+
+  bool _isFetchingDetails = true;
+  bool _isAccepting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = context.read<UserProvider>().currentUser;
+      final provider = context.read<CommunityProvider>();
+
+      await Future.wait([
+        provider.fetchPostDetails(widget.questionId),
+        provider.fetchComments(widget.questionId, currentUserId: user?.id),
+        provider.loadUserActions(widget.questionId, userId: user?.id),
+      ]);
+
+      provider.incrementViewCount(widget.questionId, userId: user?.id);
+
+      if (mounted) {
+        setState(() {
+          _isFetchingDetails = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _replyController.dispose();
+    _replyFocusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (animated) {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
+      }
+    });
+  }
+
+  void _submitReply() async {
+    final text = _replyController.text.trim();
+    if (text.isEmpty) return;
+
+    final currentUser = context.read<UserProvider>().currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      return;
+    }
+
+    _replyController.clear();
+    _replyFocusNode.unfocus();
+
+    final provider = context.read<CommunityProvider>();
+    final success = await provider.addComment(
+      widget.questionId,
+      text,
+      authorId: currentUser.id,
+      authorNickname: currentUser.displayName ?? '익명',
+      authorAvatarUrl: currentUser.photoUrl,
+    );
+
+    if (success) {
+      _scrollToBottom();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage ?? '답글 등록에 실패했습니다.')),
+      );
+    }
+  }
+
+  void _acceptAnswer(Post question, Comment comment) async {
+    final currentUser = context.read<UserProvider>().currentUser;
+    if (currentUser == null) return;
+
+    if (question.questionStatus == 'resolved') {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('이미 채택된 질문입니다.')));
+      return;
+    }
+    if (question.questionStatus == 'expired') {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('마감 기한이 지난 질문입니다.')));
+      return;
+    }
+
+    // 채택 확인 팝업
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('답변 채택'),
+        content: Text(
+            '이 답변을 채택하시겠습니까?\n채택 시 ${question.rewardCrackers} 크래커가 송금됩니다.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('채택하기',
+                style: TextStyle(
+                    color: Colors.green, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isAccepting = true);
+
+    final provider = context.read<CommunityProvider>();
+    final success = await provider.acceptAnswer(
+      postId: widget.questionId,
+      commentId: comment.id,
+      answererId: comment.authorId,
+      rewardCrackers: question.rewardCrackers,
+    );
+
+    if (!mounted) return;
+    setState(() => _isAccepting = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('채택이 완료되었습니다! 🍪')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage ?? '채택 처리에 실패했습니다.')),
+      );
+    }
+  }
+
+  String _formatTimeAgo(DateTime? time) {
+    if (time == null) return '';
+    final diff = DateTime.now().difference(time);
+    if (diff.inDays > 0) return '${diff.inDays}일 전';
+    if (diff.inHours > 0) return '${diff.inHours}시간 전';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}분 전';
+    return '방금 전';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: _buildAppBar(),
+      body: _buildBody(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+            color: Colors.black, size: 20),
+        onPressed: () => Navigator.maybePop(context),
+      ),
+      title: const Text(
+        '질문 스레드',
+        style: TextStyle(
+            color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+      ),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(color: const Color(0xFFF1F3F5), height: 1),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    final provider = context.watch<CommunityProvider>();
+
+    final questions = provider.posts.where((p) => p.id == widget.questionId);
+    final question = questions.isNotEmpty ? questions.first : null;
+
+    if (_isFetchingDetails) {
+      return const Center(
+          child: CircularProgressIndicator(color: Colors.orange));
+    }
+
+    if (question == null) {
+      return const Center(child: Text('질문을 찾을 수 없습니다.'));
+    }
+
+    final answers = provider.currentPostComments;
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildMainQuestionTweet(question, provider),
+                    _buildDivider(),
+                    _buildRepliesSection(question, answers),
+                  ],
+                ),
+              ),
+            ),
+            _buildStickyReplyBar(),
+          ],
+        ),
+        if (_isAccepting)
+          Container(
+            color: Colors.black.withValues(alpha: 0.3),
+            child: const Center(
+                child: CircularProgressIndicator(color: Colors.green)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMainQuestionTweet(Post question, CommunityProvider provider) {
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMe = currentUser != null && question.authorId == currentUser.id;
+    final authorName = isMe
+        ? (currentUser.displayName ?? question.authorNickname)
+        : ((question.authorId != null
+                ? provider.getCachedUser(question.authorId!)?.displayName
+                : null) ??
+            question.authorNickname);
+
+    final avatarUrl = isMe
+        ? (currentUser.photoUrl ?? question.authorAvatarUrl)
+        : ((question.authorId != null
+                ? provider.getCachedUser(question.authorId!)?.photoUrl
+                : null) ??
+            question.authorAvatarUrl);
+
+    final isLiked = provider.isCurrentPostLiked;
+    final isBookmarked = provider.isCurrentPostScrapped;
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: const Color(0xFFF1F3F5),
+                backgroundImage:
+                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl == null
+                    ? const Icon(Icons.person, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          authorName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF212529)),
+                        ),
+                        if (question.questionStatus == 'resolved') ...[
+                          const SizedBox(width: 4),
+                          const Icon(Icons.verified,
+                              color: Colors.green, size: 16),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (question.rewardCrackers > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.orange[200]!),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('🍪', style: TextStyle(fontSize: 12)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${question.rewardCrackers}',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange[800]),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            question.title,
+            style: const TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF212529),
+                height: 1.35),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            question.content,
+            style: const TextStyle(
+                fontSize: 16, color: Color(0xFF495057), height: 1.5),
+          ),
+          const SizedBox(height: 16),
+          if (question.hasImage && question.imageUrls.isNotEmpty)
+            Container(
+              width: double.infinity,
+              height: 250,
+              color: Colors.grey[200],
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Image.network(
+                question.imageUrls.first,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.image_not_supported, color: Colors.grey),
+              ),
+            ),
+          Text(
+            '${_formatTimeAgo(question.createdAt)} · 조회 ${question.viewCount}회',
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          ),
+          const Divider(height: 24, color: Color(0xFFF1F3F5)),
+          Row(
+            children: [
+              Text('${question.likeCount}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF212529))),
+              const SizedBox(width: 4),
+              Text('유용해요',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+              const SizedBox(width: 16),
+              Text('${question.commentCount}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF212529))),
+              const SizedBox(width: 4),
+              Text('답글',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+            ],
+          ),
+          const Divider(height: 24, color: Color(0xFFF1F3F5)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.mode_comment_outlined,
+                    size: 20, color: Color(0xFF65676B)),
+                onPressed: () =>
+                    FocusScope.of(context).requestFocus(_replyFocusNode),
+              ),
+              IconButton(
+                icon: Icon(isLiked ? Icons.bolt : Icons.bolt_outlined,
+                    size: 22,
+                    color:
+                        isLiked ? Colors.orange[600] : const Color(0xFF65676B)),
+                onPressed: () => context
+                    .read<CommunityProvider>()
+                    .toggleLike(question.id, currentUser?.id ?? ''),
+              ),
+              IconButton(
+                icon: Icon(
+                    isBookmarked
+                        ? Icons.bookmark
+                        : Icons.bookmark_border_rounded,
+                    size: 20,
+                    color: isBookmarked
+                        ? Colors.orange[600]
+                        : const Color(0xFF65676B)),
+                onPressed: () => context
+                    .read<CommunityProvider>()
+                    .toggleScrap(question.id, currentUser?.id ?? ''),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(height: 8, color: const Color(0xFFF1F3F5));
+  }
+
+  Widget _buildRepliesSection(Post question, List<Comment> answers) {
+    if (answers.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: Text('아직 답변이 없습니다.\n첫 번째 답변을 남겨보세요!', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFFADB5BD), fontSize: 14)),
+        ),
+      );
+    }
+
+    final parentAnswers = answers.where((c) => c.parentId == null).toList();
+    final childAnswers = answers.where((c) => c.parentId != null).toList();
+
+    parentAnswers.sort((a, b) => (b.isAccepted ? 1 : 0).compareTo(a.isAccepted ? 1 : 0));
+
+    final List<Widget> widgets = [];
+    for (var i = 0; i < parentAnswers.length; i++) {
+      final parent = parentAnswers[i];
+      widgets.add(_buildReplyItem(question, parent, isReply: false));
+      
+      final children = childAnswers.where((c) => c.parentId == parent.id).toList();
+      for (var child in children) {
+        widgets.add(_buildReplyItem(question, child, isReply: true));
+      }
+      
+      if (i < parentAnswers.length - 1 || children.isNotEmpty) {
+        widgets.add(const Divider(height: 1, color: Color(0xFFF1F3F5)));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: widgets,
+    );
+  }
+
+  Widget _buildReplyItem(Post question, Comment answer, {bool isReply = false}) {
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMe = currentUser != null && question.authorId == currentUser.id;
+    final provider = context.read<CommunityProvider>();
+
+    final answererName = (answer.authorId == currentUser?.id)
+        ? (currentUser?.displayName ?? answer.authorNickname)
+        : (provider.getCachedUser(answer.authorId)?.displayName ??
+            answer.authorNickname);
+
+    final answererAvatar = (answer.authorId == currentUser?.id)
+        ? (currentUser?.photoUrl ?? answer.authorAvatarUrl)
+        : (provider.getCachedUser(answer.authorId)?.photoUrl ??
+            answer.authorAvatarUrl);
+
+    final isAdopted = answer.isAccepted;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(isReply ? 16 + 18 + 12 : 16, 16, 16, 16),
+      decoration: isReply
+          ? const BoxDecoration(
+              border: Border(left: BorderSide(color: Color(0xFFEFEFEF), width: 3)),
+            )
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              CircleAvatar(
+                radius: isReply ? 14 : 18,
+                backgroundColor: const Color(0xFFF1F3F5),
+                backgroundImage: answererAvatar != null
+                    ? NetworkImage(answererAvatar)
+                    : null,
+                child: answererAvatar == null
+                    ? Icon(Icons.person, size: isReply ? 14 : 18, color: Colors.white)
+                    : null,
+              ),
+              if (!isReply)
+                Container(width: 2, height: 40, color: const Color(0xFFE9ECEF)),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(answererName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Color(0xFF212529))),
+                    const Spacer(),
+                    Text(_formatTimeAgo(answer.createdAt),
+                        style:
+                            TextStyle(color: Colors.grey[400], fontSize: 12)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                if (isAdopted) ...[
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.green[200]!),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.verified, color: Colors.green, size: 12),
+                        SizedBox(width: 4),
+                        Text('채택된 답변',
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+                if (isReply && answer.replyToNickname != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '@${answer.replyToNickname}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF3F72C4),
+                      ),
+                    ),
+                  ),
+                Text(answer.content,
+                    style: const TextStyle(
+                        fontSize: 15, color: Color(0xFF343A40), height: 1.45)),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                            icon: Icon(
+                                provider.likedCommentIds.contains(answer.id)
+                                    ? Icons.bolt
+                                    : Icons.bolt_outlined,
+                                size: 18,
+                                color:
+                                    provider.likedCommentIds.contains(answer.id)
+                                        ? Colors.orange[600]
+                                        : const Color(0xFF65676B)),
+                            onPressed: () {
+                              if (currentUser != null) {
+                                provider.toggleCommentLike(
+                                    question.id, answer.id, currentUser.id);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('로그인이 필요합니다.')));
+                              }
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints()),
+                        const SizedBox(width: 4),
+                        Text('${answer.likeCount}',
+                            style: TextStyle(
+                                color: Colors.grey[500], fontSize: 12)),
+                        const SizedBox(width: 12),
+                        IconButton(
+                          icon: const Icon(Icons.mode_comment_outlined, size: 18, color: Color(0xFF65676B)),
+                          onPressed: () {
+                            provider.setReplyingTo(answer);
+                            FocusScope.of(context).requestFocus(_replyFocusNode);
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    if (!isReply && 
+                        isMe &&
+                        question.questionStatus == 'waiting' &&
+                        answer.authorId != currentUser.id)
+                      GestureDetector(
+                        onTap: () => _acceptAnswer(question, answer),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('채택하기',
+                              style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStickyReplyBar() {
+    final currentUser = context.watch<UserProvider>().currentUser;
+    final provider = context.watch<CommunityProvider>();
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFF1F3F5))),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (provider.replyingTo != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: const Color(0xFFF8F9FA),
+              child: Row(
+                children: [
+                  Text(
+                    '${provider.replyingTo!.authorNickname}님에게 답글 남기는 중',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      provider.setReplyingTo(null);
+                    },
+                    child: const Icon(Icons.close, size: 16, color: Color(0xFFADB5BD)),
+                  ),
+                ],
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: const Color(0xFFF1F3F5),
+                    backgroundImage: currentUser?.photoUrl != null
+                        ? NetworkImage(currentUser!.photoUrl!)
+                        : null,
+                    child: currentUser?.photoUrl == null
+                        ? const Icon(Icons.person, size: 14, color: Colors.grey)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _replyController,
+                      focusNode: _replyFocusNode,
+                      decoration: const InputDecoration(
+                        hintText: '답글 남기기...',
+                        hintStyle: TextStyle(fontSize: 14, color: Color(0xFFADB5BD)),
+                        border: InputBorder.none,
+                      ),
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _submitReply,
+                    child: Text('답글',
+                        style: TextStyle(
+                            color: Colors.orange[600],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

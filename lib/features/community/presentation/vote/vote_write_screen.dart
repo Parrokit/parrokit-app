@@ -12,6 +12,11 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/data/models/vote_option.dart';
 
 class VoteWriteScreen extends StatefulWidget {
   const VoteWriteScreen({super.key});
@@ -32,6 +37,9 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
     TextEditingController(),
     TextEditingController(),
   ];
+
+  // 만료일 선택 (기본 3일)
+  int _selectedExpirationDays = 3;
 
   bool get _isValid {
     if (_titleController.text.trim().isEmpty) return false;
@@ -77,6 +85,71 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
     });
   }
 
+  void _showExpirationPicker(BuildContext context) {
+    int tempSelectedDays = _selectedExpirationDays; // 스크롤 중 임시 저장
+
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) => Container(
+        height: 250,
+        padding: const EdgeInsets.only(top: 6.0),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              // 상단 완료/취소 툴바
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: const Text('취소', style: TextStyle(color: CupertinoColors.destructiveRed)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    child: const Text('완료', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      setState(() {
+                        _selectedExpirationDays = tempSelectedDays;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              // 숫자 휠 피커 (1일 ~ 30일)
+              Expanded(
+                child: CupertinoPicker(
+                  magnification: 1.22,
+                  squeeze: 1.2,
+                  useMagnifier: true,
+                  itemExtent: 32.0,
+                  scrollController: FixedExtentScrollController(
+                    initialItem: tempSelectedDays - 1, // 1~30일을 index 0~29로
+                  ),
+                  onSelectedItemChanged: (int selectedItem) {
+                    tempSelectedDays = selectedItem + 1;
+                  },
+                  children: List<Widget>.generate(30, (int index) {
+                    return Center(
+                      child: Text(
+                        '${index + 1}일',
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _removeOption(int index) {
     if (_optionControllers.length <= 2) return;
 
@@ -88,10 +161,56 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
     });
   }
 
-  void _submitVote() {
+  Future<void> _submitVote() async {
     if (!_isValid) return;
-    // 작성 완료 후 화면 닫기
-    Navigator.pop(context);
+
+    final userProvider = context.read<UserProvider>();
+    final communityProvider = context.read<CommunityProvider>();
+    final user = userProvider.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      return;
+    }
+
+    // 포커스 해제 (키보드 내림)
+    FocusScope.of(context).unfocus();
+
+    // 입력된 옵션들을 VoteOption 객체 배열로 변환
+    final List<VoteOption> voteOptions = [];
+    for (int i = 0; i < _optionControllers.length; i++) {
+      final text = _optionControllers[i].text.trim();
+      voteOptions.add(VoteOption(
+        id: i.toString(),
+        text: text,
+        count: 0,
+      ));
+    }
+
+    // 만료일 계산
+    final voteEndTime = DateTime.now().add(Duration(days: _selectedExpirationDays));
+
+    final success = await communityProvider.addPost(
+      _titleController.text.trim(),
+      _contentController.text.trim(),
+      '투표', // category
+      postType: 'vote',
+      authorId: user.id,
+      authorNickname: user.displayName ?? '익명',
+      authorAvatarUrl: null, // 임시 프사 지원 시 수정 가능
+      voteOptions: voteOptions,
+      voteEndTime: voteEndTime,
+    );
+
+    if (success && mounted) {
+      Navigator.pop(context);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(communityProvider.errorMessage ?? '투표 업로드에 실패했습니다.')),
+      );
+    }
   }
 
   @override
@@ -113,6 +232,7 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
   // ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<CommunityProvider>().isLoading;
     final blue600 = Colors.blue[600]!;
 
     return Scaffold(
@@ -129,7 +249,7 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0, top: 10.0, bottom: 10.0),
             child: ElevatedButton(
-              onPressed: _isValid ? _submitVote : null,
+              onPressed: (_isValid && !isLoading) ? _submitVote : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: blue600,
                 disabledBackgroundColor: blue600.withValues(alpha: 0.4),
@@ -137,14 +257,20 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
               ),
-              child: const Text(
-                '투표 올리기',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text(
+                      '투표 올리기',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
             ),
           )
         ],
@@ -210,6 +336,43 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
                     const SizedBox(height: 24),
 
                     const Divider(color: Color(0xFFF1F3F5), height: 1, thickness: 1),
+                    const SizedBox(height: 24),
+
+                    // ── 투표 기간 설정 ──
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '투표 진행 기간',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _showExpirationPicker(context),
+                          child: Container(
+                            height: 36,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  '$_selectedExpirationDays일 동안',
+                                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.black54),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 24),
 
                     // Vote Options Section

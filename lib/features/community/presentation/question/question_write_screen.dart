@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/community/presentation/qeustion_wirte_screen.dart
+// lib/features/community/presentation/question/question_write_screen.dart
 // ============================================================================
 //
 // [역할]
@@ -11,6 +11,9 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
 
 class QuestionWriteScreen extends StatefulWidget {
   const QuestionWriteScreen({super.key});
@@ -25,6 +28,10 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
   // ─────────────────────────────────────────────────────────────────
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+
+  int _rewardCrackers = 100;
+  int _deadlineDays = 3;
+  bool _isSubmitting = false;
 
   bool get _isValid =>
       _titleController.text.trim().isNotEmpty &&
@@ -41,10 +48,47 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
     setState(() {});
   }
 
-  void _submitQuestion() {
-    if (!_isValid) return;
-    // 작성 완료 후 화면 닫기
-    Navigator.pop(context);
+  Future<void> _submitQuestion() async {
+    if (!_isValid || _isSubmitting) return;
+
+    final userProvider = context.read<UserProvider>();
+    final user = userProvider.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
+      return;
+    }
+
+    if (user.crackers < _rewardCrackers) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('크래커가 부족합니다. (보유: ${user.crackers} 🍪)')));
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final commProvider = context.read<CommunityProvider>();
+    final success = await commProvider.addQuestion(
+      title: _titleController.text.trim(),
+      content: _contentController.text.trim(),
+      category: 'Q&A', // 기본 카테고리
+      authorId: user.id,
+      authorNickname: user.displayName ?? '익명',
+      authorAvatarUrl: user.photoUrl,
+      rewardCrackers: _rewardCrackers,
+      expireAt: DateTime.now().add(Duration(days: _deadlineDays)),
+    );
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (success) {
+      // 내 로컬 유저 객체의 크래커도 깎아주기 (UI 갱신)
+      userProvider.updateUser(user.addCrackers(-_rewardCrackers));
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(commProvider.errorMessage ?? '질문 등록에 실패했습니다.')),
+      );
+    }
   }
 
   @override
@@ -77,7 +121,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0, top: 10.0, bottom: 10.0),
             child: ElevatedButton(
-              onPressed: _isValid ? _submitQuestion : null,
+              onPressed: (_isValid && !_isSubmitting) ? _submitQuestion : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: orange600,
                 disabledBackgroundColor: orange600.withValues(alpha: 0.4),
@@ -85,14 +129,19 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
               ),
-              child: const Text(
-                '질문하기',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text(
+                      '질문하기',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
             ),
           )
         ],
@@ -155,6 +204,56 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                         height: 1.5,
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    
+                    // --- Q&A Settings Box ---
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF9F0),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: orange600.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('보상 크래커 🍪', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              Text('$_rewardCrackers', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: orange600)),
+                            ],
+                          ),
+                          Slider(
+                            value: _rewardCrackers.toDouble(),
+                            min: 100,
+                            max: 5000,
+                            divisions: 49,
+                            activeColor: orange600,
+                            inactiveColor: orange600.withValues(alpha: 0.2),
+                            onChanged: (val) => setState(() => _rewardCrackers = val.toInt()),
+                          ),
+                          const Divider(height: 32, color: Color(0xFFF1F3F5)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('마감 기한 ⏳', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              Text('$_deadlineDays일 후', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: orange600)),
+                            ],
+                          ),
+                          Slider(
+                            value: _deadlineDays.toDouble(),
+                            min: 1,
+                            max: 14,
+                            divisions: 13,
+                            activeColor: orange600,
+                            inactiveColor: orange600.withValues(alpha: 0.2),
+                            onChanged: (val) => setState(() => _deadlineDays = val.toInt()),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),

@@ -85,10 +85,11 @@ class CommunityRepository {
   }
 
   // Fetch posts (basic version, ordered by createdAt desc)
-  Future<List<Post>> getPosts({int limit = 10, DocumentSnapshot? startAfter}) async {
+  Future<List<Post>> getPosts({String postType = 'board', int limit = 10, DocumentSnapshot? startAfter}) async {
     try {
       Query query = _firestore
           .collection('posts')
+          .where('postType', isEqualTo: postType)
           .orderBy('createdAt', descending: true)
           .limit(limit);
 
@@ -310,6 +311,183 @@ class CommunityRepository {
         'isLiked': false,
         'isScrapped': false,
       };
+    }
+  }
+
+  // --- Q&A 특화 트랜잭션 메서드 ---
+
+  // 1. 질문 등록 (크래커 차감 동반)
+  Future<Post> addQuestion(Post post, String userId, int requiredCrackers) async {
+    try {
+      final userRef = _firestore.collection('users').doc(userId);
+      final docRef = post.id.isEmpty 
+          ? _firestore.collection('posts').doc()
+          : _firestore.collection('posts').doc(post.id);
+
+      final newPost = post.copyWith(
+        id: docRef.id,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await _firestore.runTransaction((transaction) async {
+        // 유저 문서 읽기
+        final userSnapshot = await transaction.get(userRef);
+        if (!userSnapshot.exists) {
+          throw Exception('유저 정보를 찾을 수 없습니다.');
+        }
+
+        final userData = userSnapshot.data()!;
+        final currentCrackers = (userData['crackers'] as num?)?.toInt() ?? 0;
+
+        // 크래커 잔액 확인
+        if (currentCrackers < requiredCrackers) {
+          throw Exception('보유한 크래커가 부족합니다.');
+        }
+
+        // 크래커 차감
+        transaction.update(userRef, {
+          'crackers': FieldValue.increment(-requiredCrackers),
+        });
+
+        // 질문글 등록
+        transaction.set(docRef, newPost.toJson());
+      });
+
+      return newPost;
+    } catch (e) {
+      throw Exception('질문 등록에 실패했습니다: $e');
+    }
+  }
+
+  // 2. 답변 채택 (상태 변경 및 크래커 송금)
+  Future<void> acceptAnswer({
+    required String postId,
+    required String commentId,
+    required String answererId,
+    required int rewardCrackers,
+  }) async {
+    try {
+      final postRef = _firestore.collection('posts').doc(postId);
+      final commentRef = postRef.collection('comments').doc(commentId);
+      final answererRef = _firestore.collection('users').doc(answererId);
+
+      await _firestore.runTransaction((transaction) async {
+        // --- [모든 READ(읽기) 작업 우선 수행] ---
+        // 1. 질문글 상태 확인
+        final postSnapshot = await transaction.get(postRef);
+        if (!postSnapshot.exists) {
+          throw Exception('게시글을 찾을 수 없습니다.');
+        }
+
+        final postData = postSnapshot.data()!;
+        if (postData['questionStatus'] == 'resolved') {
+          throw Exception('이미 채택이 완료된 질문입니다.');
+        }
+        if (postData['questionStatus'] == 'expired') {
+          throw Exception('마감 기한이 지난 질문입니다.');
+        }
+
+        // 2. 답변자 정보 가져오기
+        final answererSnapshot = await transaction.get(answererRef);
+
+        // --- [READ 이후 모든 WRITE(쓰기) 작업 수행] ---
+        // 3. 상태 업데이트
+        transaction.update(postRef, {
+          'questionStatus': 'resolved',
+          'acceptedCommentId': commentId,
+          'updatedAt': DateTime.now().toIso8601String(),
+        });
+        
+        transaction.update(commentRef, {
+          'isAccepted': true,
+          'updatedAt': DateTime.now().toIso8601String(),
+        });
+
+        // 4. 답변자에게 크래커 지급 (답변자 정보가 존재할 경우에만)
+        if (answererSnapshot.exists) {
+          transaction.update(answererRef, {
+            'crackers': FieldValue.increment(rewardCrackers),
+          });
+        }
+      });
+    } catch (e) {
+      throw Exception('답변 채택에 실패했습니다: $e');
+    }
+  }
+
+  // =======================================================================
+  // 4. 투표(Vote) 관련 기능
+  // =======================================================================
+
+  /// 투표하기 (트랜잭션 기반 동시성 제어 및 중복 방지)
+  Future<void> votePost(String postId, String userId, int optionIndex) async {
+    final postRef = _firestore.collection('posts').doc(postId);
+    final voterRef = postRef.collection('voters').doc(userId);
+
+    try {
+      await _firestore.runTransaction((transaction) async {
+        // 1. 읽기 작업
+        final postSnapshot = await transaction.get(postRef);
+        final voterSnapshot = await transaction.get(voterRef);
+
+        if (!postSnapshot.exists) {
+          throw Exception('게시글을 찾을 수 없습니다.');
+        }
+        if (voterSnapshot.exists) {
+          throw Exception('이미 투표한 게시글입니다.');
+        }
+
+        final postData = postSnapshot.data()!;
+        final voteOptionsList = postData['voteOptions'] as List<dynamic>?;
+        if (voteOptionsList == null) {
+          throw Exception('투표 항목이 존재하지 않습니다.');
+        }
+
+        final List<Map<String, dynamic>> updatedOptions = List<Map<String, dynamic>>.from(voteOptionsList);
+        if (optionIndex < 0 || optionIndex >= updatedOptions.length) {
+          throw Exception('유효하지 않은 투표 항목입니다.');
+        }
+
+        // 2. 투표수 1 증가
+        updatedOptions[optionIndex]['count'] = (updatedOptions[optionIndex]['count'] as int? ?? 0) + 1;
+
+        // 3. 쓰기 작업 (옵션 업데이트 및 투표자 기록 추가)
+        transaction.update(postRef, {'voteOptions': updatedOptions});
+        transaction.set(voterRef, {
+          'selectedOption': optionIndex,
+          'votedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } catch (e) {
+      throw Exception('투표 처리에 실패했습니다: $e');
+    }
+  }
+
+  /// 특정 유저가 여러 투표글들에 대해 각각 어떤 항목에 투표했는지 캐싱 조회
+  Future<Map<String, int>> getMyVotes(String userId, List<String> postIds) async {
+    final Map<String, int> myVotes = {};
+    if (postIds.isEmpty) return myVotes;
+
+    try {
+      // 투표글 수가 많지 않으므로 Future.wait 로 일괄 병렬 조회 (Firestore 에서는 다중 get 이 비용 효율적임)
+      await Future.wait(postIds.map((postId) async {
+        final voterDoc = await _firestore
+            .collection('posts')
+            .doc(postId)
+            .collection('voters')
+            .doc(userId)
+            .get();
+
+        if (voterDoc.exists) {
+          myVotes[postId] = voterDoc.data()?['selectedOption'] as int;
+        }
+      }));
+      return myVotes;
+    } catch (e) {
+      // 오류가 발생해도 앱이 터지지 않도록 로그만 찍고 빈 Map 반환
+      print('내 투표 기록 조회 실패: $e');
+      return myVotes;
     }
   }
 }

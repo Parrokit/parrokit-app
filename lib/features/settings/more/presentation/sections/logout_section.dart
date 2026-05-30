@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:provider/provider.dart';
@@ -41,7 +43,10 @@ class LogoutSection extends StatelessWidget {
       // 2. 실제 인증 로그아웃 처리
       await userProvider.signOut();
       
-      if (context.mounted) showToast('로그아웃되었습니다.');
+      if (context.mounted) {
+        showToast('로그아웃되었습니다.');
+        context.go('${AppRoutes.authPath}/${AppRoutes.signInPath}');
+      }
     } catch (e) {
       if (context.mounted) showToast('로그아웃 중 오류가 발생했습니다: $e');
     }

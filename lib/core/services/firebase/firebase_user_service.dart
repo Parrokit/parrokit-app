@@ -32,13 +32,55 @@ class FirebaseUserService {
     return snap.data();
   }
 
-  Future<void> updateUserCoins({
+  Future<void> updateUserEconomy({
     required String uid,
-    required int coins,
+    required int parrots,
+    required int crackers,
   }) async {
     await _firestore.collection('users').doc(uid).update({
-      'coins': coins,
+      'parrots': parrots,
+      'crackers': crackers,
       'lastPurchaseAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> exchangeCurrency({
+    required String uid,
+    required int amountToDeduct,
+    required int amountToAdd,
+    required bool isParrotsToCrackers,
+  }) async {
+    final userRef = _firestore.collection('users').doc(uid);
+    
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(userRef);
+      if (!snapshot.exists) {
+        throw Exception('유저 정보를 찾을 수 없습니다.');
+      }
+      
+      final data = snapshot.data()!;
+      int currentParrots = (data['parrots'] as num?)?.toInt() ?? 0;
+      int currentCrackers = (data['crackers'] as num?)?.toInt() ?? 0;
+      
+      if (isParrotsToCrackers) {
+        if (currentParrots < amountToDeduct) {
+          throw Exception('보유하신 패롯이 부족합니다.');
+        }
+        currentParrots -= amountToDeduct;
+        currentCrackers += amountToAdd;
+      } else {
+        if (currentCrackers < amountToDeduct) {
+          throw Exception('보유하신 크래커가 부족합니다.');
+        }
+        currentCrackers -= amountToDeduct;
+        currentParrots += amountToAdd;
+      }
+      
+      transaction.update(userRef, {
+        'parrots': currentParrots,
+        'crackers': currentCrackers,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     });
   }
 
@@ -94,7 +136,7 @@ class FirebaseUserService {
     return !doc.exists;
   }
 
-  Future<PaUser?> loadUserDocument({required String uid}) async {
+  Future<AppUser?> loadUserDocument({required String uid}) async {
     final snap = await _firestore
         .collection('users')
         .doc(uid)
@@ -105,12 +147,13 @@ class FirebaseUserService {
     }
 
     final data = snap.data()!;
-    return PaUser(
+    return AppUser(
       id: uid,
       displayName: data['displayName'],
       email: data['email'],
       photoUrl: data['photoUrl'],
-      coins: (data['coins'] as num?)?.toInt() ?? 0,
+      parrots: (data['parrots'] as num?)?.toInt() ?? 0,
+      crackers: (data['crackers'] as num?)?.toInt() ?? 0,
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : null,

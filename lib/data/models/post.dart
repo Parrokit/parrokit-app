@@ -26,6 +26,12 @@ class Post {
   final List<DateTime> editHistory;
   final List<VoteOption>? voteOptions;
   final DateTime? voteEndTime;
+  
+  // --- Q&A 전용 필드 ---
+  final String questionStatus; // 'waiting', 'resolved', 'expired'
+  final String? acceptedCommentId;
+  final int rewardCrackers;
+  final DateTime? expireAt;
 
   const Post({
     required this.id,
@@ -52,6 +58,10 @@ class Post {
     this.editHistory = const [],
     this.voteOptions,
     this.voteEndTime,
+    this.questionStatus = 'waiting',
+    this.acceptedCommentId,
+    this.rewardCrackers = 0,
+    this.expireAt,
   });
 
   Post copyWith({
@@ -82,6 +92,12 @@ class Post {
     List<VoteOption>? voteOptions,
     DateTime? voteEndTime,
     bool clearVoteEndTime = false,
+    String? questionStatus,
+    String? acceptedCommentId,
+    bool clearAcceptedCommentId = false,
+    int? rewardCrackers,
+    DateTime? expireAt,
+    bool clearExpireAt = false,
   }) {
     return Post(
       id: id ?? this.id,
@@ -108,6 +124,10 @@ class Post {
       editHistory: editHistory ?? this.editHistory,
       voteOptions: voteOptions ?? this.voteOptions,
       voteEndTime: clearVoteEndTime ? null : (voteEndTime ?? this.voteEndTime),
+      questionStatus: questionStatus ?? this.questionStatus,
+      acceptedCommentId: clearAcceptedCommentId ? null : (acceptedCommentId ?? this.acceptedCommentId),
+      rewardCrackers: rewardCrackers ?? this.rewardCrackers,
+      expireAt: clearExpireAt ? null : (expireAt ?? this.expireAt),
     );
   }
 
@@ -143,6 +163,10 @@ class Post {
           ?.map((e) => VoteOption.fromJson(e as Map<String, dynamic>))
           .toList(),
       voteEndTime: _parseDateTime(json['voteEndTime']),
+      questionStatus: json['questionStatus'] as String? ?? 'waiting',
+      acceptedCommentId: json['acceptedCommentId'] as String?,
+      rewardCrackers: (json['rewardCrackers'] as num?)?.toInt() ?? 0,
+      expireAt: _parseDateTime(json['expireAt']),
     );
   }
 
@@ -172,6 +196,10 @@ class Post {
       'editHistory': editHistory.map((e) => e.toIso8601String()).toList(),
       if (voteOptions != null) 'voteOptions': voteOptions!.map((e) => e.toJson()).toList(),
       if (voteEndTime != null) 'voteEndTime': voteEndTime!.toIso8601String(),
+      'questionStatus': questionStatus,
+      'acceptedCommentId': acceptedCommentId,
+      'rewardCrackers': rewardCrackers,
+      if (expireAt != null) 'expireAt': expireAt!.toIso8601String(),
     };
   }
 

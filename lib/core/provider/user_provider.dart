@@ -11,7 +11,7 @@ import 'package:parrokit/core/utils/app_logger.dart';
 ///
 /// 역할:
 /// - 앱 시작 시 로컬(UserPrefs)에서 유저를 복원하거나, 없으면 게스트 유저 생성
-/// - 현재 유저(PaUser)와 코인 값을 UI에 노출
+/// - 현재 유저(AppUser)와 코인 값을 UI에 노출
 /// - 코인 증감, 로그아웃 등의 액션을 AuthService를 통해 위임
 ///
 /// 현재는 외부 인증/서버 연동 없이 로컬 전용 동작만 하지만,
@@ -20,7 +20,7 @@ import 'package:parrokit/core/utils/app_logger.dart';
 class UserProvider extends ChangeNotifier {
   final UserRepository _userRepository;
 
-  PaUser? _currentUser;
+  AppUser? _currentUser;
   bool _isLoading = false;
 
   /// 라우터 새로고침 전용 Notifier (로그인 상태, 온보딩 상태 변경 시에만 호출)
@@ -33,7 +33,7 @@ class UserProvider extends ChangeNotifier {
   UserProvider(this._userRepository);
 
   /// 현재 로그인된 유저(없을 수도 있음)
-  PaUser? get currentUser => _currentUser;
+  AppUser? get currentUser => _currentUser;
 
   /// 유저 정보를 로딩 중인지 여부
   bool get isLoading => _isLoading;
@@ -53,6 +53,7 @@ class UserProvider extends ChangeNotifier {
 
     try {
       _currentUser = await _userRepository.getCurrentUser();
+      _checkAndNotifyRouter();
     } finally {
       _setLoading(false);
     }
@@ -86,7 +87,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   /// 유저 정보를 외부(서버, 프로필 편집 화면 등)에서 갱신했을 때 호출합니다.
-  Future<void> updateUser(PaUser user) async {
+  Future<void> updateUser(AppUser user) async {
     await _userRepository.saveUser(user);
     _currentUser = user;
     notifyListeners();
@@ -274,6 +275,49 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// 패롯과 크래커 상호 환전
+  Future<void> exchangeCurrency({
+    required int amountToDeduct,
+    required int amountToAdd,
+    required bool isParrotsToCrackers,
+  }) async {
+    if (_currentUser == null) return;
+    
+    // 1. Optimistic Update (화면에 남은 돈/받은 돈 즉시 반영)
+    int newParrots = _currentUser!.parrots;
+    int newCrackers = _currentUser!.crackers;
+    
+    if (isParrotsToCrackers) {
+      newParrots -= amountToDeduct;
+      newCrackers += amountToAdd;
+    } else {
+      newCrackers -= amountToDeduct;
+      newParrots += amountToAdd;
+    }
+    
+    _currentUser = _currentUser!.copyWith(
+      parrots: newParrots,
+      crackers: newCrackers,
+    );
+    notifyListeners();
+
+    _setLoading(true);
+    try {
+      await _userRepository.exchangeCurrency(
+        amountToDeduct: amountToDeduct,
+        amountToAdd: amountToAdd,
+        isParrotsToCrackers: isParrotsToCrackers,
+      );
+    } catch (e) {
+      // 롤백 (실패 시 데이터베이스에서 유저 정보를 다시 가져와 복구)
+      AppLogger.e('[UserProvider] Exchange failed: $e');
+      await reloadFirebaseUser();
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 닉네임(DisplayName) 업데이트
   Future<void> updateDisplayName(String? displayName) async {
     AppLogger.d('[UserProvider] updateDisplayName requested: $displayName');
@@ -311,6 +355,7 @@ class UserProvider extends ChangeNotifier {
       await _userRepository.deleteAccount();
       () async { try { await Purchases.logOut(); } catch (_) {} }();
       _currentUser = null;
+      _checkAndNotifyRouter();
       notifyListeners();
     } finally {
       _setLoading(false);

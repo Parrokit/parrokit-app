@@ -8,80 +8,101 @@
 /// - coins       : 유저가 보유한 코인 수 (기본값 0)
 /// - createdAt   : 계정이 처음 생성된 시각 (없으면 null)
 /// - updatedAt   : 마지막으로 정보가 갱신된 시각 (없으면 null)
-class PaUser {
+class AppUser {
   final String id;
   final String? displayName;
   final String? email;
   final String? photoUrl;
-  final int coins;
+  final int parrots;
+  final int crackers;
+
+  /// 하위 호환성 (기존 코인 시스템과 패롯을 동일 취급)
+  int get coins => parrots;
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? lastNicknameChangedAt;
 
-  const PaUser({
+  const AppUser({
     required this.id,
     this.displayName,
     this.email,
     this.photoUrl,
-    this.coins = 20,
+    this.parrots = 20,
+    this.crackers = 1000,
     this.createdAt,
     this.updatedAt,
     this.lastNicknameChangedAt,
   });
 
-  /// 코인 증감이 적용된 새 인스턴스를 반환합니다.
-  PaUser addCoins(int delta) {
-    return copyWith(coins: coins + delta);
+  /// 재화 증감이 적용된 새 인스턴스를 반환합니다.
+  AppUser addParrots(int delta) {
+    return copyWith(parrots: parrots + delta);
   }
 
+  AppUser addCrackers(int delta) {
+    return copyWith(crackers: crackers + delta);
+  }
+
+  // 기존 호환용 메서드
+  AppUser addCoins(int delta) => addParrots(delta);
+
   /// 일부 필드만 변경해서 새 인스턴스를 만들기 위한 헬퍼입니다.
-  PaUser copyWith({
+  AppUser copyWith({
     String? id,
     String? displayName,
     bool clearDisplayName = false,
     String? email,
     String? photoUrl,
     bool clearPhotoUrl = false,
-    int? coins,
+    int? parrots,
+    int? crackers,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastNicknameChangedAt,
   }) {
-    return PaUser(
+    return AppUser(
       id: id ?? this.id,
       displayName: clearDisplayName ? null : (displayName ?? this.displayName),
       email: email ?? this.email,
       photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
-      coins: coins ?? this.coins,
+      parrots: parrots ?? this.parrots,
+      crackers: crackers ?? this.crackers,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      lastNicknameChangedAt: lastNicknameChangedAt ?? this.lastNicknameChangedAt,
+      lastNicknameChangedAt:
+          lastNicknameChangedAt ?? this.lastNicknameChangedAt,
     );
   }
 
-  /// JSON → PaUser
+  /// JSON → AppUser
   /// Firestore, REST API 등에서 내려오는 JSON을 그대로 매핑할 때 사용합니다.
-  factory PaUser.fromJson(Map<String, dynamic> json) {
-    return PaUser(
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    return AppUser(
       id: json['id'] as String,
       displayName: json['displayName'] as String?,
       email: json['email'] as String?,
       photoUrl: json['photoUrl'] as String?,
-      coins: (json['coins'] as num?)?.toInt() ?? 0,
+      parrots: (json['parrots'] as num?)?.toInt() ??
+          (json['coins'] as num?)?.toInt() ??
+          0,
+      crackers: (json['crackers'] as num?)?.toInt() ?? 0,
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
       lastNicknameChangedAt: _parseDateTime(json['lastNicknameChangedAt']),
     );
   }
 
-  /// PaUser → JSON
+  /// AppUser → JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'displayName': displayName,
       'email': email,
       'photoUrl': photoUrl,
-      'coins': coins,
+      'parrots': parrots,
+      'crackers': crackers,
+      'coins': parrots, // 호환용
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'lastNicknameChangedAt': lastNicknameChangedAt?.toIso8601String(),
@@ -107,18 +128,19 @@ class PaUser {
 
   @override
   String toString() {
-    return 'PaUser(id: $id, displayName: $displayName, email: $email, photoUrl: $photoUrl, coins: $coins)';
+    return 'AppUser(id: $id, displayName: $displayName, email: $email, photoUrl: $photoUrl, parrots: $parrots, crackers: $crackers)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is PaUser &&
+    return other is AppUser &&
         other.id == id &&
         other.displayName == displayName &&
         other.email == email &&
         other.photoUrl == photoUrl &&
-        other.coins == coins &&
+        other.parrots == parrots &&
+        other.crackers == crackers &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -130,7 +152,8 @@ class PaUser {
       displayName,
       email,
       photoUrl,
-      coins,
+      parrots,
+      crackers,
       createdAt,
       updatedAt,
     );

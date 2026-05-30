@@ -3,97 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/features/community/domain/data/community_filters.dart';
 
-// ─── 더미 데이터 ───────────────────────────────────────────────────────────────
-class VoteItem {
-  final String id;
-  final String title;
-  final String description;
-  final List<String> options;
-  final List<int> votes;
-  final String author;
-  final String time;
-  final String expiresIn;
-  final int likes;
-  final int comments;
-
-  const VoteItem({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.options,
-    required this.votes,
-    required this.author,
-    required this.time,
-    required this.expiresIn,
-    required this.likes,
-    required this.comments,
-  });
-
-  int get totalVotes => votes.fold(0, (a, b) => a + b);
-}
-
-const dummyVotes = [
-  VoteItem(
-    id: '1',
-    title: '재택 vs 사무실',
-    description: '어느 환경에서 일할 때 생산성이 더 높다고 느끼시나요?',
-    options: ['재택 근무', '사무실 출근', '혼합 근무'],
-    votes: [260, 80, 190],
-    author: '워라밸러',
-    time: '3일 전',
-    expiresIn: '5시간 38분 후 종료!',
-    likes: 9,
-    comments: 4,
-  ),
-  VoteItem(
-    id: '2',
-    title: 'Flutter vs React Native, 2025년엔?',
-    description: '크로스플랫폼 앱 개발을 시작한다면 어떤 프레임워크를 선택하시겠어요?',
-    options: ['Flutter', 'React Native'],
-    votes: [142, 87],
-    author: '개발자뚝딱',
-    time: '2시간 전',
-    expiresIn: '3시간 12분 후 종료!',
-    likes: 12,
-    comments: 7,
-  ),
-  VoteItem(
-    id: '3',
-    title: '사이드 프로젝트 스택 선택',
-    description: '새로운 사이드 프로젝트를 시작한다면 어떤 웹 프레임워크를 고르시겠어요?',
-    options: ['Next.js', 'Nuxt.js', 'SvelteKit'],
-    votes: [98, 34, 56],
-    author: '코딩하는고양이',
-    time: '5시간 전',
-    expiresIn: '1일 후 종료!',
-    likes: 5,
-    comments: 3,
-  ),
-  VoteItem(
-    id: '4',
-    title: '코드 리뷰 주기, 어떻게 생각해요?',
-    description: '팀에서 코드 리뷰를 어느 주기로 진행하는 게 가장 효율적일까요?',
-    options: ['PR마다', '매일 1회', '주 1회'],
-    votes: [201, 60, 45],
-    author: '리뷰왕',
-    time: '1일 전',
-    expiresIn: '5시간 38분 후 종료!',
-    likes: 9,
-    comments: 4,
-  ),
-  VoteItem(
-    id: '5',
-    title: '개발할 때 음악 듣나요?',
-    description: '코딩할 때 배경 음악을 틀어놓는 편인가요?',
-    options: ['항상 들어요', '가끔만', '안 들어요'],
-    votes: [320, 210, 88],
-    author: '집중력마스터',
-    time: '2일 전',
-    expiresIn: '2일 후 종료!',
-    likes: 24,
-    comments: 11,
-  ),
-];
+import 'package:provider/provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/data/models/post.dart';
 
 // ─── VoteScreen ────────────────────────────────────────────────────────────────
 class VoteScreen extends StatefulWidget {
@@ -108,24 +21,58 @@ class VoteScreen extends StatefulWidget {
 
 class _VoteScreenState extends State<VoteScreen> {
   int _currentCardIndex = 0;
-  final Map<int, int> _selectedOptions = {};
   final Map<int, bool> _showResults = {};
+  
+  // 방금 화면에서 투표한 게시글 ID (새로고침 시까지 유지됨)
+  final Set<String> _justVotedPostIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _justVotedPostIds.clear();
+      final user = context.read<UserProvider>().currentUser;
+      final provider = context.read<CommunityProvider>();
+      await provider.fetchPosts(postType: 'vote', refresh: true);
+      if (user != null) {
+        await provider.fetchMyVotes(user.id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<CommunityProvider>();
+    final posts = provider.posts.where((p) {
+      if (p.postType != 'vote') return false;
+      // 이미 투표했고, 방금 투표한 게 아니라면(즉 예전에 투표한 거라면) 숨김
+      if (provider.myVotes.containsKey(p.id) && !_justVotedPostIds.contains(p.id)) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    if (provider.isLoading && posts.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (posts.isEmpty) {
+      return const Center(child: Text('진행 중인 투표가 없습니다.'));
+    }
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       transitionBuilder: (child, anim) =>
           FadeTransition(opacity: anim, child: child),
       child: widget.selectedFilter == CommunityFilters.vote[0]
-          ? _buildRandomView(key: const ValueKey('random'))
-          : _buildListView(key: const ValueKey('list')),
+          ? _buildRandomView(posts, key: const ValueKey('random'))
+          : _buildListView(posts, key: const ValueKey('list')),
     );
   }
 
   // ── 랜덤 보기 (스와이프) ─────────────────────────────────────────────────────
-  Widget _buildRandomView({Key? key}) {
-    if (_currentCardIndex >= dummyVotes.length) {
+  Widget _buildRandomView(List<Post> posts, {Key? key}) {
+    if (_currentCardIndex >= posts.length) {
       return Center(
         key: key,
         child: Column(
@@ -147,7 +94,6 @@ class _VoteScreenState extends State<VoteScreen> {
             OutlinedButton(
               onPressed: () => setState(() {
                 _currentCardIndex = 0;
-                _selectedOptions.clear();
                 _showResults.clear();
               }),
               child: const Text('처음부터 다시 보기'),
@@ -178,14 +124,22 @@ class _VoteScreenState extends State<VoteScreen> {
                       onDismiss: () => setState(() => _currentCardIndex++),
                       child: GestureDetector(
                         onTap: () {
-                          context.push(AppRoutes.communityVoteViewPathOf(dummyVotes[_currentCardIndex].id));
+                          context.push(AppRoutes.communityVoteViewPathOf(posts[_currentCardIndex].id));
                         },
                         child: VoteCard(
-                          item: dummyVotes[_currentCardIndex],
-                          selectedOption: _selectedOptions[_currentCardIndex],
+                          item: posts[_currentCardIndex],
+                          selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
                           showResult: _showResults[_currentCardIndex] ?? false,
-                          onSelect: (idx) => setState(
-                              () => _selectedOptions[_currentCardIndex] = idx),
+                          showToggleResultButton: false,
+                          onSelect: (idx) {
+                            final user = context.read<UserProvider>().currentUser;
+                            if (user != null) {
+                              setState(() {
+                                _justVotedPostIds.add(posts[_currentCardIndex].id);
+                              });
+                              context.read<CommunityProvider>().votePost(posts[_currentCardIndex].id, idx, user.id);
+                            }
+                          },
                           onToggleResult: () => setState(() {
                             _showResults[_currentCardIndex] =
                                 !(_showResults[_currentCardIndex] ?? false);
@@ -215,8 +169,8 @@ class _VoteScreenState extends State<VoteScreen> {
               const SizedBox(width: 36),
               _NavButton(
                 icon: Icons.arrow_forward_ios_rounded,
-                enabled: _currentCardIndex < dummyVotes.length,
-                onTap: _currentCardIndex < dummyVotes.length
+                enabled: _currentCardIndex < posts.length,
+                onTap: _currentCardIndex < posts.length
                     ? () => setState(() => _currentCardIndex++)
                     : null,
               ),
@@ -228,22 +182,31 @@ class _VoteScreenState extends State<VoteScreen> {
   }
 
   // ── 한눈에 보기 (리스트) ─────────────────────────────────────────────────────
-  Widget _buildListView({Key? key}) {
+  Widget _buildListView(List<Post> posts, {Key? key}) {
     return ListView.builder(
       key: key,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      itemCount: dummyVotes.length,
+      itemCount: posts.length,
       itemBuilder: (context, i) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: GestureDetector(
           onTap: () {
-            context.push(AppRoutes.communityVoteViewPathOf(dummyVotes[i].id));
+            context.push(AppRoutes.communityVoteViewPathOf(posts[i].id));
           },
           child: VoteCard(
-            item: dummyVotes[i],
-            selectedOption: _selectedOptions[i],
+            item: posts[i],
+            selectedOption: context.watch<CommunityProvider>().myVotes[posts[i].id],
             showResult: _showResults[i] ?? false,
-            onSelect: (idx) => setState(() => _selectedOptions[i] = idx),
+            showToggleResultButton: false,
+            onSelect: (idx) {
+              final user = context.read<UserProvider>().currentUser;
+              if (user != null) {
+                setState(() {
+                  _justVotedPostIds.add(posts[i].id);
+                });
+                context.read<CommunityProvider>().votePost(posts[i].id, idx, user.id);
+              }
+            },
             onToggleResult: () => setState(() {
               _showResults[i] = !(_showResults[i] ?? false);
             }),
@@ -354,11 +317,12 @@ class _SwipeableCardState extends State<_SwipeableCard> {
 
 // ─── 투표 카드 (이미지 1:1 매치, 테두리 없음) ──────────────────────────────────
 class VoteCard extends StatelessWidget {
-  final VoteItem item;
+  final Post item;
   final int? selectedOption;
   final bool showResult;
   final ValueChanged<int> onSelect;
   final VoidCallback onToggleResult;
+  final bool showToggleResultButton;
 
   const VoteCard({
     super.key,
@@ -367,11 +331,37 @@ class VoteCard extends StatelessWidget {
     required this.showResult,
     required this.onSelect,
     required this.onToggleResult,
+    this.showToggleResultButton = true,
   });
+
+  String _formatTimeAgo(DateTime? time) {
+    if (time == null) return '';
+    final diff = DateTime.now().difference(time);
+    if (diff.inDays > 0) return '${diff.inDays}일 전';
+    if (diff.inHours > 0) return '${diff.inHours}시간 전';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}분 전';
+    return '방금 전';
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final int totalVotes = item.voteOptions?.fold(0, (sum, opt) => sum! + opt.count) ?? 0;
+    
+    // 남은 시간 계산
+    String expiresInText = '';
+    if (item.voteEndTime != null) {
+      final diff = item.voteEndTime!.difference(DateTime.now());
+      if (diff.isNegative) {
+        expiresInText = '투표 종료';
+      } else if (diff.inDays > 0) {
+        expiresInText = '${diff.inDays}일 후 종료!';
+      } else if (diff.inHours > 0) {
+        expiresInText = '${diff.inHours}시간 ${diff.inMinutes % 60}분 후 종료!';
+      } else {
+        expiresInText = '${diff.inMinutes}분 후 종료!';
+      }
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -398,7 +388,7 @@ class VoteCard extends StatelessWidget {
               children: [
                 const Spacer(),
                 Text(
-                  item.expiresIn,
+                  expiresInText,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -424,17 +414,17 @@ class VoteCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.author,
+                      Text(item.authorNickname,
                           style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.bold)),
-                      Text(item.time,
+                      Text(item.createdAt != null ? _formatTimeAgo(item.createdAt!) : '',
                           style:
                               TextStyle(fontSize: 12, color: Colors.grey[500])),
                     ],
                   ),
                 ),
                 Text(
-                  '${item.totalVotes}명 참여',
+                  '$totalVotes명 참여',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -459,7 +449,7 @@ class VoteCard extends StatelessWidget {
 
             // ── 설명 ──
             Text(
-              item.description,
+              item.content,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -469,33 +459,35 @@ class VoteCard extends StatelessWidget {
             const SizedBox(height: 20),
 
             // ── 옵션 or 결과 ──
-            !showResult ? _buildOptions(cs) : _buildResults(cs),
+            !(showResult || selectedOption != null) ? _buildOptions(context, cs) : _buildResults(cs, totalVotes),
             const SizedBox(height: 16),
 
             // ── 결과 보기 / 리셋 버튼 ──
-            Center(
-              child: SizedBox(
-                width: 180,
-                height: 46,
-                child: OutlinedButton(
-                  onPressed: onToggleResult,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black87,
-                    side: const BorderSide(color: Colors.black54, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
+            if (showToggleResultButton && selectedOption == null) ...[
+              Center(
+                child: SizedBox(
+                  width: 180,
+                  height: 46,
+                  child: OutlinedButton(
+                    onPressed: onToggleResult,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      side: const BorderSide(color: Colors.black54, width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
+                    child: showResult
+                        ? const Icon(Icons.refresh_rounded,
+                            color: Colors.black87, size: 22)
+                        : const Text('결과 보기',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
-                  child: showResult
-                      ? const Icon(Icons.refresh_rounded,
-                          color: Colors.black87, size: 22)
-                      : const Text('결과 보기',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 14),
+            ],
 
             // ── 좋아요 + 댓글 ──
             Row(
@@ -503,14 +495,14 @@ class VoteCard extends StatelessWidget {
                 const Icon(Icons.favorite_border,
                     size: 24, color: Colors.black87),
                 const SizedBox(width: 6),
-                Text('${item.likes}',
+                Text('${item.likeCount}',
                     style: const TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(width: 16),
                 const Icon(Icons.chat_bubble_outline,
                     size: 22, color: Colors.black87),
                 const SizedBox(width: 6),
-                Text('${item.comments}',
+                Text('${item.commentCount}',
                     style: const TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w600)),
               ],
@@ -521,14 +513,37 @@ class VoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildOptions(ColorScheme cs) {
+  Widget _buildOptions(BuildContext context, ColorScheme cs) {
+    final options = item.voteOptions ?? [];
     return Column(
-      children: List.generate(item.options.length, (i) {
+      children: List.generate(options.length, (i) {
         final isSelected = selectedOption == i;
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GestureDetector(
-            onTap: () => onSelect(i),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('투표 확인', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  content: Text('\'${options[i].text}\' 항목에 투표하시겠습니까?\n한 번 투표하면 수정할 수 없습니다.'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        onSelect(i);
+                      },
+                      child: Text('투표하기', style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              );
+            },
             child: Container(
               width: double.infinity,
               height: 52,
@@ -538,7 +553,7 @@ class VoteCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                item.options[i],
+                options[i].text,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -552,11 +567,11 @@ class VoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildResults(ColorScheme cs) {
+  Widget _buildResults(ColorScheme cs, int totalVotes) {
+    final options = item.voteOptions ?? [];
     return Column(
-      children: List.generate(item.options.length, (i) {
-        final pct =
-            item.totalVotes == 0 ? 0.0 : item.votes[i] / item.totalVotes;
+      children: List.generate(options.length, (i) {
+        final pct = totalVotes == 0 ? 0.0 : options[i].count / totalVotes;
         final isSelected = selectedOption == i;
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
@@ -565,7 +580,7 @@ class VoteCard extends StatelessWidget {
               SizedBox(
                 width: 72,
                 child: Text(
-                  item.options[i],
+                  options[i].text,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,

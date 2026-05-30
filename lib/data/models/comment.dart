@@ -10,6 +10,7 @@ class Comment {
   final String? replyToNickname;
   final int likeCount;
   final String status;
+  final bool isAccepted;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,6 +24,7 @@ class Comment {
     this.replyToNickname,
     this.likeCount = 0,
     this.status = 'active',
+    this.isAccepted = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -40,6 +42,7 @@ class Comment {
     bool clearReplyToNickname = false,
     int? likeCount,
     String? status,
+    bool? isAccepted,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -53,6 +56,7 @@ class Comment {
       replyToNickname: clearReplyToNickname ? null : (replyToNickname ?? this.replyToNickname),
       likeCount: likeCount ?? this.likeCount,
       status: status ?? this.status,
+      isAccepted: isAccepted ?? this.isAccepted,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -69,6 +73,7 @@ class Comment {
       replyToNickname: json['replyToNickname'] as String?,
       likeCount: (json['likeCount'] as num?)?.toInt() ?? 0,
       status: json['status'] as String? ?? 'active',
+      isAccepted: json['isAccepted'] as bool? ?? false,
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
     );
@@ -85,6 +90,7 @@ class Comment {
       'replyToNickname': replyToNickname,
       'likeCount': likeCount,
       'status': status,
+      'isAccepted': isAccepted,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };

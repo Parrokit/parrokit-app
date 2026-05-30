@@ -9,9 +9,12 @@
 //
 // [레이어]
 // Presentation Layer > Screens
-// ============================================================================
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/data/models/comment.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'vote_screen.dart';
 
 class VoteViewScreen extends StatefulWidget {
@@ -27,118 +30,102 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   // 상태 & 데이터
   // ─────────────────────────────────────────────────────────────────
-  late VoteItem _voteItem;
-  int? _selectedOption;
-  bool _showResult = false;
-
   final TextEditingController _commentController = TextEditingController();
-  late List<_VoteComment> _comments;
+  final FocusNode _commentFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+  bool _isFetchingDetails = true;
+
+  bool get _canSubmitComment => _commentController.text.trim().isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    _loadVoteItem();
-    _loadMockComments();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = context.read<UserProvider>().currentUser;
+      final provider = context.read<CommunityProvider>();
+
+      final futures = <Future<void>>[
+        provider.fetchPostDetails(widget.voteId),
+        provider.fetchComments(widget.voteId, currentUserId: user?.id),
+        provider.loadUserActions(widget.voteId, userId: user?.id),
+      ];
+      if (user != null) {
+        futures.add(provider.fetchMyVotes(user.id));
+      }
+
+      await Future.wait(futures);
+      provider.incrementViewCount(widget.voteId, userId: user?.id);
+
+      if (mounted) {
+        setState(() {
+          _isFetchingDetails = false;
+        });
+      }
+    });
   }
 
-  void _loadVoteItem() {
-    // ID가 일치하는 투표 항목 찾기 (없으면 첫 번째 항목으로 폴백)
-    _voteItem = dummyVotes.firstWhere(
-      (v) => v.id == widget.voteId,
-      orElse: () => dummyVotes.first,
-    );
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _commentFocusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  void _loadMockComments() {
-    // 주제별 맞춤 댓글 생성
-    if (_voteItem.id == '1') {
-      _comments = [
-        _VoteComment(
-          author: '워라밸러',
-          handle: '@worklife_balance',
-          avatarUrl: 'https://picsum.photos/seed/user_work/100/100',
-          content: '역시 재택근무가 최고죠. 통근 시간 왕복 2시간 아끼는 것만으로도 저녁 있는 삶이 가능하고 스트레스가 훨씬 덜합니다.',
-          timeAgo: '2시간 전',
-          likes: 12,
-        ),
-        _VoteComment(
-          author: '협업킹',
-          handle: '@collaboration_king',
-          avatarUrl: 'https://picsum.photos/seed/user_coll/100/100',
-          content: '업무 성격에 따라 달라요. 기획이나 마케팅 브레인스토밍 등 협업이 집중적으로 필요할 때는 사무실에서 페이스투페이스로 얘기하는 게 훨씬 효율적입니다.',
-          timeAgo: '1시간 전',
-          likes: 8,
-        ),
-        _VoteComment(
-          author: 'HR전문가',
-          handle: '@hr_expert',
-          avatarUrl: 'https://picsum.photos/seed/user_hr/100/100',
-          content: '저희 회사 설문조사 결과로는 주 3회 출근 / 주 2회 재택의 하이브리드가 만족도와 생산성 밸런스 면에서 가장 높은 점수를 받았습니다.',
-          timeAgo: '30분 전',
-          likes: 5,
-        ),
-      ];
-    } else if (_voteItem.id == '2') {
-      _comments = [
-        _VoteComment(
-          author: '플러터덕후',
-          handle: '@flutter_dev',
-          avatarUrl: 'https://picsum.photos/seed/user_flut/100/100',
-          content: 'Flutter의 고성능 렌더링 엔진과 핫 리로드 기능은 한번 경험하면 정말 벗어나기 어렵습니다. 크로스플랫폼의 최고봉이라고 생각해요.',
-          timeAgo: '3시간 전',
-          likes: 15,
-        ),
-        _VoteComment(
-          author: 'RN빌더',
-          handle: '@rn_builder',
-          avatarUrl: 'https://picsum.photos/seed/user_rn/100/100',
-          content: '국내 대기업이나 스타트업 채용 시장에서는 아직 자바스크립트 생태계의 강점을 업은 React Native가 채용 풀이 훨씬 넓고 유연합니다.',
-          timeAgo: '2시간 전',
-          likes: 9,
-        ),
-      ];
-    } else {
-      _comments = [
-        _VoteComment(
-          author: '개발자토끼',
-          handle: '@rabbit_coder',
-          avatarUrl: 'https://picsum.photos/seed/user_rab/100/100',
-          content: '좋은 주제네요! 투표 결과가 어떻게 끝날지 정말 흥미진진하게 보고 있습니다.',
-          timeAgo: '5시간 전',
-          likes: 4,
-        ),
-        _VoteComment(
-          author: '지나가는행인',
-          handle: '@passer_by',
-          avatarUrl: 'https://picsum.photos/seed/user_pass/100/100',
-          content: '이견이 꽤 갈릴 수 있는 문제 같은데 댓글창 보면서 다양한 관점 배워가네요.',
-          timeAgo: '4시간 전',
-          likes: 2,
-        ),
-      ];
-    }
+  void _scrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (animated) {
+        _scrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(target);
+      }
+    });
   }
 
-  void _submitComment() {
+  void _focusCommentInput() {
+    FocusScope.of(context).requestFocus(_commentFocusNode);
+  }
+
+  void _submitComment() async {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
 
-    setState(() {
-      _comments.insert(
-        0, // 최신 댓글을 맨 위에 추가
-        _VoteComment(
-          author: '나의계정',
-          handle: '@my_account',
-          avatarUrl: 'https://picsum.photos/seed/myaccount/100/100',
-          content: text,
-          timeAgo: '방금 전',
-          likes: 0,
-        ),
+    final user = context.read<UserProvider>().currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
       );
-      _commentController.clear();
-    });
+      return;
+    }
 
-    FocusScope.of(context).unfocus();
+    final provider = context.read<CommunityProvider>();
+
+    _commentController.clear();
+    _commentFocusNode.unfocus();
+
+    final success = await provider.addComment(
+      widget.voteId,
+      text,
+      authorId: user.id,
+      authorNickname: user.displayName ?? '',
+      authorAvatarUrl: user.photoUrl,
+    );
+
+    if (success) {
+      _scrollToBottom();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.errorMessage ?? '댓글 등록 실패')),
+        );
+      }
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -146,6 +133,24 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<CommunityProvider>();
+    final voteItem =
+        provider.posts.where((p) => p.id == widget.voteId).firstOrNull;
+
+    if (_isFetchingDetails) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (voteItem == null) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: Text('투표를 찾을 수 없습니다.')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -153,12 +158,14 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Colors.black, size: 20),
           onPressed: () => Navigator.maybePop(context),
         ),
         title: const Text(
           '투표 상세 토론',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -169,6 +176,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
         children: [
           Expanded(
             child: SingleChildScrollView(
+              controller: _scrollController,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -176,19 +184,17 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: VoteCard(
-                      item: _voteItem,
-                      selectedOption: _selectedOption,
-                      showResult: _showResult,
+                      item: voteItem,
+                      selectedOption: provider.myVotes[voteItem.id],
+                      showResult: false,
+                      showToggleResultButton: false,
                       onSelect: (idx) {
-                        setState(() {
-                          _selectedOption = idx;
-                        });
+                        final user = context.read<UserProvider>().currentUser;
+                        if (user != null) {
+                          provider.votePost(voteItem.id, idx, user.id);
+                        }
                       },
-                      onToggleResult: () {
-                        setState(() {
-                          _showResult = !_showResult;
-                        });
-                      },
+                      onToggleResult: () {},
                     ),
                   ),
 
@@ -202,7 +208,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
                     child: Text(
-                      '토론 & 의견 (${_comments.length})',
+                      '토론 & 의견 (${provider.currentPostComments.length})',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -212,30 +218,20 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                   ),
 
                   // List of comments
-                  if (_comments.isEmpty)
+                  if (provider.currentPostComments.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 40.0),
                       child: Center(
                         child: Text(
                           '첫 의견을 작성해 투표 토론에 참여해보세요!',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 14),
                         ),
                       ),
                     )
                   else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _comments.length,
-                      separatorBuilder: (context, index) => const Divider(
-                        color: Color(0xFFF1F3F5),
-                        height: 1,
-                      ),
-                      itemBuilder: (context, index) {
-                        final comment = _comments[index];
-                        return _buildCommentItem(comment);
-                      },
-                    ),
+                    ..._buildStructuredComments(
+                        provider.currentPostComments, voteItem.authorId),
                 ],
               ),
             ),
@@ -248,176 +244,395 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
     );
   }
 
-  Widget _buildCommentItem(_VoteComment comment) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundImage: NetworkImage(comment.avatarUrl),
-            backgroundColor: const Color(0xFFF1F3F5),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      comment.author,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Color(0xFF212529),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      comment.handle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      comment.timeAgo,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  comment.content,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF495057),
-                    height: 1.45,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Comment Actions (Like button)
-                Row(
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          comment.likes++;
-                        });
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.favorite_border_rounded,
-                            size: 15,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${comment.likes}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatTimeAgo(DateTime? time) {
+    if (time == null) return '';
+    final diff = DateTime.now().difference(time);
+    if (diff.inDays > 0) return '${diff.inDays}일 전';
+    if (diff.inHours > 0) return '${diff.inHours}시간 전';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}분 전';
+    return '방금 전';
   }
 
-  Widget _buildStickyReplyBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-        border: const Border(
-          top: BorderSide(color: Color(0xFFE9ECEF), width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: SafeArea(
+  List<Widget> _buildStructuredComments(
+      List<Comment> allComments, String postAuthorId) {
+    final parentComments =
+        allComments.where((c) => c.parentId == null).toList();
+    final childComments = allComments.where((c) => c.parentId != null).toList();
+
+    final List<Widget> widgets = [];
+    for (var i = 0; i < parentComments.length; i++) {
+      final parent = parentComments[i];
+      widgets.add(_buildCommentItem(parent, postAuthorId, isReply: false));
+
+      final children =
+          childComments.where((c) => c.parentId == parent.id).toList();
+      for (var child in children) {
+        widgets.add(_buildCommentItem(child, postAuthorId, isReply: true));
+      }
+
+      if (i < parentComments.length - 1) {
+        widgets.add(const Divider(color: Color(0xFFF1F3F5), height: 1));
+      }
+    }
+    return widgets;
+  }
+
+  Widget _buildCommentItem(Comment comment, String postAuthorId,
+      {required bool isReply}) {
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyComment =
+        currentUser != null && comment.authorId == currentUser.id;
+    final isDeleted = comment.status == 'deleted';
+    final provider = context.watch<CommunityProvider>();
+    final isLiked = provider.likedCommentIds.contains(comment.id);
+
+    return GestureDetector(
+      onLongPress: () => _showCommentOptionsSheet(comment),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(isReply ? 48 : 16, 16, 16, 16),
+        decoration: isReply
+            ? const BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Color(0xFFEFEFEF), width: 3),
+                ),
+              )
+            : null,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CircleAvatar(
-              radius: 16,
-              backgroundImage: NetworkImage('https://picsum.photos/seed/composer/100/100'),
-              backgroundColor: Color(0xFFF1F3F5),
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFFF1F3F5),
+              backgroundImage: (comment.authorAvatarUrl != null &&
+                      comment.authorAvatarUrl!.isNotEmpty &&
+                      !isDeleted)
+                  ? CachedNetworkImageProvider(comment.authorAvatarUrl!)
+                  : null,
+              child: (comment.authorAvatarUrl == null ||
+                      comment.authorAvatarUrl!.isEmpty ||
+                      isDeleted)
+                  ? const Icon(Icons.person, color: Color(0xFF9E9E9E), size: 20)
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F3F5),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: TextField(
-                  controller: _commentController,
-                  decoration: const InputDecoration(
-                    hintText: '투표 의견 남기기...',
-                    border: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        isDeleted ? '알 수 없음' : comment.authorNickname,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFF212529),
+                        ),
+                      ),
+                      if (comment.authorId == postAuthorId && !isDeleted) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '작성자',
+                            style: TextStyle(
+                              color: Colors.blue[600],
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      if (comment.createdAt != null)
+                        Text(
+                          _formatTimeAgo(comment.createdAt),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                    ],
                   ),
-                  style: const TextStyle(fontSize: 14),
-                ),
+                  const SizedBox(height: 6),
+                  if (isReply && comment.replyToNickname != null && !isDeleted)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '@${comment.replyToNickname}',
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  Text(
+                    isDeleted ? '삭제된 댓글입니다.' : comment.content,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDeleted
+                          ? const Color(0xFF9E9E9E)
+                          : const Color(0xFF495057),
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (!isDeleted)
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            if (currentUser == null) return;
+                            provider.toggleCommentLike(
+                                widget.voteId, comment.id, currentUser.id);
+                          },
+                          child: Row(
+                            children: [
+                              Icon(
+                                isLiked
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                size: 15,
+                                color: isLiked ? Colors.red : Colors.grey[400],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${comment.likeCount}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                      isLiked ? Colors.red : Colors.grey[500],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        GestureDetector(
+                          onTap: () {
+                            provider.setReplyingTo(comment);
+                            _focusCommentInput();
+                          },
+                          child: Text(
+                            '답글 달기',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: Icon(
-                Icons.send_rounded,
-                color: Colors.blue[600],
-                size: 22,
-              ),
-              onPressed: _submitComment,
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class _VoteComment {
-  final String author;
-  final String handle;
-  final String avatarUrl;
-  final String content;
-  final String timeAgo;
-  int likes;
+  void _showCommentOptionsSheet(Comment comment) {
+    if (comment.status == 'deleted') return;
 
-  _VoteComment({
-    required this.author,
-    required this.handle,
-    required this.avatarUrl,
-    required this.content,
-    required this.timeAgo,
-    required this.likes,
-  });
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyComment =
+        currentUser != null && comment.authorId == currentUser.id;
+    final provider = context.read<CommunityProvider>();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (isMyComment)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  title:
+                      const Text('삭제하기', style: TextStyle(color: Colors.red)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('댓글 삭제'),
+                        content: const Text('정말로 이 댓글을 삭제하시겠습니까?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('취소'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('삭제',
+                                style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await provider.deleteComment(widget.voteId, comment.id);
+                    }
+                  },
+                ),
+              if (!isMyComment)
+                ListTile(
+                  leading: const Icon(Icons.reply_rounded),
+                  title: const Text('답글 달기'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    provider.setReplyingTo(comment);
+                    _focusCommentInput();
+                  },
+                ),
+              if (!isMyComment)
+                ListTile(
+                  leading: const Icon(Icons.report_problem_outlined),
+                  title: const Text('신고하기'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('신고가 접수되었습니다.')),
+                    );
+                  },
+                ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStickyReplyBar() {
+    final provider = context.watch<CommunityProvider>();
+    final currentUser = context.watch<UserProvider>().currentUser;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (provider.replyingTo != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: const Color(0xFFF8F9FA),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${provider.replyingTo?.authorNickname} 님에게 답글 남기는 중',
+                    style:
+                        const TextStyle(fontSize: 13, color: Color(0xFF495057)),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => provider.setReplyingTo(null),
+                  child: const Icon(Icons.close,
+                      size: 16, color: Color(0xFF868E96)),
+                ),
+              ],
+            ),
+          ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+            border: const Border(
+              top: BorderSide(color: Color(0xFFE9ECEF), width: 1),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: SafeArea(
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: const Color(0xFFF1F3F5),
+                  backgroundImage: (currentUser?.photoUrl != null &&
+                          currentUser!.photoUrl!.isNotEmpty)
+                      ? CachedNetworkImageProvider(currentUser.photoUrl!)
+                      : null,
+                  child: (currentUser?.photoUrl == null ||
+                          currentUser!.photoUrl!.isEmpty)
+                      ? const Icon(Icons.person,
+                          color: Color(0xFF9E9E9E), size: 18)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white, width: 1),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: TextField(
+                      controller: _commentController,
+                      focusNode: _commentFocusNode,
+                      onChanged: (_) => setState(() {}),
+                      onSubmitted: (_) => _submitComment(),
+                      decoration: InputDecoration(
+                        hintText: '투표 의견 남기기...',
+                        fillColor: Colors.grey[100],
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+                      ),
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(
+                    Icons.send_rounded,
+                    color:
+                        _canSubmitComment ? Colors.blue[600] : Colors.grey[400],
+                    size: 22,
+                  ),
+                  onPressed: _canSubmitComment ? _submitComment : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
