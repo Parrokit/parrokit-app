@@ -22,11 +22,15 @@ class VoteScreen extends StatefulWidget {
 class _VoteScreenState extends State<VoteScreen> {
   int _currentCardIndex = 0;
   final Map<int, bool> _showResults = {};
+  
+  // 방금 화면에서 투표한 게시글 ID (새로고침 시까지 유지됨)
+  final Set<String> _justVotedPostIds = {};
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _justVotedPostIds.clear();
       final user = context.read<UserProvider>().currentUser;
       final provider = context.read<CommunityProvider>();
       await provider.fetchPosts(postType: 'vote', refresh: true);
@@ -39,7 +43,14 @@ class _VoteScreenState extends State<VoteScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CommunityProvider>();
-    final posts = provider.posts.where((p) => p.postType == 'vote').toList();
+    final posts = provider.posts.where((p) {
+      if (p.postType != 'vote') return false;
+      // 이미 투표했고, 방금 투표한 게 아니라면(즉 예전에 투표한 거라면) 숨김
+      if (provider.myVotes.containsKey(p.id) && !_justVotedPostIds.contains(p.id)) {
+        return false;
+      }
+      return true;
+    }).toList();
 
     if (provider.isLoading && posts.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -122,6 +133,9 @@ class _VoteScreenState extends State<VoteScreen> {
                           onSelect: (idx) {
                             final user = context.read<UserProvider>().currentUser;
                             if (user != null) {
+                              setState(() {
+                                _justVotedPostIds.add(posts[_currentCardIndex].id);
+                              });
                               context.read<CommunityProvider>().votePost(posts[_currentCardIndex].id, idx, user.id);
                             }
                           },
@@ -185,6 +199,9 @@ class _VoteScreenState extends State<VoteScreen> {
             onSelect: (idx) {
               final user = context.read<UserProvider>().currentUser;
               if (user != null) {
+                setState(() {
+                  _justVotedPostIds.add(posts[i].id);
+                });
                 context.read<CommunityProvider>().votePost(posts[i].id, idx, user.id);
               }
             },
