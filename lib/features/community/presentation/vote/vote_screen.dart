@@ -130,6 +130,7 @@ class _VoteScreenState extends State<VoteScreen> {
                           item: posts[_currentCardIndex],
                           selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
                           showResult: _showResults[_currentCardIndex] ?? false,
+                          showToggleResultButton: false,
                           onSelect: (idx) {
                             final user = context.read<UserProvider>().currentUser;
                             if (user != null) {
@@ -196,6 +197,7 @@ class _VoteScreenState extends State<VoteScreen> {
             item: posts[i],
             selectedOption: context.watch<CommunityProvider>().myVotes[posts[i].id],
             showResult: _showResults[i] ?? false,
+            showToggleResultButton: false,
             onSelect: (idx) {
               final user = context.read<UserProvider>().currentUser;
               if (user != null) {
@@ -320,6 +322,7 @@ class VoteCard extends StatelessWidget {
   final bool showResult;
   final ValueChanged<int> onSelect;
   final VoidCallback onToggleResult;
+  final bool showToggleResultButton;
 
   const VoteCard({
     super.key,
@@ -328,6 +331,7 @@ class VoteCard extends StatelessWidget {
     required this.showResult,
     required this.onSelect,
     required this.onToggleResult,
+    this.showToggleResultButton = true,
   });
 
   String _formatTimeAgo(DateTime? time) {
@@ -459,7 +463,7 @@ class VoteCard extends StatelessWidget {
             const SizedBox(height: 16),
 
             // ── 결과 보기 / 리셋 버튼 ──
-            if (selectedOption == null) ...[
+            if (showToggleResultButton && selectedOption == null) ...[
               Center(
                 child: SizedBox(
                   width: 180,

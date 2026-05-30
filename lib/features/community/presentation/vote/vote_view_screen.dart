@@ -30,8 +30,6 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   // 상태 & 데이터
   // ─────────────────────────────────────────────────────────────────
-  bool _showResult = false;
-
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
 
@@ -148,18 +146,15 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     child: VoteCard(
                       item: voteItem,
                       selectedOption: provider.myVotes[voteItem.id],
-                      showResult: _showResult,
+                      showResult: false,
+                      showToggleResultButton: false,
                       onSelect: (idx) {
                         final user = context.read<UserProvider>().currentUser;
                         if (user != null) {
                           provider.votePost(voteItem.id, idx, user.id);
                         }
                       },
-                      onToggleResult: () {
-                        setState(() {
-                          _showResult = !_showResult;
-                        });
-                      },
+                      onToggleResult: () {},
                     ),
                   ),
 
@@ -195,7 +190,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       ),
                     )
                   else
-                    ..._buildStructuredComments(provider.currentPostComments, voteItem.authorId),
+                    ..._buildStructuredComments(
+                        provider.currentPostComments, voteItem.authorId),
                 ],
               ),
             ),
@@ -217,8 +213,10 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
     return '방금 전';
   }
 
-  List<Widget> _buildStructuredComments(List<Comment> allComments, String postAuthorId) {
-    final parentComments = allComments.where((c) => c.parentId == null).toList();
+  List<Widget> _buildStructuredComments(
+      List<Comment> allComments, String postAuthorId) {
+    final parentComments =
+        allComments.where((c) => c.parentId == null).toList();
     final childComments = allComments.where((c) => c.parentId != null).toList();
 
     final List<Widget> widgets = [];
@@ -226,11 +224,12 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
       final parent = parentComments[i];
       widgets.add(_buildCommentItem(parent, postAuthorId, isReply: false));
 
-      final children = childComments.where((c) => c.parentId == parent.id).toList();
+      final children =
+          childComments.where((c) => c.parentId == parent.id).toList();
       for (var child in children) {
         widgets.add(_buildCommentItem(child, postAuthorId, isReply: true));
       }
-      
+
       if (i < parentComments.length - 1) {
         widgets.add(const Divider(color: Color(0xFFF1F3F5), height: 1));
       }
@@ -238,13 +237,15 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
     return widgets;
   }
 
-  Widget _buildCommentItem(Comment comment, String postAuthorId, {required bool isReply}) {
+  Widget _buildCommentItem(Comment comment, String postAuthorId,
+      {required bool isReply}) {
     final currentUser = context.read<UserProvider>().currentUser;
-    final isMyComment = currentUser != null && comment.authorId == currentUser.id;
+    final isMyComment =
+        currentUser != null && comment.authorId == currentUser.id;
     final isDeleted = comment.status == 'deleted';
     final provider = context.watch<CommunityProvider>();
     final isLiked = provider.likedCommentIds.contains(comment.id);
-    
+
     return GestureDetector(
       onLongPress: () => _showCommentOptionsSheet(comment),
       behavior: HitTestBehavior.opaque,
@@ -263,10 +264,14 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
             CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFFF1F3F5),
-              backgroundImage: (comment.authorAvatarUrl != null && comment.authorAvatarUrl!.isNotEmpty && !isDeleted)
+              backgroundImage: (comment.authorAvatarUrl != null &&
+                      comment.authorAvatarUrl!.isNotEmpty &&
+                      !isDeleted)
                   ? CachedNetworkImageProvider(comment.authorAvatarUrl!)
                   : null,
-              child: (comment.authorAvatarUrl == null || comment.authorAvatarUrl!.isEmpty || isDeleted)
+              child: (comment.authorAvatarUrl == null ||
+                      comment.authorAvatarUrl!.isEmpty ||
+                      isDeleted)
                   ? const Icon(Icons.person, color: Color(0xFF9E9E9E), size: 20)
                   : null,
             ),
@@ -290,7 +295,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       if (comment.authorId == postAuthorId && !isDeleted) ...[
                         const SizedBox(width: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(
                             color: Colors.blue[50],
                             borderRadius: BorderRadius.circular(4),
@@ -333,7 +339,9 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     isDeleted ? '삭제된 댓글입니다.' : comment.content,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDeleted ? const Color(0xFF9E9E9E) : const Color(0xFF495057),
+                      color: isDeleted
+                          ? const Color(0xFF9E9E9E)
+                          : const Color(0xFF495057),
                       height: 1.45,
                     ),
                   ),
@@ -344,12 +352,15 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                         GestureDetector(
                           onTap: () {
                             if (currentUser == null) return;
-                            provider.toggleCommentLike(widget.voteId, comment.id, currentUser.id);
+                            provider.toggleCommentLike(
+                                widget.voteId, comment.id, currentUser.id);
                           },
                           child: Row(
                             children: [
                               Icon(
-                                isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                isLiked
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
                                 size: 15,
                                 color: isLiked ? Colors.red : Colors.grey[400],
                               ),
@@ -358,7 +369,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                                 '${comment.likeCount}',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: isLiked ? Colors.red : Colors.grey[500],
+                                  color:
+                                      isLiked ? Colors.red : Colors.grey[500],
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -393,9 +405,10 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
 
   void _showCommentOptionsSheet(Comment comment) {
     if (comment.status == 'deleted') return;
-    
+
     final currentUser = context.read<UserProvider>().currentUser;
-    final isMyComment = currentUser != null && comment.authorId == currentUser.id;
+    final isMyComment =
+        currentUser != null && comment.authorId == currentUser.id;
     final provider = context.read<CommunityProvider>();
 
     showModalBottomSheet(
@@ -422,7 +435,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
               if (isMyComment)
                 ListTile(
                   leading: const Icon(Icons.delete_outline, color: Colors.red),
-                  title: const Text('삭제하기', style: TextStyle(color: Colors.red)),
+                  title:
+                      const Text('삭제하기', style: TextStyle(color: Colors.red)),
                   onTap: () async {
                     Navigator.pop(context);
                     final confirm = await showDialog<bool>(
@@ -437,7 +451,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+                            child: const Text('삭제',
+                                style: TextStyle(color: Colors.red)),
                           ),
                         ],
                       ),
@@ -493,12 +508,14 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                 Expanded(
                   child: Text(
                     '${provider.replyingTo?.authorNickname} 님에게 답글 남기는 중',
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF495057)),
+                    style:
+                        const TextStyle(fontSize: 13, color: Color(0xFF495057)),
                   ),
                 ),
                 GestureDetector(
                   onTap: () => provider.setReplyingTo(null),
-                  child: const Icon(Icons.close, size: 16, color: Color(0xFF868E96)),
+                  child: const Icon(Icons.close,
+                      size: 16, color: Color(0xFF868E96)),
                 ),
               ],
             ),
@@ -524,19 +541,23 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: const Color(0xFFF1F3F5),
-                  backgroundImage: (currentUser?.photoUrl != null && currentUser!.photoUrl!.isNotEmpty)
+                  backgroundImage: (currentUser?.photoUrl != null &&
+                          currentUser!.photoUrl!.isNotEmpty)
                       ? CachedNetworkImageProvider(currentUser.photoUrl!)
                       : null,
-                  child: (currentUser?.photoUrl == null || currentUser!.photoUrl!.isEmpty)
-                      ? const Icon(Icons.person, color: Color(0xFF9E9E9E), size: 18)
+                  child: (currentUser?.photoUrl == null ||
+                          currentUser!.photoUrl!.isEmpty)
+                      ? const Icon(Icons.person,
+                          color: Color(0xFF9E9E9E), size: 18)
                       : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F3F5),
+                      color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white, width: 1),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: TextField(
@@ -544,8 +565,9 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       focusNode: _commentFocusNode,
                       onChanged: (_) => setState(() {}),
                       onSubmitted: (_) => _submitComment(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: '투표 의견 남기기...',
+                        fillColor: Colors.grey[100],
                         border: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -560,7 +582,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                 IconButton(
                   icon: Icon(
                     Icons.send_rounded,
-                    color: _canSubmitComment ? Colors.blue[600] : Colors.grey[400],
+                    color:
+                        _canSubmitComment ? Colors.blue[600] : Colors.grey[400],
                     size: 22,
                   ),
                   onPressed: _canSubmitComment ? _submitComment : null,
