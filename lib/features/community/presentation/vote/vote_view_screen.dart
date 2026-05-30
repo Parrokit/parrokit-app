@@ -32,6 +32,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocusNode = FocusNode();
+  bool _isFetchingDetails = true;
 
   bool get _canSubmitComment => _commentController.text.trim().isNotEmpty;
 
@@ -41,11 +42,24 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final user = context.read<UserProvider>().currentUser;
       final provider = context.read<CommunityProvider>();
-      await provider.fetchPostDetails(widget.voteId);
+
+      final futures = <Future<void>>[
+        provider.fetchPostDetails(widget.voteId),
+        provider.fetchComments(widget.voteId, currentUserId: user?.id),
+        provider.loadUserActions(widget.voteId, userId: user?.id),
+      ];
       if (user != null) {
-        await provider.fetchMyVotes(user.id);
+        futures.add(provider.fetchMyVotes(user.id));
       }
-      await provider.fetchComments(widget.voteId, currentUserId: user?.id);
+
+      await Future.wait(futures);
+      provider.incrementViewCount(widget.voteId, userId: user?.id);
+
+      if (mounted) {
+        setState(() {
+          _isFetchingDetails = false;
+        });
+      }
     });
   }
 
@@ -105,10 +119,17 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
     final voteItem =
         provider.posts.where((p) => p.id == widget.voteId).firstOrNull;
 
-    if (voteItem == null) {
+    if (_isFetchingDetails) {
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (voteItem == null) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: Text('투표를 찾을 수 없습니다.')),
       );
     }
 
