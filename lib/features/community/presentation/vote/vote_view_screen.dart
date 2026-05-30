@@ -99,9 +99,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
       authorAvatarUrl: user.photoUrl,
     );
 
-    if (success) {
-      provider.fetchComments(widget.voteId, currentUserId: user.id);
-    } else {
+    if (!success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(provider.errorMessage ?? '댓글 등록 실패')),
