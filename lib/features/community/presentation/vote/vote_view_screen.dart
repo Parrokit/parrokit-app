@@ -9,9 +9,9 @@
 //
 // [레이어]
 // Presentation Layer > Screens
-// ============================================================================
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'vote_screen.dart';
 
 class VoteViewScreen extends StatefulWidget {
@@ -27,7 +27,6 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   // 상태 & 데이터
   // ─────────────────────────────────────────────────────────────────
-  late VoteItem _voteItem;
   int? _selectedOption;
   bool _showResult = false;
 
@@ -37,86 +36,31 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   @override
   void initState() {
     super.initState();
-    _loadVoteItem();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CommunityProvider>().fetchPostDetails(widget.voteId);
+    });
     _loadMockComments();
   }
 
-  void _loadVoteItem() {
-    // ID가 일치하는 투표 항목 찾기 (없으면 첫 번째 항목으로 폴백)
-    _voteItem = dummyVotes.firstWhere(
-      (v) => v.id == widget.voteId,
-      orElse: () => dummyVotes.first,
-    );
-  }
-
   void _loadMockComments() {
-    // 주제별 맞춤 댓글 생성
-    if (_voteItem.id == '1') {
-      _comments = [
-        _VoteComment(
-          author: '워라밸러',
-          handle: '@worklife_balance',
-          avatarUrl: 'https://picsum.photos/seed/user_work/100/100',
-          content: '역시 재택근무가 최고죠. 통근 시간 왕복 2시간 아끼는 것만으로도 저녁 있는 삶이 가능하고 스트레스가 훨씬 덜합니다.',
-          timeAgo: '2시간 전',
-          likes: 12,
-        ),
-        _VoteComment(
-          author: '협업킹',
-          handle: '@collaboration_king',
-          avatarUrl: 'https://picsum.photos/seed/user_coll/100/100',
-          content: '업무 성격에 따라 달라요. 기획이나 마케팅 브레인스토밍 등 협업이 집중적으로 필요할 때는 사무실에서 페이스투페이스로 얘기하는 게 훨씬 효율적입니다.',
-          timeAgo: '1시간 전',
-          likes: 8,
-        ),
-        _VoteComment(
-          author: 'HR전문가',
-          handle: '@hr_expert',
-          avatarUrl: 'https://picsum.photos/seed/user_hr/100/100',
-          content: '저희 회사 설문조사 결과로는 주 3회 출근 / 주 2회 재택의 하이브리드가 만족도와 생산성 밸런스 면에서 가장 높은 점수를 받았습니다.',
-          timeAgo: '30분 전',
-          likes: 5,
-        ),
-      ];
-    } else if (_voteItem.id == '2') {
-      _comments = [
-        _VoteComment(
-          author: '플러터덕후',
-          handle: '@flutter_dev',
-          avatarUrl: 'https://picsum.photos/seed/user_flut/100/100',
-          content: 'Flutter의 고성능 렌더링 엔진과 핫 리로드 기능은 한번 경험하면 정말 벗어나기 어렵습니다. 크로스플랫폼의 최고봉이라고 생각해요.',
-          timeAgo: '3시간 전',
-          likes: 15,
-        ),
-        _VoteComment(
-          author: 'RN빌더',
-          handle: '@rn_builder',
-          avatarUrl: 'https://picsum.photos/seed/user_rn/100/100',
-          content: '국내 대기업이나 스타트업 채용 시장에서는 아직 자바스크립트 생태계의 강점을 업은 React Native가 채용 풀이 훨씬 넓고 유연합니다.',
-          timeAgo: '2시간 전',
-          likes: 9,
-        ),
-      ];
-    } else {
-      _comments = [
-        _VoteComment(
-          author: '개발자토끼',
-          handle: '@rabbit_coder',
-          avatarUrl: 'https://picsum.photos/seed/user_rab/100/100',
-          content: '좋은 주제네요! 투표 결과가 어떻게 끝날지 정말 흥미진진하게 보고 있습니다.',
-          timeAgo: '5시간 전',
-          likes: 4,
-        ),
-        _VoteComment(
-          author: '지나가는행인',
-          handle: '@passer_by',
-          avatarUrl: 'https://picsum.photos/seed/user_pass/100/100',
-          content: '이견이 꽤 갈릴 수 있는 문제 같은데 댓글창 보면서 다양한 관점 배워가네요.',
-          timeAgo: '4시간 전',
-          likes: 2,
-        ),
-      ];
-    }
+    _comments = [
+      _VoteComment(
+        author: '개발자토끼',
+        handle: '@rabbit_coder',
+        avatarUrl: 'https://picsum.photos/seed/user_rab/100/100',
+        content: '좋은 주제네요! 투표 결과가 어떻게 끝날지 정말 흥미진진하게 보고 있습니다.',
+        timeAgo: '5시간 전',
+        likes: 4,
+      ),
+      _VoteComment(
+        author: '지나가는행인',
+        handle: '@passer_by',
+        avatarUrl: 'https://picsum.photos/seed/user_pass/100/100',
+        content: '이견이 꽤 갈릴 수 있는 문제 같은데 댓글창 보면서 다양한 관점 배워가네요.',
+        timeAgo: '4시간 전',
+        likes: 2,
+      ),
+    ];
   }
 
   void _submitComment() {
@@ -146,6 +90,17 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<CommunityProvider>();
+    final voteItem =
+        provider.posts.where((p) => p.id == widget.voteId).firstOrNull;
+
+    if (voteItem == null) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -153,12 +108,14 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Colors.black, size: 20),
           onPressed: () => Navigator.maybePop(context),
         ),
         title: const Text(
           '투표 상세 토론',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -176,7 +133,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: VoteCard(
-                      item: _voteItem,
+                      item: voteItem,
                       selectedOption: _selectedOption,
                       showResult: _showResult,
                       onSelect: (idx) {
@@ -218,7 +175,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       child: Center(
                         child: Text(
                           '첫 의견을 작성해 투표 토론에 참여해보세요!',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 14),
                         ),
                       ),
                     )
@@ -363,7 +321,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
           children: [
             const CircleAvatar(
               radius: 16,
-              backgroundImage: NetworkImage('https://picsum.photos/seed/composer/100/100'),
+              backgroundImage:
+                  NetworkImage('https://picsum.photos/seed/composer/100/100'),
               backgroundColor: Color(0xFFF1F3F5),
             ),
             const SizedBox(width: 12),
