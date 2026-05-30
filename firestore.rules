@@ -47,6 +47,11 @@ service cloud.firestore {
         allow read: if true;
         allow write: if true;
       }
+
+      match /voters/{voterId} {
+        allow read: if true;
+        allow write: if true;
+      }
     }
 
     // 전역 닉네임 유일성 체크 (기존 추가본)

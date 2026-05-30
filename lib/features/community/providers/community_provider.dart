@@ -7,6 +7,7 @@ import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/features/community/data/repositories/community_repository.dart';
 import 'package:parrokit/data/models/user.dart';
+import 'package:parrokit/data/models/vote_option.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -56,6 +57,9 @@ class CommunityProvider with ChangeNotifier {
   Set<String> _likedCommentIds = {};
   Set<String> get likedCommentIds => _likedCommentIds;
 
+  // 내 투표 기록 캐시 (postId -> 선택한 optionIndex)
+  Map<String, int> myVotes = {};
+
   Comment? _replyingTo;
   Comment? get replyingTo => _replyingTo;
 
@@ -81,6 +85,7 @@ class CommunityProvider with ChangeNotifier {
     _replyingTo = null;
     _isCurrentPostLiked = false;
     _isCurrentPostScrapped = false;
+    myVotes.clear();
     notifyListeners();
   }
 
@@ -148,11 +153,14 @@ class CommunityProvider with ChangeNotifier {
     String title,
     String content,
     String category, {
+    String postType = 'board',
     required String authorId,
     required String authorNickname,
     String? authorAvatarUrl,
     List<String> tags = const [],
     List<File> imageFiles = const [],
+    List<VoteOption>? voteOptions,
+    DateTime? voteEndTime,
     void Function(int current, int total, double progress)? onImageProgress,
   }) async {
     _isLoading = true;
@@ -182,7 +190,7 @@ class CommunityProvider with ChangeNotifier {
 
       final newPost = Post(
         id: postId, // 발급받은 ID 사용
-        postType: 'board',
+        postType: postType,
         category: category,
         title: title,
         content: content,
@@ -192,6 +200,8 @@ class CommunityProvider with ChangeNotifier {
         authorId: authorId,
         authorNickname: authorNickname,
         authorAvatarUrl: authorAvatarUrl,
+        voteOptions: voteOptions,
+        voteEndTime: voteEndTime,
         snippet:
             content.length > 50 ? '${content.substring(0, 50)}...' : content,
       );
@@ -332,6 +342,60 @@ class CommunityProvider with ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // =======================================================================
+  // 투표(Vote) 관련 기능
+  // =======================================================================
+
+  // 여러 투표글에 대한 내 투표 기록 일괄 조회 및 캐싱
+  Future<void> fetchMyVotes(String userId) async {
+    final votePosts = _posts.where((p) => p.postType == 'vote').map((p) => p.id).toList();
+    if (votePosts.isEmpty) return;
+
+    final fetchedVotes = await _repository.getMyVotes(userId, votePosts);
+    myVotes.addAll(fetchedVotes);
+    notifyListeners();
+  }
+
+  // 투표하기 (낙관적 UI 업데이트 포함)
+  Future<bool> votePost(String postId, int optionIndex, String userId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _repository.votePost(postId, userId, optionIndex);
+      
+      // 1. 로컬 캐시에 즉각 반영
+      myVotes[postId] = optionIndex;
+      
+      // 2. 게시글 목록 내의 옵션 카운트를 즉각 1 증가시켜 낙관적 업데이트
+      final postIndex = _posts.indexWhere((p) => p.id == postId);
+      if (postIndex != -1) {
+        final post = _posts[postIndex];
+        if (post.voteOptions != null) {
+          final newOptions = List<VoteOption>.from(post.voteOptions!);
+          if (optionIndex >= 0 && optionIndex < newOptions.length) {
+            newOptions[optionIndex] = VoteOption(
+              id: newOptions[optionIndex].id,
+              text: newOptions[optionIndex].text,
+              count: newOptions[optionIndex].count + 1,
+            );
+            _posts[postIndex] = post.copyWith(voteOptions: newOptions);
+          }
+        }
+      }
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
       notifyListeners();
       return false;
     }

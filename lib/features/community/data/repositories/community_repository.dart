@@ -415,4 +415,79 @@ class CommunityRepository {
       throw Exception('답변 채택에 실패했습니다: $e');
     }
   }
+
+  // =======================================================================
+  // 4. 투표(Vote) 관련 기능
+  // =======================================================================
+
+  /// 투표하기 (트랜잭션 기반 동시성 제어 및 중복 방지)
+  Future<void> votePost(String postId, String userId, int optionIndex) async {
+    final postRef = _firestore.collection('posts').doc(postId);
+    final voterRef = postRef.collection('voters').doc(userId);
+
+    try {
+      await _firestore.runTransaction((transaction) async {
+        // 1. 읽기 작업
+        final postSnapshot = await transaction.get(postRef);
+        final voterSnapshot = await transaction.get(voterRef);
+
+        if (!postSnapshot.exists) {
+          throw Exception('게시글을 찾을 수 없습니다.');
+        }
+        if (voterSnapshot.exists) {
+          throw Exception('이미 투표한 게시글입니다.');
+        }
+
+        final postData = postSnapshot.data()!;
+        final voteOptionsList = postData['voteOptions'] as List<dynamic>?;
+        if (voteOptionsList == null) {
+          throw Exception('투표 항목이 존재하지 않습니다.');
+        }
+
+        final List<Map<String, dynamic>> updatedOptions = List<Map<String, dynamic>>.from(voteOptionsList);
+        if (optionIndex < 0 || optionIndex >= updatedOptions.length) {
+          throw Exception('유효하지 않은 투표 항목입니다.');
+        }
+
+        // 2. 투표수 1 증가
+        updatedOptions[optionIndex]['count'] = (updatedOptions[optionIndex]['count'] as int? ?? 0) + 1;
+
+        // 3. 쓰기 작업 (옵션 업데이트 및 투표자 기록 추가)
+        transaction.update(postRef, {'voteOptions': updatedOptions});
+        transaction.set(voterRef, {
+          'selectedOption': optionIndex,
+          'votedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } catch (e) {
+      throw Exception('투표 처리에 실패했습니다: $e');
+    }
+  }
+
+  /// 특정 유저가 여러 투표글들에 대해 각각 어떤 항목에 투표했는지 캐싱 조회
+  Future<Map<String, int>> getMyVotes(String userId, List<String> postIds) async {
+    final Map<String, int> myVotes = {};
+    if (postIds.isEmpty) return myVotes;
+
+    try {
+      // 투표글 수가 많지 않으므로 Future.wait 로 일괄 병렬 조회 (Firestore 에서는 다중 get 이 비용 효율적임)
+      await Future.wait(postIds.map((postId) async {
+        final voterDoc = await _firestore
+            .collection('posts')
+            .doc(postId)
+            .collection('voters')
+            .doc(userId)
+            .get();
+
+        if (voterDoc.exists) {
+          myVotes[postId] = voterDoc.data()?['selectedOption'] as int;
+        }
+      }));
+      return myVotes;
+    } catch (e) {
+      // 오류가 발생해도 앱이 터지지 않도록 로그만 찍고 빈 Map 반환
+      print('내 투표 기록 조회 실패: $e');
+      return myVotes;
+    }
+  }
 }

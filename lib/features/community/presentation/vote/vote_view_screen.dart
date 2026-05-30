@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 import 'vote_screen.dart';
 
 class VoteViewScreen extends StatefulWidget {
@@ -27,7 +28,6 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   // 상태 & 데이터
   // ─────────────────────────────────────────────────────────────────
-  int? _selectedOption;
   bool _showResult = false;
 
   final TextEditingController _commentController = TextEditingController();
@@ -36,8 +36,13 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommunityProvider>().fetchPostDetails(widget.voteId);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = context.read<UserProvider>().currentUser;
+      final provider = context.read<CommunityProvider>();
+      await provider.fetchPostDetails(widget.voteId);
+      if (user != null) {
+        await provider.fetchMyVotes(user.id);
+      }
     });
     _loadMockComments();
   }
@@ -134,12 +139,13 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     padding: const EdgeInsets.all(16.0),
                     child: VoteCard(
                       item: voteItem,
-                      selectedOption: _selectedOption,
+                      selectedOption: provider.myVotes[voteItem.id],
                       showResult: _showResult,
                       onSelect: (idx) {
-                        setState(() {
-                          _selectedOption = idx;
-                        });
+                        final user = context.read<UserProvider>().currentUser;
+                        if (user != null) {
+                          provider.votePost(voteItem.id, idx, user.id);
+                        }
                       },
                       onToggleResult: () {
                         setState(() {

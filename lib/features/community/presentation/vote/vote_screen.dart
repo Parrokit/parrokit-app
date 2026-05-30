@@ -5,6 +5,7 @@ import 'package:parrokit/features/community/domain/data/community_filters.dart';
 
 import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/models/post.dart';
 
 // ─── VoteScreen ────────────────────────────────────────────────────────────────
@@ -20,14 +21,18 @@ class VoteScreen extends StatefulWidget {
 
 class _VoteScreenState extends State<VoteScreen> {
   int _currentCardIndex = 0;
-  final Map<int, int> _selectedOptions = {};
   final Map<int, bool> _showResults = {};
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommunityProvider>().fetchPosts(postType: 'vote', refresh: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = context.read<UserProvider>().currentUser;
+      final provider = context.read<CommunityProvider>();
+      await provider.fetchPosts(postType: 'vote', refresh: true);
+      if (user != null) {
+        await provider.fetchMyVotes(user.id);
+      }
     });
   }
 
@@ -78,7 +83,6 @@ class _VoteScreenState extends State<VoteScreen> {
             OutlinedButton(
               onPressed: () => setState(() {
                 _currentCardIndex = 0;
-                _selectedOptions.clear();
                 _showResults.clear();
               }),
               child: const Text('처음부터 다시 보기'),
@@ -113,10 +117,14 @@ class _VoteScreenState extends State<VoteScreen> {
                         },
                         child: VoteCard(
                           item: posts[_currentCardIndex],
-                          selectedOption: _selectedOptions[_currentCardIndex],
+                          selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
                           showResult: _showResults[_currentCardIndex] ?? false,
-                          onSelect: (idx) => setState(
-                              () => _selectedOptions[_currentCardIndex] = idx),
+                          onSelect: (idx) {
+                            final user = context.read<UserProvider>().currentUser;
+                            if (user != null) {
+                              context.read<CommunityProvider>().votePost(posts[_currentCardIndex].id, idx, user.id);
+                            }
+                          },
                           onToggleResult: () => setState(() {
                             _showResults[_currentCardIndex] =
                                 !(_showResults[_currentCardIndex] ?? false);
@@ -172,9 +180,14 @@ class _VoteScreenState extends State<VoteScreen> {
           },
           child: VoteCard(
             item: posts[i],
-            selectedOption: _selectedOptions[i],
+            selectedOption: context.watch<CommunityProvider>().myVotes[posts[i].id],
             showResult: _showResults[i] ?? false,
-            onSelect: (idx) => setState(() => _selectedOptions[i] = idx),
+            onSelect: (idx) {
+              final user = context.read<UserProvider>().currentUser;
+              if (user != null) {
+                context.read<CommunityProvider>().votePost(posts[i].id, idx, user.id);
+              }
+            },
             onToggleResult: () => setState(() {
               _showResults[i] = !(_showResults[i] ?? false);
             }),
@@ -425,33 +438,35 @@ class VoteCard extends StatelessWidget {
             const SizedBox(height: 20),
 
             // ── 옵션 or 결과 ──
-            !showResult ? _buildOptions(cs) : _buildResults(cs, totalVotes),
+            !(showResult || selectedOption != null) ? _buildOptions(context, cs) : _buildResults(cs, totalVotes),
             const SizedBox(height: 16),
 
             // ── 결과 보기 / 리셋 버튼 ──
-            Center(
-              child: SizedBox(
-                width: 180,
-                height: 46,
-                child: OutlinedButton(
-                  onPressed: onToggleResult,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.black87,
-                    side: const BorderSide(color: Colors.black54, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
+            if (selectedOption == null) ...[
+              Center(
+                child: SizedBox(
+                  width: 180,
+                  height: 46,
+                  child: OutlinedButton(
+                    onPressed: onToggleResult,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      side: const BorderSide(color: Colors.black54, width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
+                    child: showResult
+                        ? const Icon(Icons.refresh_rounded,
+                            color: Colors.black87, size: 22)
+                        : const Text('결과 보기',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
-                  child: showResult
-                      ? const Icon(Icons.refresh_rounded,
-                          color: Colors.black87, size: 22)
-                      : const Text('결과 보기',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 14),
+            ],
 
             // ── 좋아요 + 댓글 ──
             Row(
@@ -477,7 +492,7 @@ class VoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildOptions(ColorScheme cs) {
+  Widget _buildOptions(BuildContext context, ColorScheme cs) {
     final options = item.voteOptions ?? [];
     return Column(
       children: List.generate(options.length, (i) {
@@ -485,7 +500,29 @@ class VoteCard extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GestureDetector(
-            onTap: () => onSelect(i),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('투표 확인', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  content: Text('\'${options[i].text}\' 항목에 투표하시겠습니까?\n한 번 투표하면 수정할 수 없습니다.'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        onSelect(i);
+                      },
+                      child: Text('투표하기', style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              );
+            },
             child: Container(
               width: double.infinity,
               height: 52,
