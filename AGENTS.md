@@ -101,3 +101,20 @@ import 순서:
 - Anthropic CLAUDE.md 메모리/지침 로딩 참고:
   - https://docs.anthropic.com/en/docs/claude-code/memory
   - https://code.claude.com/docs/en/agent-sdk/modifying-system-prompts
+
+## 10) 워크플로 문서 참조 규칙 (토큰 최적화)
+
+- 기본 원칙: 항상 이 `AGENTS.md`를 우선 적용하고, 세부 워크플로는 **필요할 때만** 읽는다.
+- 인덱스: `.agents/workflows/flutter-guide-index.md`
+- 세부 문서:
+  - `.agents/workflows/flutter-architecture.md`
+  - `.agents/workflows/flutter-directory.md`
+  - `.agents/workflows/flutter-sections-widgets.md`
+  - `.agents/workflows/flutter-naming.md`
+  - `.agents/workflows/flutter-modularization.md`
+  - `.agents/workflows/product-docs-guideline.md`
+
+로드 규칙:
+1. 작업 요청과 직접 관련된 문서만 1~2개 선택해 읽는다.
+2. 이미 현재 문맥에서 충족된 규칙은 반복 로드하지 않는다.
+3. 문서 전체 인용 대신, 필요한 규칙만 짧게 적용한다.
