@@ -21,6 +21,8 @@ Flutter 작업 유형에 따라 참조할 워크플로 문서를 빠르게 고�
 | API/FRD/Schema 문서화 | `/product-docs-guideline` |
 | ADR/Runbook/Test-case/Changelog 문서화 | `/product-docs-guideline` |
 | 코드 변경 후 문서 반영 | `/product-docs-guideline` |
+| AGENTS/하네스 규칙 갱신 | `/harness-update-guideline` |
+| 커밋 메시지 스타일 | `/commit-style-guideline` |
 
 ## 기본 순서
 
@@ -29,3 +31,5 @@ Flutter 작업 유형에 따라 참조할 워크플로 문서를 빠르게 고�
 3. 이름/스타일: `/flutter-naming`
 4. 공통화 판단: `/flutter-modularization`
 5. 변경 문서 반영: `/product-docs-guideline`
+6. 하네스 지침 갱신: `/harness-update-guideline`
+7. 커밋 메시지 확인: `/commit-style-guideline`

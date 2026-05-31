@@ -23,3 +23,4 @@ description: Sections vs Widgets 구분 및 사용 가이드
 2. 2개 이상 화면에서 재사용되면 `widgets/`로 승격.
 3. `sections`/`widgets` 모두 입력 중심(데이터, 콜백 주입)으로 작성.
 4. `_buildXxx()`가 길어지면 메서드 대신 위젯 파일로 추출.
+5. 색상/타이포/간격은 `AppTheme`를 우선 사용하고, 위젯 내부 하드코딩을 최소화.
