@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_routes.dart';
@@ -6,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import '../utils/community_post_ui_utils.dart';
 
 class QuestionScreen extends StatefulWidget {
   final String selectedFilter;
@@ -23,15 +23,6 @@ class _QuestionScreenState extends State<QuestionScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CommunityProvider>().fetchPosts(postType: 'question', refresh: true);
     });
-  }
-
-  String _formatTimeAgo(DateTime? time) {
-    if (time == null) return '';
-    final diff = DateTime.now().difference(time);
-    if (diff.inDays > 0) return '${diff.inDays}일 전';
-    if (diff.inHours > 0) return '${diff.inHours}시간 전';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}분 전';
-    return '방금 전';
   }
 
   @override
@@ -85,15 +76,17 @@ class _QuestionScreenState extends State<QuestionScreen> {
   }
 
   Widget _buildFeedItem(Post question, CommunityProvider provider) {
-    final currentUser = context.watch<UserProvider>().currentUser;
-    final isMe = currentUser != null && question.authorId == currentUser.id;
-    final authorName = isMe 
-      ? (currentUser.displayName ?? question.authorNickname) 
-      : ((question.authorId != null ? provider.getCachedUser(question.authorId!)?.displayName : null) ?? question.authorNickname);
-    
-    final avatarUrl = isMe
-      ? (currentUser.photoUrl ?? question.authorAvatarUrl)
-      : ((question.authorId != null ? provider.getCachedUser(question.authorId!)?.photoUrl : null) ?? question.authorAvatarUrl);
+    final userProvider = context.watch<UserProvider>();
+    final authorName = resolveCommunityAuthorName(
+      post: question,
+      provider: provider,
+      userProvider: userProvider,
+    );
+    final avatarUrl = resolveCommunityAuthorAvatarUrl(
+      post: question,
+      provider: provider,
+      userProvider: userProvider,
+    );
 
     final isResolved = question.questionStatus == 'resolved';
     final isExpired = question.questionStatus == 'expired';
@@ -175,7 +168,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                         ],
                       ),
                       Text(
-                        _formatTimeAgo(question.createdAt),
+                        formatCommunityTimeAgo(question.createdAt),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[500],

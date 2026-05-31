@@ -43,14 +43,7 @@ class _VoteScreenState extends State<VoteScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CommunityProvider>();
-    final posts = provider.posts.where((p) {
-      if (p.postType != 'vote') return false;
-      // 이미 투표했고, 방금 투표한 게 아니라면(즉 예전에 투표한 거라면) 숨김
-      if (provider.myVotes.containsKey(p.id) && !_justVotedPostIds.contains(p.id)) {
-        return false;
-      }
-      return true;
-    }).toList();
+    final posts = _visibleVotePosts(provider);
 
     if (provider.isLoading && posts.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -132,13 +125,10 @@ class _VoteScreenState extends State<VoteScreen> {
                           showResult: _showResults[_currentCardIndex] ?? false,
                           showToggleResultButton: false,
                           onSelect: (idx) {
-                            final user = context.read<UserProvider>().currentUser;
-                            if (user != null) {
-                              setState(() {
-                                _justVotedPostIds.add(posts[_currentCardIndex].id);
-                              });
-                              context.read<CommunityProvider>().votePost(posts[_currentCardIndex].id, idx, user.id);
-                            }
+                            _submitVote(
+                              postId: posts[_currentCardIndex].id,
+                              optionIndex: idx,
+                            );
                           },
                           onToggleResult: () => setState(() {
                             _showResults[_currentCardIndex] =
@@ -199,13 +189,10 @@ class _VoteScreenState extends State<VoteScreen> {
             showResult: _showResults[i] ?? false,
             showToggleResultButton: false,
             onSelect: (idx) {
-              final user = context.read<UserProvider>().currentUser;
-              if (user != null) {
-                setState(() {
-                  _justVotedPostIds.add(posts[i].id);
-                });
-                context.read<CommunityProvider>().votePost(posts[i].id, idx, user.id);
-              }
+              _submitVote(
+                postId: posts[i].id,
+                optionIndex: idx,
+              );
             },
             onToggleResult: () => setState(() {
               _showResults[i] = !(_showResults[i] ?? false);
@@ -214,6 +201,35 @@ class _VoteScreenState extends State<VoteScreen> {
         ),
       ),
     );
+  }
+
+  List<Post> _visibleVotePosts(CommunityProvider provider) {
+    return provider.posts.where((post) {
+      if (post.postType != 'vote') return false;
+      final alreadyVoted = provider.myVotes.containsKey(post.id);
+      if (alreadyVoted && !_justVotedPostIds.contains(post.id)) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  void _submitVote({
+    required String postId,
+    required int optionIndex,
+  }) {
+    final user = context.read<UserProvider>().currentUser;
+    if (user == null) return;
+
+    setState(() {
+      _justVotedPostIds.add(postId);
+    });
+
+    context.read<CommunityProvider>().votePost(
+          postId,
+          optionIndex,
+          user.id,
+        );
   }
 }
 
@@ -306,7 +322,7 @@ class _SwipeableCardState extends State<_SwipeableCard> {
         duration: _dragging ? Duration.zero : const Duration(milliseconds: 300),
         curve: Curves.easeOut,
         transform: Matrix4.identity()
-          ..translate(_offset.dx, _offset.dy * 0.2)
+          ..translateByDouble(_offset.dx, _offset.dy * 0.2, 0, 1)
           ..rotateZ(angle),
         transformAlignment: Alignment.bottomCenter,
         child: widget.child,

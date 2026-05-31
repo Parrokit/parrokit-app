@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import '../utils/community_post_ui_utils.dart';
 
 class BoardScreen extends StatefulWidget {
   final String selectedFilter;
@@ -22,15 +23,6 @@ class _BoardScreenState extends State<BoardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CommunityProvider>().fetchPosts(postType: 'board', refresh: true);
     });
-  }
-
-  String _formatTimeAgo(DateTime? time) {
-    if (time == null) return '';
-    final diff = DateTime.now().difference(time);
-    if (diff.inDays > 0) return '${diff.inDays}일 전';
-    if (diff.inHours > 0) return '${diff.inHours}시간 전';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}분 전';
-    return '방금 전';
   }
 
   @override
@@ -73,8 +65,12 @@ class _BoardScreenState extends State<BoardScreen> {
 
   Widget _buildPostItem(Post post) {
     final provider = context.watch<CommunityProvider>();
-    final currentUser = context.watch<UserProvider>().currentUser;
-    final isMe = currentUser != null && post.authorId == currentUser.id;
+    final userProvider = context.watch<UserProvider>();
+    final authorName = resolveCommunityAuthorName(
+      post: post,
+      provider: provider,
+      userProvider: userProvider,
+    );
     
     return InkWell(
       onTap: () => context.push(AppRoutes.communityBoardViewPathOf(post.id)),
@@ -122,7 +118,7 @@ class _BoardScreenState extends State<BoardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${isMe ? (currentUser.displayName ?? post.authorNickname) : ((post.authorId != null ? provider.getCachedUser(post.authorId!)?.displayName : null) ?? post.authorNickname)} · ${_formatTimeAgo(post.createdAt)}',
+                  '$authorName · ${formatCommunityTimeAgo(post.createdAt)}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[500],
