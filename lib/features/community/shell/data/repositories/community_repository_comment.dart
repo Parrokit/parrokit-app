@@ -90,15 +90,31 @@ mixin CommunityRepositoryComment {
     try {
       final commentRef =
           _firestore.collection('posts').doc(postId).collection('comments').doc(commentId);
+      final likeDocId = '${postId}_$commentId';
       final likeRef =
+          _firestore.collection('users').doc(userId).collection('comment_likes').doc(likeDocId);
+      final legacyLikeRef =
           _firestore.collection('users').doc(userId).collection('comment_likes').doc(commentId);
 
       await _firestore.runTransaction((transaction) async {
         if (isLiked) {
-          transaction.set(likeRef, {'createdAt': FieldValue.serverTimestamp()});
+          transaction.set(likeRef, {
+            'postId': postId,
+            'commentId': commentId,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+          // Keep backward compatibility for old key format during migration.
+          final legacySnapshot = await transaction.get(legacyLikeRef);
+          if (legacySnapshot.exists) {
+            transaction.delete(legacyLikeRef);
+          }
           transaction.update(commentRef, {'likeCount': FieldValue.increment(1)});
         } else {
           transaction.delete(likeRef);
+          final legacySnapshot = await transaction.get(legacyLikeRef);
+          if (legacySnapshot.exists) {
+            transaction.delete(legacyLikeRef);
+          }
           transaction.update(commentRef, {'likeCount': FieldValue.increment(-1)});
         }
       });
@@ -111,7 +127,16 @@ mixin CommunityRepositoryComment {
     try {
       final snap =
           await _firestore.collection('users').doc(userId).collection('comment_likes').get();
-      return snap.docs.map((doc) => doc.id).toSet();
+      return snap.docs
+          .map((doc) {
+            final data = doc.data();
+            final commentId = data['commentId'] as String?;
+            if (commentId != null && commentId.isNotEmpty) {
+              return commentId;
+            }
+            return doc.id;
+          })
+          .toSet();
     } catch (_) {
       return {};
     }

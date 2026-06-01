@@ -3,6 +3,7 @@ import '../../domain/entities/activity_item.dart';
 class ActivityModel extends ActivityItem {
   const ActivityModel({
     required super.id,
+    required super.sourcePostId,
     required super.title,
     required super.content,
     required super.createdAt,
@@ -16,6 +17,7 @@ class ActivityModel extends ActivityItem {
   factory ActivityModel.fromJson(Map<String, dynamic> json) {
     return ActivityModel(
       id: json['id'] as String,
+      sourcePostId: json['sourcePostId'] as String? ?? '',
       title: json['title'] as String,
       content: json['content'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -30,6 +32,7 @@ class ActivityModel extends ActivityItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'sourcePostId': sourcePostId,
       'title': title,
       'content': content,
       'createdAt': createdAt.toIso8601String(),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'providers/activity_provider.dart';
@@ -10,10 +12,12 @@ class CommunityActivityScreen extends StatelessWidget {
     super.key,
     required this.boardType,
     required this.activityType,
+    this.activityProviderFactory,
   });
 
   final String boardType;
   final String activityType;
+  final ActivityProvider Function()? activityProviderFactory;
 
   String _getAppBarTitle() {
     String boardName = '';
@@ -88,17 +92,32 @@ class CommunityActivityScreen extends StatelessWidget {
     return '총 $typeLabel $count개';
   }
 
+  String? _resolveDetailPath(String boardType, String postId) {
+    if (postId.isEmpty) return null;
+    switch (boardType) {
+      case 'question':
+        return AppRoutes.communityQuestionViewPathOf(postId);
+      case 'vote':
+        return AppRoutes.communityVoteViewPathOf(postId);
+      case 'board':
+      default:
+        return AppRoutes.communityBoardViewPathOf(postId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final userId = userProvider.currentUser?.id ?? '';
 
     return ChangeNotifierProvider(
-      create: (context) => ActivityProvider()..fetchActivities(
-        userId: userId,
-        boardType: boardType, 
-        activityType: activityType
-      ),
+      create: (context) =>
+          (activityProviderFactory?.call() ?? ActivityProvider())
+            ..fetchActivities(
+              userId: userId,
+              boardType: boardType,
+              activityType: activityType,
+            ),
       child: Scaffold(
         appBar: AppBar(
           title: Text(
@@ -118,7 +137,8 @@ class CommunityActivityScreen extends StatelessWidget {
 
             if (provider.error != null) {
               return Center(
-                child: Text('오류가 발생했습니다: ${provider.error}', style: const TextStyle(color: Colors.red)),
+                child: Text('오류가 발생했습니다: ${provider.error}',
+                    style: const TextStyle(color: Colors.red)),
               );
             }
 
@@ -127,11 +147,13 @@ class CommunityActivityScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.inbox_rounded, size: 64, color: AppColors.textDisabled),
+                    const Icon(Icons.inbox_rounded,
+                        size: 64, color: AppColors.textDisabled),
                     const SizedBox(height: 16),
                     const Text(
                       '아직 활동 내역이 없습니다.',
-                      style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                      style: TextStyle(
+                          fontSize: 16, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -143,7 +165,8 @@ class CommunityActivityScreen extends StatelessWidget {
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border(
@@ -164,7 +187,18 @@ class CommunityActivityScreen extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     itemCount: provider.activities.length,
                     itemBuilder: (context, index) {
-                      return ActivityCard(item: provider.activities[index]);
+                      final item = provider.activities[index];
+                      return ActivityCard(
+                        item: item,
+                        onTap: () {
+                          final path = _resolveDetailPath(
+                            item.boardType,
+                            item.sourcePostId,
+                          );
+                          if (path == null) return;
+                          context.push(path);
+                        },
+                      );
                     },
                   ),
                 ),

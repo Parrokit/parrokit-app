@@ -1,5 +1,6 @@
 class ActivityItem {
   final String id;
+  final String sourcePostId;
   final String title;
   final String content;
   final DateTime createdAt;
@@ -11,6 +12,7 @@ class ActivityItem {
 
   const ActivityItem({
     required this.id,
+    required this.sourcePostId,
     required this.title,
     required this.content,
     required this.createdAt,

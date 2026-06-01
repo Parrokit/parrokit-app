@@ -1,0 +1,56 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/features/community/activity/domain/entities/activity_item.dart';
+import 'package:parrokit/features/community/activity/domain/repositories/activity_repository.dart';
+import 'package:parrokit/features/community/activity/domain/usecases/get_activities_usecase.dart';
+import 'package:parrokit/features/community/activity/presentation/activity_screen.dart';
+import 'package:parrokit/features/community/activity/presentation/providers/activity_provider.dart';
+
+class _MockUserProvider extends Mock implements UserProvider {}
+
+class _FakeActivityRepository implements ActivityRepository {
+  @override
+  Future<List<ActivityItem>> getActivities({
+    required String userId,
+    required String boardType,
+    required String activityType,
+  }) async {
+    return [];
+  }
+}
+
+void main() {
+  group('CommunityActivityScreen View', () {
+    testWidgets('질문 게시판 활동 화면이 빈 상태로 렌더링된다', (tester) async {
+      final userProvider = _MockUserProvider();
+      when(userProvider.currentUser).thenReturn(null);
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserProvider>.value(
+          value: userProvider,
+          child: const MaterialApp(
+            home: CommunityActivityScreen(
+              boardType: 'question',
+              activityType: 'commented',
+              activityProviderFactory: _createActivityProvider,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('질문 게시판 - 작성한 댓글'), findsOneWidget);
+      expect(find.text('아직 활동 내역이 없습니다.'), findsOneWidget);
+    });
+  });
+}
+
+ActivityProvider _createActivityProvider() {
+  return ActivityProvider(
+    getActivitiesUseCase: GetActivitiesUseCase(_FakeActivityRepository()),
+  );
+}
