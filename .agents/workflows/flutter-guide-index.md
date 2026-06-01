@@ -29,11 +29,12 @@ Flutter 작업 유형에 따라 참조할 워크플로 문서를 빠르게 고�
 
 ## 기본 순서
 
-1. 구조 결정: `/flutter-architecture`, `/flutter-directory`
-2. UI 분리: `/flutter-sections-widgets`
-3. 이름/스타일: `/flutter-naming`
-4. 공통화 판단: `/flutter-modularization`
-5. 변경 문서 반영: `/product-docs-guideline`
-6. 하네스 지침 갱신: `/harness-update-guideline`
-7. 커밋 메시지 확인: `/commit-style-guideline`
-8. 배포 전 병합 순서 확인: `/git-merge-flow-guideline`
+1. 시작 선언: 선택한 역할 1개 + 워크플로 1개를 첫 진행 메시지에 경로 포함 명시
+2. 구조 결정: `/flutter-architecture`, `/flutter-directory`
+3. UI 분리: `/flutter-sections-widgets`
+4. 이름/스타일: `/flutter-naming`
+5. 공통화 판단: `/flutter-modularization`
+6. 변경 문서 반영: `/product-docs-guideline`
+7. 하네스 지침 갱신: `/harness-update-guideline`
+8. 커밋 메시지 확인: `/commit-style-guideline`
+9. 배포 전 병합 순서 확인: `/git-merge-flow-guideline`

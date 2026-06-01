@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'community_menu_item.dart';
-import 'community_menu_labels.dart';
-import 'community_menu_tile.dart';
+import 'package:parrokit/features/community/menu/domain/entities/community_menu_entry.dart';
+import 'package:parrokit/features/community/menu/presentation/widgets/community_menu_labels.dart';
+import 'package:parrokit/features/community/menu/presentation/widgets/community_menu_tile.dart';
 
 class CommunityMenuSection extends StatelessWidget {
   const CommunityMenuSection({
@@ -10,7 +10,7 @@ class CommunityMenuSection extends StatelessWidget {
     this.addTopSpacing = false,
   });
 
-  final CommunityMenuSectionItem section;
+  final CommunityMenuSectionEntry section;
   final bool addTopSpacing;
 
   @override
