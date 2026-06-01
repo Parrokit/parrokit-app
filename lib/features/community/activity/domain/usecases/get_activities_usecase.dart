@@ -7,10 +7,12 @@ class GetActivitiesUseCase {
   GetActivitiesUseCase(this._repository);
 
   Future<List<ActivityItem>> call({
+    required String userId,
     required String boardType,
     required String activityType,
   }) {
     return _repository.getActivities(
+      userId: userId,
       boardType: boardType,
       activityType: activityType,
     );

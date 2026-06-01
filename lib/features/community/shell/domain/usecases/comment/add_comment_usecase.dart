@@ -10,6 +10,7 @@ class AddCommentUseCase {
   Future<Comment> execute(
     String postId,
     String content, {
+    required String postType,
     required String authorId,
     required String authorNickname,
     String? authorAvatarUrl,
@@ -25,6 +26,8 @@ class AddCommentUseCase {
       content: content,
       parentId: replyingTo?.parentId ?? replyingTo?.id,
       replyToNickname: replyingTo?.authorNickname,
+      postId: postId,
+      postType: postType,
     );
 
     final createdComment = await _repository.addComment(postId, newComment);

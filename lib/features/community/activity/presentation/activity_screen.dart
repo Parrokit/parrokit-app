@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 import 'providers/activity_provider.dart';
 import 'widgets/activity_card.dart';
 
@@ -89,8 +90,15 @@ class CommunityActivityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.currentUser?.id ?? '';
+
     return ChangeNotifierProvider(
-      create: (context) => ActivityProvider()..fetchActivities(boardType: boardType, activityType: activityType),
+      create: (context) => ActivityProvider()..fetchActivities(
+        userId: userId,
+        boardType: boardType, 
+        activityType: activityType
+      ),
       child: Scaffold(
         appBar: AppBar(
           title: Text(

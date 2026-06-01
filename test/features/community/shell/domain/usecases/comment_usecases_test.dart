@@ -26,10 +26,11 @@ void main() {
       when(mockRepository.addComment(any, any)).thenAnswer((_) async => returnedComment);
 
       final result = await addCommentUseCase.execute(
-        'post_123',
+        'post_1',
         '테스트 댓글',
+        postType: 'board',
         authorId: 'user_1',
-        authorNickname: 'Nickname',
+        authorNickname: '테스터',
       );
 
       expect(result.id, 'c_123');

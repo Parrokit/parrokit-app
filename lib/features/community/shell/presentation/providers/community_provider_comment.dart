@@ -35,9 +35,13 @@ extension CommunityProviderComment on CommunityProvider {
     String? authorAvatarUrl,
   }) async {
     try {
+      final postIndex = _posts.indexWhere((p) => p.id == postId);
+      final postType = postIndex != -1 ? _posts[postIndex].postType : 'board';
+
       final createdComment = await addCommentUseCase.execute(
         postId,
         content,
+        postType: postType,
         authorId: authorId,
         authorNickname: authorNickname,
         authorAvatarUrl: authorAvatarUrl,
@@ -47,7 +51,6 @@ extension CommunityProviderComment on CommunityProvider {
       _replyingTo = null;
       _currentPostComments = List.from(_currentPostComments)..add(createdComment);
 
-      final postIndex = _posts.indexWhere((p) => p.id == postId);
       if (postIndex != -1) {
         final p = _posts[postIndex];
         _posts[postIndex] = p.copyWith(commentCount: p.commentCount + 1);

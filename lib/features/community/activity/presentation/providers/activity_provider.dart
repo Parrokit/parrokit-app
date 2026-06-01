@@ -19,6 +19,7 @@ class ActivityProvider extends ChangeNotifier {
   List<ActivityItem> get activities => _activities;
 
   Future<void> fetchActivities({
+    required String userId,
     required String boardType,
     required String activityType,
   }) async {
@@ -28,6 +29,7 @@ class ActivityProvider extends ChangeNotifier {
 
     try {
       _activities = await _getActivitiesUseCase(
+        userId: userId,
         boardType: boardType,
         activityType: activityType,
       );

@@ -8,6 +8,8 @@ class Comment {
   final String content;
   final String? parentId;
   final String? replyToNickname;
+  final String postId;
+  final String postType;
   final int likeCount;
   final String status;
   final bool isAccepted;
@@ -22,6 +24,8 @@ class Comment {
     required this.content,
     this.parentId,
     this.replyToNickname,
+    this.postId = '',
+    this.postType = 'board',
     this.likeCount = 0,
     this.status = 'active',
     this.isAccepted = false,
@@ -40,6 +44,8 @@ class Comment {
     bool clearParentId = false,
     String? replyToNickname,
     bool clearReplyToNickname = false,
+    String? postId,
+    String? postType,
     int? likeCount,
     String? status,
     bool? isAccepted,
@@ -54,6 +60,8 @@ class Comment {
       content: content ?? this.content,
       parentId: clearParentId ? null : (parentId ?? this.parentId),
       replyToNickname: clearReplyToNickname ? null : (replyToNickname ?? this.replyToNickname),
+      postId: postId ?? this.postId,
+      postType: postType ?? this.postType,
       likeCount: likeCount ?? this.likeCount,
       status: status ?? this.status,
       isAccepted: isAccepted ?? this.isAccepted,
@@ -71,6 +79,8 @@ class Comment {
       content: json['content'] as String? ?? '',
       parentId: json['parentId'] as String?,
       replyToNickname: json['replyToNickname'] as String?,
+      postId: json['postId'] as String? ?? '',
+      postType: json['postType'] as String? ?? 'board',
       likeCount: (json['likeCount'] as num?)?.toInt() ?? 0,
       status: json['status'] as String? ?? 'active',
       isAccepted: json['isAccepted'] as bool? ?? false,
@@ -88,6 +98,8 @@ class Comment {
       'content': content,
       'parentId': parentId,
       'replyToNickname': replyToNickname,
+      'postId': postId,
+      'postType': postType,
       'likeCount': likeCount,
       'status': status,
       'isAccepted': isAccepted,
