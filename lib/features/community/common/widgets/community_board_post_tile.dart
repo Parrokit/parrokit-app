@@ -4,7 +4,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
-import 'package:parrokit/features/community/presentation/utils/community_post_ui_utils.dart';
+import 'package:parrokit/features/community/utils/community_post_ui_utils.dart';
 import 'package:provider/provider.dart';
 
 class CommunityBoardPostTile extends StatelessWidget {

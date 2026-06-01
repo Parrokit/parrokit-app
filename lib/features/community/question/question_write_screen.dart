@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/community/presentation/content/question/question_write_screen.dart
+// lib/features/community/question/question_write_screen.dart
 // ============================================================================
 //
 // [역할]

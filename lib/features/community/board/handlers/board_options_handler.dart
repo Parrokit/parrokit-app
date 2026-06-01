@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/data/models/post.dart';
-import 'package:parrokit/features/community/presentation/content/board/widgets/board_sheet_action.dart';
+import 'package:parrokit/features/community/board/widgets/board_sheet_action.dart';
 
 class BoardOptionsHandler {
   static Future<void> showCommentOptionsSheet({

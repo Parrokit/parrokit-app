@@ -20,15 +20,15 @@ import 'package:parrokit/features/auth/sign-up/sign_up_screen.dart';
 import 'package:parrokit/features/auth/find-pw/find_pw_screen.dart';
 import 'package:parrokit/features/auth/onboarding/onboarding_screen.dart';
 import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
-import 'package:parrokit/features/community/presentation/community_screen.dart';
-import 'package:parrokit/features/community/presentation/content/board/board_view_screen.dart';
-import 'package:parrokit/features/community/presentation/content/board/board_write_screen.dart';
-import 'package:parrokit/features/community/presentation/content/question/question_write_screen.dart';
-import 'package:parrokit/features/community/presentation/content/question/question_view_screen.dart';
-import 'package:parrokit/features/community/presentation/content/vote/vote_write_screen.dart';
-import 'package:parrokit/features/community/presentation/content/vote/vote_view_screen.dart';
-import 'package:parrokit/features/community/presentation/menu/community_menu_screen.dart';
-import 'package:parrokit/features/community/presentation/notification/community_notification_screen.dart';
+import 'package:parrokit/features/community/shell/community_shell_screen.dart';
+import 'package:parrokit/features/community/board/board_view_screen.dart';
+import 'package:parrokit/features/community/board/board_write_screen.dart';
+import 'package:parrokit/features/community/question/question_write_screen.dart';
+import 'package:parrokit/features/community/question/question_view_screen.dart';
+import 'package:parrokit/features/community/vote/vote_write_screen.dart';
+import 'package:parrokit/features/community/vote/vote_view_screen.dart';
+import 'package:parrokit/features/community/menu/community_menu_screen.dart';
+import 'package:parrokit/features/community/notification/community_notification_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/content/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
@@ -263,7 +263,7 @@ ShellRoute get _shellRoute => ShellRoute(
           name: AppRoutes.community,
           pageBuilder: (context, state) => const NoTransitionPage(
             name: AppRoutes.community,
-            child: CommunityScreen(),
+            child: CommunityShellScreen(),
           ),
         ),
 

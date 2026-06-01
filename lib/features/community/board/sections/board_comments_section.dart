@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/models/comment.dart';
-import 'package:parrokit/features/community/presentation/content/board/widgets/board_comment_item.dart';
-import 'package:parrokit/features/community/presentation/content/board/widgets/board_comments_empty_state.dart';
+import 'package:parrokit/features/community/board/widgets/board_comment_item.dart';
+import 'package:parrokit/features/community/board/widgets/board_comments_empty_state.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:provider/provider.dart';
 

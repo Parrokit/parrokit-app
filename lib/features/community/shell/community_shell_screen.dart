@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
-import '../domain/data/community_filters.dart';
-import 'content/board/board_screen.dart';
-import 'content/question/question_screen.dart';
-import 'content/vote/vote_screen.dart';
+import 'package:parrokit/features/community/domain/data/community_filters.dart';
+import 'package:parrokit/features/community/board/board_screen.dart';
+import 'package:parrokit/features/community/question/question_screen.dart';
+import 'package:parrokit/features/community/vote/vote_screen.dart';
 
-class CommunityScreen extends StatefulWidget {
-  const CommunityScreen({super.key});
+class CommunityShellScreen extends StatefulWidget {
+  const CommunityShellScreen({super.key});
 
   @override
-  State<CommunityScreen> createState() => _CommunityScreenState();
+  State<CommunityShellScreen> createState() => _CommunityScreenState();
 }
 
-class _CommunityScreenState extends State<CommunityScreen>
+class _CommunityScreenState extends State<CommunityShellScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _outerScrollController = ScrollController();

@@ -5,14 +5,14 @@ import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/features/community/presentation/content/board/board_write_screen.dart';
-import 'package:parrokit/features/community/presentation/content/board/widgets/board_action_tile.dart';
-import 'package:parrokit/features/community/presentation/content/board/widgets/board_comment_input_bar.dart';
-import 'package:parrokit/features/community/presentation/content/board/widgets/board_post_meta_row.dart';
-import 'package:parrokit/features/community/presentation/content/board/widgets/board_post_author_row.dart';
-import 'package:parrokit/features/community/presentation/content/board/widgets/board_post_content_section.dart';
-import 'package:parrokit/features/community/presentation/content/board/sections/board_comments_section.dart';
-import 'package:parrokit/features/community/presentation/content/board/handlers/board_options_handler.dart';
+import 'package:parrokit/features/community/board/board_write_screen.dart';
+import 'package:parrokit/features/community/board/widgets/board_action_tile.dart';
+import 'package:parrokit/features/community/board/widgets/board_comment_input_bar.dart';
+import 'package:parrokit/features/community/board/widgets/board_post_meta_row.dart';
+import 'package:parrokit/features/community/board/widgets/board_post_author_row.dart';
+import 'package:parrokit/features/community/board/widgets/board_post_content_section.dart';
+import 'package:parrokit/features/community/board/sections/board_comments_section.dart';
+import 'package:parrokit/features/community/board/handlers/board_options_handler.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
