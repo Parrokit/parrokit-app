@@ -27,8 +27,8 @@ import 'package:parrokit/features/community/presentation/question/question_write
 import 'package:parrokit/features/community/presentation/question/question_view_screen.dart';
 import 'package:parrokit/features/community/presentation/vote/vote_write_screen.dart';
 import 'package:parrokit/features/community/presentation/vote/vote_view_screen.dart';
-import 'package:parrokit/features/community/presentation/community_menu_screen.dart';
-import 'package:parrokit/features/community/presentation/community_notification_screen.dart';
+import 'package:parrokit/features/community/presentation/menu/community_menu_screen.dart';
+import 'package:parrokit/features/community/presentation/notification/community_notification_screen.dart';
 import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/content/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';

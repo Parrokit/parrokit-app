@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/features/community/presentation/widgets/community_board_post_tile.dart';
+import 'package:parrokit/features/community/presentation/common/widgets/community_board_post_tile.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
 

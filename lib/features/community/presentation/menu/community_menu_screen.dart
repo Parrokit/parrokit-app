@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'config/community_menu_config.dart';
-import 'sections/community_menu_section.dart';
+import 'package:parrokit/features/community/presentation/common/config/community_menu_config.dart';
+import 'package:parrokit/features/community/presentation/common/sections/community_menu_section.dart';
 
 class CommunityMenuScreen extends StatelessWidget {
   const CommunityMenuScreen({super.key});
