@@ -31,10 +31,10 @@ class _BoardActionTileState extends State<BoardActionTile> {
         widget.selected ? widget.accentColor : AppColors.disabled;
     final borderWidth = _pressed ? 2.0 : 1.4;
     final contentColor = widget.selected
-        ? colorScheme.onPrimary
+        ? widget.accentColor
         : colorScheme.onSurfaceVariant;
     final labelColor =
-        widget.selected ? colorScheme.onPrimary : AppColors.textSecondary;
+        widget.selected ? widget.accentColor : AppColors.textSecondary;
 
     return AnimatedScale(
       scale: _pressed ? 0.94 : 1,

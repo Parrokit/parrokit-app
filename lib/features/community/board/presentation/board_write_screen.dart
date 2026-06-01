@@ -74,15 +74,15 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     '게시판 주제 선택',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -242,10 +242,11 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     const lineColor = AppColors.disabled;
     const mutedText = AppColors.textDisabled;
     const tipBlue = AppColors.primary;
-    const panelBg = AppColors.surfaceContainer;
+    final panelBg = isDark ? const Color(0xFF3A4048) : AppColors.surfaceContainer;
     const contentBaseHeight = 230.0;
     const tipAreaHeight = 190.0;
     final contentFieldHeight =
@@ -267,7 +268,18 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                         onPressed: () => Navigator.maybePop(context),
                         icon: Icon(Icons.close, size: 34, color: colorScheme.onSurface),
                       ),
-                      const Spacer(),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            _isEditMode ? '게시글 수정' : '게시글 작성',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
                       TextButton(
                         onPressed: _canComplete ? _submitPost : null,
                         child: context.watch<CommunityProvider>().isLoading
@@ -311,12 +323,12 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w500,
-                                    color: AppColors.textPrimary,
+                                    color: colorScheme.onSurface,
                                   ),
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Icon(Icons.keyboard_arrow_down_rounded,
-                                    size: 32),
+                                    size: 32, color: colorScheme.onSurface),
                               ],
                             ),
                           ),
@@ -348,7 +360,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -383,7 +395,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                 fontSize: 18,
                                 height: 1.6,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.textPrimary,
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -393,16 +405,16 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Row(
-                              children: const [
+                              children: [
                                 _TipBadge(),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     '쉐도잉 학습과 영상 자막 활용 경험을 나눠보세요',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: tipBlue,
+                                      color: isDark ? Colors.white : tipBlue,
                                     ),
                                   ),
                                 ),
@@ -417,21 +429,24 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                               color: panelBg,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Column(
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _TipBullet(
                                   text: '영상 자막 자동 생성, 쉐도잉 팁, 학습 루틴을 자유롭게 공유해요.',
+                                  forceWhite: isDark,
                                 ),
-                                SizedBox(height: 14),
+                                const SizedBox(height: 14),
                                 _TipBullet(
                                   text:
                                       '외국어 표현, 추천 콘텐츠, 발음 연습 경험처럼 학습에 도움이 되는 이야기를 나눠요.',
+                                  forceWhite: isDark,
                                 ),
-                                SizedBox(height: 14),
+                                const SizedBox(height: 14),
                                 _TipBullet(
                                   text:
                                       '저작권을 침해하거나 학습 커뮤니티 성격에 맞지 않는 글은 제한될 수 있어요.',
+                                  forceWhite: isDark,
                                 ),
                               ],
                             ),
@@ -483,8 +498,8 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: const BoxDecoration(
-                      color: AppColors.surfaceContainer,
+                    decoration: BoxDecoration(
+                      color: panelBg,
                       border: Border(top: BorderSide(color: lineColor)),
                     ),
                     child: TextField(
@@ -705,27 +720,29 @@ class _TipBadge extends StatelessWidget {
 
 class _TipBullet extends StatelessWidget {
   final String text;
+  final bool forceWhite;
 
-  const _TipBullet({required this.text});
+  const _TipBullet({required this.text, this.forceWhite = false});
 
   @override
   Widget build(BuildContext context) {
+    final bodyColor = forceWhite ? Colors.white : AppColors.textPrimary;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(top: 6),
-          child: Icon(Icons.circle, size: 8, color: AppColors.textPrimary),
+          child: Icon(Icons.circle, size: 8, color: bodyColor),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               height: 1.45,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: bodyColor,
             ),
           ),
         ),
