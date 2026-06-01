@@ -1,0 +1,227 @@
+import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/features/community/shell/domain/data/community_filters.dart';
+
+class CommunityShellFiltersSection extends StatelessWidget {
+  const CommunityShellFiltersSection({
+    super.key,
+    required this.tabIndex,
+    required this.selectedBoardFilter,
+    required this.selectedQuestionFilter,
+    required this.selectedVoteFilter,
+    required this.onBoardFilterSelected,
+    required this.onQuestionFilterSelected,
+    required this.onVoteFilterSelected,
+  });
+
+  final int tabIndex;
+  final String selectedBoardFilter;
+  final String selectedQuestionFilter;
+  final String selectedVoteFilter;
+  final ValueChanged<String> onBoardFilterSelected;
+  final ValueChanged<String> onQuestionFilterSelected;
+  final ValueChanged<String> onVoteFilterSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tabIndex == 0) {
+      return ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: CommunityFilters.board.length,
+        itemBuilder: (context, index) {
+          final filter = CommunityFilters.board[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: _BoardChip(
+              label: filter,
+              isSelected: selectedBoardFilter == filter,
+              onTap: () => onBoardFilterSelected(filter),
+            ),
+          );
+        },
+      );
+    }
+
+    if (tabIndex == 1) {
+      return ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: CommunityFilters.question.length,
+        itemBuilder: (context, index) {
+          final filter = CommunityFilters.question[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: _QuestionTab(
+              title: filter,
+              isSelected: selectedQuestionFilter == filter,
+              onTap: () => onQuestionFilterSelected(filter),
+            ),
+          );
+        },
+      );
+    }
+
+    return _VoteToggle(
+      selectedVoteFilter: selectedVoteFilter,
+      onVoteFilterSelected: onVoteFilterSelected,
+    );
+  }
+}
+
+class _BoardChip extends StatelessWidget {
+  const _BoardChip({required this.label, required this.isSelected, required this.onTap});
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDropdown = label == '최신';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue[600] : Colors.grey[100],
+          borderRadius: BorderRadius.circular(18),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+            if (isDropdown) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.keyboard_arrow_down, color: isSelected ? Colors.white : Colors.black87, size: 18),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuestionTab extends StatelessWidget {
+  const _QuestionTab({required this.title, required this.isSelected, required this.onTap});
+
+  final String title;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? Colors.blue[600]! : Colors.transparent,
+              width: 2.0,
+            ),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              color: isSelected ? Colors.black : Colors.grey[500],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VoteToggle extends StatelessWidget {
+  const _VoteToggle({required this.selectedVoteFilter, required this.onVoteFilterSelected});
+
+  final String selectedVoteFilter;
+  final ValueChanged<String> onVoteFilterSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isRandom = selectedVoteFilter == CommunityFilters.vote[0];
+    const h = 36.0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: SizedBox(
+        height: h,
+        child: Stack(
+          children: [
+            AnimatedAlign(
+              alignment: isRandom ? Alignment.centerLeft : Alignment.centerRight,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              child: FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Container(
+                  height: h,
+                  decoration: BoxDecoration(color: Colors.blue[600], borderRadius: BorderRadius.circular(6)),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => onVoteFilterSelected(CommunityFilters.vote[0]),
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.style_rounded, size: 16, color: isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          const SizedBox(width: 6),
+                          Text(
+                            CommunityFilters.vote[0],
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => onVoteFilterSelected(CommunityFilters.vote[1]),
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.menu, size: 16, color: !isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          const SizedBox(width: 6),
+                          Text(
+                            CommunityFilters.vote[1],
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: !isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
