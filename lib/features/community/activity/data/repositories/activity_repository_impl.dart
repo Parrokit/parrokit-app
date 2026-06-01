@@ -23,8 +23,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
     final activities = <ActivityModel>[];
 
     try {
-      if (activityType == 'written') {
-        if (boardType == 'vote') {
+      if (activityType == 'written' || activityType == 'written_posted') {
+        if (boardType == 'vote' && activityType == 'written') {
           // 참여한 투표: users/{uid}가 posts/{postId}/voters/{uid}를 가진 투표 글
           final votersSnapshot = await _firestore
               .collectionGroup('voters')

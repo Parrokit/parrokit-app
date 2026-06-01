@@ -13,36 +13,53 @@ class CommunityMenuScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    '커뮤니티 메뉴',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black,
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              automaticallyImplyLeading: false,
+              titleSpacing: 0,
+              title: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        '커뮤니티 메뉴',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close, size: 24, color: Colors.black),
+                      tooltip: '닫기',
+                    ),
+                  ],
                 ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, size: 24, color: Colors.black),
-                  tooltip: '닫기',
-                ),
-              ],
+              ),
+              bottom: const PreferredSize(
+                preferredSize: Size.fromHeight(1),
+                child: Divider(height: 1, color: AppColors.disabled),
+              ),
             ),
-            const SizedBox(height: 6),
-            const Divider(height: 1, color: AppColors.disabled),
-            const SizedBox(height: 12),
-            ...List.generate(
-              sections.length,
-              (index) => CommunityMenuSection(
-                section: sections[index],
-                addTopSpacing: index > 0,
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => CommunityMenuSection(
+                    section: sections[index],
+                    addTopSpacing: index > 0,
+                  ),
+                  childCount: sections.length,
+                ),
               ),
             ),
           ],

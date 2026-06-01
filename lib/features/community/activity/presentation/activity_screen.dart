@@ -40,6 +40,9 @@ class CommunityActivityScreen extends StatelessWidget {
       case 'written':
         activityName = '작성한 글';
         break;
+      case 'written_posted':
+        activityName = '게시한 투표';
+        break;
       case 'commented':
         activityName = '작성한 댓글';
         break;
@@ -71,6 +74,7 @@ class CommunityActivityScreen extends StatelessWidget {
     String typeLabel = '';
     switch (activityType) {
       case 'written':
+      case 'written_posted':
         typeLabel = '글';
         if (boardType == 'vote') typeLabel = '투표';
         if (boardType == 'question') typeLabel = '질문/답변';

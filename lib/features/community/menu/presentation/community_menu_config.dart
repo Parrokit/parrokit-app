@@ -49,6 +49,7 @@ List<CommunityMenuSectionItem> buildCommunityMenuSections() {
           title: '투표 게시판',
           items: [
             CommunityMenuItem(title: '참여한 투표', icon: Icons.how_to_vote_rounded, colors: voteColors, boardType: 'vote', activityType: 'written'),
+            CommunityMenuItem(title: '게시한 투표', icon: Icons.campaign_rounded, colors: voteColors, boardType: 'vote', activityType: 'written_posted'),
             CommunityMenuItem(title: '작성한 댓글', icon: Icons.chat_rounded, colors: voteColors, boardType: 'vote', activityType: 'commented'),
             CommunityMenuItem(title: '공감한 투표', icon: Icons.thumb_up_rounded, colors: voteColors, boardType: 'vote', activityType: 'liked'),
             CommunityMenuItem(title: '공감한 댓글', icon: Icons.favorite_rounded, colors: voteColors, boardType: 'vote', activityType: 'liked_comment'),
