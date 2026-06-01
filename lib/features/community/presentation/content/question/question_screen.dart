@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/features/community/providers/community_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import '../utils/community_post_ui_utils.dart';
+import '../../utils/community_post_ui_utils.dart';
 
 class QuestionScreen extends StatefulWidget {
   final String selectedFilter;

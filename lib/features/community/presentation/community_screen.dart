@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/theme/app_spacing.dart';
 import '../domain/data/community_filters.dart';
-import 'board/board_screen.dart';
-import 'question/question_screen.dart';
-import 'vote/vote_screen.dart';
+import 'content/board/board_screen.dart';
+import 'content/question/question_screen.dart';
+import 'content/vote/vote_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
