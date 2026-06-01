@@ -135,40 +135,41 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   // ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final provider = context.watch<CommunityProvider>();
     final currentUser = context.watch<UserProvider>().currentUser;
     final voteItem =
         provider.posts.where((p) => p.id == widget.voteId).firstOrNull;
 
     if (_isFetchingDetails) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (voteItem == null) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
         body: Center(child: Text('투표를 찾을 수 없습니다.')),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.black, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.maybePop(context),
         ),
-        title: const Text(
+        title: Text(
           '투표 상세 토론',
           style: TextStyle(
-              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+              color: colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 16),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -225,7 +226,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                   // Divider
                   Container(
                     height: 8,
-                    color: AppColors.surfaceContainerHigh,
+                    color: colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
 
                   // Comments section header
@@ -233,10 +234,10 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
                     child: Text(
                       '토론 & 의견 (${provider.currentPostComments.length})',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -246,10 +247,10 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 40.0),
                       child: Center(
-                        child: Text(
+                      child: Text(
                           '첫 의견을 작성해 투표 토론에 참여해보세요!',
                           style:
-                              TextStyle(color: Colors.grey[500], fontSize: 14),
+                              TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
                         ),
                       ),
                     )
@@ -279,6 +280,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
 
   List<Widget> _buildStructuredComments(
       List<Comment> allComments, String postAuthorId) {
+    final colorScheme = Theme.of(context).colorScheme;
     final parentComments =
         allComments.where((c) => c.parentId == null).toList();
     final childComments = allComments.where((c) => c.parentId != null).toList();
@@ -295,7 +297,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
       }
 
       if (i < parentComments.length - 1) {
-        widgets.add(const Divider(color: AppColors.surfaceContainerHigh, height: 1));
+        widgets.add(Divider(color: colorScheme.onSurface.withValues(alpha: 0.06), height: 1));
       }
     }
     return widgets;
@@ -303,6 +305,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
 
   Widget _buildCommentItem(Comment comment, String postAuthorId,
       {required bool isReply}) {
+    final colorScheme = Theme.of(context).colorScheme;
     final currentUser = context.read<UserProvider>().currentUser;
     final isDeleted = comment.status == 'deleted';
     final provider = context.watch<CommunityProvider>();
@@ -314,9 +317,9 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
       child: Container(
         padding: EdgeInsets.fromLTRB(isReply ? 48 : 16, 16, 16, 16),
         decoration: isReply
-            ? const BoxDecoration(
+            ? BoxDecoration(
                 border: Border(
-                  left: BorderSide(color: AppColors.disabled, width: 3),
+                  left: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.16), width: 3),
                 ),
               )
             : null,
@@ -348,10 +351,10 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     children: [
                       Text(
                         isDeleted ? '알 수 없음' : comment.authorNickname,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppColors.textPrimary,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       if (comment.authorId == postAuthorId && !isDeleted) ...[
@@ -360,13 +363,13 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(
-                            color: Colors.blue[50],
+                            color: AppColors.primarySoft,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             '작성자',
                             style: TextStyle(
-                              color: Colors.blue[600],
+                              color: AppColors.primary,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
@@ -379,7 +382,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                           _formatTimeAgo(comment.createdAt),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[400],
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                     ],
@@ -391,7 +394,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       child: Text(
                         '@${comment.replyToNickname}',
                         style: const TextStyle(
-                          color: Colors.blue,
+                          color: AppColors.primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -403,7 +406,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       fontSize: 14,
                       color: isDeleted
                           ? AppColors.textDisabled
-                          : AppColors.textSecondary,
+                          : colorScheme.onSurface,
                       height: 1.45,
                     ),
                   ),
@@ -424,7 +427,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                                     ? Icons.favorite_rounded
                                     : Icons.favorite_border_rounded,
                                 size: 15,
-                                color: isLiked ? Colors.red : Colors.grey[400],
+                                color: isLiked ? AppColors.danger : colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -432,7 +435,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   color:
-                                      isLiked ? Colors.red : Colors.grey[500],
+                                      isLiked ? AppColors.danger : colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -449,7 +452,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                             '답글 달기',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[500],
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -475,7 +478,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -489,16 +492,16 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 16),
               if (isMyComment)
                 ListTile(
-                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  leading: const Icon(Icons.delete_outline, color: AppColors.danger),
                   title:
-                      const Text('삭제하기', style: TextStyle(color: Colors.red)),
+                      const Text('삭제하기', style: TextStyle(color: AppColors.danger)),
                   onTap: () async {
                     Navigator.pop(context);
                     final confirm = await showDialog<bool>(
@@ -514,7 +517,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, true),
                             child: const Text('삭제',
-                                style: TextStyle(color: Colors.red)),
+                                style: TextStyle(color: AppColors.danger)),
                           ),
                         ],
                       ),
@@ -554,6 +557,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   }
 
   Widget _buildStickyReplyBar() {
+    final colorScheme = Theme.of(context).colorScheme;
     final provider = context.watch<CommunityProvider>();
     final currentUser = context.watch<UserProvider>().currentUser;
 
@@ -584,10 +588,10 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
           ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: colorScheme.shadow.withValues(alpha: 0.12),
                 blurRadius: 10,
                 offset: const Offset(0, -4),
               ),
@@ -617,9 +621,9 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: colorScheme.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white, width: 1),
+                      border: Border.all(color: colorScheme.surface, width: 1),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: TextField(
@@ -629,14 +633,14 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       onSubmitted: (_) => _submitComment(),
                       decoration: InputDecoration(
                         hintText: '투표 의견 남기기...',
-                        fillColor: Colors.grey[100],
+                        fillColor: colorScheme.surfaceContainerHigh,
                         border: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(vertical: 8.0),
                       ),
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
                     ),
                   ),
                 ),
@@ -645,7 +649,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                   icon: Icon(
                     Icons.send_rounded,
                     color:
-                        _canSubmitComment ? Colors.blue[600] : Colors.grey[400],
+                        _canSubmitComment ? AppColors.primary : colorScheme.onSurfaceVariant,
                     size: 22,
                   ),
                   onPressed: _canSubmitComment ? _submitComment : null,

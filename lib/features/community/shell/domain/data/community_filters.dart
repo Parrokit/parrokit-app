@@ -5,7 +5,7 @@ class CommunityFilters {
 
   static const String defaultBoard = '전체';
   static const String defaultQuestion = '답변 대기중';
-  static const String defaultVote = '랜덤 보기';
+  static const String defaultVote = '랜덤';
 
   const CommunityFilters._();
 }

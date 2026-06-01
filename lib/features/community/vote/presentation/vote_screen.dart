@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_routes.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 import 'package:parrokit/features/community/shell/domain/data/community_filters.dart';
 
 import 'package:provider/provider.dart';
@@ -166,74 +167,88 @@ class _VoteScreenState extends State<VoteScreen> {
       );
     }
 
-    return SingleChildScrollView(
+    return Column(
       key: key,
-      physics: const AlwaysScrollableScrollPhysics(),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: GestureDetector(
-              onTap: () {
-                context.push(AppRoutes.communityVoteViewPathOf(posts[_currentCardIndex].id));
-              },
-              child: VoteCard(
-                item: posts[_currentCardIndex],
-                selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
-                showResult: _showResultsByPostId[posts[_currentCardIndex].id] ?? false,
-                showToggleResultButton: false,
-                enablePostActions: true,
-                isPostLiked: provider.isPostLiked(posts[_currentCardIndex].id),
-                isPostScrapped: provider.isPostScrapped(posts[_currentCardIndex].id),
-                onTogglePostLike: () {
-                  final user = context.read<UserProvider>().currentUser;
-                  if (user == null) return;
-                  context.read<CommunityProvider>().toggleLike(posts[_currentCardIndex].id, user.id);
-                },
-                onTogglePostScrap: () {
-                  final user = context.read<UserProvider>().currentUser;
-                  if (user == null) return;
-                  context.read<CommunityProvider>().toggleScrap(posts[_currentCardIndex].id, user.id);
-                },
-                onSelect: (idx) {
-                  _submitVote(
-                    postId: posts[_currentCardIndex].id,
-                    optionIndex: idx,
-                  );
-                },
-                onToggleResult: () => setState(() {
-                  final postId = posts[_currentCardIndex].id;
-                  _showResultsByPostId[postId] =
-                      !(_showResultsByPostId[postId] ?? false);
-                }),
+      children: [
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: constraints.maxHeight - 16),
+                    child: _SwipeableCard(
+                      key: ValueKey(posts[_currentCardIndex].id),
+                      enabled: widget.swipeEnabled,
+                      onDismiss: () => setState(() => _currentCardIndex++),
+                      child: GestureDetector(
+                        onTap: () {
+                          context.push(AppRoutes.communityVoteViewPathOf(posts[_currentCardIndex].id));
+                        },
+                        child: VoteCard(
+                          item: posts[_currentCardIndex],
+                          selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
+                          showResult: _showResultsByPostId[posts[_currentCardIndex].id] ?? false,
+                          showToggleResultButton: false,
+                          enablePostActions: true,
+                          isPostLiked: provider.isPostLiked(posts[_currentCardIndex].id),
+                          isPostScrapped: provider.isPostScrapped(posts[_currentCardIndex].id),
+                          onTogglePostLike: () {
+                            final user = context.read<UserProvider>().currentUser;
+                            if (user == null) return;
+                            context.read<CommunityProvider>().toggleLike(posts[_currentCardIndex].id, user.id);
+                          },
+                          onTogglePostScrap: () {
+                            final user = context.read<UserProvider>().currentUser;
+                            if (user == null) return;
+                            context.read<CommunityProvider>().toggleScrap(posts[_currentCardIndex].id, user.id);
+                          },
+                          onSelect: (idx) {
+                            _submitVote(
+                              postId: posts[_currentCardIndex].id,
+                              optionIndex: idx,
+                            );
+                          },
+                          onToggleResult: () => setState(() {
+                            final postId = posts[_currentCardIndex].id;
+                            _showResultsByPostId[postId] =
+                                !(_showResultsByPostId[postId] ?? false);
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _NavButton(
+                icon: Icons.arrow_back_ios_new_rounded,
+                enabled: _currentCardIndex > 0,
+                onTap: _currentCardIndex > 0
+                    ? () => setState(() => _currentCardIndex--)
+                    : null,
               ),
-            ),
+              const SizedBox(width: 36),
+              _NavButton(
+                icon: Icons.arrow_forward_ios_rounded,
+                enabled: _currentCardIndex < posts.length,
+                onTap: _currentCardIndex < posts.length
+                    ? () => setState(() => _currentCardIndex++)
+                    : null,
+              ),
+            ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _NavButton(
-                  icon: Icons.arrow_back_ios_new_rounded,
-                  enabled: _currentCardIndex > 0,
-                  onTap: _currentCardIndex > 0
-                      ? () => setState(() => _currentCardIndex--)
-                      : null,
-                ),
-                const SizedBox(width: 36),
-                _NavButton(
-                  icon: Icons.arrow_forward_ios_rounded,
-                  enabled: _currentCardIndex < posts.length,
-                  onTap: _currentCardIndex < posts.length
-                      ? () => setState(() => _currentCardIndex++)
-                      : null,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -321,6 +336,57 @@ class _VoteScreenState extends State<VoteScreen> {
   }
 }
 
+class _SwipeableCard extends StatefulWidget {
+  const _SwipeableCard({
+    super.key,
+    required this.child,
+    required this.onDismiss,
+    this.enabled = true,
+  });
+
+  final Widget child;
+  final VoidCallback onDismiss;
+  final bool enabled;
+
+  @override
+  State<_SwipeableCard> createState() => _SwipeableCardState();
+}
+
+class _SwipeableCardState extends State<_SwipeableCard> {
+  double _dx = 0;
+  bool _dismissed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragUpdate: widget.enabled
+          ? (details) => setState(() => _dx += details.delta.dx)
+          : null,
+      onHorizontalDragEnd: widget.enabled
+          ? (_) {
+              if (_dx.abs() > 110) {
+                setState(() => _dismissed = true);
+                Future.delayed(const Duration(milliseconds: 180), () {
+                  if (!mounted) return;
+                  widget.onDismiss();
+                });
+              } else {
+                setState(() => _dx = 0);
+              }
+            }
+          : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        transform: Matrix4.identity()
+          ..translateByDouble(_dismissed ? (_dx.sign * 420) : _dx, 0, 0, 1)
+          ..rotateZ((_dx / 1200).clamp(-0.08, 0.08)),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 // ─── 네비게이션 버튼 (원형) ──────────────────────────────────────────────────────
 class _NavButton extends StatelessWidget {
   final IconData icon;
@@ -399,6 +465,7 @@ class VoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final int totalVotes = item.voteOptions?.fold(0, (sum, opt) => sum! + opt.count) ?? 0;
     
     // 남은 시간 계산
@@ -418,12 +485,16 @@ class VoteCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? cs.surfaceContainerHigh : Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.45),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 20,
+            color: cs.shadow.withValues(alpha: 0.18),
+            blurRadius: 18,
             spreadRadius: 1,
             offset: const Offset(0, 4),
           ),
@@ -445,11 +516,11 @@ class VoteCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.orange[600],
+                    color: AppColors.primary,
                   ),
                 ),
                 const Spacer(),
-                const Icon(Icons.more_horiz, size: 22, color: Colors.grey),
+                Icon(Icons.more_horiz, size: 22, color: cs.onSurfaceVariant),
               ],
             ),
             const SizedBox(height: 14),
@@ -459,8 +530,8 @@ class VoteCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: Colors.grey[300],
-                  child: const Icon(Icons.person, color: Colors.white),
+                  backgroundColor: cs.surfaceContainerHigh,
+                  child: Icon(Icons.person, color: cs.onSurfaceVariant),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -468,11 +539,11 @@ class VoteCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.authorNickname,
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.bold)),
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.bold, color: cs.onSurface)),
                       Text(item.createdAt != null ? _formatTimeAgo(item.createdAt!) : '',
                           style:
-                              TextStyle(fontSize: 12, color: Colors.grey[500])),
+                              TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -481,7 +552,7 @@ class VoteCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey[500],
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -491,10 +562,10 @@ class VoteCard extends StatelessWidget {
             // ── 제목 ──
             Text(
               item.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Colors.black,
+                color: cs.onSurface,
                 height: 1.3,
               ),
             ),
@@ -505,7 +576,7 @@ class VoteCard extends StatelessWidget {
               item.content,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: cs.onSurface,
                 height: 1.45,
               ),
             ),
@@ -524,15 +595,15 @@ class VoteCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: onToggleResult,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black87,
-                      side: const BorderSide(color: Colors.black54, width: 1.2),
+                      foregroundColor: cs.onSurface,
+                      side: BorderSide(color: cs.onSurface.withValues(alpha: 0.55), width: 1.2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
                     child: showResult
-                        ? const Icon(Icons.refresh_rounded,
-                            color: Colors.black87, size: 22)
+                        ? Icon(Icons.refresh_rounded,
+                            color: cs.onSurface, size: 22)
                         : const Text('결과 보기',
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.bold)),
@@ -550,7 +621,7 @@ class VoteCard extends StatelessWidget {
                   child: Icon(
                     isPostLiked ? Icons.favorite : Icons.favorite_border,
                     size: 24,
-                    color: isPostLiked ? Colors.red : Colors.black87,
+                    color: isPostLiked ? AppColors.danger : cs.onSurface,
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -564,17 +635,17 @@ class VoteCard extends StatelessWidget {
                     child: Icon(
                       isPostScrapped ? Icons.bookmark : Icons.bookmark_outline,
                       size: 22,
-                      color: isPostScrapped ? Colors.amber[700] : Colors.black87,
+                      color: isPostScrapped ? AppColors.primary : cs.onSurface,
                     ),
                   ),
                 ],
                 const SizedBox(width: 16),
-                const Icon(Icons.chat_bubble_outline,
-                    size: 22, color: Colors.black87),
+                Icon(Icons.chat_bubble_outline,
+                    size: 22, color: cs.onSurface),
                 const SizedBox(width: 6),
                 Text('${item.commentCount}',
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface)),
               ],
             ),
           ],
@@ -584,6 +655,7 @@ class VoteCard extends StatelessWidget {
   }
 
   Widget _buildOptions(BuildContext context, ColorScheme cs) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final options = item.voteOptions ?? [];
     return Column(
       children: List.generate(options.length, (i) {
@@ -619,7 +691,9 @@ class VoteCard extends StatelessWidget {
               height: 52,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: isSelected ? cs.primary : Colors.grey[100],
+                color: isSelected
+                    ? cs.primary
+                    : (isDark ? cs.surfaceContainer : cs.surfaceContainerHigh),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(

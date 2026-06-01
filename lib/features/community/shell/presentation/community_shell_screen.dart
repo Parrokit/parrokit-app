@@ -31,6 +31,11 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
   bool _isFabExtended = true;
   bool _headerVisible = true;
 
+  String _normalizedVoteFilter(String value) {
+    if (value == '랜덤 보기') return CommunityFilters.vote[0];
+    return CommunityFilters.vote.contains(value) ? value : CommunityFilters.defaultVote;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -93,7 +98,7 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
               BoardScreen(selectedFilter: _selectedBoardFilter),
               QuestionScreen(selectedFilter: _selectedQuestionFilter),
               VoteScreen(
-                selectedFilter: _selectedVoteFilter,
+                selectedFilter: _normalizedVoteFilter(_selectedVoteFilter),
                 swipeEnabled: !_headerVisible,
               ),
             ],
@@ -181,7 +186,8 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
             selectedVoteFilter: _selectedVoteFilter,
             onBoardFilterSelected: (value) => setState(() => _selectedBoardFilter = value),
             onQuestionFilterSelected: (value) => setState(() => _selectedQuestionFilter = value),
-            onVoteFilterSelected: (value) => setState(() => _selectedVoteFilter = value),
+            onVoteFilterSelected: (value) =>
+                setState(() => _selectedVoteFilter = _normalizedVoteFilter(value)),
           ),
         ),
         const SizedBox(height: 11),

@@ -166,7 +166,10 @@ class _VoteToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     const h = 36.0;
-    final selectedIndex = CommunityFilters.vote.indexOf(selectedVoteFilter).clamp(
+    final normalizedFilter = selectedVoteFilter == '랜덤 보기'
+        ? CommunityFilters.vote[0]
+        : selectedVoteFilter;
+    final selectedIndex = CommunityFilters.vote.indexOf(normalizedFilter).clamp(
       0,
       CommunityFilters.vote.length - 1,
     );
@@ -193,7 +196,7 @@ class _VoteToggle extends StatelessWidget {
             Row(
               children: List.generate(CommunityFilters.vote.length, (index) {
                 final filter = CommunityFilters.vote[index];
-                final isSelected = selectedVoteFilter == filter;
+                final isSelected = normalizedFilter == filter;
                 final icon = switch (index) {
                   0 => Icons.style_rounded,
                   1 => Icons.menu,
