@@ -99,6 +99,8 @@ class CommunityProvider with ChangeNotifier {
 
   bool _isCurrentPostScrapped = false;
   bool get isCurrentPostScrapped => _isCurrentPostScrapped;
+  final Map<String, bool> _postLikedStates = {};
+  final Map<String, bool> _postScrappedStates = {};
 
   String _currentPostType = 'board';
 
@@ -116,6 +118,8 @@ class CommunityProvider with ChangeNotifier {
     _replyingTo = null;
     _isCurrentPostLiked = false;
     _isCurrentPostScrapped = false;
+    _postLikedStates.clear();
+    _postScrappedStates.clear();
     myVotes.clear();
     notifyListeners();
   }

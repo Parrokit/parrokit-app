@@ -99,6 +99,11 @@ class _VoteScreenState extends State<VoteScreen> {
       await provider.ensureVotedPostsLoaded(user.id);
     }
     await provider.fetchMyVotes(user.id);
+    final votePostIds = provider.posts
+        .where((p) => p.postType == 'vote')
+        .map((p) => p.id)
+        .toList();
+    await provider.loadUserActionsForPosts(votePostIds, userId: user.id);
     if (!mounted || token != _voteSyncToken) return;
     setState(() {
       _votedOnlyPostIds
@@ -110,6 +115,7 @@ class _VoteScreenState extends State<VoteScreen> {
 
   // ── 랜덤 보기 (스와이프) ─────────────────────────────────────────────────────
   Widget _buildRandomView(List<Post> posts, {Key? key}) {
+    final provider = context.watch<CommunityProvider>();
     if (_currentCardIndex >= posts.length) {
       return Center(
         key: key,
@@ -169,6 +175,19 @@ class _VoteScreenState extends State<VoteScreen> {
                           selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
                           showResult: _showResultsByPostId[posts[_currentCardIndex].id] ?? false,
                           showToggleResultButton: false,
+                          enablePostActions: true,
+                          isPostLiked: provider.isPostLiked(posts[_currentCardIndex].id),
+                          isPostScrapped: provider.isPostScrapped(posts[_currentCardIndex].id),
+                          onTogglePostLike: () {
+                            final user = context.read<UserProvider>().currentUser;
+                            if (user == null) return;
+                            context.read<CommunityProvider>().toggleLike(posts[_currentCardIndex].id, user.id);
+                          },
+                          onTogglePostScrap: () {
+                            final user = context.read<UserProvider>().currentUser;
+                            if (user == null) return;
+                            context.read<CommunityProvider>().toggleScrap(posts[_currentCardIndex].id, user.id);
+                          },
                           onSelect: (idx) {
                             _submitVote(
                               postId: posts[_currentCardIndex].id,
@@ -219,6 +238,7 @@ class _VoteScreenState extends State<VoteScreen> {
 
   // ── 한눈에 보기 (리스트) ─────────────────────────────────────────────────────
   Widget _buildListView(List<Post> posts, {Key? key}) {
+    final provider = context.watch<CommunityProvider>();
     return ListView.builder(
       key: key,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
@@ -234,6 +254,19 @@ class _VoteScreenState extends State<VoteScreen> {
             selectedOption: context.watch<CommunityProvider>().myVotes[posts[i].id],
             showResult: _showResultsByPostId[posts[i].id] ?? false,
             showToggleResultButton: false,
+            enablePostActions: true,
+            isPostLiked: provider.isPostLiked(posts[i].id),
+            isPostScrapped: provider.isPostScrapped(posts[i].id),
+            onTogglePostLike: () {
+              final user = context.read<UserProvider>().currentUser;
+              if (user == null) return;
+              context.read<CommunityProvider>().toggleLike(posts[i].id, user.id);
+            },
+            onTogglePostScrap: () {
+              final user = context.read<UserProvider>().currentUser;
+              if (user == null) return;
+              context.read<CommunityProvider>().toggleScrap(posts[i].id, user.id);
+            },
             onSelect: (idx) {
               _submitVote(
                 postId: posts[i].id,
