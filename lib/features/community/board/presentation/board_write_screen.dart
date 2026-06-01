@@ -3,6 +3,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'package:parrokit/features/community/shell/domain/validators/post_validator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:parrokit/features/community/shell/domain/data/community_filters.dart';
 
@@ -494,7 +495,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                             color: Color(0xFF9EA4AF), fontSize: 15),
                         border: InputBorder.none,
                         isDense: true,
-                        suffixText: '${_tags.length}/20',
+                        suffixText: '${_tags.length}/${PostValidator.maxTags}',
                         suffixStyle: const TextStyle(
                             color: Color(0xFF9EA4AF),
                             fontSize: 13,
@@ -504,14 +505,14 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                       onSubmitted: (val) {
                         final text = val.trim();
                         if (text.isNotEmpty && !_tags.contains(text)) {
-                          if (text.length > 10) {
+                          if (text.length > PostValidator.maxTagLength) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('태그는 10글자 이하로 입력해주세요.')),
+                              SnackBar(
+                                  content: Text('태그는 ${PostValidator.maxTagLength}글자 이하로 입력해주세요.')),
                             );
                             return;
                           }
-                          if (_tags.length >= 20) {
+                          if (_tags.length >= PostValidator.maxTags) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('태그는 최대 20개까지만 등록할 수 있습니다.')),

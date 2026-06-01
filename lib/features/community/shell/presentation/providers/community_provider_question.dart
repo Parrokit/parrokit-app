@@ -19,45 +19,19 @@ extension CommunityProviderQuestion on CommunityProvider {
     _notifyListenersSafe();
 
     try {
-      final String postId = _repository.generatePostId();
-
-      List<String> uploadedUrls = [];
-      for (int i = 0; i < imageFiles.length; i++) {
-        final file = imageFiles[i];
-        final url = await uploadImageToStorage(
-          file,
-          userId: authorId,
-          postId: postId,
-          onProgress: (progress) {
-            if (onImageProgress != null) {
-              onImageProgress(i + 1, imageFiles.length, progress);
-            }
-          },
-        );
-        if (url != null) {
-          uploadedUrls.add(url);
-        }
-      }
-
-      final newPost = Post(
-        id: postId,
-        postType: 'question',
-        category: category,
+      await addQuestionUseCase.execute(
         title: title,
         content: content,
-        tags: tags,
-        hasImage: uploadedUrls.isNotEmpty,
-        imageUrls: uploadedUrls,
+        category: category,
         authorId: authorId,
         authorNickname: authorNickname,
-        authorAvatarUrl: authorAvatarUrl,
-        snippet: content.length > 50 ? '${content.substring(0, 50)}...' : content,
         rewardCrackers: rewardCrackers,
         expireAt: expireAt,
-        questionStatus: 'waiting',
+        authorAvatarUrl: authorAvatarUrl,
+        tags: tags,
+        imageFiles: imageFiles,
+        onImageProgress: onImageProgress,
       );
-
-      await _repository.addQuestion(newPost, authorId, rewardCrackers);
 
       _isLoading = false;
       await fetchPosts(refresh: true);
@@ -81,7 +55,7 @@ extension CommunityProviderQuestion on CommunityProvider {
     _notifyListenersSafe();
 
     try {
-      await _repository.acceptAnswer(
+      await acceptAnswerUseCase.execute(
         postId: postId,
         commentId: commentId,
         answererId: answererId,

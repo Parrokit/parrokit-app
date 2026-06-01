@@ -79,43 +79,20 @@ extension CommunityProviderPost on CommunityProvider {
     _notifyListenersSafe();
 
     try {
-      final String postId = _repository.generatePostId();
-
-      List<String> uploadedUrls = [];
-      for (int i = 0; i < imageFiles.length; i++) {
-        final file = imageFiles[i];
-        final url = await uploadImageToStorage(
-          file,
-          userId: authorId,
-          postId: postId,
-          onProgress: (progress) {
-            if (onImageProgress != null) {
-              onImageProgress(i + 1, imageFiles.length, progress);
-            }
-          },
-        );
-        if (url != null) {
-          uploadedUrls.add(url);
-        }
-      }
-
-      final newPost = Post(
-        id: postId,
-        postType: postType,
-        category: category,
+      await addPostUseCase.execute(
         title: title,
         content: content,
-        tags: tags,
-        hasImage: uploadedUrls.isNotEmpty,
-        imageUrls: uploadedUrls,
+        category: category,
+        postType: postType,
         authorId: authorId,
         authorNickname: authorNickname,
         authorAvatarUrl: authorAvatarUrl,
+        tags: tags,
+        imageFiles: imageFiles,
         voteOptions: voteOptions,
         voteEndTime: voteEndTime,
-        snippet: content.length > 50 ? '${content.substring(0, 50)}...' : content,
+        onImageProgress: onImageProgress,
       );
-      await _repository.addPost(newPost);
 
       _isLoading = false;
       await fetchPosts(refresh: true);
@@ -146,49 +123,18 @@ extension CommunityProviderPost on CommunityProvider {
 
     try {
       final postToEdit = _posts.firstWhere((p) => p.id == postId);
-
-      final deletedImageUrls =
-          postToEdit.imageUrls.where((url) => !existingImageUrls.contains(url)).toList();
-      for (final url in deletedImageUrls) {
-        try {
-          final ref = FirebaseStorage.instance.refFromURL(url);
-          await ref.delete();
-        } catch (e) {
-          debugPrint('기존 스토리지 이미지 삭제 실패: $url, $e');
-        }
-      }
-
-      List<String> newUploadedUrls = [];
-      for (int i = 0; i < newImageFiles.length; i++) {
-        final file = newImageFiles[i];
-        final url = await uploadImageToStorage(
-          file,
-          userId: authorId,
-          postId: postId,
-          onProgress: (progress) {
-            if (onImageProgress != null) {
-              onImageProgress(i + 1, newImageFiles.length, progress);
-            }
-          },
-        );
-        if (url != null) {
-          newUploadedUrls.add(url);
-        }
-      }
-
-      final finalImageUrls = [...existingImageUrls, ...newUploadedUrls];
-
-      final updateData = {
-        'title': title,
-        'content': content,
-        'category': category,
-        'tags': tags,
-        'hasImage': finalImageUrls.isNotEmpty,
-        'imageUrls': finalImageUrls,
-        'snippet': content.length > 50 ? '${content.substring(0, 50)}...' : content,
-      };
-
-      await _repository.updatePost(postId, updateData);
+      
+      await editPostUseCase.execute(
+        existingPost: postToEdit,
+        title: title,
+        content: content,
+        category: category,
+        tags: tags,
+        existingImageUrls: existingImageUrls,
+        newImageFiles: newImageFiles,
+        authorId: authorId,
+        onImageProgress: onImageProgress,
+      );
 
       _isLoading = false;
       await fetchPosts(refresh: true);
@@ -208,23 +154,9 @@ extension CommunityProviderPost on CommunityProvider {
     _notifyListenersSafe();
 
     try {
-      try {
-        final postToDelete = _posts.firstWhere((p) => p.id == postId);
-        if (postToDelete.hasImage) {
-          for (final url in postToDelete.imageUrls) {
-            try {
-              final ref = FirebaseStorage.instance.refFromURL(url);
-              await ref.delete();
-            } catch (e) {
-              debugPrint('스토리지 이미지 삭제 실패: $url, $e');
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('로컬에서 게시글을 찾지 못해 이미지 삭제 건너뜀: $e');
-      }
-
-      await _repository.deletePost(postId);
+      final postToDelete = _posts.firstWhere((p) => p.id == postId);
+      await deletePostUseCase.execute(postToDelete);
+      
       _posts.removeWhere((post) => post.id == postId);
 
       _isLoading = false;

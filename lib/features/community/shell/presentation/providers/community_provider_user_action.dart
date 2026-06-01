@@ -9,7 +9,7 @@ extension CommunityProviderUserAction on CommunityProvider {
     if (userId == null) return;
 
     try {
-      final actions = await _repository.getUserPostActions(postId, userId);
+      final actions = await loadUserActionsUseCase.execute(postId, userId);
       _isCurrentPostLiked = actions['isLiked'] ?? false;
       _isCurrentPostScrapped = actions['isScrapped'] ?? false;
       _notifyListenersSafe();
@@ -20,25 +20,8 @@ extension CommunityProviderUserAction on CommunityProvider {
 
   Future<void> incrementViewCount(String postId, {String? userId}) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'viewed_${userId ?? "guest"}_$postId';
-      final lastViewedStr = prefs.getString(key);
-
-      var shouldIncrement = false;
-
-      if (lastViewedStr == null) {
-        shouldIncrement = true;
-      } else {
-        final lastViewed = DateTime.parse(lastViewedStr);
-        if (DateTime.now().difference(lastViewed).inHours >= 24) {
-          shouldIncrement = true;
-        }
-      }
-
-      if (shouldIncrement) {
-        await _repository.incrementViewCount(postId);
-        await prefs.setString(key, DateTime.now().toIso8601String());
-
+      final incremented = await incrementViewCountUseCase.execute(postId, userId: userId);
+      if (incremented) {
         final postIndex = _posts.indexWhere((p) => p.id == postId);
         if (postIndex != -1) {
           final p = _posts[postIndex];
@@ -63,7 +46,7 @@ extension CommunityProviderUserAction on CommunityProvider {
     _notifyListenersSafe();
 
     try {
-      await _repository.toggleLike(postId, userId, _isCurrentPostLiked);
+      await toggleLikeUseCase.execute(postId, userId, _isCurrentPostLiked);
     } catch (e) {
       _isCurrentPostLiked = originalState;
       if (postIndex != -1) {
@@ -89,7 +72,7 @@ extension CommunityProviderUserAction on CommunityProvider {
     _notifyListenersSafe();
 
     try {
-      await _repository.toggleScrap(postId, userId, _isCurrentPostScrapped);
+      await toggleScrapUseCase.execute(postId, userId, _isCurrentPostScrapped);
     } catch (e) {
       _isCurrentPostScrapped = originalState;
       if (postIndex != -1) {

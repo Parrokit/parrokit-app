@@ -18,7 +18,7 @@ extension CommunityProviderVote on CommunityProvider {
     _notifyListenersSafe();
 
     try {
-      await _repository.votePost(postId, userId, optionIndex);
+      await votePostUseCase.execute(postId, userId, optionIndex);
 
       myVotes[postId] = optionIndex;
 

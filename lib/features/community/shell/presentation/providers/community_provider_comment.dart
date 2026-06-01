@@ -1,49 +1,7 @@
 part of 'community_provider.dart';
 
 extension CommunityProviderComment on CommunityProvider {
-  // 이미지 업로드 로직 (폴더 구조화 및 진행률 추적)
-  Future<String?> uploadImageToStorage(
-    File imageFile, {
-    required String userId,
-    required String postId,
-    void Function(double progress)? onProgress,
-  }) async {
-    try {
-      final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final String path = 'users/$userId/posts/$postId/$fileName';
-      final Reference ref = FirebaseStorage.instance.ref().child(path);
-
-      final UploadTask uploadTask = ref.putFile(imageFile);
-
-      if (onProgress != null) {
-        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          final double progress = snapshot.totalBytes == 0
-              ? 0.0
-              : snapshot.bytesTransferred / snapshot.totalBytes;
-          onProgress(progress);
-        });
-      }
-
-      final TaskSnapshot snapshot = await uploadTask;
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      debugPrint('Error uploading image: $e');
-      return null;
-    }
-  }
-
-  // 이미지 삭제 로직
-  Future<bool> deleteImageFromStorage(String imageUrl) async {
-    try {
-      final Reference ref = FirebaseStorage.instance.refFromURL(imageUrl);
-      await ref.delete();
-      return true;
-    } catch (e) {
-      debugPrint('Error deleting image: $e');
-      return false;
-    }
-  }
+  // 이미지 로직은 CommunityImageService로 이관됨
 
   // 특정 게시글의 댓글 목록 가져오기 (현재 로그인된 유저 ID도 받아와서 좋아요 상태 셋팅)
   Future<void> fetchComments(String postId, {String? currentUserId}) async {
@@ -77,17 +35,14 @@ extension CommunityProviderComment on CommunityProvider {
     String? authorAvatarUrl,
   }) async {
     try {
-      final newComment = Comment(
-        id: '',
+      final createdComment = await addCommentUseCase.execute(
+        postId,
+        content,
         authorId: authorId,
         authorNickname: authorNickname,
         authorAvatarUrl: authorAvatarUrl,
-        content: content,
-        parentId: _replyingTo?.parentId ?? _replyingTo?.id,
-        replyToNickname: _replyingTo?.authorNickname,
+        replyingTo: _replyingTo,
       );
-
-      final createdComment = await _repository.addComment(postId, newComment);
 
       _replyingTo = null;
       _currentPostComments = List.from(_currentPostComments)..add(createdComment);
@@ -109,7 +64,7 @@ extension CommunityProviderComment on CommunityProvider {
 
   Future<bool> deleteComment(String postId, String commentId) async {
     try {
-      await _repository.deleteComment(postId, commentId);
+      await deleteCommentUseCase.execute(postId, commentId);
 
       final index = _currentPostComments.indexWhere((c) => c.id == commentId);
       if (index != -1) {
@@ -148,7 +103,7 @@ extension CommunityProviderComment on CommunityProvider {
     _notifyListenersSafe();
 
     try {
-      await _repository.toggleCommentLike(postId, commentId, userId, targetState);
+      await toggleCommentLikeUseCase.execute(postId, commentId, userId, targetState);
     } catch (e) {
       if (!targetState) {
         _likedCommentIds.add(commentId);
