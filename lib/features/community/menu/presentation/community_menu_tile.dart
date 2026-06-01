@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'community_menu_item.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
+import 'community_menu_item.dart';
 
 class CommunityMenuTile extends StatelessWidget {
   const CommunityMenuTile({
@@ -38,7 +40,17 @@ class CommunityMenuTile extends StatelessWidget {
         color: AppColors.textDisabled,
         size: 24,
       ),
-      onTap: onTap ?? () {},
+      onTap: onTap ??
+          () {
+            if (item.boardType != null && item.activityType != null) {
+              context.push(
+                AppRoutes.communityActivityPathOf(
+                  boardType: item.boardType!,
+                  activityType: item.activityType!,
+                ),
+              );
+            }
+          },
     );
   }
 }

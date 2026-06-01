@@ -29,6 +29,7 @@ import 'package:parrokit/features/community/vote/presentation/vote_write_screen.
 import 'package:parrokit/features/community/vote/presentation/vote_view_screen.dart';
 import 'package:parrokit/features/community/menu/presentation/community_menu_screen.dart';
 import 'package:parrokit/features/community/notification/presentation/community_notification_screen.dart';
+import 'package:parrokit/features/community/activity/presentation/activity_screen.dart';
 import 'package:parrokit/features/contents/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/contents/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
@@ -119,6 +120,18 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityNotificationPath,
         name: AppRoutes.communityNotification,
         builder: (context, state) => const CommunityNotificationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityActivityPath,
+        name: AppRoutes.communityActivity,
+        builder: (context, state) {
+          final boardType = state.uri.queryParameters['boardType'] ?? 'unknown';
+          final activityType = state.uri.queryParameters['activityType'] ?? 'unknown';
+          return CommunityActivityScreen(
+            boardType: boardType,
+            activityType: activityType,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.communityBoardViewPath,
