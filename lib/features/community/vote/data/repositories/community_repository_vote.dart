@@ -1,4 +1,4 @@
-part of 'community_repository.dart';
+part of '../../../shell/data/repositories/community_repository.dart';
 
 mixin CommunityRepositoryVote {
   FirebaseFirestore get _firestore;

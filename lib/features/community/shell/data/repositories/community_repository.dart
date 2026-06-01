@@ -2,11 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/data/models/post.dart';
 
-part 'community_repository_post.dart';
+part '../../../board/data/repositories/community_repository_post.dart';
 part 'community_repository_comment.dart';
 part 'community_repository_user_action.dart';
-part 'community_repository_question.dart';
-part 'community_repository_vote.dart';
+part '../../../question/data/repositories/community_repository_question.dart';
+part '../../../vote/data/repositories/community_repository_vote.dart';
 
 class CommunityRepository
     with

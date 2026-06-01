@@ -19,11 +19,11 @@ import 'package:parrokit/features/community/shell/domain/usecases/vote/vote_post
 import 'package:parrokit/features/community/shell/domain/usecases/user_action/user_action_usecases.dart';
 import 'dart:io';
 
-part 'community_provider_post.dart';
-part 'community_provider_vote.dart';
+part '../../../board/presentation/provider/community_provider_post.dart';
+part '../../../vote/presentation/provider/community_provider_vote.dart';
 part 'community_provider_comment.dart';
 part 'community_provider_user_action.dart';
-part 'community_provider_question.dart';
+part '../../../question/presentation/provider/community_provider_question.dart';
 
 class CommunityProvider with ChangeNotifier {
   final CommunityRepository _repository = CommunityRepository();

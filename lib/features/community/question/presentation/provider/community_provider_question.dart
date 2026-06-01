@@ -1,4 +1,4 @@
-part of 'community_provider.dart';
+part of '../../../shell/presentation/providers/community_provider.dart';
 
 extension CommunityProviderQuestion on CommunityProvider {
   Future<bool> addQuestion({

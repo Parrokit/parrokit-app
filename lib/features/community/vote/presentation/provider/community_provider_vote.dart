@@ -1,4 +1,4 @@
-part of 'community_provider.dart';
+part of '../../../shell/presentation/providers/community_provider.dart';
 
 extension CommunityProviderVote on CommunityProvider {
   Future<Set<String>> getVotedPostIdSet(String userId) async {

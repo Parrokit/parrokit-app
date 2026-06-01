@@ -1,4 +1,4 @@
-part of 'community_provider.dart';
+part of '../../../shell/presentation/providers/community_provider.dart';
 
 extension CommunityProviderPost on CommunityProvider {
   List<Post> getBoardPostsByFilter(String selectedFilter) {
