@@ -16,6 +16,7 @@ class CommunityMenuSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (addTopSpacing) const SizedBox(height: 18),
         CommunityMenuSectionTitle(title: section.title),
@@ -23,6 +24,7 @@ class CommunityMenuSection extends StatelessWidget {
           final category = section.categories[categoryIndex];
 
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (category.title != null) ...[
                 if (categoryIndex > 0) const SizedBox(height: 8),

@@ -295,4 +295,16 @@ abstract final class AppColors {
 
   /// 커뮤니티 스크랩 아이콘 (골드)
   static const Color communityScrapAccent = Color(0xFFC9AE58);
+
+  /// 커뮤니티 일반 게시판 액센트
+  static const Color communityBoardAccent = primary;
+  static const Color communityBoardAccentSoft = primarySoft;
+
+  /// 커뮤니티 질문 게시판 액센트 (오렌지)
+  static const Color communityQuestionAccent = Color(0xFFFF9800);
+  static const Color communityQuestionAccentSoft = Color(0xFFFFF3E0);
+
+  /// 커뮤니티 투표 게시판 액센트 (앰버)
+  static const Color communityVoteAccent = Color(0xFFFFC107);
+  static const Color communityVoteAccentSoft = Color(0xFFFFF8E1);
 }

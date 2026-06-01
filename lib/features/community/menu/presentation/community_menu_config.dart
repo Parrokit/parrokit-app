@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 import 'community_menu_item.dart';
 
 List<CommunityMenuSectionItem> buildCommunityMenuSections() {
   final boardColors = CommunityMenuColors(
-    iconColor: Colors.blue[600]!,
-    bgColor: Colors.blue[50]!,
+    iconColor: AppColors.communityBoardAccent,
+    bgColor: AppColors.communityBoardAccentSoft,
   );
   final questionColors = CommunityMenuColors(
-    iconColor: Colors.deepPurple[600]!,
-    bgColor: Colors.deepPurple[50]!,
+    iconColor: AppColors.communityQuestionAccent,
+    bgColor: AppColors.communityQuestionAccentSoft,
   );
   final voteColors = CommunityMenuColors(
-    iconColor: Colors.teal[600]!,
-    bgColor: Colors.teal[50]!,
+    iconColor: AppColors.communityVoteAccent,
+    bgColor: AppColors.communityVoteAccentSoft,
+  );
+  final settingsColors = CommunityMenuColors(
+    iconColor: AppColors.textSecondary,
+    bgColor: AppColors.surfaceContainerHigh,
   );
 
   return [
@@ -35,7 +40,8 @@ List<CommunityMenuSectionItem> buildCommunityMenuSections() {
             CommunityMenuItem(title: '작성한 질문', icon: Icons.help_rounded, colors: questionColors),
             CommunityMenuItem(title: '작성한 답변', icon: Icons.forum_rounded, colors: questionColors),
             CommunityMenuItem(title: '답변에 달린 댓글', icon: Icons.chat_rounded, colors: questionColors),
-            CommunityMenuItem(title: '공감한 글', icon: Icons.thumb_up_rounded, colors: questionColors),
+            CommunityMenuItem(title: '공감한 질문', icon: Icons.thumb_up_rounded, colors: questionColors),
+            CommunityMenuItem(title: '공감한 답변 및 댓글', icon: Icons.favorite_rounded, colors: questionColors),
             CommunityMenuItem(title: '스크랩', icon: Icons.bookmark_rounded, colors: questionColors),
           ],
         ),
@@ -60,15 +66,12 @@ List<CommunityMenuSectionItem> buildCommunityMenuSections() {
             CommunityMenuItem(
               title: '알림 설정',
               icon: Icons.notifications_rounded,
-              colors: CommunityMenuColors(
-                iconColor: Colors.purple[500]!,
-                bgColor: Colors.purple[50]!,
-              ),
+              colors: settingsColors,
             ),
             CommunityMenuItem(
               title: '차단 사용자 관리',
               icon: Icons.shield_rounded,
-              colors: voteColors,
+              colors: settingsColors,
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/router/app_routes.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 void showCommunityWriteBottomSheet(BuildContext context) {
   showModalBottomSheet<void>(
@@ -24,8 +25,8 @@ void showCommunityWriteBottomSheet(BuildContext context) {
               const SizedBox(height: 20),
               _CommunityWriteOption(
                 icon: Icons.edit_rounded,
-                iconColor: Colors.blue[600]!,
-                bgColor: Colors.blue[50]!,
+                iconColor: AppColors.communityBoardAccent,
+                bgColor: AppColors.communityBoardAccentSoft,
                 title: '게시판 작성',
                 subtitle: '자유롭게 대화해보세요',
                 onTap: () {
@@ -36,8 +37,8 @@ void showCommunityWriteBottomSheet(BuildContext context) {
               const SizedBox(height: 12),
               _CommunityWriteOption(
                 icon: Icons.live_help_rounded,
-                iconColor: Colors.orange[500]!,
-                bgColor: Colors.orange[50]!,
+                iconColor: AppColors.communityQuestionAccent,
+                bgColor: AppColors.communityQuestionAccentSoft,
                 title: '질문하기',
                 subtitle: '모르는 지식을 습득해보세요',
                 onTap: () {
@@ -48,8 +49,8 @@ void showCommunityWriteBottomSheet(BuildContext context) {
               const SizedBox(height: 12),
               _CommunityWriteOption(
                 icon: Icons.how_to_vote_rounded,
-                iconColor: Colors.amber[500]!,
-                bgColor: Colors.amber[50]!,
+                iconColor: AppColors.communityVoteAccent,
+                bgColor: AppColors.communityVoteAccentSoft,
                 title: '투표 만들기',
                 subtitle: '투표를 진행하여 다양한 의견을 받아보세요',
                 onTap: () {
