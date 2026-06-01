@@ -64,8 +64,10 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: NestedScrollView(
           controller: _outerScrollController,
@@ -76,7 +78,7 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
                 floating: true,
                 delegate: CommunityHeaderDelegate(
                   titleWidget: _buildTitleBar(context),
-                  zone1Widget: _buildTabBar(),
+                  zone1Widget: _buildTabBar(context),
                   zone2Widget: _buildFilterSection(),
                 ),
               ),
@@ -106,31 +108,33 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
   }
 
   Widget _buildTitleBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16.0, 4.0, 4.0, 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             '커뮤니티',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: colorScheme.onSurface,
             ),
           ),
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.search, color: Colors.black),
+                icon: Icon(Icons.search, color: colorScheme.onSurface),
                 onPressed: () {},
               ),
               IconButton(
-                icon: const Icon(Icons.notifications_none, color: Colors.black),
+                icon: Icon(Icons.notifications_none, color: colorScheme.onSurface),
                 onPressed: () => context.push(AppRoutes.communityNotificationPath),
               ),
               IconButton(
-                icon: const Icon(Icons.menu, color: Colors.black),
+                icon: Icon(Icons.menu, color: colorScheme.onSurface),
                 onPressed: () => context.push(AppRoutes.communityMenuPath),
               ),
             ],
@@ -140,16 +144,18 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return TabBar(
       controller: _tabController,
       isScrollable: true,
       tabAlignment: TabAlignment.start,
-      labelColor: Colors.black,
+      labelColor: colorScheme.onSurface,
       labelStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      unselectedLabelColor: Colors.grey,
+      unselectedLabelColor: colorScheme.onSurfaceVariant,
       unselectedLabelStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      indicatorColor: Colors.black,
+      indicatorColor: colorScheme.onSurface,
       indicatorSize: TabBarIndicatorSize.label,
       dividerColor: Colors.transparent,
       padding: EdgeInsets.zero,

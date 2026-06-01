@@ -23,6 +23,7 @@ class CommunityHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final surface = Theme.of(context).colorScheme.surface;
     final titleTop = -shrinkOffset;
 
     double zone1Top;
@@ -37,7 +38,7 @@ class CommunityHeaderDelegate extends SliverPersistentHeaderDelegate {
     final zone2Top = (titleHeight + zone1Height) - shrinkOffset;
 
     return Container(
-      color: Colors.white,
+      color: surface,
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
@@ -46,21 +47,21 @@ class CommunityHeaderDelegate extends SliverPersistentHeaderDelegate {
             left: 0,
             right: 0,
             height: zone2Height,
-            child: Container(color: Colors.white, child: zone2Widget),
+            child: Container(color: surface, child: zone2Widget),
           ),
           Positioned(
             top: titleTop,
             left: 0,
             right: 0,
             height: titleHeight,
-            child: Container(color: Colors.white, child: titleWidget),
+            child: Container(color: surface, child: titleWidget),
           ),
           Positioned(
             top: zone1Top,
             left: 0,
             right: 0,
             height: zone1Height,
-            child: Container(color: Colors.white, child: zone1Widget),
+            child: Container(color: surface, child: zone1Widget),
           ),
         ],
       ),

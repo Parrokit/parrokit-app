@@ -6,11 +6,12 @@ import 'package:parrokit/core/theme/app_colors.dart';
 void showCommunityWriteBottomSheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (context) {
+      final colorScheme = Theme.of(context).colorScheme;
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 32.0),
@@ -18,9 +19,9 @@ void showCommunityWriteBottomSheet(BuildContext context) {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 '커뮤니티 글쓰기',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
               ),
               const SizedBox(height: 20),
               _CommunityWriteOption(
@@ -85,6 +86,8 @@ class _CommunityWriteOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -103,13 +106,13 @@ class _CommunityWriteOption extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87)),
+                  Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+                  Text(subtitle, style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[400], size: 28),
+            Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant, size: 28),
           ],
         ),
       ),

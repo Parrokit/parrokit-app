@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class CommunityWriteFab extends StatelessWidget {
   const CommunityWriteFab({
@@ -12,15 +13,17 @@ class CommunityWriteFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       height: 56,
       decoration: BoxDecoration(
-        color: Colors.blue[600],
+        color: AppColors.communityBoardAccent,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+        boxShadow: [
+          BoxShadow(color: colorScheme.shadow.withValues(alpha: 0.22), blurRadius: 4, offset: const Offset(0, 2)),
         ],
       ),
       child: Material(
@@ -33,19 +36,19 @@ class CommunityWriteFab extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.add, color: Colors.white, size: 24),
+                Icon(Icons.add, color: colorScheme.onPrimary, size: 24),
                 AnimatedSize(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
                   child: SizedBox(
                     width: isExtended ? null : 0,
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           '글쓰기',
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: colorScheme.onPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.clip,
                         ),

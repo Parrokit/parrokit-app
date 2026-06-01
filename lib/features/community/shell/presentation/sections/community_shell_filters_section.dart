@@ -78,6 +78,7 @@ class _BoardChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isDropdown = label == '최신';
 
     return GestureDetector(
@@ -85,7 +86,7 @@ class _BoardChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue[600] : Colors.grey[100],
+          color: isSelected ? cs.primary : cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(18),
         ),
         alignment: Alignment.center,
@@ -95,14 +96,14 @@ class _BoardChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
+                color: isSelected ? cs.onPrimary : cs.onSurface,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 fontSize: 14,
               ),
             ),
             if (isDropdown) ...[
               const SizedBox(width: 4),
-              Icon(Icons.keyboard_arrow_down, color: isSelected ? Colors.white : Colors.black87, size: 18),
+              Icon(Icons.keyboard_arrow_down, color: isSelected ? cs.onPrimary : cs.onSurface, size: 18),
             ],
           ],
         ),
@@ -120,6 +121,7 @@ class _QuestionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -133,7 +135,7 @@ class _QuestionTab extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? Colors.black : Colors.grey[500],
+                color: isSelected ? cs.onSurface : cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -143,7 +145,7 @@ class _QuestionTab extends StatelessWidget {
               height: 2.0,
               width: isSelected ? 64 : 0,
               decoration: BoxDecoration(
-                color: Colors.blue[600],
+                color: cs.primary,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -184,7 +186,7 @@ class _VoteToggle extends StatelessWidget {
                 widthFactor: widthFactor,
                 child: Container(
                   height: h,
-                  decoration: BoxDecoration(color: Colors.blue[600], borderRadius: BorderRadius.circular(6)),
+                  decoration: BoxDecoration(color: cs.primary, borderRadius: BorderRadius.circular(6)),
                 ),
               ),
             ),
@@ -209,7 +211,7 @@ class _VoteToggle extends StatelessWidget {
                           Icon(
                             icon,
                             size: 16,
-                            color: isSelected ? Colors.white : cs.onSurface.withValues(alpha: 0.4),
+                            color: isSelected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.4),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -217,7 +219,7 @@ class _VoteToggle extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : cs.onSurface.withValues(alpha: 0.4),
+                              color: isSelected ? cs.onPrimary : cs.onSurface.withValues(alpha: 0.4),
                             ),
                           ),
                         ],
