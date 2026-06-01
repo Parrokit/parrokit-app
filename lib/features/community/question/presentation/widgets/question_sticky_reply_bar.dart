@@ -18,13 +18,14 @@ class QuestionStickyReplyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final currentUser = context.watch<UserProvider>().currentUser;
     final provider = context.watch<CommunityProvider>();
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.surfaceContainerHigh)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: const Border(top: BorderSide(color: AppColors.surfaceContainerHigh)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -39,7 +40,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                     '${provider.replyingTo!.authorNickname}님에게 답글 남기는 중',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey[600],
+                      color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -64,7 +65,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                         ? NetworkImage(currentUser!.photoUrl!)
                         : null,
                     child: currentUser?.photoUrl == null
-                        ? const Icon(Icons.person, size: 14, color: Colors.grey)
+                        ? Icon(Icons.person, size: 14, color: colorScheme.onSurfaceVariant)
                         : null,
                   ),
                   const SizedBox(width: 12),
@@ -72,12 +73,12 @@ class QuestionStickyReplyBar extends StatelessWidget {
                     child: TextField(
                       controller: replyController,
                       focusNode: replyFocusNode,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: '답글 남기기...',
-                        hintStyle: TextStyle(fontSize: 14, color: AppColors.textDisabled),
+                        hintStyle: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
                         border: InputBorder.none,
                       ),
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
                     ),
                   ),
                   TextButton(
@@ -85,7 +86,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                     child: Text(
                       '답글',
                       style: TextStyle(
-                        color: Colors.orange[600],
+                        color: AppColors.warning,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),

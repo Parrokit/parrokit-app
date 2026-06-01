@@ -50,6 +50,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final provider = context.watch<CommunityProvider>();
 
     if (_isInitialLoading) {
@@ -75,7 +76,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
       return Center(
         child: Text(
           '해당 조건의 질문이 없습니다.',
-          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 16),
         ),
       );
     }
@@ -103,6 +104,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
   }
 
   Widget _buildFeedItem(Post question, CommunityProvider provider) {
+    final colorScheme = Theme.of(context).colorScheme;
     final userProvider = context.watch<UserProvider>();
     final authorName = resolveCommunityAuthorName(
       post: question,
@@ -119,17 +121,17 @@ class _QuestionScreenState extends State<QuestionScreen> {
     final isExpired = question.questionStatus == 'expired';
 
     String statusText = '답변 대기중';
-    Color statusColor = Colors.blue[600]!;
-    Color statusBgColor = Colors.blue[50]!;
+    Color statusColor = AppColors.primary;
+    Color statusBgColor = AppColors.primarySoft;
 
     if (isResolved) {
       statusText = '채택 완료';
-      statusColor = Colors.grey[600]!;
-      statusBgColor = Colors.grey[200]!;
+      statusColor = colorScheme.onSurfaceVariant;
+      statusBgColor = colorScheme.surfaceContainerHigh;
     } else if (isExpired) {
       statusText = '만료됨';
-      statusColor = Colors.red[600]!;
-      statusBgColor = Colors.red[50]!;
+      statusColor = AppColors.danger;
+      statusBgColor = AppColors.dangerSoft;
     }
 
     return Padding(
@@ -144,9 +146,9 @@ class _QuestionScreenState extends State<QuestionScreen> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: colorScheme.surfaceContainerHigh,
                   backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                  child: avatarUrl == null ? const Icon(Icons.person, color: Colors.white) : null,
+                  child: avatarUrl == null ? Icon(Icons.person, color: colorScheme.onSurfaceVariant) : null,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -172,9 +174,9 @@ class _QuestionScreenState extends State<QuestionScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.orange[50],
+                                color: AppColors.primarySoft,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.orange[200]!),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -186,7 +188,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.orange[800],
+                                      color: AppColors.primary,
                                     ),
                                   ),
                                 ],
@@ -198,7 +200,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                         formatCommunityTimeAgo(question.createdAt),
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[500],
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -220,7 +222,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.more_vert, color: Colors.grey),
+                Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
               ],
             ),
           ),
@@ -244,7 +246,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
               question.snippet,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[800],
+                color: colorScheme.onSurface,
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -257,13 +259,13 @@ class _QuestionScreenState extends State<QuestionScreen> {
             Container(
               width: double.infinity,
               height: 250,
-              color: Colors.grey[200],
+              color: colorScheme.surfaceContainerHigh,
               margin: const EdgeInsets.only(bottom: 12),
               child: Image.network(
                 question.imageUrls.first,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.image_not_supported, color: Colors.grey),
+                    Icon(Icons.image_not_supported, color: colorScheme.onSurfaceVariant),
               ),
             ),
 
@@ -272,21 +274,21 @@ class _QuestionScreenState extends State<QuestionScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                const Icon(Icons.favorite_border, size: 24, color: Colors.black87),
+                Icon(Icons.favorite_border, size: 24, color: colorScheme.onSurface),
                 const SizedBox(width: 6),
                 Text(
                   '${question.likeCount}',
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 16),
-                const Icon(Icons.chat_bubble_outline, size: 22, color: Colors.black87),
+                Icon(Icons.chat_bubble_outline, size: 22, color: colorScheme.onSurface),
                 const SizedBox(width: 6),
                 Text(
                   '${question.commentCount}',
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const Spacer(),
-                const Icon(Icons.bookmark_border, size: 24, color: Colors.black87),
+                Icon(Icons.bookmark_border, size: 24, color: colorScheme.onSurface),
               ],
             ),
           ),

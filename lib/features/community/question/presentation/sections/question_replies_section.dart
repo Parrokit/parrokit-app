@@ -60,6 +60,7 @@ class QuestionRepliesSection extends StatelessWidget {
   }
 
   Widget _buildReplyItem(BuildContext context, Comment answer, {required bool isReply}) {
+    final colorScheme = Theme.of(context).colorScheme;
     final currentUser = context.read<UserProvider>().currentUser;
     final isMe = currentUser != null && question.authorId == currentUser.id;
     final provider = context.read<CommunityProvider>();
@@ -87,7 +88,7 @@ class QuestionRepliesSection extends StatelessWidget {
                 backgroundColor: AppColors.surfaceContainerHigh,
                 backgroundImage: answererAvatar != null ? NetworkImage(answererAvatar) : null,
                 child: answererAvatar == null
-                    ? Icon(Icons.person, size: isReply ? 14 : 18, color: Colors.white)
+                    ? Icon(Icons.person, size: isReply ? 14 : 18, color: colorScheme.onSurfaceVariant)
                     : null,
               ),
               if (!isReply) Container(width: 2, height: 40, color: AppColors.surfaceContainerHigh),
@@ -102,7 +103,7 @@ class QuestionRepliesSection extends StatelessWidget {
                   children: [
                     Text(answererName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary)),
                     const Spacer(),
-                    Text(formatTimeAgo(answer.createdAt), style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                    Text(formatTimeAgo(answer.createdAt), style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -111,16 +112,16 @@ class QuestionRepliesSection extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
+                      color: AppColors.successSoft,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.green[200]!),
+                      border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.verified, color: Colors.green, size: 12),
-                        SizedBox(width: 4),
-                        Text('채택된 답변', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
+                        const Icon(Icons.verified, color: AppColors.success, size: 12),
+                        const SizedBox(width: 4),
+                        const Text('채택된 답변', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.success)),
                       ],
                     ),
                   ),
@@ -145,7 +146,7 @@ class QuestionRepliesSection extends StatelessWidget {
                           icon: Icon(
                             provider.likedCommentIds.contains(answer.id) ? Icons.bolt : Icons.bolt_outlined,
                             size: 18,
-                            color: provider.likedCommentIds.contains(answer.id) ? Colors.orange[600] : AppColors.textSecondary,
+                            color: provider.likedCommentIds.contains(answer.id) ? AppColors.warning : AppColors.textSecondary,
                           ),
                           onPressed: () {
                             if (currentUser != null) {
@@ -158,7 +159,7 @@ class QuestionRepliesSection extends StatelessWidget {
                           constraints: const BoxConstraints(),
                         ),
                         const SizedBox(width: 4),
-                        Text('${answer.likeCount}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                        Text('${answer.likeCount}', style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
                         const SizedBox(width: 12),
                         IconButton(
                           icon: const Icon(Icons.mode_comment_outlined, size: 18, color: AppColors.textSecondary),
@@ -176,8 +177,8 @@ class QuestionRepliesSection extends StatelessWidget {
                         onTap: () => onAcceptAnswer(answer),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(6)),
-                          child: const Text('채택하기', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                          decoration: BoxDecoration(color: AppColors.successSoft, borderRadius: BorderRadius.circular(6)),
+                          child: const Text('채택하기', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                       ),
                   ],

@@ -106,17 +106,36 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
   // ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final orange600 = Colors.orange[600]!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const accentBlue = AppColors.primary;
+    const valueTextStyle = TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 16,
+      color: Colors.black87,
+    );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
+        title: Text(
+          '질문 작성',
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
         leading: IconButton(
           onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.close_rounded, size: 28, color: Colors.black),
+          icon: Icon(
+            Icons.close_rounded,
+            size: 28,
+            color: isDark ? Colors.white : colorScheme.onSurface,
+          ),
         ),
         actions: [
           Padding(
@@ -124,21 +143,21 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
             child: ElevatedButton(
               onPressed: (_isValid && !_isSubmitting) ? _submitQuestion : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: orange600,
-                disabledBackgroundColor: orange600.withValues(alpha: 0.4),
+                backgroundColor: accentBlue,
+                disabledBackgroundColor: accentBlue.withValues(alpha: 0.4),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
               ),
               child: _isSubmitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16, height: 16,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(color: colorScheme.onPrimary, strokeWidth: 2),
                     )
-                  : const Text(
+                  : Text(
                       '질문하기',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -164,6 +183,8 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                       controller: _titleController,
                       decoration: const InputDecoration(
                         hintText: '제목을 입력하세요.',
+                        filled: true,
+                        fillColor: Colors.transparent,
                         hintStyle: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -174,10 +195,10 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                         focusedBorder: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -189,6 +210,8 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                       keyboardType: TextInputType.multiline,
                       decoration: const InputDecoration(
                         hintText: '무엇이 궁금하신가요? 단어 번역, 문맥 상 의미, 억양 차이 등 자유롭게 질문해보세요.',
+                        filled: true,
+                        fillColor: Colors.transparent,
                         hintStyle: TextStyle(
                           fontSize: 16,
                           color: AppColors.textDisabled,
@@ -199,9 +222,9 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                         focusedBorder: InputBorder.none,
                         contentPadding: EdgeInsets.zero,
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.textSecondary,
+                        color: colorScheme.onSurface,
                         height: 1.5,
                       ),
                     ),
@@ -211,9 +234,9 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.warningSoft,
+                        color: isDark ? const Color(0xFF3A3F46) : const Color(0xFFE3E6EB),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: orange600.withValues(alpha: 0.2)),
+                        border: Border.all(color: isDark ? const Color(0xFF5B616B) : const Color(0xFFCAD0D8)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,8 +244,8 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('보상 크래커 🍪', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                              Text('$_rewardCrackers', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: orange600)),
+                              Text('보상 크래커 🍪', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface)),
+                              Text('$_rewardCrackers', style: valueTextStyle),
                             ],
                           ),
                           Slider(
@@ -230,16 +253,16 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                             min: 100,
                             max: 5000,
                             divisions: 49,
-                            activeColor: orange600,
-                            inactiveColor: orange600.withValues(alpha: 0.2),
+                            activeColor: accentBlue,
+                            inactiveColor: accentBlue.withValues(alpha: 0.2),
                             onChanged: (val) => setState(() => _rewardCrackers = val.toInt()),
                           ),
                           const Divider(height: 32, color: AppColors.surfaceContainerHigh),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('마감 기한 ⏳', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                              Text('$_deadlineDays일 후', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: orange600)),
+                              Text('마감 기한 ⏳', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface)),
+                              Text('$_deadlineDays일 후', style: valueTextStyle),
                             ],
                           ),
                           Slider(
@@ -247,8 +270,8 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                             min: 1,
                             max: 14,
                             divisions: 13,
-                            activeColor: orange600,
-                            inactiveColor: orange600.withValues(alpha: 0.2),
+                            activeColor: accentBlue,
+                            inactiveColor: accentBlue.withValues(alpha: 0.2),
                             onChanged: (val) => setState(() => _deadlineDays = val.toInt()),
                           ),
                         ],
@@ -262,27 +285,27 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
 
             // Bottom Attachment Toolbar
             Container(
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.surfaceContainerHigh)),
-                color: Colors.white,
+              decoration: BoxDecoration(
+                border: const Border(top: BorderSide(color: AppColors.surfaceContainerHigh)),
+                color: isDark ? const Color(0xFF151922) : colorScheme.surface,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.image_outlined, color: orange600),
+                    icon: Icon(Icons.image_outlined, color: isDark ? AppColors.primarySoft : AppColors.primary),
                     onPressed: () {},
                   ),
                   IconButton(
-                    icon: Icon(Icons.mic_none_rounded, color: orange600),
+                    icon: Icon(Icons.mic_none_rounded, color: isDark ? AppColors.primarySoft : AppColors.primary),
                     onPressed: () {},
                   ),
                   IconButton(
-                    icon: Icon(Icons.link_rounded, color: orange600),
+                    icon: Icon(Icons.link_rounded, color: isDark ? AppColors.primarySoft : AppColors.primary),
                     onPressed: () {},
                   ),
                   IconButton(
-                    icon: Icon(Icons.tag_rounded, color: orange600),
+                    icon: Icon(Icons.tag_rounded, color: isDark ? AppColors.primarySoft : AppColors.primary),
                     onPressed: () {},
                   ),
                   const Spacer(),
@@ -292,7 +315,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                       '${_contentController.text.length}자',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[500],
+                        color: colorScheme.onSurface.withValues(alpha: 0.75),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
