@@ -29,13 +29,13 @@ import 'package:parrokit/features/community/vote/presentation/vote_write_screen.
 import 'package:parrokit/features/community/vote/presentation/vote_view_screen.dart';
 import 'package:parrokit/features/community/menu/presentation/community_menu_screen.dart';
 import 'package:parrokit/features/community/notification/presentation/community_notification_screen.dart';
-import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
-import 'package:parrokit/features/content/library/presentation/library_screen.dart';
+import 'package:parrokit/features/contents/shorts/presentation/shorts_screen.dart';
+import 'package:parrokit/features/contents/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/profile_edit_screen.dart';
 import 'package:parrokit/features/discovery/recent/presentation/recent_screen.dart';
-import 'package:parrokit/features/content/clip-editor/presentation/clip_editor_screen.dart';
-import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
+import 'package:parrokit/features/contents/clip-editor/presentation/clip_editor_screen.dart';
+import 'package:parrokit/features/contents/player/presentation/clip_player_screen.dart';
 
 // Router 관련
 import 'app_routes.dart';

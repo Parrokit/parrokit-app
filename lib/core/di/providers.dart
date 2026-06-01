@@ -16,13 +16,13 @@ import 'package:provider/single_child_widget.dart';
 import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/core/provider/theme_provider.dart';
 import 'package:parrokit/core/provider/iap_provider.dart';
-import 'package:parrokit/features/content/shorts/presentation/providers/ad_provider.dart';
+import 'package:parrokit/features/contents/shorts/presentation/providers/ad_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/features/content/shorts/presentation/providers/shorts_provider.dart';
-import 'package:parrokit/features/content/shorts/data/shorts_repository.dart';
-import 'package:parrokit/features/content/library/presentation/providers/tag_filter_provider.dart';
+import 'package:parrokit/features/contents/shorts/presentation/providers/shorts_provider.dart';
+import 'package:parrokit/features/contents/shorts/data/shorts_repository.dart';
+import 'package:parrokit/features/contents/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 
 /// Provider 목록 생성.
