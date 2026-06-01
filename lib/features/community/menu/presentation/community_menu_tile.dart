@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'community_menu_item.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class CommunityMenuTile extends StatelessWidget {
   const CommunityMenuTile({
@@ -34,7 +35,7 @@ class CommunityMenuTile extends StatelessWidget {
       ),
       trailing: const Icon(
         Icons.chevron_right_rounded,
-        color: Color(0xFFB0B7C3),
+        color: AppColors.commB0B7C3,
         size: 24,
       ),
       onTap: onTap ?? () {},

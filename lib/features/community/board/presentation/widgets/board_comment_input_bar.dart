@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/data/models/comment.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class BoardCommentInputBar extends StatelessWidget {
   const BoardCommentInputBar({
@@ -13,7 +14,7 @@ class BoardCommentInputBar extends StatelessWidget {
     required this.onSubmit,
     required this.canSubmit,
     required this.sendAccent,
-    this.backgroundColor = const Color(0xFFFFFFFF),
+    this.backgroundColor = AppColors.commFFFFFF,
   });
 
   final Comment? replyingTo;
@@ -32,7 +33,7 @@ class BoardCommentInputBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        border: const Border(top: BorderSide(color: Color(0xFFDCDCDC))),
+        border: const Border(top: BorderSide(color: AppColors.commDCDCDC)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -41,7 +42,7 @@ class BoardCommentInputBar extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              color: const Color(0xFFF6F6F6),
+              color: AppColors.commF6F6F6,
               child: Row(
                 children: [
                   Expanded(
@@ -50,13 +51,13 @@ class BoardCommentInputBar extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF666666),
+                        color: AppColors.comm666666,
                       ),
                     ),
                   ),
                   GestureDetector(
                     onTap: onCancelReply,
-                    child: const Icon(Icons.close, size: 18, color: Color(0xFF888888)),
+                    child: const Icon(Icons.close, size: 18, color: AppColors.comm888888),
                   ),
                 ],
               ),
@@ -68,7 +69,7 @@ class BoardCommentInputBar extends StatelessWidget {
                 IconButton(
                   onPressed: () {},
                   icon: const Icon(Icons.photo_outlined, size: 32),
-                  color: const Color(0xFF707070),
+                  color: AppColors.comm707070,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -90,7 +91,7 @@ class BoardCommentInputBar extends StatelessWidget {
                               onChanged: onChanged,
                               onSubmitted: (_) => onSubmit(),
                               style: const TextStyle(
-                                color: Color(0xFF3F3F3F),
+                                color: AppColors.comm3F3F3F,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -98,7 +99,7 @@ class BoardCommentInputBar extends StatelessWidget {
                                 hintText: '댓글을 입력해주세요.',
                                 fillColor: Color.fromARGB(255, 250, 250, 250),
                                 hintStyle: TextStyle(
-                                  color: Color(0xFF9B9B9B),
+                                  color: AppColors.comm9B9B9B,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -115,7 +116,7 @@ class BoardCommentInputBar extends StatelessWidget {
                             onTap: canSubmit ? onSubmit : null,
                             child: Icon(
                               Icons.keyboard_return_rounded,
-                              color: canSubmit ? sendAccent : const Color(0xFF8A8A8A),
+                              color: canSubmit ? sendAccent : AppColors.comm8A8A8A,
                               size: 30,
                             ),
                           ),

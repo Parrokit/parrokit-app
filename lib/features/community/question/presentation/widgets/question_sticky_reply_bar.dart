@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class QuestionStickyReplyBar extends StatelessWidget {
   const QuestionStickyReplyBar({
@@ -23,7 +24,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF1F3F5))),
+        border: Border(top: BorderSide(color: AppColors.commF1F3F5)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -31,7 +32,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
           if (provider.replyingTo != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: const Color(0xFFF8F9FA),
+              color: AppColors.commF8F9FA,
               child: Row(
                 children: [
                   Text(
@@ -45,7 +46,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                   const Spacer(),
                   GestureDetector(
                     onTap: () => provider.setReplyingTo(null),
-                    child: const Icon(Icons.close, size: 16, color: Color(0xFFADB5BD)),
+                    child: const Icon(Icons.close, size: 16, color: AppColors.commADB5BD),
                   ),
                 ],
               ),
@@ -58,7 +59,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 14,
-                    backgroundColor: const Color(0xFFF1F3F5),
+                    backgroundColor: AppColors.commF1F3F5,
                     backgroundImage: currentUser?.photoUrl != null
                         ? NetworkImage(currentUser!.photoUrl!)
                         : null,
@@ -73,7 +74,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                       focusNode: replyFocusNode,
                       decoration: const InputDecoration(
                         hintText: '답글 남기기...',
-                        hintStyle: TextStyle(fontSize: 14, color: Color(0xFFADB5BD)),
+                        hintStyle: TextStyle(fontSize: 14, color: AppColors.commADB5BD),
                         border: InputBorder.none,
                       ),
                       style: const TextStyle(fontSize: 14),

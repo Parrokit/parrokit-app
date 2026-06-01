@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/user.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class BoardPostAuthorRow extends StatelessWidget {
   const BoardPostAuthorRow({
@@ -66,7 +67,7 @@ class BoardPostAuthorRow extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF6E6E6E),
+                  color: AppColors.comm6E6E6E,
                 ),
               ),
             ],

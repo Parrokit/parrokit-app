@@ -6,6 +6,7 @@ import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/utils/community_post_ui_utils.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class QuestionScreen extends StatefulWidget {
   final String selectedFilter;
@@ -59,7 +60,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
         padding: const EdgeInsets.only(bottom: 80), // Fab space
         itemCount: questionPosts.length,
         separatorBuilder: (context, index) => const Divider(
-          color: Color(0xFFEEEEEE),
+          color: AppColors.commEEEEEE,
           thickness: 8,
         ),
         itemBuilder: (context, index) {

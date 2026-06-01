@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/features/community/menu/presentation/community_menu_config.dart';
 import 'package:parrokit/features/community/menu/presentation/community_menu_section.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class CommunityMenuScreen extends StatelessWidget {
   const CommunityMenuScreen({super.key});
@@ -35,7 +36,7 @@ class CommunityMenuScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            const Divider(height: 1, color: Color(0xFFEDEDED)),
+            const Divider(height: 1, color: AppColors.commEDEDED),
             const SizedBox(height: 12),
             ...List.generate(
               sections.length,

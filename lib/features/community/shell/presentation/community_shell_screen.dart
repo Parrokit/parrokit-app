@@ -9,6 +9,7 @@ import 'package:parrokit/features/community/shell/presentation/sections/communit
 import 'package:parrokit/features/community/shell/presentation/sections/community_shell_write_sheet.dart';
 import 'package:parrokit/features/community/shell/presentation/widgets/community_header_delegate.dart';
 import 'package:parrokit/features/community/shell/presentation/widgets/community_write_fab.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class CommunityShellScreen extends StatefulWidget {
   const CommunityShellScreen({super.key});
@@ -178,7 +179,7 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
           ),
         ),
         const SizedBox(height: 11),
-        const Divider(color: Color(0xFFEEEEEE), height: 1),
+        const Divider(color: AppColors.commEEEEEE, height: 1),
       ],
     );
   }

@@ -17,6 +17,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/models/vote_option.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class VoteWriteScreen extends StatefulWidget {
   const VoteWriteScreen({super.key});
@@ -279,7 +280,7 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
         child: Column(
           children: [
             // Thin top divider
-            Container(color: const Color(0xFFF1F3F5), height: 1),
+            Container(color: AppColors.commF1F3F5, height: 1),
 
             Expanded(
               child: SingleChildScrollView(
@@ -295,7 +296,7 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
                         hintStyle: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFADB5BD),
+                          color: AppColors.commADB5BD,
                         ),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -305,7 +306,7 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF212529),
+                        color: AppColors.comm212529,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -319,7 +320,7 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
                         hintText: '투표에 대한 자세한 설명을 적어보세요.',
                         hintStyle: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFFADB5BD),
+                          color: AppColors.commADB5BD,
                           height: 1.5,
                         ),
                         border: InputBorder.none,
@@ -329,13 +330,13 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
                       ),
                       style: const TextStyle(
                         fontSize: 16,
-                        color: Color(0xFF495057),
+                        color: AppColors.comm495057,
                         height: 1.5,
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    const Divider(color: Color(0xFFF1F3F5), height: 1, thickness: 1),
+                    const Divider(color: AppColors.commF1F3F5, height: 1, thickness: 1),
                     const SizedBox(height: 24),
 
                     // ── 투표 기간 설정 ──
@@ -393,7 +394,7 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8F9FA),
+                            color: AppColors.commF8F9FA,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -412,13 +413,13 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
                                   controller: _optionControllers[index],
                                   decoration: InputDecoration(
                                     hintText: '항목 ${index + 1} 입력',
-                                    hintStyle: const TextStyle(color: Color(0xFFADB5BD), fontSize: 15),
+                                    hintStyle: const TextStyle(color: AppColors.commADB5BD, fontSize: 15),
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
                                     focusedBorder: InputBorder.none,
                                     isDense: true,
                                   ),
-                                  style: const TextStyle(fontSize: 15, color: Color(0xFF212529)),
+                                  style: const TextStyle(fontSize: 15, color: AppColors.comm212529),
                                 ),
                               ),
                               if (_optionControllers.length > 2)

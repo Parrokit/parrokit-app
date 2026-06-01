@@ -4,6 +4,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class QuestionViewScreen extends StatefulWidget {
   final String questionId;
@@ -200,7 +201,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
       ),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(color: const Color(0xFFF1F3F5), height: 1),
+        child: Container(color: AppColors.commF1F3F5, height: 1),
       ),
     );
   }
@@ -277,7 +278,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: const Color(0xFFF1F3F5),
+                backgroundColor: AppColors.commF1F3F5,
                 backgroundImage:
                     avatarUrl != null ? NetworkImage(avatarUrl) : null,
                 child: avatarUrl == null
@@ -296,7 +297,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                           style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: Color(0xFF212529)),
+                              color: AppColors.comm212529),
                         ),
                         if (question.questionStatus == 'resolved') ...[
                           const SizedBox(width: 4),
@@ -340,14 +341,14 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
             style: const TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF212529),
+                color: AppColors.comm212529,
                 height: 1.35),
           ),
           const SizedBox(height: 12),
           Text(
             question.content,
             style: const TextStyle(
-                fontSize: 16, color: Color(0xFF495057), height: 1.5),
+                fontSize: 16, color: AppColors.comm495057, height: 1.5),
           ),
           const SizedBox(height: 16),
           if (question.hasImage && question.imageUrls.isNotEmpty)
@@ -367,14 +368,14 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
             '${_formatTimeAgo(question.createdAt)} · 조회 ${question.viewCount}회',
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
-          const Divider(height: 24, color: Color(0xFFF1F3F5)),
+          const Divider(height: 24, color: AppColors.commF1F3F5),
           Row(
             children: [
               Text('${question.likeCount}',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: Color(0xFF212529))),
+                      color: AppColors.comm212529)),
               const SizedBox(width: 4),
               Text('유용해요',
                   style: TextStyle(color: Colors.grey[500], fontSize: 14)),
@@ -383,19 +384,19 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: Color(0xFF212529))),
+                      color: AppColors.comm212529)),
               const SizedBox(width: 4),
               Text('답글',
                   style: TextStyle(color: Colors.grey[500], fontSize: 14)),
             ],
           ),
-          const Divider(height: 24, color: Color(0xFFF1F3F5)),
+          const Divider(height: 24, color: AppColors.commF1F3F5),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               IconButton(
                 icon: const Icon(Icons.mode_comment_outlined,
-                    size: 20, color: Color(0xFF65676B)),
+                    size: 20, color: AppColors.comm65676B),
                 onPressed: () =>
                     FocusScope.of(context).requestFocus(_replyFocusNode),
               ),
@@ -403,7 +404,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                 icon: Icon(isLiked ? Icons.bolt : Icons.bolt_outlined,
                     size: 22,
                     color:
-                        isLiked ? Colors.orange[600] : const Color(0xFF65676B)),
+                        isLiked ? Colors.orange[600] : AppColors.comm65676B),
                 onPressed: () => context
                     .read<CommunityProvider>()
                     .toggleLike(question.id, currentUser?.id ?? ''),
@@ -416,7 +417,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                     size: 20,
                     color: isBookmarked
                         ? Colors.orange[600]
-                        : const Color(0xFF65676B)),
+                        : AppColors.comm65676B),
                 onPressed: () => context
                     .read<CommunityProvider>()
                     .toggleScrap(question.id, currentUser?.id ?? ''),
@@ -429,7 +430,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
   }
 
   Widget _buildDivider() {
-    return Container(height: 8, color: const Color(0xFFF1F3F5));
+    return Container(height: 8, color: AppColors.commF1F3F5);
   }
 
   Widget _buildRepliesSection(Post question, List<Comment> answers) {
@@ -437,7 +438,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 40),
         child: Center(
-          child: Text('아직 답변이 없습니다.\n첫 번째 답변을 남겨보세요!', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFFADB5BD), fontSize: 14)),
+          child: Text('아직 답변이 없습니다.\n첫 번째 답변을 남겨보세요!', textAlign: TextAlign.center, style: TextStyle(color: AppColors.commADB5BD, fontSize: 14)),
         ),
       );
     }
@@ -458,7 +459,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
       }
       
       if (i < parentAnswers.length - 1 || children.isNotEmpty) {
-        widgets.add(const Divider(height: 1, color: Color(0xFFF1F3F5)));
+        widgets.add(const Divider(height: 1, color: AppColors.commF1F3F5));
       }
     }
 
@@ -489,7 +490,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
       padding: EdgeInsets.fromLTRB(isReply ? 16 + 18 + 12 : 16, 16, 16, 16),
       decoration: isReply
           ? const BoxDecoration(
-              border: Border(left: BorderSide(color: Color(0xFFEFEFEF), width: 3)),
+              border: Border(left: BorderSide(color: AppColors.commEFEFEF, width: 3)),
             )
           : null,
       child: Row(
@@ -499,7 +500,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
             children: [
               CircleAvatar(
                 radius: isReply ? 14 : 18,
-                backgroundColor: const Color(0xFFF1F3F5),
+                backgroundColor: AppColors.commF1F3F5,
                 backgroundImage: answererAvatar != null
                     ? NetworkImage(answererAvatar)
                     : null,
@@ -508,7 +509,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                     : null,
               ),
               if (!isReply)
-                Container(width: 2, height: 40, color: const Color(0xFFE9ECEF)),
+                Container(width: 2, height: 40, color: AppColors.commE9ECEF),
             ],
           ),
           const SizedBox(width: 12),
@@ -522,7 +523,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                         style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
-                            color: Color(0xFF212529))),
+                            color: AppColors.comm212529)),
                     const Spacer(),
                     Text(_formatTimeAgo(answer.createdAt),
                         style:
@@ -563,13 +564,13 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF3F72C4),
+                        color: AppColors.comm3F72C4,
                       ),
                     ),
                   ),
                 Text(answer.content,
                     style: const TextStyle(
-                        fontSize: 15, color: Color(0xFF343A40), height: 1.45)),
+                        fontSize: 15, color: AppColors.comm343A40, height: 1.45)),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -585,7 +586,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                                 color:
                                     provider.likedCommentIds.contains(answer.id)
                                         ? Colors.orange[600]
-                                        : const Color(0xFF65676B)),
+                                        : AppColors.comm65676B),
                             onPressed: () {
                               if (currentUser != null) {
                                 provider.toggleCommentLike(
@@ -604,7 +605,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                                 color: Colors.grey[500], fontSize: 12)),
                         const SizedBox(width: 12),
                         IconButton(
-                          icon: const Icon(Icons.mode_comment_outlined, size: 18, color: Color(0xFF65676B)),
+                          icon: const Icon(Icons.mode_comment_outlined, size: 18, color: AppColors.comm65676B),
                           onPressed: () {
                             provider.setReplyingTo(answer);
                             FocusScope.of(context).requestFocus(_replyFocusNode);
@@ -650,7 +651,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF1F3F5))),
+        border: Border(top: BorderSide(color: AppColors.commF1F3F5)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -658,7 +659,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
           if (provider.replyingTo != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: const Color(0xFFF8F9FA),
+              color: AppColors.commF8F9FA,
               child: Row(
                 children: [
                   Text(
@@ -674,7 +675,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                     onTap: () {
                       provider.setReplyingTo(null);
                     },
-                    child: const Icon(Icons.close, size: 16, color: Color(0xFFADB5BD)),
+                    child: const Icon(Icons.close, size: 16, color: AppColors.commADB5BD),
                   ),
                 ],
               ),
@@ -687,7 +688,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                 children: [
                   CircleAvatar(
                     radius: 14,
-                    backgroundColor: const Color(0xFFF1F3F5),
+                    backgroundColor: AppColors.commF1F3F5,
                     backgroundImage: currentUser?.photoUrl != null
                         ? NetworkImage(currentUser!.photoUrl!)
                         : null,
@@ -702,7 +703,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                       focusNode: _replyFocusNode,
                       decoration: const InputDecoration(
                         hintText: '답글 남기기...',
-                        hintStyle: TextStyle(fontSize: 14, color: Color(0xFFADB5BD)),
+                        hintStyle: TextStyle(fontSize: 14, color: AppColors.commADB5BD),
                         border: InputBorder.none,
                       ),
                       style: const TextStyle(fontSize: 14),

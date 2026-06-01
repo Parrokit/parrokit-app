@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class CommunityNotificationScreen extends StatefulWidget {
   const CommunityNotificationScreen({super.key});
@@ -19,32 +20,32 @@ class _CommunityNotificationScreenState
     _items = [
       const _NotificationItem(
         icon: Icons.campaign_rounded,
-        iconColor: Color(0xFF6B7280),
-        iconBgColor: Color(0xFFF3F4F6),
+        iconColor: AppColors.comm6B7280,
+        iconBgColor: AppColors.commF3F4F6,
         category: '공지',
         title: '새로운 쉐도잉 챌린지가 시작됐어요.',
         timeAgo: '2일 전',
       ),
       const _NotificationItem(
         icon: Icons.record_voice_over_rounded,
-        iconColor: Color(0xFF2563EB),
-        iconBgColor: Color(0xFFEFF6FF),
+        iconColor: AppColors.comm2563EB,
+        iconBgColor: AppColors.commEFF6FF,
         category: '학습 팁',
         title: '발음 교정에 도움 되는 반복 구간이 추천됐어요.',
         timeAgo: '4일 전',
       ),
       const _NotificationItem(
         icon: Icons.subtitles_rounded,
-        iconColor: Color(0xFFEA580C),
-        iconBgColor: Color(0xFFFFF7ED),
+        iconColor: AppColors.commEA580C,
+        iconBgColor: AppColors.commFFF7ED,
         category: '자막',
         title: '업로드한 영상의 자동 자막 생성이 완료됐어요.',
         timeAgo: '1주 전',
       ),
       const _NotificationItem(
         icon: Icons.forum_rounded,
-        iconColor: Color(0xFF16A34A),
-        iconBgColor: Color(0xFFF0FDF4),
+        iconColor: AppColors.comm16A34A,
+        iconBgColor: AppColors.commF0FDF4,
         category: '커뮤니티',
         title: '내 글에 새로운 댓글이 달렸어요.',
         timeAgo: '2주 전',
@@ -75,7 +76,7 @@ class _CommunityNotificationScreenState
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFFE34D4D),
+                          color: AppColors.commE34D4D,
                         ),
                       ),
                     ),
@@ -91,7 +92,7 @@ class _CommunityNotificationScreenState
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF212529),
+                          color: AppColors.comm212529,
                         ),
                       ),
                     ),
@@ -123,7 +124,7 @@ class _CommunityNotificationScreenState
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF111827),
+            color: AppColors.comm111827,
           ),
         ),
         actions: [
@@ -141,7 +142,7 @@ class _CommunityNotificationScreenState
         ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: Color(0xFFEDEDED)),
+          child: Divider(height: 1, color: AppColors.commEDEDED),
         ),
       ),
       body: Column(
@@ -151,7 +152,7 @@ class _CommunityNotificationScreenState
               height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFEDEDED))),
+                border: Border(bottom: BorderSide(color: AppColors.commEDEDED)),
               ),
               child: Row(
                 children: [
@@ -168,7 +169,7 @@ class _CommunityNotificationScreenState
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFE34D4D),
+                            color: AppColors.commE34D4D,
                           ),
                         ),
                       ),
@@ -179,7 +180,7 @@ class _CommunityNotificationScreenState
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF6B7280),
+                            color: AppColors.comm6B7280,
                           ),
                         ),
                       ),
@@ -196,14 +197,14 @@ class _CommunityNotificationScreenState
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF9CA3AF),
+                        color: AppColors.comm9CA3AF,
                       ),
                     ),
                   )
                 : ListView.separated(
                     itemCount: _items.length,
                     separatorBuilder: (_, __) =>
-                        const Divider(height: 1, color: Color(0xFFF2F3F5)),
+                        const Divider(height: 1, color: AppColors.commF2F3F5),
                     itemBuilder: (context, index) {
                       final item = _items[index];
                       return Padding(
@@ -238,7 +239,7 @@ class _CommunityNotificationScreenState
                                           style: const TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.w600,
-                                            color: Color(0xFF9CA3AF),
+                                            color: AppColors.comm9CA3AF,
                                           ),
                                         ),
                                       ),
@@ -249,7 +250,7 @@ class _CommunityNotificationScreenState
                                             style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
-                                              color: Color(0xFF9CA3AF),
+                                              color: AppColors.comm9CA3AF,
                                             ),
                                           ),
                                           IconButton(
@@ -269,7 +270,7 @@ class _CommunityNotificationScreenState
                                                   ? Icons.close_rounded
                                                   : Icons.more_vert_rounded,
                                               size: 24,
-                                              color: const Color(0xFF9CA3AF),
+                                              color: AppColors.comm9CA3AF,
                                             ),
                                           ),
                                         ],
@@ -282,7 +283,7 @@ class _CommunityNotificationScreenState
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                       height: 1.4,
-                                      color: Color(0xFF111827),
+                                      color: AppColors.comm111827,
                                     ),
                                   ),
                                 ],

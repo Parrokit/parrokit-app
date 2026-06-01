@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class BoardCommentsEmptyState extends StatelessWidget {
   const BoardCommentsEmptyState({super.key, required this.onTap});
@@ -15,7 +16,7 @@ class BoardCommentsEmptyState extends StatelessWidget {
             '첫 댓글을 남겨보세요',
             style: TextStyle(
               fontSize: 16,
-              color: Color(0xFF8B8B8B),
+              color: AppColors.comm8B8B8B,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -41,7 +42,7 @@ class BoardCommentsEmptyState extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF3F3F3F),
+                      color: AppColors.comm3F3F3F,
                     ),
                   ),
                 ],

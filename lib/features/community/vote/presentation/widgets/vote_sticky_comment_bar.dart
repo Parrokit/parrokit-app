@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class VoteStickyCommentBar extends StatelessWidget {
   const VoteStickyCommentBar({
@@ -32,18 +33,18 @@ class VoteStickyCommentBar extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xFFF8F9FA),
+            color: AppColors.commF8F9FA,
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     '${provider.replyingTo?.authorNickname} 님에게 답글 남기는 중',
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF495057)),
+                    style: const TextStyle(fontSize: 13, color: AppColors.comm495057),
                   ),
                 ),
                 GestureDetector(
                   onTap: () => provider.setReplyingTo(null),
-                  child: const Icon(Icons.close, size: 16, color: Color(0xFF868E96)),
+                  child: const Icon(Icons.close, size: 16, color: AppColors.comm868E96),
                 ),
               ],
             ),
@@ -58,7 +59,7 @@ class VoteStickyCommentBar extends StatelessWidget {
                 offset: const Offset(0, -4),
               ),
             ],
-            border: const Border(top: BorderSide(color: Color(0xFFE9ECEF), width: 1)),
+            border: const Border(top: BorderSide(color: AppColors.commE9ECEF, width: 1)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: SafeArea(
@@ -66,12 +67,12 @@ class VoteStickyCommentBar extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: const Color(0xFFF1F3F5),
+                  backgroundColor: AppColors.commF1F3F5,
                   backgroundImage: (currentUser?.photoUrl != null && currentUser!.photoUrl!.isNotEmpty)
                       ? CachedNetworkImageProvider(currentUser.photoUrl!)
                       : null,
                   child: (currentUser?.photoUrl == null || currentUser!.photoUrl!.isEmpty)
-                      ? const Icon(Icons.person, color: Color(0xFF9E9E9E), size: 18)
+                      ? const Icon(Icons.person, color: AppColors.comm9E9E9E, size: 18)
                       : null,
                 ),
                 const SizedBox(width: 12),

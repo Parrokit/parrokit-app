@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class QuestionWriteScreen extends StatefulWidget {
   const QuestionWriteScreen({super.key});
@@ -150,7 +151,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
         child: Column(
           children: [
             // Thin top divider
-            Container(color: const Color(0xFFF1F3F5), height: 1),
+            Container(color: AppColors.commF1F3F5, height: 1),
 
             Expanded(
               child: SingleChildScrollView(
@@ -166,7 +167,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                         hintStyle: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFADB5BD),
+                          color: AppColors.commADB5BD,
                         ),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -176,7 +177,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF212529),
+                        color: AppColors.comm212529,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -190,7 +191,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                         hintText: '무엇이 궁금하신가요? 단어 번역, 문맥 상 의미, 억양 차이 등 자유롭게 질문해보세요.',
                         hintStyle: TextStyle(
                           fontSize: 16,
-                          color: Color(0xFFADB5BD),
+                          color: AppColors.commADB5BD,
                           height: 1.5,
                         ),
                         border: InputBorder.none,
@@ -200,7 +201,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                       ),
                       style: const TextStyle(
                         fontSize: 16,
-                        color: Color(0xFF495057),
+                        color: AppColors.comm495057,
                         height: 1.5,
                       ),
                     ),
@@ -210,7 +211,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF9F0),
+                        color: AppColors.commFFF9F0,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: orange600.withValues(alpha: 0.2)),
                       ),
@@ -233,7 +234,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                             inactiveColor: orange600.withValues(alpha: 0.2),
                             onChanged: (val) => setState(() => _rewardCrackers = val.toInt()),
                           ),
-                          const Divider(height: 32, color: Color(0xFFF1F3F5)),
+                          const Divider(height: 32, color: AppColors.commF1F3F5),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -262,7 +263,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
             // Bottom Attachment Toolbar
             Container(
               decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0xFFF1F3F5))),
+                border: Border(top: BorderSide(color: AppColors.commF1F3F5)),
                 color: Colors.white,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

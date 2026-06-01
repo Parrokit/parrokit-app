@@ -13,6 +13,7 @@ import 'package:parrokit/features/community/board/presentation/widgets/board_pos
 import 'package:parrokit/features/community/board/presentation/widgets/board_post_content_section.dart';
 import 'package:parrokit/features/community/board/presentation/sections/board_comments_section.dart';
 import 'package:parrokit/features/community/board/presentation/handlers/board_options_handler.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;
@@ -203,17 +204,17 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const backgroundColor = Color(0xFFFFFFFF);
-    const likeAccent = Color(0xFF3F72C4); // blue[600] 느낌
-    const scrapAccent = Color(0xFFC9AE58); // 부드러운 노랑 느낌
+    const backgroundColor = AppColors.commFFFFFF;
+    const likeAccent = AppColors.comm3F72C4; // blue[600] 느낌
+    const scrapAccent = AppColors.commC9AE58; // 부드러운 노랑 느낌
     final sendAccent = Colors.blue[600]!;
 
     final provider = context.watch<CommunityProvider>();
     final liked = provider.isCurrentPostLiked;
     final scrapped = provider.isCurrentPostScrapped;
 
-    final likeMetaColor = liked ? likeAccent : const Color(0xFF9F9F9F);
-    final likeIconColor = liked ? likeAccent : const Color(0xFFB2B2B2);
+    final likeMetaColor = liked ? likeAccent : AppColors.comm9F9F9F;
+    final likeIconColor = liked ? likeAccent : AppColors.commB2B2B2;
 
     final post = provider.posts.firstWhere(
       (p) => p.id == widget.postId,

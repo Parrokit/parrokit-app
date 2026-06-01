@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class BoardSheetAction extends StatelessWidget {
   const BoardSheetAction({
@@ -15,7 +16,7 @@ class BoardSheetAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor =
-        isDestructive ? const Color(0xFFD34B4B) : const Color(0xFF222222);
+        isDestructive ? AppColors.commD34B4B : AppColors.comm222222;
 
     return InkWell(
       onTap: onTap,

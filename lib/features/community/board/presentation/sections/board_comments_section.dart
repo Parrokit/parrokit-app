@@ -5,6 +5,7 @@ import 'package:parrokit/features/community/board/presentation/widgets/board_com
 import 'package:parrokit/features/community/board/presentation/widgets/board_comments_empty_state.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class BoardCommentsSection extends StatelessWidget {
   const BoardCommentsSection({
@@ -35,7 +36,7 @@ class BoardCommentsSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 18, 28, 0),
           child: Text(
             '댓글 ${comments.length}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF6A6A6A)),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.comm6A6A6A),
           ),
         ),
         if (comments.isEmpty) ...[

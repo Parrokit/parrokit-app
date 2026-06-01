@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
 
 class BoardPostContentSection extends StatelessWidget {
   const BoardPostContentSection({super.key, required this.post});
@@ -81,7 +82,7 @@ class BoardPostContentSection extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF8F96A3),
+                        color: AppColors.comm8F96A3,
                       ),
                     ),
                   )
