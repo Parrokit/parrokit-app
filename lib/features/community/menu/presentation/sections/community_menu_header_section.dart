@@ -6,10 +6,12 @@ class CommunityMenuHeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SliverAppBar(
       pinned: true,
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: colorScheme.surface,
       elevation: 0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
@@ -18,19 +20,19 @@ class CommunityMenuHeaderSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 '커뮤니티 메뉴',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
             IconButton(
               onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.close, size: 24, color: Colors.black),
+              icon: Icon(Icons.close, size: 24, color: colorScheme.onSurface),
               tooltip: '닫기',
             ),
           ],

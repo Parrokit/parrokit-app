@@ -16,6 +16,8 @@ class CommunityMenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       leading: Container(
@@ -29,10 +31,10 @@ class CommunityMenuTile extends StatelessWidget {
       ),
       title: Text(
         item.title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: colorScheme.onSurface,
         ),
       ),
       trailing: const Icon(

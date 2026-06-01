@@ -10,9 +10,10 @@ class CommunityMenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const factory = CommunityMenuSectionFactory();
     final sections = factory.build();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

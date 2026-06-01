@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
 
 class CommunityMenuCategoryLabel extends StatelessWidget {
   const CommunityMenuCategoryLabel({
@@ -11,14 +10,16 @@ class CommunityMenuCategoryLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 10, 4, 4),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: AppColors.textDisabled,
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -35,14 +36,16 @@ class CommunityMenuSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w700,
-          color: AppColors.textTertiary,
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
     );
