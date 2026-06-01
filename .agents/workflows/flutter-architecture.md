@@ -36,3 +36,11 @@ features/{feature_name}/
 2. `usecase`가 orchestration만 하고 service로 위임하는지 확인.
 3. ViewModel이 비대하면 mixin 또는 파일 분리.
 4. Widget에 비즈니스 조건문이 늘어나면 ViewModel/service로 이동.
+
+## Provider 분리 규칙
+
+1. Provider는 상태 보관, 화면 이벤트, notify만 담당한다.
+2. 필터/정렬/파생 목록 계산은 selector 또는 usecase/service로 이동한다.
+3. 파일 길이 400줄 초과 또는 public 메서드 15개 초과 시 기능별 분리를 검토한다.
+4. 권장 분리: `PostProvider`, `CommentProvider`, `VoteProvider` (또는 동등한 기능 단위).
+5. 의존 흐름은 `presentation -> provider -> usecase/service -> repository`를 유지한다.

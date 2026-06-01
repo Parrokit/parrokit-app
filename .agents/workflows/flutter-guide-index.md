@@ -14,6 +14,7 @@ Flutter 작업 유형에 따라 참조할 워크플로 문서를 빠르게 고�
 |-------------|---------------|
 | feature 생성, 새 화면 | `/flutter-architecture`, `/flutter-directory` |
 | domain, usecase, service | `/flutter-architecture` |
+| provider 비대화, provider 분리 | `/flutter-architecture` |
 | section, widget, 화면 분리 | `/flutter-sections-widgets` |
 | 네이밍, 주석, 스타일 | `/flutter-naming` |
 | core 이동, 모듈화 | `/flutter-modularization` |
