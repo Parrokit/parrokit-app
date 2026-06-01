@@ -60,7 +60,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
         padding: const EdgeInsets.only(bottom: 80), // Fab space
         itemCount: questionPosts.length,
         separatorBuilder: (context, index) => const Divider(
-          color: AppColors.commEEEEEE,
+          color: AppColors.disabled,
           thickness: 8,
         ),
         itemBuilder: (context, index) {

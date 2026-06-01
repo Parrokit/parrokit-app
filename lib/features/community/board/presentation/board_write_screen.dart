@@ -81,7 +81,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.comm202225,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -106,7 +106,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color:
-                            selected ? Colors.white : AppColors.comm4A4F57,
+                            selected ? Colors.white : AppColors.textSecondary,
                       ),
                       side: BorderSide(
                         width: 1,
@@ -241,10 +241,10 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const lineColor = AppColors.commEDEDED;
-    const mutedText = AppColors.commB8BEC9;
-    const tipBlue = AppColors.comm2F67BF;
-    const panelBg = AppColors.commF6F7F8;
+    const lineColor = AppColors.disabled;
+    const mutedText = AppColors.textDisabled;
+    const tipBlue = AppColors.primary;
+    const panelBg = AppColors.surfaceContainer;
     const contentBaseHeight = 230.0;
     const tipAreaHeight = 190.0;
     final contentFieldHeight =
@@ -283,8 +283,8 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   color: _canComplete
-                                      ? AppColors.comm2F67BF
-                                      : AppColors.commD3D6DB,
+                                      ? AppColors.primary
+                                      : AppColors.disabled,
                                 ),
                               ),
                       ),
@@ -311,7 +311,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w500,
-                                    color: AppColors.comm202225,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 SizedBox(width: 8),
@@ -348,7 +348,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.comm202225,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
@@ -370,7 +370,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                   fontSize: 16,
                                   height: 1.6,
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.commB8BEC9,
+                                  color: AppColors.textDisabled,
                                 ),
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
@@ -383,7 +383,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                 fontSize: 18,
                                 height: 1.6,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.comm202225,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ),
@@ -460,10 +460,10 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                         _tags.remove(tag);
                                       });
                                     },
-                                    backgroundColor: AppColors.commEAF2FF,
-                                    deleteIconColor: AppColors.comm2F67BF,
+                                    backgroundColor: AppColors.primarySoft,
+                                    deleteIconColor: AppColors.primary,
                                     labelStyle: const TextStyle(
-                                      color: AppColors.comm2F67BF,
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                     shape: RoundedRectangleBorder(
@@ -484,7 +484,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: const BoxDecoration(
-                      color: AppColors.commF9F9F9,
+                      color: AppColors.surfaceContainer,
                       border: Border(top: BorderSide(color: lineColor)),
                     ),
                     child: TextField(
@@ -493,12 +493,12 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                       decoration: InputDecoration(
                         hintText: '태그를 입력하고 엔터를 누르세요',
                         hintStyle: const TextStyle(
-                            color: AppColors.comm9EA4AF, fontSize: 15),
+                            color: AppColors.textDisabled, fontSize: 15),
                         border: InputBorder.none,
                         isDense: true,
                         suffixText: '${_tags.length}/${PostValidator.maxTags}',
                         suffixStyle: const TextStyle(
-                            color: AppColors.comm9EA4AF,
+                            color: AppColors.textDisabled,
                             fontSize: 13,
                             fontWeight: FontWeight.w600),
                       ),
@@ -688,7 +688,7 @@ class _TipBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.commEAF2FF,
+        color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(5),
       ),
       child: const Text(
@@ -696,7 +696,7 @@ class _TipBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w800,
-          color: AppColors.comm2F67BF,
+          color: AppColors.primary,
         ),
       ),
     );
@@ -715,7 +715,7 @@ class _TipBullet extends StatelessWidget {
       children: [
         const Padding(
           padding: EdgeInsets.only(top: 6),
-          child: Icon(Icons.circle, size: 8, color: AppColors.comm222222),
+          child: Icon(Icons.circle, size: 8, color: AppColors.textPrimary),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -725,7 +725,7 @@ class _TipBullet extends StatelessWidget {
               fontSize: 14,
               height: 1.45,
               fontWeight: FontWeight.w500,
-              color: AppColors.comm222222,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -747,7 +747,7 @@ class _BottomTool extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.comm2F67BF : AppColors.comm9EA4AF;
+    final color = isActive ? AppColors.primary : AppColors.textDisabled;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

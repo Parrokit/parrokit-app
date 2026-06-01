@@ -43,7 +43,7 @@ class BoardCommentItem extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(isReply ? 52 : 18, 18, 18, 0),
       decoration: isReply
           ? const BoxDecoration(
-              border: Border(left: BorderSide(color: AppColors.commEFEFEF, width: 3)),
+              border: Border(left: BorderSide(color: AppColors.disabled, width: 3)),
             )
           : null,
       child: Row(
@@ -52,7 +52,7 @@ class BoardCommentItem extends StatelessWidget {
           Container(
             width: isReply ? 36 : 44,
             height: isReply ? 36 : 44,
-            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.commE5E5E5),
+            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.disabled),
             child: ClipOval(
               child: (photoUrl != null && photoUrl.isNotEmpty && !isDeleted)
                   ? CachedNetworkImage(
@@ -64,11 +64,11 @@ class BoardCommentItem extends StatelessWidget {
                         child: Container(color: Colors.white),
                       ),
                       errorWidget: (context, url, error) => Center(
-                        child: Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.comm9E9E9E),
+                        child: Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.textDisabled),
                       ),
                     )
                   : Center(
-                      child: isDeleted ? const SizedBox() : Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.comm9E9E9E),
+                      child: isDeleted ? const SizedBox() : Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.textDisabled),
                     ),
             ),
           ),
@@ -84,23 +84,23 @@ class BoardCommentItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: isDeleted ? AppColors.commB0B0B0 : AppColors.comm1F1F1F,
+                        color: isDeleted ? AppColors.textDisabled : AppColors.textPrimary,
                       ),
                     ),
                     if (!isDeleted && isAuthor) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: AppColors.commE6F0FF, borderRadius: BorderRadius.circular(4)),
-                        child: const Text('작성자', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.comm3F72C4)),
+                        decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(4)),
+                        child: const Text('작성자', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
                       ),
                     ],
                     if (!isDeleted && isMyComment && !isAuthor) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: AppColors.commF0F0F0, borderRadius: BorderRadius.circular(4)),
-                        child: const Text('내 댓글', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.comm7A7A7A)),
+                        decoration: BoxDecoration(color: AppColors.surfaceContainerHigh, borderRadius: BorderRadius.circular(4)),
+                        child: const Text('내 댓글', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textTertiary)),
                       ),
                     ],
                   ],
@@ -109,7 +109,7 @@ class BoardCommentItem extends StatelessWidget {
                 if (!isDeleted)
                   Text(
                     formatTimeAgo(comment.createdAt),
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.comm8F96A3),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDisabled),
                   ),
                 const SizedBox(height: 8),
                 if (!isDeleted && isReply && comment.replyToNickname != null)
@@ -117,7 +117,7 @@ class BoardCommentItem extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       '@${comment.replyToNickname}',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.comm3F72C4),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
                     ),
                   ),
                 Text(
@@ -125,7 +125,7 @@ class BoardCommentItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: isDeleted ? AppColors.commB0B0B0 : AppColors.comm232323,
+                    color: isDeleted ? AppColors.textDisabled : AppColors.textPrimary,
                     height: 1.35,
                   ),
                 ),
@@ -137,11 +137,11 @@ class BoardCommentItem extends StatelessWidget {
                         onTap: onLike,
                         child: Row(
                           children: [
-                            Icon(isLiked ? Icons.favorite : Icons.favorite_border, size: 18, color: isLiked ? Colors.redAccent : AppColors.comm8F96A3),
+                            Icon(isLiked ? Icons.favorite : Icons.favorite_border, size: 18, color: isLiked ? Colors.redAccent : AppColors.textDisabled),
                             const SizedBox(width: 4),
                             Text(
                               comment.likeCount > 0 ? '${comment.likeCount}' : '좋아요',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isLiked ? Colors.redAccent : AppColors.comm8F96A3),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isLiked ? Colors.redAccent : AppColors.textDisabled),
                             ),
                           ],
                         ),
@@ -151,9 +151,9 @@ class BoardCommentItem extends StatelessWidget {
                         onTap: onReply,
                         child: const Row(
                           children: [
-                            Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.comm8F96A3),
+                            Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.textDisabled),
                             SizedBox(width: 4),
-                            Text('답글쓰기', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.comm8F96A3)),
+                            Text('답글쓰기', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDisabled)),
                           ],
                         ),
                       ),
@@ -165,7 +165,7 @@ class BoardCommentItem extends StatelessWidget {
           if (!isDeleted)
             IconButton(
               onPressed: onMore,
-              icon: const Icon(Icons.more_vert, color: AppColors.comm8F96A3, size: 20),
+              icon: const Icon(Icons.more_vert, color: AppColors.textDisabled, size: 20),
             )
           else
             const SizedBox(width: 48),

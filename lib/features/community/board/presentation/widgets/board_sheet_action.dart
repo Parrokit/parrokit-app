@@ -16,7 +16,7 @@ class BoardSheetAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor =
-        isDestructive ? AppColors.commD34B4B : AppColors.comm222222;
+        isDestructive ? AppColors.danger : AppColors.textPrimary;
 
     return InkWell(
       onTap: onTap,

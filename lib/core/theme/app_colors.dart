@@ -288,75 +288,11 @@ abstract final class AppColors {
   /// 다크 라이트 오버레이
   static const Color overlayLightDark = Color(0x33000000);
 
-  // ===================================================================
-  // Community Specific Colors
-  // ===================================================================
 
-  static const Color comm111827 = Color(0xFF111827);
-  static const Color comm16A34A = Color(0xFF16A34A);
-  static const Color comm1F1F1F = Color(0xFF1F1F1F);
-  static const Color comm202225 = Color(0xFF202225);
-  static const Color comm212529 = Color(0xFF212529);
-  static const Color comm222222 = Color(0xFF222222);
-  static const Color comm232323 = Color(0xFF232323);
-  static const Color comm2563EB = Color(0xFF2563EB);
-  static const Color comm2F67BF = Color(0xFF2F67BF);
-  static const Color comm343A40 = Color(0xFF343A40);
-  static const Color comm3F3F3F = Color(0xFF3F3F3F);
-  static const Color comm3F72C4 = Color(0xFF3F72C4);
-  static const Color comm495057 = Color(0xFF495057);
-  static const Color comm4A4F57 = Color(0xFF4A4F57);
-  static const Color comm5E5E5E = Color(0xFF5E5E5E);
-  static const Color comm65676B = Color(0xFF65676B);
-  static const Color comm666666 = Color(0xFF666666);
-  static const Color comm6A6A6A = Color(0xFF6A6A6A);
-  static const Color comm6B7280 = Color(0xFF6B7280);
-  static const Color comm6E6E6E = Color(0xFF6E6E6E);
-  static const Color comm707070 = Color(0xFF707070);
-  static const Color comm7A7A7A = Color(0xFF7A7A7A);
-  static const Color comm7E7E7E = Color(0xFF7E7E7E);
-  static const Color comm7E8794 = Color(0xFF7E8794);
-  static const Color comm868E96 = Color(0xFF868E96);
-  static const Color comm888888 = Color(0xFF888888);
-  static const Color comm8A8A8A = Color(0xFF8A8A8A);
-  static const Color comm8B8B8B = Color(0xFF8B8B8B);
-  static const Color comm8F96A3 = Color(0xFF8F96A3);
-  static const Color comm9AA3AF = Color(0xFF9AA3AF);
-  static const Color comm9B9B9B = Color(0xFF9B9B9B);
-  static const Color comm9CA3AF = Color(0xFF9CA3AF);
-  static const Color comm9E9E9E = Color(0xFF9E9E9E);
-  static const Color comm9EA4AF = Color(0xFF9EA4AF);
-  static const Color comm9F9F9F = Color(0xFF9F9F9F);
-  static const Color commADB5BD = Color(0xFFADB5BD);
-  static const Color commB0B0B0 = Color(0xFFB0B0B0);
-  static const Color commB0B7C3 = Color(0xFFB0B7C3);
-  static const Color commB2B2B2 = Color(0xFFB2B2B2);
-  static const Color commB8BEC9 = Color(0xFFB8BEC9);
-  static const Color commC9AE58 = Color(0xFFC9AE58);
-  static const Color commD34B4B = Color(0xFFD34B4B);
-  static const Color commD3D6DB = Color(0xFFD3D6DB);
-  static const Color commD8D8D8 = Color(0xFFD8D8D8);
-  static const Color commDCDCDC = Color(0xFFDCDCDC);
-  static const Color commE34D4D = Color(0xFFE34D4D);
-  static const Color commE5E5E5 = Color(0xFFE5E5E5);
-  static const Color commE6F0FF = Color(0xFFE6F0FF);
-  static const Color commE9ECEF = Color(0xFFE9ECEF);
-  static const Color commEA580C = Color(0xFFEA580C);
-  static const Color commEAF2FF = Color(0xFFEAF2FF);
-  static const Color commEDEDED = Color(0xFFEDEDED);
-  static const Color commEEEEEE = Color(0xFFEEEEEE);
-  static const Color commEFEFEF = Color(0xFFEFEFEF);
-  static const Color commEFF6FF = Color(0xFFEFF6FF);
-  static const Color commF0F0F0 = Color(0xFFF0F0F0);
-  static const Color commF0FDF4 = Color(0xFFF0FDF4);
-  static const Color commF1F3F5 = Color(0xFFF1F3F5);
-  static const Color commF2F3F5 = Color(0xFFF2F3F5);
-  static const Color commF3F4F6 = Color(0xFFF3F4F6);
-  static const Color commF6F6F6 = Color(0xFFF6F6F6);
-  static const Color commF6F7F8 = Color(0xFFF6F7F8);
-  static const Color commF8F9FA = Color(0xFFF8F9FA);
-  static const Color commF9F9F9 = Color(0xFFF9F9F9);
-  static const Color commFFF7ED = Color(0xFFFFF7ED);
-  static const Color commFFF9F0 = Color(0xFFFFF9F0);
-  static const Color commFFFFFF = Color(0xFFFFFFFF);
+  // ─────────────────────────────────────────────────────────────────
+  // Feature Specific Accents
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 커뮤니티 스크랩 아이콘 (골드)
+  static const Color communityScrapAccent = Color(0xFFC9AE58);
 }

@@ -36,7 +36,7 @@ class BoardCommentsSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 18, 28, 0),
           child: Text(
             '댓글 ${comments.length}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.comm6A6A6A),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textTertiary),
           ),
         ),
         if (comments.isEmpty) ...[

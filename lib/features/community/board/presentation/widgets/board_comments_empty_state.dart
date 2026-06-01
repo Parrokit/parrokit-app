@@ -16,7 +16,7 @@ class BoardCommentsEmptyState extends StatelessWidget {
             '첫 댓글을 남겨보세요',
             style: TextStyle(
               fontSize: 16,
-              color: AppColors.comm8B8B8B,
+              color: AppColors.textTertiary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -42,7 +42,7 @@ class BoardCommentsEmptyState extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.comm3F3F3F,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],

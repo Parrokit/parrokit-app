@@ -33,18 +33,18 @@ class VoteStickyCommentBar extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: AppColors.commF8F9FA,
+            color: AppColors.surfaceContainer,
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     '${provider.replyingTo?.authorNickname} 님에게 답글 남기는 중',
-                    style: const TextStyle(fontSize: 13, color: AppColors.comm495057),
+                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                   ),
                 ),
                 GestureDetector(
                   onTap: () => provider.setReplyingTo(null),
-                  child: const Icon(Icons.close, size: 16, color: AppColors.comm868E96),
+                  child: const Icon(Icons.close, size: 16, color: AppColors.textTertiary),
                 ),
               ],
             ),
@@ -59,7 +59,7 @@ class VoteStickyCommentBar extends StatelessWidget {
                 offset: const Offset(0, -4),
               ),
             ],
-            border: const Border(top: BorderSide(color: AppColors.commE9ECEF, width: 1)),
+            border: const Border(top: BorderSide(color: AppColors.surfaceContainerHigh, width: 1)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: SafeArea(
@@ -67,12 +67,12 @@ class VoteStickyCommentBar extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: AppColors.commF1F3F5,
+                  backgroundColor: AppColors.surfaceContainerHigh,
                   backgroundImage: (currentUser?.photoUrl != null && currentUser!.photoUrl!.isNotEmpty)
                       ? CachedNetworkImageProvider(currentUser.photoUrl!)
                       : null,
                   child: (currentUser?.photoUrl == null || currentUser!.photoUrl!.isEmpty)
-                      ? const Icon(Icons.person, color: AppColors.comm9E9E9E, size: 18)
+                      ? const Icon(Icons.person, color: AppColors.textDisabled, size: 18)
                       : null,
                 ),
                 const SizedBox(width: 12),

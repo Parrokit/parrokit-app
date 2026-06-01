@@ -67,7 +67,7 @@ class BoardPostAuthorRow extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.comm6E6E6E,
+                  color: AppColors.textTertiary,
                 ),
               ),
             ],

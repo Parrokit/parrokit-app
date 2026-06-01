@@ -24,7 +24,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.commF1F3F5)),
+        border: Border(top: BorderSide(color: AppColors.surfaceContainerHigh)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -32,7 +32,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
           if (provider.replyingTo != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: AppColors.commF8F9FA,
+              color: AppColors.surfaceContainer,
               child: Row(
                 children: [
                   Text(
@@ -46,7 +46,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                   const Spacer(),
                   GestureDetector(
                     onTap: () => provider.setReplyingTo(null),
-                    child: const Icon(Icons.close, size: 16, color: AppColors.commADB5BD),
+                    child: const Icon(Icons.close, size: 16, color: AppColors.textDisabled),
                   ),
                 ],
               ),
@@ -59,7 +59,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 14,
-                    backgroundColor: AppColors.commF1F3F5,
+                    backgroundColor: AppColors.surfaceContainerHigh,
                     backgroundImage: currentUser?.photoUrl != null
                         ? NetworkImage(currentUser!.photoUrl!)
                         : null,
@@ -74,7 +74,7 @@ class QuestionStickyReplyBar extends StatelessWidget {
                       focusNode: replyFocusNode,
                       decoration: const InputDecoration(
                         hintText: '답글 남기기...',
-                        hintStyle: TextStyle(fontSize: 14, color: AppColors.commADB5BD),
+                        hintStyle: TextStyle(fontSize: 14, color: AppColors.textDisabled),
                         border: InputBorder.none,
                       ),
                       style: const TextStyle(fontSize: 14),

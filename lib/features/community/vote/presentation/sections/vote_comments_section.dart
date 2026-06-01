@@ -32,7 +32,7 @@ class VoteCommentsSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
           child: Text(
             '토론 & 의견 (${comments.length})',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.comm212529),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
         ),
         if (comments.isEmpty)
@@ -63,7 +63,7 @@ class VoteCommentsSection extends StatelessWidget {
       }
 
       if (i < parentComments.length - 1) {
-        widgets.add(const Divider(color: AppColors.commF1F3F5, height: 1));
+        widgets.add(const Divider(color: AppColors.surfaceContainerHigh, height: 1));
       }
     }
     return widgets;
@@ -81,19 +81,19 @@ class VoteCommentsSection extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.fromLTRB(isReply ? 48 : 16, 16, 16, 16),
         decoration: isReply
-            ? const BoxDecoration(border: Border(left: BorderSide(color: AppColors.commEFEFEF, width: 3)))
+            ? const BoxDecoration(border: Border(left: BorderSide(color: AppColors.disabled, width: 3)))
             : null,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.commF1F3F5,
+              backgroundColor: AppColors.surfaceContainerHigh,
               backgroundImage: (comment.authorAvatarUrl != null && comment.authorAvatarUrl!.isNotEmpty && !isDeleted)
                   ? NetworkImage(comment.authorAvatarUrl!)
                   : null,
               child: (comment.authorAvatarUrl == null || comment.authorAvatarUrl!.isEmpty || isDeleted)
-                  ? const Icon(Icons.person, color: AppColors.comm9E9E9E, size: 20)
+                  ? const Icon(Icons.person, color: AppColors.textDisabled, size: 20)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -107,7 +107,7 @@ class VoteCommentsSection extends StatelessWidget {
                     children: [
                       Text(
                         isDeleted ? '알 수 없음' : comment.authorNickname,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.comm212529),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                       ),
                       if (comment.authorId == postAuthorId && !isDeleted) ...[
                         const SizedBox(width: 4),
@@ -133,7 +133,7 @@ class VoteCommentsSection extends StatelessWidget {
                     ),
                   Text(
                     isDeleted ? '삭제된 댓글입니다.' : comment.content,
-                    style: TextStyle(fontSize: 14, color: isDeleted ? AppColors.comm9E9E9E : AppColors.comm495057, height: 1.45),
+                    style: TextStyle(fontSize: 14, color: isDeleted ? AppColors.textDisabled : AppColors.textSecondary, height: 1.45),
                   ),
                   const SizedBox(height: 12),
                   if (!isDeleted)

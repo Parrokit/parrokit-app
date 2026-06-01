@@ -151,7 +151,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
         child: Column(
           children: [
             // Thin top divider
-            Container(color: AppColors.commF1F3F5, height: 1),
+            Container(color: AppColors.surfaceContainerHigh, height: 1),
 
             Expanded(
               child: SingleChildScrollView(
@@ -167,7 +167,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                         hintStyle: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.commADB5BD,
+                          color: AppColors.textDisabled,
                         ),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -177,7 +177,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.comm212529,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -191,7 +191,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                         hintText: '무엇이 궁금하신가요? 단어 번역, 문맥 상 의미, 억양 차이 등 자유롭게 질문해보세요.',
                         hintStyle: TextStyle(
                           fontSize: 16,
-                          color: AppColors.commADB5BD,
+                          color: AppColors.textDisabled,
                           height: 1.5,
                         ),
                         border: InputBorder.none,
@@ -201,7 +201,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                       ),
                       style: const TextStyle(
                         fontSize: 16,
-                        color: AppColors.comm495057,
+                        color: AppColors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -211,7 +211,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.commFFF9F0,
+                        color: AppColors.warningSoft,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: orange600.withValues(alpha: 0.2)),
                       ),
@@ -234,7 +234,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
                             inactiveColor: orange600.withValues(alpha: 0.2),
                             onChanged: (val) => setState(() => _rewardCrackers = val.toInt()),
                           ),
-                          const Divider(height: 32, color: AppColors.commF1F3F5),
+                          const Divider(height: 32, color: AppColors.surfaceContainerHigh),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -263,7 +263,7 @@ class _QuestionWriteScreenState extends State<QuestionWriteScreen> {
             // Bottom Attachment Toolbar
             Container(
               decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.commF1F3F5)),
+                border: Border(top: BorderSide(color: AppColors.surfaceContainerHigh)),
                 color: Colors.white,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

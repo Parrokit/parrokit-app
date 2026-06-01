@@ -18,7 +18,7 @@ class CommunityMenuCategoryLabel extends StatelessWidget {
         style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: AppColors.comm9AA3AF,
+          color: AppColors.textDisabled,
         ),
       ),
     );
@@ -42,7 +42,7 @@ class CommunityMenuSectionTitle extends StatelessWidget {
         style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w700,
-          color: AppColors.comm7E8794,
+          color: AppColors.textTertiary,
         ),
       ),
     );

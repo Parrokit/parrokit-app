@@ -204,17 +204,17 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const backgroundColor = AppColors.commFFFFFF;
-    const likeAccent = AppColors.comm3F72C4; // blue[600] 느낌
-    const scrapAccent = AppColors.commC9AE58; // 부드러운 노랑 느낌
+    const backgroundColor = AppColors.surface;
+    const likeAccent = AppColors.primary; // blue[600] 느낌
+    const scrapAccent = AppColors.communityScrapAccent; // 부드러운 노랑 느낌
     final sendAccent = Colors.blue[600]!;
 
     final provider = context.watch<CommunityProvider>();
     final liked = provider.isCurrentPostLiked;
     final scrapped = provider.isCurrentPostScrapped;
 
-    final likeMetaColor = liked ? likeAccent : AppColors.comm9F9F9F;
-    final likeIconColor = liked ? likeAccent : AppColors.commB2B2B2;
+    final likeMetaColor = liked ? likeAccent : AppColors.textDisabled;
+    final likeIconColor = liked ? likeAccent : AppColors.textDisabled;
 
     final post = provider.posts.firstWhere(
       (p) => p.id == widget.postId,

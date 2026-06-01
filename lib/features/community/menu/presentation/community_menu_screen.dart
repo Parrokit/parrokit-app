@@ -36,7 +36,7 @@ class CommunityMenuScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            const Divider(height: 1, color: AppColors.commEDEDED),
+            const Divider(height: 1, color: AppColors.disabled),
             const SizedBox(height: 12),
             ...List.generate(
               sections.length,

@@ -82,7 +82,7 @@ class BoardPostContentSection extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.comm8F96A3,
+                        color: AppColors.textDisabled,
                       ),
                     ),
                   )

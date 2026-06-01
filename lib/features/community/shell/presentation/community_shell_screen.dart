@@ -179,7 +179,7 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
           ),
         ),
         const SizedBox(height: 11),
-        const Divider(color: AppColors.commEEEEEE, height: 1),
+        const Divider(color: AppColors.disabled, height: 1),
       ],
     );
   }

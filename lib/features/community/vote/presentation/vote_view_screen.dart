@@ -170,7 +170,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: AppColors.commF1F3F5, height: 1),
+          child: Container(color: AppColors.surfaceContainerHigh, height: 1),
         ),
       ),
       body: Column(
@@ -202,7 +202,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                   // Divider
                   Container(
                     height: 8,
-                    color: AppColors.commF1F3F5,
+                    color: AppColors.surfaceContainerHigh,
                   ),
 
                   // Comments section header
@@ -213,7 +213,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.comm212529,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -272,7 +272,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
       }
 
       if (i < parentComments.length - 1) {
-        widgets.add(const Divider(color: AppColors.commF1F3F5, height: 1));
+        widgets.add(const Divider(color: AppColors.surfaceContainerHigh, height: 1));
       }
     }
     return widgets;
@@ -293,7 +293,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
         decoration: isReply
             ? const BoxDecoration(
                 border: Border(
-                  left: BorderSide(color: AppColors.commEFEFEF, width: 3),
+                  left: BorderSide(color: AppColors.disabled, width: 3),
                 ),
               )
             : null,
@@ -302,7 +302,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.commF1F3F5,
+              backgroundColor: AppColors.surfaceContainerHigh,
               backgroundImage: (comment.authorAvatarUrl != null &&
                       comment.authorAvatarUrl!.isNotEmpty &&
                       !isDeleted)
@@ -311,7 +311,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
               child: (comment.authorAvatarUrl == null ||
                       comment.authorAvatarUrl!.isEmpty ||
                       isDeleted)
-                  ? const Icon(Icons.person, color: AppColors.comm9E9E9E, size: 20)
+                  ? const Icon(Icons.person, color: AppColors.textDisabled, size: 20)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -328,7 +328,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppColors.comm212529,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       if (comment.authorId == postAuthorId && !isDeleted) ...[
@@ -379,8 +379,8 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       color: isDeleted
-                          ? AppColors.comm9E9E9E
-                          : AppColors.comm495057,
+                          ? AppColors.textDisabled
+                          : AppColors.textSecondary,
                       height: 1.45,
                     ),
                   ),
@@ -541,20 +541,20 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: AppColors.commF8F9FA,
+            color: AppColors.surfaceContainer,
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     '${provider.replyingTo?.authorNickname} 님에게 답글 남기는 중',
                     style:
-                        const TextStyle(fontSize: 13, color: AppColors.comm495057),
+                        const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                   ),
                 ),
                 GestureDetector(
                   onTap: () => provider.setReplyingTo(null),
                   child: const Icon(Icons.close,
-                      size: 16, color: AppColors.comm868E96),
+                      size: 16, color: AppColors.textTertiary),
                 ),
               ],
             ),
@@ -570,7 +570,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
               ),
             ],
             border: const Border(
-              top: BorderSide(color: AppColors.commE9ECEF, width: 1),
+              top: BorderSide(color: AppColors.surfaceContainerHigh, width: 1),
             ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -579,7 +579,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: AppColors.commF1F3F5,
+                  backgroundColor: AppColors.surfaceContainerHigh,
                   backgroundImage: (currentUser?.photoUrl != null &&
                           currentUser!.photoUrl!.isNotEmpty)
                       ? CachedNetworkImageProvider(currentUser.photoUrl!)
@@ -587,7 +587,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                   child: (currentUser?.photoUrl == null ||
                           currentUser!.photoUrl!.isEmpty)
                       ? const Icon(Icons.person,
-                          color: AppColors.comm9E9E9E, size: 18)
+                          color: AppColors.textDisabled, size: 18)
                       : null,
                 ),
                 const SizedBox(width: 12),

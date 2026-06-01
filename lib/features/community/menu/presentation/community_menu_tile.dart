@@ -35,7 +35,7 @@ class CommunityMenuTile extends StatelessWidget {
       ),
       trailing: const Icon(
         Icons.chevron_right_rounded,
-        color: AppColors.commB0B7C3,
+        color: AppColors.textDisabled,
         size: 24,
       ),
       onTap: onTap ?? () {},
