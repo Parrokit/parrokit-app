@@ -23,6 +23,7 @@ Flutter 작업 유형에 따라 참조할 워크플로 문서를 빠르게 고�
 | ADR/Runbook/Test-case/Changelog 문서화 | `/product-docs-guideline` |
 | 코드 변경 후 문서 반영 | `/product-docs-guideline` |
 | AGENTS/하네스 규칙 갱신 | `/harness-update-guideline` |
+| 로그 규칙, QA 로그 점검 | `/logging-qa-guideline` |
 | 커밋 메시지 스타일 | `/commit-style-guideline` |
 | dev 병합, 브랜치 병합 순서 | `/git-merge-flow-guideline` |
 

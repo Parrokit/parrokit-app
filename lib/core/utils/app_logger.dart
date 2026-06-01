@@ -6,26 +6,12 @@ import 'package:logger/logger.dart';
 class AppLogger {
   // static logger instance
   static final Logger _logger = Logger(
-    printer: PrettyPrinter(
-      methodCount: 2,
-      errorMethodCount: 8,
-      lineLength: 80,
-      colors: false,
-      printEmojis: true,
-      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
-    ),
+    printer: _OneLinePrinter(),
   );
 
   // 스택 트레이스 없는 단순 로거 (라우팅 등)
   static final Logger _simpleLogger = Logger(
-    printer: PrettyPrinter(
-      methodCount: 0,
-      errorMethodCount: 5,
-      lineLength: 80,
-      colors: false,
-      printEmojis: true,
-      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
-    ),
+    printer: _OneLinePrinter(),
   );
 
   static void d(dynamic message, {dynamic error, StackTrace? stackTrace}) =>
@@ -56,4 +42,15 @@ class AppLogger {
 
   /// 라우팅 로그용 (스택 없음)
   static void r(dynamic message) => _simpleLogger.i(message);
+}
+
+class _OneLinePrinter extends LogPrinter {
+  @override
+  List<String> log(LogEvent event) {
+    final level = event.level.name.toUpperCase();
+    final message = event.message;
+    final error = event.error;
+    final line = error == null ? '[$level] $message' : '[$level] $message | error=$error';
+    return [line];
+  }
 }
