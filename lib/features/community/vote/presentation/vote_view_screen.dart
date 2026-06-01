@@ -45,8 +45,9 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
       final user = context.read<UserProvider>().currentUser;
       final provider = context.read<CommunityProvider>();
 
+      await provider.fetchPostDetails(widget.voteId);
+
       final futures = <Future<void>>[
-        provider.fetchPostDetails(widget.voteId),
         provider.fetchComments(widget.voteId, currentUserId: user?.id),
         provider.loadUserActions(widget.voteId, userId: user?.id),
       ];
@@ -135,6 +136,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CommunityProvider>();
+    final currentUser = context.watch<UserProvider>().currentUser;
     final voteItem =
         provider.posts.where((p) => p.id == widget.voteId).firstOrNull;
 
@@ -189,6 +191,27 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       selectedOption: provider.myVotes[voteItem.id],
                       showResult: false,
                       showToggleResultButton: false,
+                      enablePostActions: true,
+                      isPostLiked: provider.isCurrentPostLiked,
+                      isPostScrapped: provider.isCurrentPostScrapped,
+                      onTogglePostLike: () {
+                        if (currentUser == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('로그인이 필요합니다.')),
+                          );
+                          return;
+                        }
+                        provider.toggleLike(voteItem.id, currentUser.id);
+                      },
+                      onTogglePostScrap: () {
+                        if (currentUser == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('로그인이 필요합니다.')),
+                          );
+                          return;
+                        }
+                        provider.toggleScrap(voteItem.id, currentUser.id);
+                      },
                       onSelect: (idx) {
                         final user = context.read<UserProvider>().currentUser;
                         if (user != null) {

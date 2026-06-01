@@ -25,22 +25,16 @@ class ActivityRepositoryImpl implements ActivityRepository {
     try {
       if (activityType == 'written' || activityType == 'written_posted') {
         if (boardType == 'vote' && activityType == 'written') {
-          // 참여한 투표: users/{uid}가 posts/{postId}/voters/{uid}를 가진 투표 글
-          final votersSnapshot = await _firestore
-              .collectionGroup('voters')
-              .where(FieldPath.documentId, isEqualTo: userId)
-              .orderBy('votedAt', descending: true)
-              .get();
-
+          // 참여한 투표: users/{uid}/voted_posts/{postId}
           final latestVotedAtByPostId = <String, DateTime>{};
-          for (final doc in votersSnapshot.docs) {
-            final postId = doc.reference.parent.parent?.id;
-            if (postId == null || postId.isEmpty) continue;
-            final votedAt = _parseDateTime(doc.data()['votedAt']);
-            final prev = latestVotedAtByPostId[postId];
-            if (prev == null || votedAt.isAfter(prev)) {
-              latestVotedAtByPostId[postId] = votedAt;
-            }
+          final votedPostsSnapshot = await _firestore
+              .collection('users')
+              .doc(userId)
+              .collection('voted_posts')
+              .get();
+          for (final votedDoc in votedPostsSnapshot.docs) {
+            latestVotedAtByPostId[votedDoc.id] =
+                _parseDateTime(votedDoc.data()['votedAt']);
           }
 
           final votePosts = await _fetchPostsByIds(latestVotedAtByPostId.keys.toList());

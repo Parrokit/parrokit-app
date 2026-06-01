@@ -21,24 +21,19 @@ class VoteScreen extends StatefulWidget {
 
 class _VoteScreenState extends State<VoteScreen> {
   int _currentCardIndex = 0;
-  final Map<int, bool> _showResults = {};
-  
-  // 방금 화면에서 투표한 게시글 ID (새로고침 시까지 유지됨)
-  final Set<String> _justVotedPostIds = {};
-  bool _isLoadingVotedOnly = false;
+  final Map<String, bool> _showResultsByPostId = {};
+
+  final Set<String> _votedOnlyPostIds = {};
+  bool _isSyncingVoteState = false;
+  int _voteSyncToken = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _justVotedPostIds.clear();
-      final user = context.read<UserProvider>().currentUser;
       final provider = context.read<CommunityProvider>();
       await provider.fetchPosts(postType: 'vote', refresh: true);
-      if (user != null) {
-        await provider.fetchMyVotes(user.id);
-      }
-      await _loadVotedOnlyIfNeeded();
+      await _syncVoteState(loadVotedPosts: widget.selectedFilter == CommunityFilters.vote[2]);
     });
   }
 
@@ -46,8 +41,12 @@ class _VoteScreenState extends State<VoteScreen> {
   void didUpdateWidget(covariant VoteScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedFilter != widget.selectedFilter) {
+      setState(() {
+        _currentCardIndex = 0;
+        _showResultsByPostId.clear();
+      });
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await _loadVotedOnlyIfNeeded();
+        await _syncVoteState(loadVotedPosts: widget.selectedFilter == CommunityFilters.vote[2]);
       });
     }
   }
@@ -56,7 +55,7 @@ class _VoteScreenState extends State<VoteScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<CommunityProvider>();
 
-    if (_isLoadingVotedOnly) {
+    if (_isSyncingVoteState) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -80,16 +79,33 @@ class _VoteScreenState extends State<VoteScreen> {
     );
   }
 
-  Future<void> _loadVotedOnlyIfNeeded() async {
+  Future<void> _syncVoteState({required bool loadVotedPosts}) async {
     if (!mounted) return;
-    if (widget.selectedFilter != CommunityFilters.vote[2]) return;
+    final token = ++_voteSyncToken;
     final user = context.read<UserProvider>().currentUser;
-    if (user == null) return;
+    if (user == null) {
+      if (!mounted || token != _voteSyncToken) return;
+      setState(() {
+        _votedOnlyPostIds.clear();
+        _isSyncingVoteState = false;
+      });
+      return;
+    }
 
-    setState(() => _isLoadingVotedOnly = true);
-    await context.read<CommunityProvider>().ensureVotedPostsLoaded(user.id);
-    if (!mounted) return;
-    setState(() => _isLoadingVotedOnly = false);
+    setState(() => _isSyncingVoteState = true);
+    final provider = context.read<CommunityProvider>();
+    final votedSet = await provider.getVotedPostIdSet(user.id);
+    if (loadVotedPosts) {
+      await provider.ensureVotedPostsLoaded(user.id);
+    }
+    await provider.fetchMyVotes(user.id);
+    if (!mounted || token != _voteSyncToken) return;
+    setState(() {
+      _votedOnlyPostIds
+        ..clear()
+        ..addAll(votedSet);
+      _isSyncingVoteState = false;
+    });
   }
 
   // ── 랜덤 보기 (스와이프) ─────────────────────────────────────────────────────
@@ -116,7 +132,7 @@ class _VoteScreenState extends State<VoteScreen> {
             OutlinedButton(
               onPressed: () => setState(() {
                 _currentCardIndex = 0;
-                _showResults.clear();
+                _showResultsByPostId.clear();
               }),
               child: const Text('처음부터 다시 보기'),
             ),
@@ -151,7 +167,7 @@ class _VoteScreenState extends State<VoteScreen> {
                         child: VoteCard(
                           item: posts[_currentCardIndex],
                           selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
-                          showResult: _showResults[_currentCardIndex] ?? false,
+                          showResult: _showResultsByPostId[posts[_currentCardIndex].id] ?? false,
                           showToggleResultButton: false,
                           onSelect: (idx) {
                             _submitVote(
@@ -160,8 +176,9 @@ class _VoteScreenState extends State<VoteScreen> {
                             );
                           },
                           onToggleResult: () => setState(() {
-                            _showResults[_currentCardIndex] =
-                                !(_showResults[_currentCardIndex] ?? false);
+                            final postId = posts[_currentCardIndex].id;
+                            _showResultsByPostId[postId] =
+                                !(_showResultsByPostId[postId] ?? false);
                           }),
                         ),
                       ),
@@ -215,7 +232,7 @@ class _VoteScreenState extends State<VoteScreen> {
           child: VoteCard(
             item: posts[i],
             selectedOption: context.watch<CommunityProvider>().myVotes[posts[i].id],
-            showResult: _showResults[i] ?? false,
+            showResult: _showResultsByPostId[posts[i].id] ?? false,
             showToggleResultButton: false,
             onSelect: (idx) {
               _submitVote(
@@ -224,7 +241,8 @@ class _VoteScreenState extends State<VoteScreen> {
               );
             },
             onToggleResult: () => setState(() {
-              _showResults[i] = !(_showResults[i] ?? false);
+              final postId = posts[i].id;
+              _showResultsByPostId[postId] = !(_showResultsByPostId[postId] ?? false);
             }),
           ),
         ),
@@ -235,33 +253,30 @@ class _VoteScreenState extends State<VoteScreen> {
   List<Post> _visibleVotePosts(CommunityProvider provider) {
     return provider.posts.where((post) {
       if (post.postType != 'vote') return false;
-      final alreadyVoted = provider.myVotes.containsKey(post.id);
       if (widget.selectedFilter == CommunityFilters.vote[2]) {
-        return alreadyVoted;
+        return _votedOnlyPostIds.contains(post.id);
       }
-      if (alreadyVoted && !_justVotedPostIds.contains(post.id)) {
-        return false;
-      }
-      return true;
+      return !_votedOnlyPostIds.contains(post.id);
     }).toList();
   }
 
-  void _submitVote({
+  Future<void> _submitVote({
     required String postId,
     required int optionIndex,
-  }) {
+  }) async {
     final user = context.read<UserProvider>().currentUser;
     if (user == null) return;
 
-    setState(() {
-      _justVotedPostIds.add(postId);
-    });
+    final success = await context.read<CommunityProvider>().votePost(
+      postId,
+      optionIndex,
+      user.id,
+    );
+    if (!mounted || !success) return;
 
-    context.read<CommunityProvider>().votePost(
-          postId,
-          optionIndex,
-          user.id,
-        );
+    setState(() {
+      _votedOnlyPostIds.add(postId);
+    });
   }
 }
 
@@ -371,6 +386,11 @@ class VoteCard extends StatelessWidget {
   final ValueChanged<int> onSelect;
   final VoidCallback onToggleResult;
   final bool showToggleResultButton;
+  final bool enablePostActions;
+  final bool isPostLiked;
+  final bool isPostScrapped;
+  final VoidCallback? onTogglePostLike;
+  final VoidCallback? onTogglePostScrap;
 
   const VoteCard({
     super.key,
@@ -380,6 +400,11 @@ class VoteCard extends StatelessWidget {
     required this.onSelect,
     required this.onToggleResult,
     this.showToggleResultButton = true,
+    this.enablePostActions = false,
+    this.isPostLiked = false,
+    this.isPostScrapped = false,
+    this.onTogglePostLike,
+    this.onTogglePostScrap,
   });
 
   String _formatTimeAgo(DateTime? time) {
@@ -540,12 +565,29 @@ class VoteCard extends StatelessWidget {
             // ── 좋아요 + 댓글 ──
             Row(
               children: [
-                const Icon(Icons.favorite_border,
-                    size: 24, color: Colors.black87),
+                GestureDetector(
+                  onTap: enablePostActions ? onTogglePostLike : null,
+                  child: Icon(
+                    isPostLiked ? Icons.favorite : Icons.favorite_border,
+                    size: 24,
+                    color: isPostLiked ? Colors.red : Colors.black87,
+                  ),
+                ),
                 const SizedBox(width: 6),
                 Text('${item.likeCount}',
                     style: const TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w600)),
+                if (enablePostActions) ...[
+                  const SizedBox(width: 16),
+                  GestureDetector(
+                    onTap: onTogglePostScrap,
+                    child: Icon(
+                      isPostScrapped ? Icons.bookmark : Icons.bookmark_outline,
+                      size: 22,
+                      color: isPostScrapped ? Colors.amber[700] : Colors.black87,
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 16),
                 const Icon(Icons.chat_bubble_outline,
                     size: 22, color: Colors.black87),

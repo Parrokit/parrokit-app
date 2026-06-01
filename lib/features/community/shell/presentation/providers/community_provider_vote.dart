@@ -1,6 +1,11 @@
 part of 'community_provider.dart';
 
 extension CommunityProviderVote on CommunityProvider {
+  Future<Set<String>> getVotedPostIdSet(String userId) async {
+    final votedPostIds = await _repository.getVotedPostIds(userId);
+    return votedPostIds.toSet();
+  }
+
   // 여러 투표글에 대한 내 투표 기록 일괄 조회 및 캐싱
   Future<void> fetchMyVotes(String userId) async {
     final votePosts = _posts.where((p) => p.postType == 'vote').map((p) => p.id).toList();
@@ -35,12 +40,12 @@ extension CommunityProviderVote on CommunityProvider {
   Future<bool> votePost(String postId, int optionIndex, String userId) async {
     _isLoading = true;
     _errorMessage = null;
+    final previousOption = myVotes[postId];
+    myVotes[postId] = optionIndex;
     _notifyListenersSafe();
 
     try {
       await votePostUseCase.execute(postId, userId, optionIndex);
-
-      myVotes[postId] = optionIndex;
 
       final postIndex = _posts.indexWhere((p) => p.id == postId);
       if (postIndex != -1) {
@@ -62,6 +67,11 @@ extension CommunityProviderVote on CommunityProvider {
       _notifyListenersSafe();
       return true;
     } catch (e) {
+      if (previousOption == null) {
+        myVotes.remove(postId);
+      } else {
+        myVotes[postId] = previousOption;
+      }
       _isLoading = false;
       _errorMessage = e.toString();
       _notifyListenersSafe();
