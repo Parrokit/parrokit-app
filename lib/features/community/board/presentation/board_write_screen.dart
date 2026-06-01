@@ -57,15 +57,16 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
   }
 
   void _showBoardTopicSheet() {
-    final blue600 = Colors.blue[600]!;
+    const blue600 = AppColors.primary;
 
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -101,18 +102,17 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                         Navigator.pop(context);
                       },
                       selectedColor: blue600,
-                      backgroundColor: const Color.fromARGB(255, 250, 250, 250),
+                      backgroundColor: colorScheme.surfaceContainerHigh,
                       labelStyle: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color:
-                            selected ? Colors.white : AppColors.textSecondary,
+                        color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                       ),
                       side: BorderSide(
                         width: 1,
                         color: selected
                             ? blue600
-                            : const Color.fromARGB(255, 255, 255, 255),
+                            : colorScheme.surface,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(50),
@@ -241,6 +241,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     const lineColor = AppColors.disabled;
     const mutedText = AppColors.textDisabled;
     const tipBlue = AppColors.primary;
@@ -253,7 +254,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: colorScheme.surface,
           resizeToAvoidBottomInset: true,
           body: SafeArea(
             child: Column(
@@ -264,8 +265,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: const Icon(Icons.close,
-                            size: 34, color: Colors.black),
+                        icon: Icon(Icons.close, size: 34, color: colorScheme.onSurface),
                       ),
                       const Spacer(),
                       TextButton(
@@ -580,14 +580,14 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.black54,
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.scrim.withValues(alpha: 0.55),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.close,
                                       size: 16,
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                     ),
                                   ),
                                 ),
@@ -670,7 +670,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
         ),
         if (_isImageUploading)
           Container(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: colorScheme.scrim.withValues(alpha: 0.5),
             child: const Center(
               child: CircularProgressIndicator(),
             ),

@@ -30,6 +30,8 @@ class BoardCommentInputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -79,7 +81,7 @@ class BoardCommentInputBar extends StatelessWidget {
                       height: 52,
                       padding: const EdgeInsets.symmetric(horizontal: 18),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 250, 250, 250),
+                        color: colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Row(
@@ -90,16 +92,16 @@ class BoardCommentInputBar extends StatelessWidget {
                               focusNode: focusNode,
                               onChanged: onChanged,
                               onSubmitted: (_) => onSubmit(),
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: '댓글을 입력해주세요.',
-                                fillColor: Color.fromARGB(255, 250, 250, 250),
+                                fillColor: colorScheme.surfaceContainerHigh,
                                 hintStyle: TextStyle(
-                                  color: AppColors.textDisabled,
+                                  color: colorScheme.onSurfaceVariant,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
                                 ),

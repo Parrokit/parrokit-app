@@ -27,11 +27,12 @@ class BoardCommentsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 40),
-        const Divider(height: 1, thickness: 5, color: Color.fromARGB(255, 239, 239, 239)),
+        Divider(height: 1, thickness: 5, color: colorScheme.surfaceContainerHigh),
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 18, 28, 0),
           child: Text(

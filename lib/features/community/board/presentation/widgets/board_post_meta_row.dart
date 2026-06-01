@@ -16,6 +16,7 @@ class BoardPostMetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(
@@ -23,7 +24,7 @@ class BoardPostMetaRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 245, 245, 245),
+              color: colorScheme.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Row(

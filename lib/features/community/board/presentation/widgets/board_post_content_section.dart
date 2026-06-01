@@ -11,6 +11,8 @@ class BoardPostContentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -30,7 +32,7 @@ class BoardPostContentSection extends StatelessWidget {
               fontSize: 16,
               fontWeight: FontWeight.w400,
               height: 1.6,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -52,13 +54,13 @@ class BoardPostContentSection extends StatelessWidget {
                       imageUrl: post.imageUrls[index],
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(color: Colors.white),
+                        baseColor: colorScheme.surfaceContainerHigh,
+                        highlightColor: colorScheme.surfaceContainer,
+                        child: Container(color: colorScheme.surface),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                        color: colorScheme.surfaceContainerHigh,
+                        child: Icon(Icons.broken_image, color: colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ),

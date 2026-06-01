@@ -35,6 +35,7 @@ class BoardCommentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDeleted = comment.status == 'deleted';
     final photoUrl = (isMyComment ? currentUser?.photoUrl : cachedUser?.photoUrl) ?? comment.authorAvatarUrl;
     final displayName = (isMyComment ? currentUser?.displayName : cachedUser?.displayName) ?? comment.authorNickname;
@@ -52,16 +53,16 @@ class BoardCommentItem extends StatelessWidget {
           Container(
             width: isReply ? 36 : 44,
             height: isReply ? 36 : 44,
-            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.disabled),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: colorScheme.surfaceContainerHigh),
             child: ClipOval(
               child: (photoUrl != null && photoUrl.isNotEmpty && !isDeleted)
                   ? CachedNetworkImage(
                       imageUrl: photoUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(color: Colors.white),
+                        baseColor: colorScheme.surfaceContainerHigh,
+                        highlightColor: colorScheme.surfaceContainer,
+                        child: Container(color: colorScheme.surface),
                       ),
                       errorWidget: (context, url, error) => Center(
                         child: Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.textDisabled),
@@ -84,7 +85,7 @@ class BoardCommentItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: isDeleted ? AppColors.textDisabled : AppColors.textPrimary,
+                        color: isDeleted ? AppColors.textDisabled : colorScheme.onSurface,
                       ),
                     ),
                     if (!isDeleted && isAuthor) ...[
@@ -125,7 +126,7 @@ class BoardCommentItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: isDeleted ? AppColors.textDisabled : AppColors.textPrimary,
+                    color: isDeleted ? AppColors.textDisabled : colorScheme.onSurface,
                     height: 1.35,
                   ),
                 ),
@@ -137,11 +138,11 @@ class BoardCommentItem extends StatelessWidget {
                         onTap: onLike,
                         child: Row(
                           children: [
-                            Icon(isLiked ? Icons.favorite : Icons.favorite_border, size: 18, color: isLiked ? Colors.redAccent : AppColors.textDisabled),
+                            Icon(isLiked ? Icons.favorite : Icons.favorite_border, size: 18, color: isLiked ? AppColors.danger : AppColors.textDisabled),
                             const SizedBox(width: 4),
                             Text(
                               comment.likeCount > 0 ? '${comment.likeCount}' : '좋아요',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isLiked ? Colors.redAccent : AppColors.textDisabled),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isLiked ? AppColors.danger : AppColors.textDisabled),
                             ),
                           ],
                         ),

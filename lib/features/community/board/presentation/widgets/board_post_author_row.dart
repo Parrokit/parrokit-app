@@ -23,6 +23,7 @@ class BoardPostAuthorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final photoUrl = (isMe ? currentUser?.photoUrl : cachedAuthor?.photoUrl) ?? post.authorAvatarUrl;
     final displayName = (isMe ? currentUser?.displayName : cachedAuthor?.displayName) ?? post.authorNickname;
 
@@ -33,9 +34,9 @@ class BoardPostAuthorRow extends StatelessWidget {
           Container(
             width: 48,
             height: 48,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Color.fromARGB(255, 220, 220, 220),
+              color: colorScheme.surfaceContainerHigh,
             ),
             child: ClipOval(
               child: (photoUrl != null && photoUrl.isNotEmpty)
@@ -43,14 +44,14 @@ class BoardPostAuthorRow extends StatelessWidget {
                       imageUrl: photoUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(color: Colors.white),
+                        baseColor: colorScheme.surfaceContainerHigh,
+                        highlightColor: colorScheme.surfaceContainer,
+                        child: Container(color: colorScheme.surface),
                       ),
                       errorWidget: (context, url, error) =>
-                          const Icon(Icons.person, size: 30, color: Colors.white),
+                          Icon(Icons.person, size: 30, color: colorScheme.onSurfaceVariant),
                     )
-                  : const Icon(Icons.person, size: 30, color: Colors.white),
+                  : Icon(Icons.person, size: 30, color: colorScheme.onSurfaceVariant),
             ),
           ),
           const SizedBox(width: 10),

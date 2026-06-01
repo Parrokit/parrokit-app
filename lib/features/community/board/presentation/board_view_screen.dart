@@ -130,6 +130,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       isMyComment: isMyComment,
       onDelete: () async {
         final provider = context.read<CommunityProvider>();
+        final colorScheme = Theme.of(context).colorScheme;
         final confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -139,11 +140,11 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                child: Text('취소', style: TextStyle(color: colorScheme.onSurfaceVariant)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('삭제', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                child: const Text('삭제', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -170,6 +171,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
       },
       onDelete: () async {
         final provider = context.read<CommunityProvider>();
+        final colorScheme = Theme.of(context).colorScheme;
         final confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -179,11 +181,11 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('취소', style: TextStyle(color: Colors.grey)),
+                child: Text('취소', style: TextStyle(color: colorScheme.onSurfaceVariant)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('삭제', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                child: const Text('삭제', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -204,10 +206,11 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const backgroundColor = AppColors.surface;
+    final colorScheme = Theme.of(context).colorScheme;
+    final backgroundColor = colorScheme.surface;
     const likeAccent = AppColors.primary; // blue[600] 느낌
     const scrapAccent = AppColors.communityScrapAccent; // 부드러운 노랑 느낌
-    final sendAccent = Colors.blue[600]!;
+    const sendAccent = AppColors.primary;
 
     final provider = context.watch<CommunityProvider>();
     final liked = provider.isCurrentPostLiked;

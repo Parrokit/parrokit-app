@@ -26,14 +26,15 @@ class _BoardActionTileState extends State<BoardActionTile> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final borderColor =
         widget.selected ? widget.accentColor : AppColors.disabled;
     final borderWidth = _pressed ? 2.0 : 1.4;
     final contentColor = widget.selected
-        ? widget.accentColor
-        : const Color.fromARGB(255, 193, 193, 193);
+        ? colorScheme.onPrimary
+        : colorScheme.onSurfaceVariant;
     final labelColor =
-        widget.selected ? widget.accentColor : AppColors.textSecondary;
+        widget.selected ? colorScheme.onPrimary : AppColors.textSecondary;
 
     return AnimatedScale(
       scale: _pressed ? 0.94 : 1,
