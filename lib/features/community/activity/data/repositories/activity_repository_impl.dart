@@ -152,23 +152,6 @@ class ActivityRepositoryImpl implements ActivityRepository {
           activities.add(_commentToActivity(comment, activityType));
         }
 
-        final legacyCommentIds = likesSnapshot.docs
-            .where((doc) {
-              final data = doc.data();
-              final postId = data['postId'] as String?;
-              final commentId = data['commentId'] as String?;
-              return (postId == null || postId.isEmpty) &&
-                  (commentId == null || commentId.isEmpty);
-            })
-            .map((doc) => doc.id)
-            .toList();
-        if (legacyCommentIds.isNotEmpty) {
-          final comments = await _fetchCommentsByIds(legacyCommentIds);
-          for (final comment in comments) {
-            if (comment.postType != boardType) continue;
-            activities.add(_commentToActivity(comment, activityType));
-          }
-        }
       } else if (activityType == 'scraped') {
         // 스크랩한 글
         final scrapsSnapshot = await _firestore
@@ -244,26 +227,6 @@ class ActivityRepositoryImpl implements ActivityRepository {
       }
     }
     return posts;
-  }
-
-  Future<List<Comment>> _fetchCommentsByIds(List<String> commentIds) async {
-    final comments = <Comment>[];
-    for (var i = 0; i < commentIds.length; i += 10) {
-      final end = (i + 10 < commentIds.length) ? i + 10 : commentIds.length;
-      final chunk = commentIds.sublist(i, end);
-      final snapshot = await _firestore
-          .collectionGroup('comments')
-          .where(FieldPath.documentId, whereIn: chunk)
-          .get();
-      for (final doc in snapshot.docs) {
-        comments.add(Comment.fromJson({
-          'id': doc.id,
-          'postId': doc.reference.parent.parent?.id ?? '',
-          ...doc.data(),
-        }));
-      }
-    }
-    return comments;
   }
 
   DateTime _parseDateTime(dynamic value) {

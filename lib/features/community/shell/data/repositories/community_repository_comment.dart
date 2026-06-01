@@ -93,8 +93,6 @@ mixin CommunityRepositoryComment {
       final likeDocId = '${postId}_$commentId';
       final likeRef =
           _firestore.collection('users').doc(userId).collection('comment_likes').doc(likeDocId);
-      final legacyLikeRef =
-          _firestore.collection('users').doc(userId).collection('comment_likes').doc(commentId);
 
       await _firestore.runTransaction((transaction) async {
         if (isLiked) {
@@ -103,18 +101,9 @@ mixin CommunityRepositoryComment {
             'commentId': commentId,
             'createdAt': FieldValue.serverTimestamp(),
           });
-          // Keep backward compatibility for old key format during migration.
-          final legacySnapshot = await transaction.get(legacyLikeRef);
-          if (legacySnapshot.exists) {
-            transaction.delete(legacyLikeRef);
-          }
           transaction.update(commentRef, {'likeCount': FieldValue.increment(1)});
         } else {
           transaction.delete(likeRef);
-          final legacySnapshot = await transaction.get(legacyLikeRef);
-          if (legacySnapshot.exists) {
-            transaction.delete(legacyLikeRef);
-          }
           transaction.update(commentRef, {'likeCount': FieldValue.increment(-1)});
         }
       });
