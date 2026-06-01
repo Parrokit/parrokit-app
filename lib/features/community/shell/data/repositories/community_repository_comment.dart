@@ -1,6 +1,9 @@
 part of 'community_repository.dart';
 
-extension CommunityRepositoryComment on CommunityRepository {
+mixin CommunityRepositoryComment {
+  FirebaseFirestore get _firestore;
+  Future<Map<String, String>> _getAuthorNicknames(Set<String> authorIds);
+
   Future<List<Comment>> getComments(String postId) async {
     try {
       final snapshot = await _firestore

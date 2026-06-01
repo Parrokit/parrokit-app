@@ -1,6 +1,8 @@
 part of 'community_repository.dart';
 
-extension CommunityRepositoryUserAction on CommunityRepository {
+mixin CommunityRepositoryUserAction {
+  FirebaseFirestore get _firestore;
+
   Future<void> incrementViewCount(String postId) async {
     try {
       await _firestore.collection('posts').doc(postId).update({

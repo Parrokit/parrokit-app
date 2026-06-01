@@ -1,6 +1,8 @@
 part of 'community_repository.dart';
 
-extension CommunityRepositoryQuestionVote on CommunityRepository {
+mixin CommunityRepositoryQuestionVote {
+  FirebaseFirestore get _firestore;
+
   Future<Post> addQuestion(Post post, String userId, int requiredCrackers) async {
     try {
       final userRef = _firestore.collection('users').doc(userId);

@@ -1,6 +1,9 @@
 part of 'community_repository.dart';
 
-extension CommunityRepositoryPost on CommunityRepository {
+mixin CommunityRepositoryPost {
+  FirebaseFirestore get _firestore;
+  Future<Map<String, String>> _getAuthorNicknames(Set<String> authorIds);
+
   Future<Post?> getPostById(String postId) async {
     try {
       final doc = await _firestore.collection('posts').doc(postId).get();

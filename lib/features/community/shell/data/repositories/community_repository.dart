@@ -7,7 +7,12 @@ part 'community_repository_comment.dart';
 part 'community_repository_user_action.dart';
 part 'community_repository_question_vote.dart';
 
-class CommunityRepository {
+class CommunityRepository
+    with
+        CommunityRepositoryPost,
+        CommunityRepositoryComment,
+        CommunityRepositoryUserAction,
+        CommunityRepositoryQuestionVote {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<Map<String, String>> _getAuthorNicknames(Set<String> authorIds) async {
