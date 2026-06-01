@@ -11,6 +11,26 @@ extension CommunityProviderVote on CommunityProvider {
     _notifyListenersSafe();
   }
 
+  Future<void> ensureVotedPostsLoaded(String userId) async {
+    final votedPostIds = await _repository.getVotedPostIds(userId);
+    if (votedPostIds.isEmpty) {
+      myVotes.clear();
+      _notifyListenersSafe();
+      return;
+    }
+
+    for (final postId in votedPostIds) {
+      if (_posts.any((p) => p.id == postId)) continue;
+      await fetchPostDetails(postId);
+    }
+
+    final fetchedVotes = await _repository.getMyVotes(userId, votedPostIds);
+    myVotes
+      ..clear()
+      ..addAll(fetchedVotes);
+    _notifyListenersSafe();
+  }
+
   // 투표하기 (낙관적 UI 업데이트 포함)
   Future<bool> votePost(String postId, int optionIndex, String userId) async {
     _isLoading = true;

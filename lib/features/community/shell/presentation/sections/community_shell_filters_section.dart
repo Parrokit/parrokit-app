@@ -156,8 +156,12 @@ class _VoteToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isRandom = selectedVoteFilter == CommunityFilters.vote[0];
     const h = 36.0;
+    final selectedIndex = CommunityFilters.vote.indexOf(selectedVoteFilter).clamp(
+      0,
+      CommunityFilters.vote.length - 1,
+    );
+    final widthFactor = 1 / CommunityFilters.vote.length;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -166,11 +170,11 @@ class _VoteToggle extends StatelessWidget {
         child: Stack(
           children: [
             AnimatedAlign(
-              alignment: isRandom ? Alignment.centerLeft : Alignment.centerRight,
+              alignment: Alignment(-1 + (selectedIndex * 2 / (CommunityFilters.vote.length - 1)), 0),
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
               child: FractionallySizedBox(
-                widthFactor: 0.5,
+                widthFactor: widthFactor,
                 child: Container(
                   height: h,
                   decoration: BoxDecoration(color: Colors.blue[600], borderRadius: BorderRadius.circular(6)),
@@ -178,46 +182,42 @@ class _VoteToggle extends StatelessWidget {
               ),
             ),
             Row(
-              children: [
-                Expanded(
+              children: List.generate(CommunityFilters.vote.length, (index) {
+                final filter = CommunityFilters.vote[index];
+                final isSelected = selectedVoteFilter == filter;
+                final icon = switch (index) {
+                  0 => Icons.style_rounded,
+                  1 => Icons.menu,
+                  _ => Icons.how_to_vote_rounded,
+                };
+                return Expanded(
                   child: GestureDetector(
-                    onTap: () => onVoteFilterSelected(CommunityFilters.vote[0]),
+                    onTap: () => onVoteFilterSelected(filter),
                     behavior: HitTestBehavior.opaque,
                     child: Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.style_rounded, size: 16, color: isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                          Icon(
+                            icon,
+                            size: 16,
+                            color: isSelected ? Colors.white : cs.onSurface.withValues(alpha: 0.4),
+                          ),
                           const SizedBox(width: 6),
                           Text(
-                            CommunityFilters.vote[0],
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
+                            filter,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : cs.onSurface.withValues(alpha: 0.4),
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => onVoteFilterSelected(CommunityFilters.vote[1]),
-                    behavior: HitTestBehavior.opaque,
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.menu, size: 16, color: !isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
-                          const SizedBox(width: 6),
-                          Text(
-                            CommunityFilters.vote[1],
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: !isRandom ? Colors.white : cs.onSurface.withValues(alpha: 0.4)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                );
+              }),
             ),
           ],
         ),

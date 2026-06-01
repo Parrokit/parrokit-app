@@ -152,4 +152,22 @@ mixin CommunityRepositoryQuestionVote {
       return myVotes;
     }
   }
+
+  Future<List<String>> getVotedPostIds(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collectionGroup('voters')
+          .where(FieldPath.documentId, isEqualTo: userId)
+          .orderBy('votedAt', descending: true)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => doc.reference.parent.parent?.id)
+          .whereType<String>()
+          .toSet()
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
 }

@@ -25,6 +25,7 @@ class _VoteScreenState extends State<VoteScreen> {
   
   // 방금 화면에서 투표한 게시글 ID (새로고침 시까지 유지됨)
   final Set<String> _justVotedPostIds = {};
+  bool _isLoadingVotedOnly = false;
 
   @override
   void initState() {
@@ -37,12 +38,28 @@ class _VoteScreenState extends State<VoteScreen> {
       if (user != null) {
         await provider.fetchMyVotes(user.id);
       }
+      await _loadVotedOnlyIfNeeded();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant VoteScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedFilter != widget.selectedFilter) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _loadVotedOnlyIfNeeded();
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CommunityProvider>();
+
+    if (_isLoadingVotedOnly) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final posts = _visibleVotePosts(provider);
 
     if (provider.isLoading && posts.isEmpty) {
@@ -59,8 +76,20 @@ class _VoteScreenState extends State<VoteScreen> {
           FadeTransition(opacity: anim, child: child),
       child: widget.selectedFilter == CommunityFilters.vote[0]
           ? _buildRandomView(posts, key: const ValueKey('random'))
-          : _buildListView(posts, key: const ValueKey('list')),
+          : _buildListView(posts, key: ValueKey('list_${widget.selectedFilter}')),
     );
+  }
+
+  Future<void> _loadVotedOnlyIfNeeded() async {
+    if (!mounted) return;
+    if (widget.selectedFilter != CommunityFilters.vote[2]) return;
+    final user = context.read<UserProvider>().currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoadingVotedOnly = true);
+    await context.read<CommunityProvider>().ensureVotedPostsLoaded(user.id);
+    if (!mounted) return;
+    setState(() => _isLoadingVotedOnly = false);
   }
 
   // ── 랜덤 보기 (스와이프) ─────────────────────────────────────────────────────
@@ -207,6 +236,9 @@ class _VoteScreenState extends State<VoteScreen> {
     return provider.posts.where((post) {
       if (post.postType != 'vote') return false;
       final alreadyVoted = provider.myVotes.containsKey(post.id);
+      if (widget.selectedFilter == CommunityFilters.vote[2]) {
+        return alreadyVoted;
+      }
       if (alreadyVoted && !_justVotedPostIds.contains(post.id)) {
         return false;
       }
