@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
@@ -140,6 +139,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
     );
 
     if (confirm != true) return;
+    if (!mounted) return;
 
     setState(() => _isAccepting = true);
 
@@ -257,16 +257,12 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
     final isMe = currentUser != null && question.authorId == currentUser.id;
     final authorName = isMe
         ? (currentUser.displayName ?? question.authorNickname)
-        : ((question.authorId != null
-                ? provider.getCachedUser(question.authorId!)?.displayName
-                : null) ??
+        : (provider.getCachedUser(question.authorId)?.displayName ??
             question.authorNickname);
 
     final avatarUrl = isMe
         ? (currentUser.photoUrl ?? question.authorAvatarUrl)
-        : ((question.authorId != null
-                ? provider.getCachedUser(question.authorId!)?.photoUrl
-                : null) ??
+        : (provider.getCachedUser(question.authorId)?.photoUrl ??
             question.authorAvatarUrl);
 
     final isLiked = provider.isCurrentPostLiked;

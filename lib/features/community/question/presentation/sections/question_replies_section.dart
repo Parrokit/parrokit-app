@@ -170,7 +170,7 @@ class QuestionRepliesSection extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (!isReply && isMe && question.questionStatus == 'waiting' && answer.authorId != currentUser?.id)
+                    if (!isReply && isMe && question.questionStatus == 'waiting' && answer.authorId != question.authorId)
                       GestureDetector(
                         onTap: () => onAcceptAnswer(answer),
                         child: Container(

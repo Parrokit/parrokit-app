@@ -280,8 +280,6 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
   Widget _buildCommentItem(Comment comment, String postAuthorId,
       {required bool isReply}) {
     final currentUser = context.read<UserProvider>().currentUser;
-    final isMyComment =
-        currentUser != null && comment.authorId == currentUser.id;
     final isDeleted = comment.status == 'deleted';
     final provider = context.watch<CommunityProvider>();
     final isLiked = provider.likedCommentIds.contains(comment.id);

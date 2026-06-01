@@ -26,13 +26,13 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
 
   List<String> _tags = [];
   bool _isTagInputActive = false;
-  bool _isImageUploading = false;
+  final bool _isImageUploading = false;
   final ImagePicker _picker = ImagePicker();
   
   // 수정 모드일 때 유지되는 기존 파이어베이스 이미지 URL들
   List<String> _existingImageUrls = [];
   // 갤러리에서 새로 추가한 로컬 파일들
-  List<XFile> _selectedImages = [];
+  final List<XFile> _selectedImages = [];
 
   bool get _isEditMode => widget.editPost != null;
 
@@ -625,16 +625,15 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                         false, // 아이클라우드 및 메타데이터 로드 실패 버그 우회용
                                   );
                                 } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              '지원하지 않는 형식이거나 깨진 이미지입니다. 다른 사진을 골라주세요.')),
-                                    );
-                                  }
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            '지원하지 않는 형식이거나 깨진 이미지입니다. 다른 사진을 골라주세요.')),
+                                  );
                                   return;
                                 }
-                                if (images == null || images.isEmpty) return;
+                                if (images.isEmpty) return;
 
                                 setState(() {
                                   _selectedImages.addAll(images!);
@@ -669,7 +668,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
         ),
         if (_isImageUploading)
           Container(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             child: const Center(
               child: CircularProgressIndicator(),
             ),
