@@ -124,23 +124,30 @@ class _QuestionTab extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4.0),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? Colors.blue[600]! : Colors.transparent,
-              width: 2.0,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? Colors.black : Colors.grey[500],
+              ),
             ),
-          ),
-        ),
-        child: Center(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-              color: isSelected ? Colors.black : Colors.grey[500],
+            const SizedBox(height: 4),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              height: 2.0,
+              width: isSelected ? 64 : 0,
+              decoration: BoxDecoration(
+                color: Colors.blue[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -188,7 +195,8 @@ class _VoteToggle extends StatelessWidget {
                 final icon = switch (index) {
                   0 => Icons.style_rounded,
                   1 => Icons.menu,
-                  _ => Icons.how_to_vote_rounded,
+                  2 => Icons.how_to_vote_rounded,
+                  _ => Icons.timer_off_rounded,
                 };
                 return Expanded(
                   child: GestureDetector(

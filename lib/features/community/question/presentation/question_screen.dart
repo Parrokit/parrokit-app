@@ -18,17 +18,43 @@ class QuestionScreen extends StatefulWidget {
 }
 
 class _QuestionScreenState extends State<QuestionScreen> {
+  bool _isInitialLoading = true;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommunityProvider>().fetchPosts(postType: 'question', refresh: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadInitialQuestions();
+      if (!mounted) return;
+      setState(() {
+        _isInitialLoading = false;
+      });
     });
+  }
+
+  Future<void> _loadInitialQuestions() async {
+    final provider = context.read<CommunityProvider>();
+
+    // 다른 탭 로딩과 경합 중이면 질문 fetch가 _isLoading guard로 스킵될 수 있어
+    // 질문 초기화 전용 로딩은 반드시 실제 fetch가 수행된 뒤 끝낸다.
+    while (mounted && provider.isLoading) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+
+    if (!mounted) return;
+    await provider.fetchPosts(
+      postType: 'question',
+      refresh: true,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CommunityProvider>();
+
+    if (_isInitialLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     if (provider.isLoading && provider.posts.isEmpty) {
       return const Center(child: CircularProgressIndicator());

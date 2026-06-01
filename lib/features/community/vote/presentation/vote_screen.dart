@@ -24,8 +24,8 @@ class _VoteScreenState extends State<VoteScreen> {
   final Map<String, bool> _showResultsByPostId = {};
 
   final Set<String> _votedOnlyPostIds = {};
-  bool _isSyncingVoteState = false;
   int _voteSyncToken = 0;
+  bool _isVoteStateReady = false;
 
   @override
   void initState() {
@@ -34,6 +34,10 @@ class _VoteScreenState extends State<VoteScreen> {
       final provider = context.read<CommunityProvider>();
       await provider.fetchPosts(postType: 'vote', refresh: true);
       await _syncVoteState(loadVotedPosts: widget.selectedFilter == CommunityFilters.vote[2]);
+      if (!mounted) return;
+      setState(() {
+        _isVoteStateReady = true;
+      });
     });
   }
 
@@ -44,9 +48,14 @@ class _VoteScreenState extends State<VoteScreen> {
       setState(() {
         _currentCardIndex = 0;
         _showResultsByPostId.clear();
+        _isVoteStateReady = false;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await _syncVoteState(loadVotedPosts: widget.selectedFilter == CommunityFilters.vote[2]);
+        if (!mounted) return;
+        setState(() {
+          _isVoteStateReady = true;
+        });
       });
     }
   }
@@ -54,11 +63,9 @@ class _VoteScreenState extends State<VoteScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CommunityProvider>();
-
-    if (_isSyncingVoteState) {
+    if (!_isVoteStateReady) {
       return const Center(child: CircularProgressIndicator());
     }
-
     final posts = _visibleVotePosts(provider);
 
     if (provider.isLoading && posts.isEmpty) {
@@ -69,14 +76,30 @@ class _VoteScreenState extends State<VoteScreen> {
       return const Center(child: Text('진행 중인 투표가 없습니다.'));
     }
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      transitionBuilder: (child, anim) =>
-          FadeTransition(opacity: anim, child: child),
-      child: widget.selectedFilter == CommunityFilters.vote[0]
-          ? _buildRandomView(posts, key: const ValueKey('random'))
-          : _buildListView(posts, key: ValueKey('list_${widget.selectedFilter}')),
+    return RefreshIndicator(
+      onRefresh: _refreshVotes,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 160),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeOut,
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
+        child: widget.selectedFilter == CommunityFilters.vote[0]
+            ? _buildRandomView(posts, key: const ValueKey('random'))
+            : _buildListView(posts, key: ValueKey('list_${widget.selectedFilter}')),
+      ),
     );
+  }
+
+  Future<void> _refreshVotes() async {
+    final provider = context.read<CommunityProvider>();
+    await provider.fetchPosts(postType: 'vote', refresh: true);
+    if (!mounted) return;
+    setState(() {
+      _currentCardIndex = 0;
+      _showResultsByPostId.clear();
+    });
+    await _syncVoteState(loadVotedPosts: widget.selectedFilter == CommunityFilters.vote[2]);
   }
 
   Future<void> _syncVoteState({required bool loadVotedPosts}) async {
@@ -87,12 +110,9 @@ class _VoteScreenState extends State<VoteScreen> {
       if (!mounted || token != _voteSyncToken) return;
       setState(() {
         _votedOnlyPostIds.clear();
-        _isSyncingVoteState = false;
       });
       return;
     }
-
-    setState(() => _isSyncingVoteState = true);
     final provider = context.read<CommunityProvider>();
     final votedSet = await provider.getVotedPostIdSet(user.id);
     if (loadVotedPosts) {
@@ -109,7 +129,6 @@ class _VoteScreenState extends State<VoteScreen> {
       _votedOnlyPostIds
         ..clear()
         ..addAll(votedSet);
-      _isSyncingVoteState = false;
     });
   }
 
@@ -147,92 +166,74 @@ class _VoteScreenState extends State<VoteScreen> {
       );
     }
 
-    return Column(
+    return SingleChildScrollView(
       key: key,
-      children: [
-        // 카드 영역 (구역 높이 고정, 카드는 내용에 맞춤)
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: constraints.maxHeight - 16,
-                    ),
-                    child: _SwipeableCard(
-                      key: ValueKey(_currentCardIndex),
-                      enabled: widget.swipeEnabled,
-                      onDismiss: () => setState(() => _currentCardIndex++),
-                      child: GestureDetector(
-                        onTap: () {
-                          context.push(AppRoutes.communityVoteViewPathOf(posts[_currentCardIndex].id));
-                        },
-                        child: VoteCard(
-                          item: posts[_currentCardIndex],
-                          selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
-                          showResult: _showResultsByPostId[posts[_currentCardIndex].id] ?? false,
-                          showToggleResultButton: false,
-                          enablePostActions: true,
-                          isPostLiked: provider.isPostLiked(posts[_currentCardIndex].id),
-                          isPostScrapped: provider.isPostScrapped(posts[_currentCardIndex].id),
-                          onTogglePostLike: () {
-                            final user = context.read<UserProvider>().currentUser;
-                            if (user == null) return;
-                            context.read<CommunityProvider>().toggleLike(posts[_currentCardIndex].id, user.id);
-                          },
-                          onTogglePostScrap: () {
-                            final user = context.read<UserProvider>().currentUser;
-                            if (user == null) return;
-                            context.read<CommunityProvider>().toggleScrap(posts[_currentCardIndex].id, user.id);
-                          },
-                          onSelect: (idx) {
-                            _submitVote(
-                              postId: posts[_currentCardIndex].id,
-                              optionIndex: idx,
-                            );
-                          },
-                          onToggleResult: () => setState(() {
-                            final postId = posts[_currentCardIndex].id;
-                            _showResultsByPostId[postId] =
-                                !(_showResultsByPostId[postId] ?? false);
-                          }),
-                        ),
-                      ),
-                    ),
-                  ),
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: GestureDetector(
+              onTap: () {
+                context.push(AppRoutes.communityVoteViewPathOf(posts[_currentCardIndex].id));
+              },
+              child: VoteCard(
+                item: posts[_currentCardIndex],
+                selectedOption: context.watch<CommunityProvider>().myVotes[posts[_currentCardIndex].id],
+                showResult: _showResultsByPostId[posts[_currentCardIndex].id] ?? false,
+                showToggleResultButton: false,
+                enablePostActions: true,
+                isPostLiked: provider.isPostLiked(posts[_currentCardIndex].id),
+                isPostScrapped: provider.isPostScrapped(posts[_currentCardIndex].id),
+                onTogglePostLike: () {
+                  final user = context.read<UserProvider>().currentUser;
+                  if (user == null) return;
+                  context.read<CommunityProvider>().toggleLike(posts[_currentCardIndex].id, user.id);
+                },
+                onTogglePostScrap: () {
+                  final user = context.read<UserProvider>().currentUser;
+                  if (user == null) return;
+                  context.read<CommunityProvider>().toggleScrap(posts[_currentCardIndex].id, user.id);
+                },
+                onSelect: (idx) {
+                  _submitVote(
+                    postId: posts[_currentCardIndex].id,
+                    optionIndex: idx,
+                  );
+                },
+                onToggleResult: () => setState(() {
+                  final postId = posts[_currentCardIndex].id;
+                  _showResultsByPostId[postId] =
+                      !(_showResultsByPostId[postId] ?? false);
+                }),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _NavButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  enabled: _currentCardIndex > 0,
+                  onTap: _currentCardIndex > 0
+                      ? () => setState(() => _currentCardIndex--)
+                      : null,
                 ),
-              );
-            },
+                const SizedBox(width: 36),
+                _NavButton(
+                  icon: Icons.arrow_forward_ios_rounded,
+                  enabled: _currentCardIndex < posts.length,
+                  onTap: _currentCardIndex < posts.length
+                      ? () => setState(() => _currentCardIndex++)
+                      : null,
+                ),
+              ],
+            ),
           ),
-        ),
-        // 하단 고정 네비게이션
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _NavButton(
-                icon: Icons.arrow_back_ios_new_rounded,
-                enabled: _currentCardIndex > 0,
-                onTap: _currentCardIndex > 0
-                    ? () => setState(() => _currentCardIndex--)
-                    : null,
-              ),
-              const SizedBox(width: 36),
-              _NavButton(
-                icon: Icons.arrow_forward_ios_rounded,
-                enabled: _currentCardIndex < posts.length,
-                onTap: _currentCardIndex < posts.length
-                    ? () => setState(() => _currentCardIndex++)
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -241,6 +242,7 @@ class _VoteScreenState extends State<VoteScreen> {
     final provider = context.watch<CommunityProvider>();
     return ListView.builder(
       key: key,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       itemCount: posts.length,
       itemBuilder: (context, i) => Padding(
@@ -284,11 +286,17 @@ class _VoteScreenState extends State<VoteScreen> {
   }
 
   List<Post> _visibleVotePosts(CommunityProvider provider) {
+    final now = DateTime.now();
     return provider.posts.where((post) {
       if (post.postType != 'vote') return false;
+      final isExpired = post.voteEndTime != null && post.voteEndTime!.isBefore(now);
+      if (widget.selectedFilter == CommunityFilters.vote[3]) {
+        return isExpired;
+      }
       if (widget.selectedFilter == CommunityFilters.vote[2]) {
         return _votedOnlyPostIds.contains(post.id);
       }
+      if (isExpired) return false;
       return !_votedOnlyPostIds.contains(post.id);
     }).toList();
   }
@@ -345,67 +353,6 @@ class _NavButton extends StatelessWidget {
             color: enabled ? Colors.white : Colors.grey,
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ─── 스와이프 래퍼 ─────────────────────────────────────────────────────────────
-class _SwipeableCard extends StatefulWidget {
-  final Widget child;
-  final VoidCallback onDismiss;
-  final bool enabled;
-  const _SwipeableCard(
-      {super.key,
-      required this.child,
-      required this.onDismiss,
-      this.enabled = true});
-
-  @override
-  State<_SwipeableCard> createState() => _SwipeableCardState();
-}
-
-class _SwipeableCardState extends State<_SwipeableCard> {
-  Offset _offset = Offset.zero;
-  bool _dragging = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    final angle = (_offset.dx / w).clamp(-1.0, 1.0) * 0.08;
-
-    return GestureDetector(
-      onPanStart:
-          widget.enabled ? (_) => setState(() => _dragging = true) : null,
-      onPanUpdate:
-          widget.enabled ? (d) => setState(() => _offset += d.delta) : null,
-      onPanEnd: widget.enabled
-          ? (details) {
-              final velocity = details.velocity.pixelsPerSecond.dx.abs();
-              // 화면의 20% 이상 드래그 or 빠른 flick(800px/s 이상)
-              final shouldDismiss =
-                  _offset.dx.abs() > w * 0.10 || velocity > 800;
-              if (shouldDismiss) {
-                setState(
-                    () => _offset = Offset(_offset.dx > 0 ? 900 : -900, 0));
-                Future.delayed(
-                    const Duration(milliseconds: 160), widget.onDismiss);
-              } else {
-                setState(() {
-                  _offset = Offset.zero;
-                  _dragging = false;
-                });
-              }
-            }
-          : null,
-      child: AnimatedContainer(
-        duration: _dragging ? Duration.zero : const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-        transform: Matrix4.identity()
-          ..translateByDouble(_offset.dx, _offset.dy * 0.2, 0, 1)
-          ..rotateZ(angle),
-        transformAlignment: Alignment.bottomCenter,
-        child: widget.child,
       ),
     );
   }
