@@ -11,12 +11,16 @@
 // Presentation Layer > Screens
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:parrokit/features/community/board/presentation/board_write_screen.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'vote_screen.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_block_actions.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 
 class VoteViewScreen extends StatefulWidget {
   final String voteId;
@@ -213,6 +217,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                         }
                         provider.toggleScrap(voteItem.id, currentUser.id);
                       },
+                      onMorePressed: () => _showVoteOptionsSheet(voteItem),
                       onSelect: (idx) {
                         final user = context.read<UserProvider>().currentUser;
                         if (user != null) {
@@ -310,6 +315,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
     final isDeleted = comment.status == 'deleted';
     final provider = context.watch<CommunityProvider>();
     final isLiked = provider.likedCommentIds.contains(comment.id);
+    final isBlocked = provider.isAuthorBlocked(comment.authorId);
 
     return GestureDetector(
       onLongPress: () => _showCommentOptionsSheet(comment),
@@ -331,13 +337,15 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
               backgroundColor: AppColors.surfaceContainerHigh,
               backgroundImage: (comment.authorAvatarUrl != null &&
                       comment.authorAvatarUrl!.isNotEmpty &&
-                      !isDeleted)
+                      !isDeleted &&
+                      !isBlocked)
                   ? CachedNetworkImageProvider(comment.authorAvatarUrl!)
                   : null,
               child: (comment.authorAvatarUrl == null ||
                       comment.authorAvatarUrl!.isEmpty ||
-                      isDeleted)
-                  ? const Icon(Icons.person, color: AppColors.textDisabled, size: 20)
+                      isDeleted ||
+                      isBlocked)
+                  ? Icon(isBlocked ? Icons.block_rounded : Icons.person, color: AppColors.textDisabled, size: 20)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -346,18 +354,21 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        isDeleted ? '알 수 없음' : comment.authorNickname,
+                        isDeleted
+                            ? '알 수 없음'
+                            : isBlocked
+                                ? '차단한 사용자'
+                                : comment.authorNickname,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                           color: colorScheme.onSurface,
                         ),
                       ),
-                      if (comment.authorId == postAuthorId && !isDeleted) ...[
+                      if (comment.authorId == postAuthorId && !isDeleted && !isBlocked) ...[
                         const SizedBox(width: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -377,7 +388,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                         ),
                       ],
                       const Spacer(),
-                      if (comment.createdAt != null)
+                      if (comment.createdAt != null && !isBlocked)
                         Text(
                           _formatTimeAgo(comment.createdAt),
                           style: TextStyle(
@@ -385,10 +396,20 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
+                      if (!isBlocked) ...[
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(Icons.more_vert_rounded, size: 18),
+                          color: colorScheme.onSurfaceVariant,
+                          onPressed: () => _showCommentOptionsSheet(comment),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
-                  if (isReply && comment.replyToNickname != null && !isDeleted)
+                if (isReply && comment.replyToNickname != null && !isDeleted && !isBlocked)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
@@ -401,7 +422,11 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       ),
                     ),
                   Text(
-                    isDeleted ? '삭제된 댓글입니다.' : comment.content,
+                    isDeleted
+                        ? '삭제된 댓글입니다.'
+                        : isBlocked
+                            ? '차단된 사용자의 댓글입니다.'
+                            : comment.content,
                     style: TextStyle(
                       fontSize: 14,
                       color: isDeleted
@@ -411,7 +436,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (!isDeleted)
+                  if (!isDeleted && !isBlocked)
                     Row(
                       children: [
                         GestureDetector(
@@ -474,85 +499,101 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
     final currentUser = context.read<UserProvider>().currentUser;
     final isMyComment =
         currentUser != null && comment.authorId == currentUser.id;
-    final provider = context.read<CommunityProvider>();
-
-    showModalBottomSheet(
+    showCommunityOptionsSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (isMyComment)
-                ListTile(
-                  leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-                  title:
-                      const Text('삭제하기', style: TextStyle(color: AppColors.danger)),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('댓글 삭제'),
-                        content: const Text('정말로 이 댓글을 삭제하시겠습니까?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('취소'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('삭제',
-                                style: TextStyle(color: AppColors.danger)),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirm == true) {
-                      await provider.deleteComment(widget.voteId, comment.id);
-                    }
-                  },
-                ),
-              if (!isMyComment)
-                ListTile(
-                  leading: const Icon(Icons.reply_rounded),
-                  title: const Text('답글 달기'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    provider.setReplyingTo(comment);
-                    _focusCommentInput();
-                  },
-                ),
-              if (!isMyComment)
-                ListTile(
-                  leading: const Icon(Icons.report_problem_outlined),
-                  title: const Text('신고하기'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('신고가 접수되었습니다.')),
-                    );
-                  },
-                ),
-              const SizedBox(height: 16),
-            ],
+      title: '댓글 옵션',
+      actions: [
+        if (isMyComment)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await context.read<CommunityProvider>().deleteComment(widget.voteId, comment.id);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
+              );
+            },
           ),
-        );
-      },
+        if (!isMyComment)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: comment.authorId,
+            targetDisplayName: comment.authorNickname,
+          ),
+        if (!isMyComment)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showVoteOptionsSheet(Post vote) async {
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyPost = currentUser != null && vote.authorId == currentUser.id;
+
+    await showCommunityOptionsSheet(
+      context: context,
+      title: '투표 옵션',
+      actions: [
+        if (isMyPost)
+          CommunityOptionAction(
+            label: '수정',
+            icon: Icons.edit_outlined,
+            onTap: () async {
+              if (!mounted) return;
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BoardWriteScreen(editPost: vote),
+                ),
+              );
+            },
+          ),
+        if (isMyPost)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await context.read<CommunityProvider>().deletePost(vote.id);
+              if (!mounted) return;
+              if (deleted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('투표가 삭제되었습니다.')),
+                );
+                Navigator.maybePop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('삭제에 실패했습니다.')),
+                );
+              }
+            },
+          ),
+        if (!isMyPost)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: vote.authorId,
+            targetDisplayName: vote.authorNickname,
+          ),
+        if (!isMyPost)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
     );
   }
 

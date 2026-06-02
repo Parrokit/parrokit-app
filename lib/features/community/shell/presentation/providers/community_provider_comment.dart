@@ -12,7 +12,9 @@ extension CommunityProviderComment on CommunityProvider {
       final comments = await _repository.getComments(postId);
       _currentPostComments.addAll(comments);
 
-      await _fetchMissingUsers(comments.map((c) => c.authorId).whereType<String>());
+      await _fetchMissingUsers(
+        comments.map((c) => c.authorId).whereType<String>(),
+      );
 
       if (currentUserId != null) {
         _likedCommentIds = await _repository.getLikedCommentIds(currentUserId);

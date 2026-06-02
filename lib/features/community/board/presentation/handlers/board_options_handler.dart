@@ -1,55 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/data/models/post.dart';
-import 'package:parrokit/features/community/board/presentation/widgets/board_sheet_action.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_block_actions.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 
 class BoardOptionsHandler {
   static Future<void> showCommentOptionsSheet({
     required BuildContext context,
     required bool isMyComment,
+    required String blockedUserId,
+    required String? blockedUserDisplayName,
     required Future<bool> Function() onDelete,
   }) async {
-    await showModalBottomSheet<void>(
+    await showCommunityOptionsSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isMyComment)
-                  BoardSheetAction(
-                    label: '삭제',
-                    isDestructive: true,
-                    onTap: () async {
-                      Navigator.pop(sheetContext);
-                      final deleted = await onDelete();
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
-                      );
-                    },
-                  ),
-                if (!isMyComment)
-                  BoardSheetAction(
-                    label: '신고',
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('신고가 접수되었습니다.')),
-                      );
-                    },
-                  ),
-                BoardSheetAction(label: '닫기', onTap: () => Navigator.pop(sheetContext)),
-              ],
-            ),
+      title: '댓글 옵션',
+      actions: [
+        if (isMyComment)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await onDelete();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
+              );
+            },
           ),
-        );
-      },
+        if (!isMyComment)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: blockedUserId,
+            targetDisplayName: blockedUserDisplayName,
+          ),
+        if (!isMyComment)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
     );
   }
 
@@ -60,62 +55,55 @@ class BoardOptionsHandler {
     required VoidCallback onEdit,
     required Future<bool> Function() onDelete,
   }) async {
-    await showModalBottomSheet<void>(
+    await showCommunityOptionsSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isMyPost) ...[
-                  BoardSheetAction(
-                    label: '수정',
-                    onTap: () {
-                      Navigator.pop(sheetContext);
-                      onEdit();
-                    },
-                  ),
-                  BoardSheetAction(
-                    label: '삭제',
-                    isDestructive: true,
-                    onTap: () async {
-                      Navigator.pop(sheetContext);
-                      final deleted = await onDelete();
-                      if (!context.mounted) return;
-                      if (deleted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('게시글이 삭제되었습니다.')),
-                        );
-                        Navigator.maybePop(context);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('삭제에 실패했습니다.')),
-                        );
-                      }
-                    },
-                  ),
-                ],
-                BoardSheetAction(
-                  label: '신고',
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('신고가 접수되었습니다.')),
-                    );
-                  },
-                ),
-                BoardSheetAction(label: '닫기', onTap: () => Navigator.pop(sheetContext)),
-              ],
-            ),
+      title: '글 옵션',
+      actions: [
+        if (isMyPost)
+          CommunityOptionAction(
+            label: '수정',
+            icon: Icons.edit_outlined,
+            onTap: () async {
+              onEdit();
+            },
           ),
-        );
-      },
+        if (isMyPost)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await onDelete();
+              if (!context.mounted) return;
+              if (deleted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('게시글이 삭제되었습니다.')),
+                );
+                Navigator.maybePop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('삭제에 실패했습니다.')),
+                );
+              }
+            },
+          ),
+        if (!isMyPost)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: post.authorId,
+            targetDisplayName: post.authorNickname,
+          ),
+        if (!isMyPost)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
     );
   }
 }

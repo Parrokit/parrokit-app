@@ -136,161 +136,164 @@ class _QuestionScreenState extends State<QuestionScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // Header: Avatar + Author + Time + Status
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: colorScheme.surfaceContainerHigh,
-                  backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                  child: avatarUrl == null ? Icon(Icons.person, color: colorScheme.onSurfaceVariant) : null,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Avatar + Author + Time + Status
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: colorScheme.surfaceContainerHigh,
+                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl == null ? Icon(Icons.person, color: colorScheme.onSurfaceVariant) : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Flexible(
-                            child: Text(
-                              authorName,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  authorName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 8),
+                              // 크래커 보상 뱃지
+                              if (question.rewardCrackers > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primarySoft,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text('🍪', style: TextStyle(fontSize: 10)),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '${question.rewardCrackers}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                          Text(
+                            formatCommunityTimeAgo(question.createdAt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          // 크래커 보상 뱃지
-                          if (question.rewardCrackers > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text('🍪', style: TextStyle(fontSize: 10)),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    '${question.rewardCrackers}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                         ],
                       ),
-                      Text(
-                        formatCommunityTimeAgo(question.createdAt),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusBgColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        statusText,
                         style: TextStyle(
                           fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusBgColor,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
                     ),
+                    const SizedBox(width: 4),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Title & Content
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  question.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Title & Content
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              question.title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
               ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              question.snippet,
-              style: TextStyle(
-                fontSize: 14,
-                color: colorScheme.onSurface,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Image Placeholder
-          if (question.hasImage && question.imageUrls.isNotEmpty)
-            Container(
-              width: double.infinity,
-              height: 250,
-              color: colorScheme.surfaceContainerHigh,
-              margin: const EdgeInsets.only(bottom: 12),
-              child: Image.network(
-                question.imageUrls.first,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Icon(Icons.image_not_supported, color: colorScheme.onSurfaceVariant),
-              ),
-            ),
-
-          // Actions Row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                Icon(Icons.favorite_border, size: 24, color: colorScheme.onSurface),
-                const SizedBox(width: 6),
-                Text(
-                  '${question.likeCount}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  question.snippet,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colorScheme.onSurface,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 16),
-                Icon(Icons.chat_bubble_outline, size: 22, color: colorScheme.onSurface),
-                const SizedBox(width: 6),
-                Text(
-                  '${question.commentCount}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+
+              // Image Placeholder
+              if (question.hasImage && question.imageUrls.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  height: 250,
+                  color: colorScheme.surfaceContainerHigh,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Image.network(
+                    question.imageUrls.first,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(Icons.image_not_supported, color: colorScheme.onSurfaceVariant),
+                  ),
                 ),
-                const Spacer(),
-                Icon(Icons.bookmark_border, size: 24, color: colorScheme.onSurface),
-              ],
-            ),
+
+              // Actions Row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.favorite_border, size: 24, color: colorScheme.onSurface),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${question.likeCount}',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(Icons.chat_bubble_outline, size: 22, color: colorScheme.onSurface),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${question.commentCount}',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    Icon(Icons.bookmark_border, size: 24, color: colorScheme.onSurface),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

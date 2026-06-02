@@ -44,6 +44,10 @@ class CommunityMenuTile extends StatelessWidget {
       ),
       onTap: onTap ??
           () {
+            if (item.routePath != null) {
+              context.push(item.routePath!);
+              return;
+            }
             if (item.boardType != null && item.activityType != null) {
               context.push(
                 AppRoutes.communityActivityPathOf(

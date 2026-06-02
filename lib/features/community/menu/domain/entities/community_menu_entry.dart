@@ -25,6 +25,7 @@ class CommunityMenuEntry {
     required this.colorKey,
     this.boardType,
     this.activityType,
+    this.routePath,
   });
 
   final String title;
@@ -32,4 +33,5 @@ class CommunityMenuEntry {
   final String colorKey;
   final String? boardType;
   final String? activityType;
+  final String? routePath;
 }

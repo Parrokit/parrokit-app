@@ -12,6 +12,7 @@ import 'package:parrokit/core/app.dart';
 import 'package:parrokit/core/bootstrap/bootstrap_dependencies.dart';
 import 'package:parrokit/core/bootstrap/bootstrap_steps.dart';
 import 'package:parrokit/core/di/providers.dart';
+import 'package:parrokit/core/services/firebase/firebase_messaging_service.dart';
 import 'package:parrokit/core/router/app_router.dart';
 import 'package:parrokit/core/utils/app_logger.dart';
 import 'package:parrokit/data/local/prefs/intro_prefs.dart';
@@ -28,6 +29,7 @@ Future<void> bootstrap() async {
   await ensureInternetOrShowOffline(themeProvider);
 
   await initFirebase();
+  FirebaseMessagingService.registerBackgroundHandler();
   initCrashlytics();
   await initEnv();
   await initKakao();

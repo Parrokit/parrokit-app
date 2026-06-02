@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/features/community/board/presentation/board_write_screen.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_block_actions.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 
 class QuestionViewScreen extends StatefulWidget {
   final String questionId;
@@ -164,6 +167,108 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
         SnackBar(content: Text(provider.errorMessage ?? '채택 처리에 실패했습니다.')),
       );
     }
+  }
+
+  Future<void> _showQuestionOptionsSheet(Post question) async {
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyPost = currentUser != null && question.authorId == currentUser.id;
+
+    await showCommunityOptionsSheet(
+      context: context,
+      title: '질문 옵션',
+      actions: [
+        if (isMyPost)
+          CommunityOptionAction(
+            label: '수정',
+            icon: Icons.edit_outlined,
+            onTap: () async {
+              if (!mounted) return;
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BoardWriteScreen(editPost: question),
+                ),
+              );
+            },
+          ),
+        if (isMyPost)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await context.read<CommunityProvider>().deletePost(question.id);
+              if (!mounted) return;
+              if (deleted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('질문이 삭제되었습니다.')),
+                );
+                Navigator.maybePop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('삭제에 실패했습니다.')),
+                );
+              }
+            },
+          ),
+        if (!isMyPost)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: question.authorId,
+            targetDisplayName: question.authorNickname,
+          ),
+        if (!isMyPost)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showAnswerOptionsSheet(Post question, Comment answer) async {
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyComment = currentUser != null && answer.authorId == currentUser.id;
+
+    await showCommunityOptionsSheet(
+      context: context,
+      title: '댓글 옵션',
+      actions: [
+        if (isMyComment)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await context.read<CommunityProvider>().deleteComment(question.id, answer.id);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
+              );
+            },
+          ),
+        if (!isMyComment)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: answer.authorId,
+            targetDisplayName: answer.authorNickname,
+          ),
+        if (!isMyComment)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
+    );
   }
 
   String _formatTimeAgo(DateTime? time) {
@@ -337,6 +442,12 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                     ],
                   ),
                 ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.more_vert_rounded),
+                color: colorScheme.onSurfaceVariant,
+                onPressed: () => _showQuestionOptionsSheet(question),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -482,6 +593,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
     final currentUser = context.read<UserProvider>().currentUser;
     final isMe = currentUser != null && question.authorId == currentUser.id;
     final provider = context.read<CommunityProvider>();
+    final isBlocked = provider.isAuthorBlocked(answer.authorId);
 
     final answererName = (answer.authorId == currentUser?.id)
         ? (currentUser?.displayName ?? answer.authorNickname)
@@ -508,11 +620,11 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
               CircleAvatar(
                 radius: isReply ? 14 : 18,
                 backgroundColor: AppColors.surfaceContainerHigh,
-                backgroundImage: answererAvatar != null
+                backgroundImage: (!isBlocked && answererAvatar != null)
                     ? NetworkImage(answererAvatar)
                     : null,
-                child: answererAvatar == null
-                    ? Icon(Icons.person, size: isReply ? 14 : 18, color: colorScheme.onSurfaceVariant)
+                child: answererAvatar == null || isBlocked
+                    ? Icon(isBlocked ? Icons.block_rounded : Icons.person, size: isReply ? 14 : 18, color: colorScheme.onSurfaceVariant)
                     : null,
               ),
               if (!isReply)
@@ -526,15 +638,25 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
               children: [
                 Row(
                   children: [
-                    Text(answererName,
+                    Text(isBlocked ? '차단한 사용자' : answererName,
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                             color: colorScheme.onSurface)),
                     const Spacer(),
-                    Text(_formatTimeAgo(answer.createdAt),
-                        style:
-                            TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                    if (!isBlocked) ...[
+                      Text(_formatTimeAgo(answer.createdAt),
+                          style:
+                              TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert_rounded, size: 18),
+                        color: colorScheme.onSurfaceVariant,
+                        onPressed: () => _showAnswerOptionsSheet(question, answer),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -563,7 +685,7 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                   ),
                   const SizedBox(height: 4),
                 ],
-                if (isReply && answer.replyToNickname != null)
+                if (isReply && answer.replyToNickname != null && !isBlocked)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
@@ -575,75 +697,78 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                       ),
                     ),
                   ),
-                Text(answer.content,
-                    style: TextStyle(
-                        fontSize: 15, color: colorScheme.onSurface, height: 1.45)),
+                Text(
+                  isBlocked ? '차단된 사용자의 답변입니다.' : answer.content,
+                  style: TextStyle(
+                      fontSize: 15, color: colorScheme.onSurface, height: 1.45),
+                ),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                            icon: Icon(
-                                provider.likedCommentIds.contains(answer.id)
-                                    ? Icons.bolt
-                                    : Icons.bolt_outlined,
-                                size: 18,
-                                color:
-                                    provider.likedCommentIds.contains(answer.id)
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary),
+                if (!isBlocked)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                              icon: Icon(
+                                  provider.likedCommentIds.contains(answer.id)
+                                      ? Icons.bolt
+                                      : Icons.bolt_outlined,
+                                  size: 18,
+                                  color:
+                                      provider.likedCommentIds.contains(answer.id)
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary),
+                              onPressed: () {
+                                if (currentUser != null) {
+                                  provider.toggleCommentLike(
+                                      question.id, answer.id, currentUser.id);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text('로그인이 필요합니다.')));
+                                }
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints()),
+                          const SizedBox(width: 4),
+                          Text('${answer.likeCount}',
+                              style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                          const SizedBox(width: 12),
+                          IconButton(
+                            icon: const Icon(Icons.mode_comment_outlined, size: 18, color: AppColors.textSecondary),
                             onPressed: () {
-                              if (currentUser != null) {
-                                provider.toggleCommentLike(
-                                    question.id, answer.id, currentUser.id);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('로그인이 필요합니다.')));
-                              }
+                              provider.setReplyingTo(answer);
+                              FocusScope.of(context).requestFocus(_replyFocusNode);
                             },
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints()),
-                        const SizedBox(width: 4),
-                        Text('${answer.likeCount}',
-                            style: TextStyle(
-                                color: colorScheme.onSurfaceVariant, fontSize: 12)),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          icon: const Icon(Icons.mode_comment_outlined, size: 18, color: AppColors.textSecondary),
-                          onPressed: () {
-                            provider.setReplyingTo(answer);
-                            FocusScope.of(context).requestFocus(_replyFocusNode);
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                    if (!isReply && 
-                        isMe &&
-                        question.questionStatus == 'waiting' &&
-                        answer.authorId != currentUser.id)
-                      GestureDetector(
-                        onTap: () => _acceptAnswer(question, answer),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(6),
+                            constraints: const BoxConstraints(),
                           ),
-                          child: const Text('채택하기',
-                              style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold)),
-                        ),
+                        ],
                       ),
-                  ],
-                ),
+                      if (!isReply &&
+                          isMe &&
+                          question.questionStatus == 'waiting' &&
+                          answer.authorId != currentUser.id)
+                        GestureDetector(
+                          onTap: () => _acceptAnswer(question, answer),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySoft,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('채택하기',
+                                style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                    ],
+                  ),
               ],
             ),
           ),

@@ -75,6 +75,7 @@ class BoardCommentsSection extends StatelessWidget {
       comment: comment,
       isReply: isReply,
       isAuthor: comment.authorId == postAuthorId,
+      isBlocked: provider.isAuthorBlocked(comment.authorId),
       isMyComment: isMyComment,
       isLiked: isLiked,
       currentUser: currentUser,

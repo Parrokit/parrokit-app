@@ -1,4 +1,6 @@
 // lib/features/community/shell/providers/community_provider.dart
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
@@ -45,6 +47,24 @@ class CommunityProvider with ChangeNotifier {
   late final IncrementViewCountUseCase incrementViewCountUseCase = IncrementViewCountUseCase(_repository);
 
   final Map<String, AppUser> _userCache = {};
+  Set<String> _blockedUserIds = {};
+
+  void setBlockedUserIds(Iterable<String> blockedUserIds) {
+    final nextBlockedUserIds = blockedUserIds.where((id) => id.isNotEmpty).toSet();
+    if (setEquals(_blockedUserIds, nextBlockedUserIds)) {
+      return;
+    }
+
+    _blockedUserIds = nextBlockedUserIds;
+    _posts = _posts.where((post) => !_isBlockedAuthor(post.authorId)).toList();
+    _currentPostComments =
+        _currentPostComments.where((comment) => !_isBlockedAuthor(comment.authorId)).toList();
+    Future.microtask(notifyListeners);
+  }
+
+  bool isAuthorBlocked(String authorId) => _blockedUserIds.contains(authorId);
+
+  bool _isBlockedAuthor(String authorId) => _blockedUserIds.contains(authorId);
 
   AppUser? getCachedUser(String uid) => _userCache[uid];
 

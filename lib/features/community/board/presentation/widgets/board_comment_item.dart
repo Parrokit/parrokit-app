@@ -11,6 +11,7 @@ class BoardCommentItem extends StatelessWidget {
     required this.comment,
     required this.isReply,
     required this.isAuthor,
+    required this.isBlocked,
     required this.isMyComment,
     required this.isLiked,
     required this.currentUser,
@@ -24,6 +25,7 @@ class BoardCommentItem extends StatelessWidget {
   final Comment comment;
   final bool isReply;
   final bool isAuthor;
+  final bool isBlocked;
   final bool isMyComment;
   final bool isLiked;
   final AppUser? currentUser;
@@ -37,8 +39,12 @@ class BoardCommentItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDeleted = comment.status == 'deleted';
-    final photoUrl = (isMyComment ? currentUser?.photoUrl : cachedUser?.photoUrl) ?? comment.authorAvatarUrl;
-    final displayName = (isMyComment ? currentUser?.displayName : cachedUser?.displayName) ?? comment.authorNickname;
+    final photoUrl = isBlocked
+        ? null
+        : (isMyComment ? currentUser?.photoUrl : cachedUser?.photoUrl) ?? comment.authorAvatarUrl;
+    final displayName = isBlocked
+        ? '차단한 사용자'
+        : (isMyComment ? currentUser?.displayName : cachedUser?.displayName) ?? comment.authorNickname;
 
     return Container(
       padding: EdgeInsets.fromLTRB(isReply ? 52 : 18, 18, 18, 0),
@@ -55,7 +61,7 @@ class BoardCommentItem extends StatelessWidget {
             height: isReply ? 36 : 44,
             decoration: BoxDecoration(shape: BoxShape.circle, color: colorScheme.surfaceContainerHigh),
             child: ClipOval(
-              child: (photoUrl != null && photoUrl.isNotEmpty && !isDeleted)
+              child: (photoUrl != null && photoUrl.isNotEmpty && !isDeleted && !isBlocked)
                   ? CachedNetworkImage(
                       imageUrl: photoUrl,
                       fit: BoxFit.cover,
@@ -68,8 +74,14 @@ class BoardCommentItem extends StatelessWidget {
                         child: Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.textDisabled),
                       ),
                     )
-                  : Center(
-                      child: isDeleted ? const SizedBox() : Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.textDisabled),
+                      : Center(
+                      child: isDeleted
+                          ? const SizedBox()
+                          : Icon(
+                              isBlocked ? Icons.block_rounded : Icons.person,
+                              size: isReply ? 20 : 26,
+                              color: AppColors.textDisabled,
+                            ),
                     ),
             ),
           ),
@@ -81,14 +93,18 @@ class BoardCommentItem extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      isDeleted ? '(삭제됨)' : displayName,
+                      isDeleted
+                          ? '(삭제됨)'
+                          : isBlocked
+                              ? '차단한 사용자'
+                              : displayName,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: isDeleted ? AppColors.textDisabled : colorScheme.onSurface,
                       ),
                     ),
-                    if (!isDeleted && isAuthor) ...[
+                    if (!isDeleted && !isBlocked && isAuthor) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -96,7 +112,7 @@ class BoardCommentItem extends StatelessWidget {
                         child: const Text('작성자', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
                       ),
                     ],
-                    if (!isDeleted && isMyComment && !isAuthor) ...[
+                    if (!isDeleted && !isBlocked && isMyComment && !isAuthor) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -107,13 +123,13 @@ class BoardCommentItem extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                if (!isDeleted)
+                if (!isDeleted && !isBlocked)
                   Text(
                     formatTimeAgo(comment.createdAt),
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDisabled),
                   ),
                 const SizedBox(height: 8),
-                if (!isDeleted && isReply && comment.replyToNickname != null)
+                if (!isDeleted && !isBlocked && isReply && comment.replyToNickname != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
@@ -122,7 +138,11 @@ class BoardCommentItem extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  comment.content,
+                  isDeleted
+                      ? '삭제된 댓글입니다.'
+                      : isBlocked
+                          ? '차단된 사용자의 댓글입니다.'
+                          : comment.content,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -131,7 +151,7 @@ class BoardCommentItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                if (!isDeleted)
+                if (!isDeleted && !isBlocked)
                   Row(
                     children: [
                       GestureDetector(
@@ -163,11 +183,11 @@ class BoardCommentItem extends StatelessWidget {
               ],
             ),
           ),
-          if (!isDeleted)
-            IconButton(
-              onPressed: onMore,
-              icon: const Icon(Icons.more_vert, color: AppColors.textDisabled, size: 20),
-            )
+          if (!isDeleted && !isBlocked)
+          IconButton(
+            onPressed: onMore,
+            icon: const Icon(Icons.more_vert_rounded, color: AppColors.textDisabled, size: 20),
+          )
           else
             const SizedBox(width: 48),
         ],

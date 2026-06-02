@@ -6,6 +6,8 @@
 /// - email       : 로그인 이메일 (없을 수도 있음)
 /// - photoUrl    : 프로필 이미지 URL (없을 수도 있음)
 /// - coins       : 유저가 보유한 코인 수 (기본값 0)
+/// - unreadNotificationCount: 읽지 않은 알림 수
+/// - blockedUserIds: 차단한 유저 ID 목록
 /// - createdAt   : 계정이 처음 생성된 시각 (없으면 null)
 /// - updatedAt   : 마지막으로 정보가 갱신된 시각 (없으면 null)
 class AppUser {
@@ -15,6 +17,8 @@ class AppUser {
   final String? photoUrl;
   final int parrots;
   final int crackers;
+  final int unreadNotificationCount;
+  final List<String> blockedUserIds;
 
   /// 하위 호환성 (기존 코인 시스템과 패롯을 동일 취급)
   int get coins => parrots;
@@ -30,6 +34,8 @@ class AppUser {
     this.photoUrl,
     this.parrots = 20,
     this.crackers = 1000,
+    this.unreadNotificationCount = 0,
+    this.blockedUserIds = const [],
     this.createdAt,
     this.updatedAt,
     this.lastNicknameChangedAt,
@@ -57,6 +63,8 @@ class AppUser {
     bool clearPhotoUrl = false,
     int? parrots,
     int? crackers,
+    int? unreadNotificationCount,
+    List<String>? blockedUserIds,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastNicknameChangedAt,
@@ -68,6 +76,9 @@ class AppUser {
       photoUrl: clearPhotoUrl ? null : (photoUrl ?? this.photoUrl),
       parrots: parrots ?? this.parrots,
       crackers: crackers ?? this.crackers,
+      unreadNotificationCount:
+          unreadNotificationCount ?? this.unreadNotificationCount,
+      blockedUserIds: blockedUserIds ?? this.blockedUserIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastNicknameChangedAt:
@@ -87,6 +98,13 @@ class AppUser {
           (json['coins'] as num?)?.toInt() ??
           0,
       crackers: (json['crackers'] as num?)?.toInt() ?? 0,
+      unreadNotificationCount:
+          (json['unreadNotificationCount'] as num?)?.toInt() ?? 0,
+      blockedUserIds: (json['blockedUserIds'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .where((id) => id.isNotEmpty)
+              .toList() ??
+          const [],
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: _parseDateTime(json['updatedAt']),
       lastNicknameChangedAt: _parseDateTime(json['lastNicknameChangedAt']),
@@ -102,7 +120,9 @@ class AppUser {
       'photoUrl': photoUrl,
       'parrots': parrots,
       'crackers': crackers,
+      'unreadNotificationCount': unreadNotificationCount,
       'coins': parrots, // 호환용
+      'blockedUserIds': blockedUserIds,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'lastNicknameChangedAt': lastNicknameChangedAt?.toIso8601String(),
@@ -128,7 +148,7 @@ class AppUser {
 
   @override
   String toString() {
-    return 'AppUser(id: $id, displayName: $displayName, email: $email, photoUrl: $photoUrl, parrots: $parrots, crackers: $crackers)';
+    return 'AppUser(id: $id, displayName: $displayName, email: $email, photoUrl: $photoUrl, parrots: $parrots, crackers: $crackers, unreadNotificationCount: $unreadNotificationCount, blockedUserIds: $blockedUserIds)';
   }
 
   @override
@@ -141,6 +161,8 @@ class AppUser {
         other.photoUrl == photoUrl &&
         other.parrots == parrots &&
         other.crackers == crackers &&
+        other.unreadNotificationCount == unreadNotificationCount &&
+        _sameBlockedUsers(other.blockedUserIds, blockedUserIds) &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -154,8 +176,18 @@ class AppUser {
       photoUrl,
       parrots,
       crackers,
+      unreadNotificationCount,
+      Object.hashAll(blockedUserIds),
       createdAt,
       updatedAt,
     );
+  }
+
+  static bool _sameBlockedUsers(List<String> left, List<String> right) {
+    if (left.length != right.length) return false;
+    for (var index = 0; index < left.length; index++) {
+      if (left[index] != right[index]) return false;
+    }
+    return true;
   }
 }

@@ -32,9 +32,16 @@ extension CommunityProviderPost on CommunityProvider {
         limit: 20,
         startAfter: _lastDocument,
       );
-      _posts.addAll(fetchedPosts);
+      _posts.addAll(
+        fetchedPosts.where((post) => !_blockedUserIds.contains(post.authorId)),
+      );
 
-      await _fetchMissingUsers(fetchedPosts.map((p) => p.authorId).whereType<String>());
+      await _fetchMissingUsers(
+        fetchedPosts
+            .where((post) => !_blockedUserIds.contains(post.authorId))
+            .map((p) => p.authorId)
+            .whereType<String>(),
+      );
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -48,7 +55,7 @@ extension CommunityProviderPost on CommunityProvider {
 
     try {
       final post = await _repository.getPostById(postId);
-      if (post != null) {
+      if (post != null && !_blockedUserIds.contains(post.authorId)) {
         _posts = List.from(_posts)..add(post);
 
         await _fetchMissingUsers([post.authorId]);

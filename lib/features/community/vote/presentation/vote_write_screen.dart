@@ -191,7 +191,9 @@ class _VoteWriteScreenState extends State<VoteWriteScreen> {
     }
 
     // 만료일 계산
-    final voteEndTime = DateTime.now().add(Duration(days: _selectedExpirationDays));
+    final voteEndTime = DateTime.now()
+        .toUtc()
+        .add(Duration(days: _selectedExpirationDays));
 
     final success = await communityProvider.addPost(
       _titleController.text.trim(),

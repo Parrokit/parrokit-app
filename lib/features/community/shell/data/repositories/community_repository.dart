@@ -16,12 +16,28 @@ class CommunityRepository
         CommunityRepositoryQuestion,
         CommunityRepositoryVote {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final Map<String, String> _authorNicknameCache = {};
 
   Future<Map<String, String>> _getAuthorNicknames(Set<String> authorIds) async {
     final nicknames = <String, String>{};
     if (authorIds.isEmpty) return nicknames;
 
-    final idsList = authorIds.toList();
+    for (final authorId in authorIds) {
+      final cachedNickname = _authorNicknameCache[authorId];
+      if (cachedNickname != null && cachedNickname.isNotEmpty) {
+        nicknames[authorId] = cachedNickname;
+      }
+    }
+
+    final missingAuthorIds = authorIds
+        .where((authorId) => !_authorNicknameCache.containsKey(authorId))
+        .toList();
+
+    if (missingAuthorIds.isEmpty) {
+      return nicknames;
+    }
+
+    final idsList = missingAuthorIds;
     for (var i = 0; i < idsList.length; i += 10) {
       final end = i + 10 > idsList.length ? idsList.length : i + 10;
       final chunk = idsList.sublist(i, end);
@@ -33,7 +49,10 @@ class CommunityRepository
       for (final doc in snap.docs) {
         final displayName = doc.data()['displayName'] as String?;
         if (displayName != null && displayName.isNotEmpty) {
+          _authorNicknameCache[doc.id] = displayName;
           nicknames[doc.id] = displayName;
+        } else {
+          _authorNicknameCache[doc.id] = '';
         }
       }
     }

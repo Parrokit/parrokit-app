@@ -17,22 +17,22 @@ void main() {
       await _seedPost(firestore, postId: 'vote_2', postType: 'vote');
 
       await firestore
-          .collection('posts')
-          .doc('vote_1')
-          .collection('voters')
+          .collection('users')
           .doc('u1')
+          .collection('voted_posts')
+          .doc('vote_1')
           .set({'selectedOption': 0, 'votedAt': DateTime(2026, 6, 1)});
 
-      final items = await repository.getActivities(
+      final page = await repository.getActivities(
         userId: 'u1',
         boardType: 'vote',
         activityType: 'written',
       );
 
-      expect(items.length, 1);
-      expect(items.first.id, 'vote_1');
-      expect(items.first.sourcePostId, 'vote_1');
-      expect(items.first.boardType, 'vote');
+      expect(page.items.length, 1);
+      expect(page.items.first.id, 'vote_1');
+      expect(page.items.first.sourcePostId, 'vote_1');
+      expect(page.items.first.boardType, 'vote');
     });
 
     test('vote/written은 votedAt 내림차순으로 정렬된다', () async {
@@ -40,27 +40,27 @@ void main() {
       await _seedPost(firestore, postId: 'vote_new', postType: 'vote');
 
       await firestore
-          .collection('posts')
-          .doc('vote_old')
-          .collection('voters')
+          .collection('users')
           .doc('u1')
+          .collection('voted_posts')
+          .doc('vote_old')
           .set({'selectedOption': 0, 'votedAt': DateTime(2026, 5, 1)});
       await firestore
-          .collection('posts')
-          .doc('vote_new')
-          .collection('voters')
+          .collection('users')
           .doc('u1')
+          .collection('voted_posts')
+          .doc('vote_new')
           .set({'selectedOption': 0, 'votedAt': DateTime(2026, 6, 1)});
 
-      final items = await repository.getActivities(
+      final page = await repository.getActivities(
         userId: 'u1',
         boardType: 'vote',
         activityType: 'written',
       );
 
-      expect(items.length, 2);
-      expect(items[0].id, 'vote_new');
-      expect(items[1].id, 'vote_old');
+      expect(page.items.length, 2);
+      expect(page.items[0].id, 'vote_new');
+      expect(page.items[1].id, 'vote_old');
     });
 
     test('question/commented는 답변(parentId=null)만 조회한다', () async {
@@ -83,15 +83,15 @@ void main() {
         parentId: 'answer_1',
       );
 
-      final items = await repository.getActivities(
+      final page = await repository.getActivities(
         userId: 'u1',
         boardType: 'question',
         activityType: 'commented',
       );
 
-      expect(items.length, 1);
-      expect(items.first.id, 'answer_1');
-      expect(items.first.sourcePostId, 'q1');
+      expect(page.items.length, 1);
+      expect(page.items.first.id, 'answer_1');
+      expect(page.items.first.sourcePostId, 'q1');
     });
 
     test('question/commented_reply는 답변의 댓글(parentId!=null)만 조회한다', () async {
@@ -114,15 +114,15 @@ void main() {
         parentId: 'answer_1',
       );
 
-      final items = await repository.getActivities(
+      final page = await repository.getActivities(
         userId: 'u1',
         boardType: 'question',
         activityType: 'commented_reply',
       );
 
-      expect(items.length, 1);
-      expect(items.first.id, 'reply_1');
-      expect(items.first.sourcePostId, 'q1');
+      expect(page.items.length, 1);
+      expect(page.items.first.id, 'reply_1');
+      expect(page.items.first.sourcePostId, 'q1');
     });
 
     test('liked_comment는 boardType으로 필터되고 sourcePostId를 유지한다', () async {
@@ -165,16 +165,16 @@ void main() {
             'createdAt': DateTime(2026, 6, 1),
           });
 
-      final items = await repository.getActivities(
+      final page = await repository.getActivities(
         userId: 'u1',
         boardType: 'board',
         activityType: 'liked_comment',
       );
 
-      expect(items.length, 1);
-      expect(items.first.id, 'c_board');
-      expect(items.first.sourcePostId, 'b1');
-      expect(items.first.boardType, 'board');
+      expect(page.items.length, 1);
+      expect(page.items.first.id, 'c_board');
+      expect(page.items.first.sourcePostId, 'b1');
+      expect(page.items.first.boardType, 'board');
     });
 
     test('liked_comment는 동일 commentId가 있어도 postId로 정확히 조회한다', () async {
@@ -207,15 +207,56 @@ void main() {
             'createdAt': DateTime(2026, 6, 1),
           });
 
-      final items = await repository.getActivities(
+      final page = await repository.getActivities(
         userId: 'u1',
         boardType: 'board',
         activityType: 'liked_comment',
       );
 
-      expect(items.length, 1);
-      expect(items.first.id, 'c_same');
-      expect(items.first.sourcePostId, 'b1');
+      expect(page.items.length, 1);
+      expect(page.items.first.id, 'c_same');
+      expect(page.items.first.sourcePostId, 'b1');
+    });
+
+    test('board/written은 cursor로 다음 페이지를 이어서 조회한다', () async {
+      await _seedPost(
+        firestore,
+        postId: 'board_old',
+        postType: 'board',
+        authorId: 'u1',
+        createdAt: DateTime(2026, 6, 1, 10),
+      );
+      await _seedPost(
+        firestore,
+        postId: 'board_new',
+        postType: 'board',
+        authorId: 'u1',
+        createdAt: DateTime(2026, 6, 2, 10),
+      );
+
+      final firstPage = await repository.getActivities(
+        userId: 'u1',
+        boardType: 'board',
+        activityType: 'written',
+        limit: 1,
+      );
+
+      expect(firstPage.items.length, 1);
+      expect(firstPage.hasMore, isTrue);
+      expect(firstPage.nextCursor, isNotNull);
+      expect(firstPage.items.first.id, 'board_new');
+
+      final secondPage = await repository.getActivities(
+        userId: 'u1',
+        boardType: 'board',
+        activityType: 'written',
+        limit: 1,
+        startAfter: firstPage.nextCursor,
+      );
+
+      expect(secondPage.items.length, 1);
+      expect(secondPage.hasMore, isFalse);
+      expect(secondPage.items.first.id, 'board_old');
     });
   });
 }
@@ -224,17 +265,19 @@ Future<void> _seedPost(
   FakeFirebaseFirestore firestore, {
   required String postId,
   required String postType,
+  String? authorId,
+  DateTime? createdAt,
 }) async {
   await firestore.collection('posts').doc(postId).set({
     'postType': postType,
     'category': 'free',
     'title': '$postType-title',
     'content': '$postType-content',
-    'authorId': 'author_$postId',
+    'authorId': authorId ?? 'author_$postId',
     'authorNickname': 'author',
     'snippet': 'snippet',
-    'createdAt': DateTime(2026, 6, 1).toIso8601String(),
-    'updatedAt': DateTime(2026, 6, 1).toIso8601String(),
+    'createdAt': createdAt ?? DateTime(2026, 6, 1),
+    'updatedAt': createdAt ?? DateTime(2026, 6, 1),
     'likeCount': 0,
     'commentCount': 0,
     'viewCount': 0,
@@ -255,8 +298,8 @@ Future<void> _seedComment(
     'content': 'comment-$commentId',
     'postType': postType,
     'parentId': parentId,
-    'createdAt': DateTime(2026, 6, 1).toIso8601String(),
-    'updatedAt': DateTime(2026, 6, 1).toIso8601String(),
+    'createdAt': DateTime(2026, 6, 1),
+    'updatedAt': DateTime(2026, 6, 1),
     'likeCount': 0,
   });
 }

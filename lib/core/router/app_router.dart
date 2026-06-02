@@ -28,6 +28,7 @@ import 'package:parrokit/features/community/question/presentation/question_view_
 import 'package:parrokit/features/community/vote/presentation/vote_write_screen.dart';
 import 'package:parrokit/features/community/vote/presentation/vote_view_screen.dart';
 import 'package:parrokit/features/community/menu/presentation/community_menu_screen.dart';
+import 'package:parrokit/features/community/block/presentation/blocked_users_screen.dart';
 import 'package:parrokit/features/community/notification/presentation/community_notification_screen.dart';
 import 'package:parrokit/features/community/activity/presentation/activity_screen.dart';
 import 'package:parrokit/features/contents/shorts/presentation/shorts_screen.dart';
@@ -115,6 +116,11 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityMenuPath,
         name: AppRoutes.communityMenu,
         builder: (context, state) => const CommunityMenuScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityBlockedUsersPath,
+        name: AppRoutes.communityBlockedUsers,
+        builder: (context, state) => const BlockedUsersScreen(),
       ),
       GoRoute(
         path: AppRoutes.communityNotificationPath,

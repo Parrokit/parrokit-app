@@ -205,6 +205,7 @@ class _VoteScreenState extends State<VoteScreen> {
                             if (user == null) return;
                             context.read<CommunityProvider>().toggleScrap(posts[_currentCardIndex].id, user.id);
                           },
+                          showMoreButton: false,
                           onSelect: (idx) {
                             _submitVote(
                               postId: posts[_currentCardIndex].id,
@@ -284,6 +285,7 @@ class _VoteScreenState extends State<VoteScreen> {
               if (user == null) return;
               context.read<CommunityProvider>().toggleScrap(posts[i].id, user.id);
             },
+            showMoreButton: false,
             onSelect: (idx) {
               _submitVote(
                 postId: posts[i].id,
@@ -334,6 +336,7 @@ class _VoteScreenState extends State<VoteScreen> {
       _votedOnlyPostIds.add(postId);
     });
   }
+
 }
 
 class _SwipeableCard extends StatefulWidget {
@@ -437,6 +440,8 @@ class VoteCard extends StatelessWidget {
   final bool isPostScrapped;
   final VoidCallback? onTogglePostLike;
   final VoidCallback? onTogglePostScrap;
+  final VoidCallback? onMorePressed;
+  final bool showMoreButton;
 
   const VoteCard({
     super.key,
@@ -451,6 +456,8 @@ class VoteCard extends StatelessWidget {
     this.isPostScrapped = false,
     this.onTogglePostLike,
     this.onTogglePostScrap,
+    this.onMorePressed,
+    this.showMoreButton = true,
   });
 
   String _formatTimeAgo(DateTime? time) {
@@ -520,7 +527,14 @@ class VoteCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Icon(Icons.more_horiz, size: 22, color: cs.onSurfaceVariant),
+                if (showMoreButton)
+                  IconButton(
+                    icon: const Icon(Icons.more_vert_rounded, size: 22),
+                    color: cs.onSurfaceVariant,
+                    onPressed: onMorePressed,
+                  )
+                else
+                  const SizedBox(width: 8),
               ],
             ),
             const SizedBox(height: 14),

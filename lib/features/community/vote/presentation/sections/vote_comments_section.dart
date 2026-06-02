@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_block_actions.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 
@@ -74,6 +76,7 @@ class VoteCommentsSection extends StatelessWidget {
     final isDeleted = comment.status == 'deleted';
     final provider = context.watch<CommunityProvider>();
     final isLiked = provider.likedCommentIds.contains(comment.id);
+    final isBlocked = provider.isAuthorBlocked(comment.authorId);
 
     return GestureDetector(
       onLongPress: () => onCommentLongPress(comment),
@@ -89,11 +92,11 @@ class VoteCommentsSection extends StatelessWidget {
             CircleAvatar(
               radius: 18,
               backgroundColor: AppColors.surfaceContainerHigh,
-              backgroundImage: (comment.authorAvatarUrl != null && comment.authorAvatarUrl!.isNotEmpty && !isDeleted)
+              backgroundImage: (!isBlocked && comment.authorAvatarUrl != null && comment.authorAvatarUrl!.isNotEmpty && !isDeleted)
                   ? NetworkImage(comment.authorAvatarUrl!)
                   : null,
-              child: (comment.authorAvatarUrl == null || comment.authorAvatarUrl!.isEmpty || isDeleted)
-                  ? const Icon(Icons.person, color: AppColors.textDisabled, size: 20)
+              child: (comment.authorAvatarUrl == null || comment.authorAvatarUrl!.isEmpty || isDeleted || isBlocked)
+                  ? Icon(isBlocked ? Icons.block_rounded : Icons.person, color: AppColors.textDisabled, size: 20)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -102,14 +105,17 @@ class VoteCommentsSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        isDeleted ? '알 수 없음' : comment.authorNickname,
+                        isDeleted
+                            ? '알 수 없음'
+                            : isBlocked
+                                ? '차단한 사용자'
+                                : comment.authorNickname,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                       ),
-                      if (comment.authorId == postAuthorId && !isDeleted) ...[
+                      if (comment.authorId == postAuthorId && !isDeleted && !isBlocked) ...[
                         const SizedBox(width: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -118,12 +124,22 @@ class VoteCommentsSection extends StatelessWidget {
                         ),
                       ],
                       const Spacer(),
-                      if (comment.createdAt != null)
+                      if (comment.createdAt != null && !isBlocked)
                         Text(formatTimeAgo(comment.createdAt), style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+                      if (!isBlocked) ...[
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(Icons.more_vert_rounded, size: 18),
+                          color: Colors.grey[500],
+                          onPressed: () => _showCommentOptionsSheet(context, comment),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
-                  if (isReply && comment.replyToNickname != null && !isDeleted)
+                  if (isReply && comment.replyToNickname != null && !isDeleted && !isBlocked)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
@@ -132,11 +148,15 @@ class VoteCommentsSection extends StatelessWidget {
                       ),
                     ),
                   Text(
-                    isDeleted ? '삭제된 댓글입니다.' : comment.content,
+                    isDeleted
+                        ? '삭제된 댓글입니다.'
+                        : isBlocked
+                            ? '차단된 사용자의 댓글입니다.'
+                            : comment.content,
                     style: TextStyle(fontSize: 14, color: isDeleted ? AppColors.textDisabled : AppColors.textSecondary, height: 1.45),
                   ),
                   const SizedBox(height: 12),
-                  if (!isDeleted)
+                  if (!isDeleted && !isBlocked)
                     Row(
                       children: [
                         GestureDetector(
@@ -168,6 +188,49 @@ class VoteCommentsSection extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _showCommentOptionsSheet(BuildContext context, Comment comment) async {
+    if (comment.status == 'deleted') return;
+
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyComment = currentUser != null && comment.authorId == currentUser.id;
+
+    await showCommunityOptionsSheet(
+      context: context,
+      title: '댓글 옵션',
+      actions: [
+        if (isMyComment)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await context.read<CommunityProvider>().deleteComment(postId, comment.id);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
+              );
+            },
+          ),
+        if (!isMyComment)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: comment.authorId,
+            targetDisplayName: comment.authorNickname,
+          ),
+        if (!isMyComment)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
     );
   }
 }
