@@ -23,6 +23,7 @@ class FirebaseUserService {
       'createdAt': FieldValue.serverTimestamp(),
       'coins': 0,
       'blockedUserIds': <String>[],
+      'fcmTokens': <String>[],
       'isPremium': false,
       'lastPurchaseAt': null,
     }, SetOptions(merge: true)); // 이미 있으면 덮어쓰지 않고 병합
@@ -147,6 +148,30 @@ class FirebaseUserService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
+  }
+
+  Future<void> addFcmToken({
+    required String uid,
+    required String token,
+  }) async {
+    if (token.isEmpty) return;
+
+    await _firestore.collection('users').doc(uid).set({
+      'fcmTokens': FieldValue.arrayUnion([token]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> removeFcmToken({
+    required String uid,
+    required String token,
+  }) async {
+    if (token.isEmpty) return;
+
+    await _firestore.collection('users').doc(uid).set({
+      'fcmTokens': FieldValue.arrayRemove([token]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<void> unblockUser({

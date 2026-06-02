@@ -25,8 +25,15 @@ import 'package:parrokit/features/contents/shorts/data/shorts_repository.dart';
 import 'package:parrokit/features/contents/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/features/community/block/data/repositories/block_repository_impl.dart';
 import 'package:parrokit/features/community/block/presentation/providers/block_provider.dart';
+import 'package:parrokit/features/community/notification/data/repositories/community_notification_repository_impl.dart';
+import 'package:parrokit/features/community/notification/domain/usecases/fetch_notifications_usecase.dart';
+import 'package:parrokit/features/community/notification/domain/usecases/mark_all_notifications_read_usecase.dart';
+import 'package:parrokit/features/community/notification/domain/usecases/mark_notification_read_usecase.dart';
+import 'package:parrokit/features/community/notification/domain/usecases/watch_notifications_usecase.dart';
+import 'package:parrokit/features/community/notification/presentation/providers/community_notification_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
+import 'package:parrokit/core/services/firebase/firebase_messaging_service.dart';
 
 /// Provider 목록 생성.
 ///
@@ -85,6 +92,47 @@ List<SingleChildWidget> buildProviders({
       update: (_, blockProvider, communityProvider) {
         final provider = communityProvider ?? CommunityProvider();
         provider.setBlockedUserIds(blockProvider.blockedUserIds);
+        return provider;
+      },
+    ),
+    ChangeNotifierProxyProvider<UserProvider, CommunityNotificationProvider>(
+      create: (_) => CommunityNotificationProvider(
+        watchNotificationsUseCase: WatchNotificationsUseCase(
+          CommunityNotificationRepositoryImpl(),
+        ),
+        fetchNotificationsUseCase: FetchNotificationsUseCase(
+          CommunityNotificationRepositoryImpl(),
+        ),
+        markNotificationReadUseCase: MarkNotificationReadUseCase(
+          CommunityNotificationRepositoryImpl(),
+        ),
+        markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase(
+          CommunityNotificationRepositoryImpl(),
+        ),
+        messagingService: FirebaseMessagingService(
+          firebaseUserService: FirebaseUserService(),
+        ),
+      ),
+      update: (_, userProvider, notificationProvider) {
+        final provider = notificationProvider ??
+            CommunityNotificationProvider(
+              watchNotificationsUseCase: WatchNotificationsUseCase(
+                CommunityNotificationRepositoryImpl(),
+              ),
+              fetchNotificationsUseCase: FetchNotificationsUseCase(
+                CommunityNotificationRepositoryImpl(),
+              ),
+              markNotificationReadUseCase: MarkNotificationReadUseCase(
+                CommunityNotificationRepositoryImpl(),
+              ),
+              markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase(
+                CommunityNotificationRepositoryImpl(),
+              ),
+              messagingService: FirebaseMessagingService(
+                firebaseUserService: FirebaseUserService(),
+              ),
+            );
+        provider.syncUser(userProvider.currentUser?.id);
         return provider;
       },
     ),
