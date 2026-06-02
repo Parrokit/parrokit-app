@@ -14,13 +14,13 @@ import 'package:flutter/material.dart';
 
 import '../../data/constants/editor_strings.dart';
 import '../widgets/labeled_text_field.dart';
-import '../clip_editor_view_model.dart';
+import '../captioning_view_model.dart';
 
 /// 태그 입력 섹션.
 class TagsSection extends StatelessWidget {
   const TagsSection({super.key, required this.vm});
 
-  final ClipEditorViewModel vm;
+  final CaptioningViewModel vm;
 
   @override
   Widget build(BuildContext context) {

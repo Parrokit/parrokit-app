@@ -17,13 +17,13 @@ import '../../data/constants/editor_strings.dart';
 import '../../domain/editor_state.dart';
 import '../widgets/stt_progress_card.dart';
 import '../widgets/segment_card.dart';
-import '../clip_editor_view_model.dart';
+import '../captioning_view_model.dart';
 
 /// 자막 세그먼트 섹션.
 class SegmentsSection extends StatefulWidget {
   const SegmentsSection({super.key, required this.vm});
 
-  final ClipEditorViewModel vm;
+  final CaptioningViewModel vm;
 
   @override
   State<SegmentsSection> createState() => _SegmentsSectionState();
@@ -145,7 +145,8 @@ class _SegmentsSectionState extends State<SegmentsSection> {
                 label: Text(vm.isSttProcessing
                     ? _sttStatusText(vm.sttState)
                     : EditorStrings.sttButtonLabel),
-                onPressed: vm.isSttProcessing ? null : () => vm.onSttAndDraft(context),
+                onPressed:
+                    vm.isSttProcessing ? null : () => vm.onSttAndDraft(context),
               ),
               TextButton.icon(
                 icon: const Icon(Icons.add_rounded, size: 18),

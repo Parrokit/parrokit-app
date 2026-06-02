@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:parrokit/core/app/router/app_routes.dart';
-import 'package:parrokit/features/content-studio/captioning/presentation/clip_editor_screen.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
+import 'package:parrokit/features/content-studio/captioning/presentation/captioning_screen.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/tts_screen.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_screen.dart';
 import 'package:parrokit/features/home/dashboard/presentation/widgets/dashboard_studio_switch_fab.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'content_studio_app_bar.dart';
 
 class ContentStudioHubScreen extends StatefulWidget {
   const ContentStudioHubScreen({
@@ -72,11 +76,23 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final userProvider = context.watch<UserProvider>();
     final isDark = theme.brightness == Brightness.dark;
-    final bg = isDark ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.surfaceContainer;
+    final bg = isDark ? AppColors.surfaceDark : theme.colorScheme.surface;
+    final appBarTitle = switch (_selectedIndex) {
+      0 => '편집',
+      1 => 'TTS 생성',
+      _ => 'Video 생성',
+    };
 
     return Scaffold(
       backgroundColor: bg,
+      appBar: ContentStudioAppBar(
+        title: appBarTitle,
+        coins: userProvider.coins,
+        onBack: _handleBack,
+        backgroundColor: bg,
+      ),
       body: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
@@ -84,6 +100,7 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
           _handleBack();
         },
         child: SafeArea(
+          top: false,
           child: Stack(
             children: [
               Padding(

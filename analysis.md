@@ -29,14 +29,14 @@
 ### 문제 1 — ViewModel 비대화: 600줄이 넘는 에디터 ViewModel을 어떻게 분리할 것인가
 
 **상황**
-클립 에디터 ViewModel(`ClipEditorViewModel`)은 파일 선택, 세그먼트 관리, 태그 관리, 자동완성, 메타데이터 입력 등 다양한 책임을 가지고 있었습니다. 모든 로직이 하나의 `ChangeNotifier` 클래스에 담기면서 600줄이 넘어갔고, 각 관심사의 경계가 불분명해져 유지보수가 어려워졌습니다.
+클립 에디터 ViewModel(`CaptioningViewModel`)은 파일 선택, 세그먼트 관리, 태그 관리, 자동완성, 메타데이터 입력 등 다양한 책임을 가지고 있었습니다. 모든 로직이 하나의 `ChangeNotifier` 클래스에 담기면서 600줄이 넘어갔고, 각 관심사의 경계가 불분명해져 유지보수가 어려워졌습니다.
 
 **해결**
 Dart의 **mixin**을 활용하여 관심사별로 로직을 물리적으로 분리했습니다.
 
 ```dart
 // 메인 ViewModel은 mixin을 조합하여 구성
-class ClipEditorViewModel extends ChangeNotifier
+class CaptioningViewModel extends ChangeNotifier
     with EditorFileMixin, EditorSegmentMixin, EditorTagMixin, EditorAutocompleteMixin {
   // 공통 의존성과 초기화 로직만 담당
 }

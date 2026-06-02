@@ -12,7 +12,7 @@ description: 네이밍 규칙, 주석 템플릿, 코드 스타일
 | Section | `{Name}Section` | `AuthFormSection` |
 | Widget | `{Name}{Suffix}` | `ProfileCard`, `ActionButton` |
 | Provider | `{Feature}Provider` | `UserProvider` |
-| ViewModel | `{Feature}ViewModel` | `ClipEditorViewModel` |
+| ViewModel | `{Feature}ViewModel` | `CaptioningViewModel` |
 | UseCase | `{Action}{Target}UseCase` | `SaveClipUseCase` |
 | Service | `{Name}Service` | `ClipSaveService` |
 | enum | `{Name}Mode/Type/State` | `AuthMode`, `EditorSaveState` |

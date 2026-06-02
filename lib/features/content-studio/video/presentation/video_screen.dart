@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/features/content-studio/hub/presentation/content_studio_placeholder_screen.dart';
 
 class VideoScreen extends StatelessWidget {
   const VideoScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const ContentStudioPlaceholderScreen(
-      title: 'Video 생성',
-      subtitle: '프롬프트 기반 영상 생성 기능을 준비하는 화면입니다.',
-      icon: Icons.movie_creation_rounded,
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.movie_creation_rounded, size: 48),
+            SizedBox(height: 16),
+            Text('Video 생성', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text('프롬프트 기반 영상 생성 기능을 준비하는 화면입니다.'),
+          ],
+        ),
+      ),
     );
   }
 }

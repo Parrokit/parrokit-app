@@ -51,13 +51,13 @@ import 'mixins/editor_tag_mixin.dart';
 import 'mixins/editor_autocomplete_mixin.dart';
 
 /// 클립 에디터 ViewModel.
-class ClipEditorViewModel extends ChangeNotifier
+class CaptioningViewModel extends ChangeNotifier
     with
         EditorFileMixin,
         EditorSegmentMixin,
         EditorTagMixin,
         EditorAutocompleteMixin {
-  ClipEditorViewModel({
+  CaptioningViewModel({
     required this.mediaProvider,
     required this.userProvider,
     required this.collectionsDao,
@@ -130,8 +130,6 @@ class ClipEditorViewModel extends ChangeNotifier
   final durationCtl = TextEditingController();
   final tagsCtl = TextEditingController();
 
-
-
   // 저장 후 닫기 플래그
   bool _shouldClose = false;
   bool get shouldClose => _shouldClose;
@@ -195,7 +193,6 @@ class ClipEditorViewModel extends ChangeNotifier
     if (initialCollectionName != null && clipId == null) {
       collectionNameCtl.text = initialCollectionName!;
     }
-
   }
 
   // ─────────────────────────────────────────────────────────────────

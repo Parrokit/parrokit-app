@@ -12,7 +12,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/app/router/app_routes.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
-import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'email_verification_section.dart';
 import '../widgets/card_container.dart';
@@ -74,7 +73,6 @@ class AccountSection extends StatelessWidget {
     final cs = theme.colorScheme;
     final userProvider = context.watch<UserProvider>();
     final user = userProvider.currentUser;
-    final isDark = theme.brightness == Brightness.dark;
     final isEmailVerified =
         FirebaseAuth.instance.currentUser?.emailVerified ?? false;
 

@@ -19,13 +19,13 @@ import 'package:video_player/video_player.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 
 import '../widgets/file_hero_card.dart';
-import '../clip_editor_view_model.dart';
+import '../captioning_view_model.dart';
 
 /// 파일 선택 섹션.
 class FileSection extends StatefulWidget {
   const FileSection({super.key, required this.vm});
 
-  final ClipEditorViewModel vm;
+  final CaptioningViewModel vm;
 
   @override
   State<FileSection> createState() => _FileSectionState();

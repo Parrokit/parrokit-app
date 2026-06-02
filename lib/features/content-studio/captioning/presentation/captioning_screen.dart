@@ -17,8 +17,9 @@ import 'package:parrokit/core/state/provider/media_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
-import 'clip_editor_view_model.dart';
+import 'captioning_view_model.dart';
 import 'widgets/exit_confirm_sheet.dart';
+import '../../hub/presentation/content_studio_app_bar.dart';
 import 'sections/sections.dart';
 
 /// 클립 에디터 화면.
@@ -37,7 +38,7 @@ class CaptioningScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => ClipEditorViewModel(
+      create: (context) => CaptioningViewModel(
         mediaProvider: context.read<MediaProvider>(),
         userProvider: context.read<UserProvider>(),
         collectionsDao: context.read<db.AppDatabase>().collectionsDao,
@@ -63,8 +64,9 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<ClipEditorViewModel>();
+    final vm = context.watch<CaptioningViewModel>();
     final userProvider = context.watch<UserProvider>();
+    final isEmbedded = widget.onClose != null;
 
     // 저장 후 닫기 - 한 번만 처리
     if (vm.shouldClose && !_hasHandledClose) {
@@ -84,37 +86,16 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        appBar: AppBar(
-          title: const Text('편집'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => _showExitConfirmation(context, vm),
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(width: 10),
-                  const Icon(
-                    Icons.monetization_on_rounded,
-                    color: Colors.amber,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    '${userProvider.coins}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(width: 10),
-                ],
+        appBar: isEmbedded
+            ? null
+            : ContentStudioAppBar(
+                title: '편집',
+                coins: userProvider.coins,
+                onBack: () => _showExitConfirmation(context, vm),
+                backgroundColor: Theme.of(context).colorScheme.surface,
               ),
-            ),
-          ],
-          elevation: 0,
-        ),
         body: SafeArea(
+          top: !isEmbedded,
           child: Stack(
             children: [
               Column(
@@ -177,7 +158,7 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
   }
 
   Future<void> _showExitConfirmation(
-      BuildContext context, ClipEditorViewModel vm) async {
+      BuildContext context, CaptioningViewModel vm) async {
     if (vm.isSttProcessing) return;
     final result = await showExitConfirmSheet(context);
     if (result == true && context.mounted) {
