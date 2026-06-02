@@ -8,6 +8,7 @@ import 'package:parrokit/features/content-studio/tts/presentation/tts_screen.dar
 import 'package:parrokit/features/content-studio/video/presentation/video_screen.dart';
 import 'package:parrokit/features/home/dashboard/presentation/widgets/dashboard_studio_switch_fab.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/features/content-studio/chat-bot/presentation/widgets/chat_bot_fab.dart';
 import 'content_studio_app_bar.dart';
 import 'widgets/content_studio_exit_confirm_sheet.dart';
 
@@ -26,6 +27,8 @@ class ContentStudioHubScreen extends StatefulWidget {
 class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
   late final PageController _pageController;
   late int _selectedIndex;
+  bool _isAppBarExpanded = false;
+  bool _isChatBotVisible = true;
 
   @override
   void initState() {
@@ -85,6 +88,12 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
         coins: userProvider.coins,
         onBack: _handleBack,
         backgroundColor: bg,
+        onToggleExpand: () {
+          setState(() {
+            _isAppBarExpanded = !_isAppBarExpanded;
+          });
+        },
+        isExpanded: _isAppBarExpanded,
       ),
       body: PopScope(
         canPop: false,
@@ -129,6 +138,80 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                   ),
                 ),
               ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: ClipRect(
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOutCubic,
+                    alignment: Alignment.bottomCenter,
+                    heightFactor: _isAppBarExpanded ? 1.0 : 0.0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: bg,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Wrap(
+                          alignment: WrapAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width / 3,
+                              child: _AppBarOptionItem(
+                                icon: _isChatBotVisible ? Icons.visibility_off : Icons.visibility,
+                                label: _isChatBotVisible ? 'AI 챗봇 숨기기' : 'AI 챗봇 켜기',
+                                iconColor: _isChatBotVisible ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.primary,
+                                onTap: () {
+                                  setState(() {
+                                    _isChatBotVisible = !_isChatBotVisible;
+                                  });
+                                },
+                              ),
+                            ),
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width / 3,
+                              child: _AppBarOptionItem(
+                                icon: Icons.storefront_rounded,
+                                label: '패롯 충전',
+                                iconColor: Colors.amber,
+                                onTap: () {},
+                              ),
+                            ),
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width / 3,
+                              child: _AppBarOptionItem(
+                                icon: Icons.settings,
+                                label: '스튜디오 설정',
+                                iconColor: theme.colorScheme.onSurface,
+                                onTap: () {},
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 16,
+                bottom: 96,
+                child: AnimatedScale(
+                  scale: _isChatBotVisible ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const ChatBotFab(),
+                ),
+              ),
             ],
           ),
         ),
@@ -155,5 +238,41 @@ class _StudioPageSlotState extends State<_StudioPageSlot>
   Widget build(BuildContext context) {
     super.build(context);
     return widget.child;
+  }
+}
+
+class _AppBarOptionItem extends StatelessWidget {
+  const _AppBarOptionItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.iconColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 28, color: iconColor),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

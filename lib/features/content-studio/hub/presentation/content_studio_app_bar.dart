@@ -8,12 +8,16 @@ class ContentStudioAppBar extends StatelessWidget
     required this.coins,
     required this.onBack,
     this.backgroundColor,
+    this.onToggleExpand,
+    this.isExpanded = false,
   });
 
   final String title;
   final int coins;
   final VoidCallback onBack;
   final Color? backgroundColor;
+  final VoidCallback? onToggleExpand;
+  final bool isExpanded;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -42,17 +46,28 @@ class ContentStudioAppBar extends StatelessWidget
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(width: 10),
-              const Icon(
-                Icons.monetization_on_rounded,
-                color: Colors.amber,
-                size: 20,
+              const Text(
+                '🦜',
+                style: TextStyle(fontSize: 18),
               ),
               const SizedBox(width: 5),
               Text(
                 '$coins',
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(width: 10),
+              if (onToggleExpand != null) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(
+                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  tooltip: isExpanded ? '옵션 닫기' : '옵션 열기',
+                  onPressed: onToggleExpand,
+                ),
+              ] else ...[
+                const SizedBox(width: 10),
+              ],
             ],
           ),
         ),
