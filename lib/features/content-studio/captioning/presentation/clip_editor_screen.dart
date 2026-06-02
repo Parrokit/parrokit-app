@@ -13,22 +13,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:parrokit/core/app/config/app_config.dart';
 import 'package:parrokit/core/state/provider/media_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
 import 'clip_editor_view_model.dart';
-import '../../../../core/shared/widgets/tip_dialog.dart';
 import 'widgets/exit_confirm_sheet.dart';
 import 'sections/sections.dart';
 
 /// 클립 에디터 화면.
 class CaptioningScreen extends StatelessWidget {
-  const CaptioningScreen({super.key, this.clipId, this.initialCollectionName});
+  const CaptioningScreen({
+    super.key,
+    this.clipId,
+    this.initialCollectionName,
+    this.onClose,
+  });
 
   final int? clipId;
   final String? initialCollectionName;
+  final Future<void> Function(Object? result)? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -40,13 +44,15 @@ class CaptioningScreen extends StatelessWidget {
         clipId: clipId,
         initialCollectionName: initialCollectionName,
       ),
-      child: const _ClipEditorBody(),
+      child: _ClipEditorBody(onClose: onClose),
     );
   }
 }
 
 class _ClipEditorBody extends StatefulWidget {
-  const _ClipEditorBody();
+  const _ClipEditorBody({required this.onClose});
+
+  final Future<void> Function(Object? result)? onClose;
 
   @override
   State<_ClipEditorBody> createState() => _ClipEditorBodyState();
@@ -55,6 +61,7 @@ class _ClipEditorBody extends StatefulWidget {
 class _ClipEditorBodyState extends State<_ClipEditorBody> {
   bool _hasHandledClose = false;
 
+  @override
   Widget build(BuildContext context) {
     final vm = context.watch<ClipEditorViewModel>();
     final userProvider = context.watch<UserProvider>();
@@ -63,8 +70,8 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
     if (vm.shouldClose && !_hasHandledClose) {
       _hasHandledClose = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted && Navigator.of(context).canPop()) {
-          Navigator.of(context).pop(vm.closeResult);
+        if (context.mounted) {
+          _close(context, vm.closeResult);
         }
       });
     }
@@ -174,7 +181,19 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
     if (vm.isSttProcessing) return;
     final result = await showExitConfirmSheet(context);
     if (result == true && context.mounted) {
-      Navigator.of(context).pop();
+      await _close(context, null);
+    }
+  }
+
+  Future<void> _close(BuildContext context, Object? result) async {
+    final onClose = widget.onClose;
+    if (onClose != null) {
+      await onClose(result);
+      return;
+    }
+
+    if (context.mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(result);
     }
   }
 }

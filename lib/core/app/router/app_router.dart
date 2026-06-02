@@ -376,7 +376,7 @@ ShellRoute get _shellRoute => ShellRoute(
           name: AppRoutes.contentStudioCaptioning,
           pageBuilder: (context, state) => const NoTransitionPage(
             name: AppRoutes.contentStudioCaptioning,
-            child: CaptioningScreen(),
+            child: ContentStudioHubScreen(initialIndex: 0),
           ),
         ),
         GoRoute(

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/app/router/app_routes.dart';
 import 'package:parrokit/features/content-studio/captioning/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/tts_screen.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_screen.dart';
@@ -53,7 +55,11 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
   }
 
   Future<void> _handleBack() async {
-    if (_selectedIndex == 0) return;
+    if (_selectedIndex == 0) {
+      context.go(AppRoutes.dashboardPath);
+      return;
+    }
+
     await _pageController.animateToPage(
       0,
       duration: const Duration(milliseconds: 240),
@@ -72,7 +78,7 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
     return Scaffold(
       backgroundColor: bg,
       body: PopScope(
-        canPop: _selectedIndex == 0,
+        canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
           _handleBack();
@@ -88,8 +94,14 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                     if (_selectedIndex == index) return;
                     setState(() => _selectedIndex = index);
                   },
-                  children: const [
-                    _StudioPageSlot(child: CaptioningScreen()),
+                  children: [
+                    _StudioPageSlot(
+                      child: CaptioningScreen(
+                        onClose: (_) async => context.go(
+                          AppRoutes.dashboardPath,
+                        ),
+                      ),
+                    ),
                     _StudioPageSlot(child: TtsScreen()),
                     _StudioPageSlot(child: VideoScreen()),
                   ],

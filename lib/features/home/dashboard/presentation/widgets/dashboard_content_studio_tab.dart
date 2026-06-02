@@ -21,7 +21,8 @@ class DashboardContentStudioTab extends StatelessWidget {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       height: 56,
-      padding: EdgeInsets.symmetric(horizontal: isExtended ? 20 : 16),
+      width: isExtended ? null : 56,
+      padding: EdgeInsets.symmetric(horizontal: isExtended ? 20 : 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
