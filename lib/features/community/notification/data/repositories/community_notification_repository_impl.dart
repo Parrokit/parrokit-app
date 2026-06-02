@@ -58,7 +58,7 @@ class CommunityNotificationRepositoryImpl
         '[CommunityNotification][Repository] fetch failed userId=$userId',
         error: e,
       );
-      throw Exception('알림을 불러오지 못했어요.');
+      return const [];
     }
   }
 

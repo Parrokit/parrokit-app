@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:parrokit/core/config/firebase_options.dart';
 import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
 import 'package:parrokit/core/utils/app_logger.dart';
+import 'package:flutter/services.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -42,37 +43,58 @@ class FirebaseMessagingService {
   Future<void> syncUserToken(String userId) async {
     if (userId.isEmpty) return;
 
-    final previousUserId = _currentUserId;
-    final previousToken = _currentToken;
+    try {
+      final previousUserId = _currentUserId;
+      final previousToken = _currentToken;
 
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        AppLogger.w(
+          '[CommunityNotification][FCM] permission denied uid=$userId',
+        );
+        return;
+      }
+
+      final token = await _messaging.getToken();
+      if (token == null || token.isEmpty) {
+        AppLogger.w(
+          '[CommunityNotification][FCM] token unavailable uid=$userId',
+        );
+        return;
+      }
+
+      await _syncToken(
+        userId: userId,
+        token: token,
+        previousUserId: previousUserId,
+        previousToken: previousToken,
+      );
+      _startTokenRefreshListener();
+    } on MissingPluginException catch (e) {
       AppLogger.w(
-        '[CommunityNotification][FCM] permission denied uid=$userId',
+        '[CommunityNotification][FCM] plugin unavailable uid=$userId',
+      );
+      AppLogger.d(
+        '[CommunityNotification][FCM] missing plugin detail=$e',
       );
       return;
+    } on FirebaseException catch (e) {
+      if (e.code == 'apns-token-not-set') {
+        AppLogger.w(
+          '[CommunityNotification][FCM] APNs token not ready uid=$userId',
+        );
+        AppLogger.d(
+          '[CommunityNotification][FCM] apns-token-not-set detail=$e',
+        );
+        return;
+      }
+      rethrow;
     }
-
-    final token = await _messaging.getToken();
-    if (token == null || token.isEmpty) {
-      AppLogger.w(
-        '[CommunityNotification][FCM] token unavailable uid=$userId',
-      );
-      return;
-    }
-
-    await _syncToken(
-      userId: userId,
-      token: token,
-      previousUserId: previousUserId,
-      previousToken: previousToken,
-    );
-    _startTokenRefreshListener();
   }
 
   Future<void> clearUserToken(String userId) async {
