@@ -33,7 +33,7 @@ import 'sections/quick_actions_section.dart';
 import 'sections/continue_watching_section.dart';
 import 'sections/collections_section.dart';
 import 'sections/random_subtitle_section.dart';
-import '../../../../core/wigdets/tip_dialog.dart';
+import '../../../../core/widgets/tip_dialog.dart';
 
 /// 대시보드 메인 화면 (앱 홈).
 ///

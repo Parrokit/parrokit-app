@@ -19,7 +19,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
 import 'clip_editor_view_model.dart';
-import '../../../../core/wigdets/tip_dialog.dart';
+import '../../../../core/widgets/tip_dialog.dart';
 import 'widgets/exit_confirm_sheet.dart';
 import 'sections/sections.dart';
 
