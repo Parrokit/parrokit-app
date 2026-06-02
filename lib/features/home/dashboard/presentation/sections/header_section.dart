@@ -4,7 +4,7 @@
 //
 // [역할]
 // 대시보드 상단 헤더 섹션.
-// 로고, 클립 수 카운터 애니메이션, 추가 버튼 표시.
+// 로고, 클립 수 카운터 애니메이션 표시.
 //
 // [레이어]
 // Presentation Layer > Sections
@@ -12,7 +12,6 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
@@ -22,7 +21,6 @@ import '../widgets/gradient_icon.dart';
 ///
 /// - 로고 뱃지
 /// - 클립 수 카운터 (숨쉬기 애니메이션 + 숫자 트윈)
-/// - 추가 버튼
 class HeaderSection extends StatefulWidget {
   const HeaderSection({super.key});
 
@@ -166,12 +164,6 @@ class _HeaderSectionState extends State<HeaderSection>
             ),
           ),
 
-          // 추가 버튼
-          IconButton(
-            onPressed: () => context.push('/clips/create'),
-            icon: const Icon(Icons.add_box_rounded, size: 28),
-            splashRadius: 24,
-          ),
         ],
       ),
     );

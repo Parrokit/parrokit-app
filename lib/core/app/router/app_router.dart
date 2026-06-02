@@ -38,6 +38,7 @@ import 'package:parrokit/features/settings/more/presentation/profile_edit_screen
 import 'package:parrokit/features/home/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/content-studio/captioning/presentation/clip_editor_screen.dart';
 import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
+import 'package:parrokit/features/content-studio/hub/presentation/content_studio_bridge_screen.dart';
 import 'package:parrokit/features/content-studio/hub/presentation/content_studio_hub_screen.dart';
 
 // Router 관련
@@ -342,6 +343,14 @@ ShellRoute get _shellRoute => ShellRoute(
         ),
 
         // Content Studio
+        GoRoute(
+          path: AppRoutes.contentStudioBridgePath,
+          name: AppRoutes.contentStudioBridge,
+          pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.contentStudioBridge,
+            child: ContentStudioBridgeScreen(),
+          ),
+        ),
         GoRoute(
           path: AppRoutes.contentStudioHubPath,
           name: AppRoutes.contentStudioHub,

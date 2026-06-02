@@ -4,7 +4,7 @@
 //
 // [역할]
 // 대시보드 메인 화면. 앱 홈 화면으로 사용.
-// 히어로 카드, 퀵 액션, 이어보기, 모음집, 랜덤 자막 섹션으로 구성.
+// 히어로 카드, 이어보기, 모음집, 랜덤 자막 섹션으로 구성.
 //
 // [레이어]
 // Presentation Layer - View
@@ -13,7 +13,6 @@
 // [구성 요소]
 // - HeaderSection: 상단 로고 + 클립 수 표시
 // - HeroSection: 오늘의 학습 카드
-// - QuickActionsSection: 빠른 액션 버튼들
 // - ContinueWatchingSection: 이어보기 리스트
 // - CollectionsSection: 모음집 그리드
 // - RandomSubtitleSection: 랜덤 자막 리스트
@@ -29,7 +28,6 @@ import 'package:parrokit/features/home/dashboard/presentation/widgets/dashboard_
 
 import 'sections/header_section.dart';
 import 'sections/hero_section.dart';
-import 'sections/quick_actions_section.dart';
 import 'sections/continue_watching_section.dart';
 import 'sections/collections_section.dart';
 import 'sections/random_subtitle_section.dart';
@@ -72,10 +70,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_isContentStudioExtended == shouldExtend) return;
     setState(() => _isContentStudioExtended = shouldExtend);
   }
-
-  // ─────────────────────────────────────────────────────────────────
-  // Actions
-  // ─────────────────────────────────────────────────────────────────
 
   /// Pull-to-refresh 핸들러
   Future<void> _onRefresh() async {
@@ -149,24 +143,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     heroClip: ui.heroClip,
                     loading: ui.loadingHero,
                     onTap: () => _navigateToHeroClip(ui.heroClip),
-                  ),
-                ),
-              ),
-
-              // ─────────────────────────────────────────────────────────
-              // 퀵 액션 섹션
-              // ─────────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: QuickActionsSection(
-                    onTapAdd: () => context.push('/clips/create'),
-                    onTapLibrary: () => context.go('/library'),
-                    onTapSearch: () => context.replaceNamed(
-                      AppRoutes.library,
-                      queryParameters: {'tab': '1'},
-                    ),
-                    onTapSettings: () => context.replaceNamed(AppRoutes.more),
                   ),
                 ),
               ),

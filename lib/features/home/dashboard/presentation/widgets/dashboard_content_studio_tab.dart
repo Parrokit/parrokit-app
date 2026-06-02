@@ -37,7 +37,7 @@ class DashboardContentStudioTab extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
-          onTap: () => context.go(AppRoutes.contentStudioHubPath),
+          onTap: () => context.go(AppRoutes.contentStudioBridgePath),
           child: Padding(
             padding:
                 EdgeInsets.symmetric(horizontal: isExtended ? 20.0 : 16.0),

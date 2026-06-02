@@ -29,6 +29,7 @@ abstract class AppRoutes {
   static const clipsCreate = 'clips_create';
   static const clipsEdit = 'clips_edit';
   static const clipsPlay = 'clips_play';
+  static const contentStudioBridge = 'content_studio_bridge';
   static const contentStudioHub = 'content_studio_hub';
   static const contentStudioCaptioning = 'content_studio_captioning';
   static const contentStudioTts = 'content_studio_tts';
@@ -78,6 +79,7 @@ abstract class AppRoutes {
   static const clipsCreatePath = 'create';
   static const clipsEditPath = 'edit';
   static const clipsPlayPath = 'play';
+  static const contentStudioBridgePath = '/content-studio';
   static const contentStudioHubPath = '/content-studio/hub';
   static const contentStudioCaptioningPath = '/content-studio/captioning';
   static const contentStudioTtsPath = '/content-studio/tts';
