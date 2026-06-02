@@ -15,6 +15,10 @@ class CommunityNotificationRepositoryImpl
     return _firestore.collection('users').doc(userId).collection('notifications');
   }
 
+  DocumentReference<Map<String, dynamic>> _userDoc(String userId) {
+    return _firestore.collection('users').doc(userId);
+  }
+
   @override
   Stream<List<CommunityNotificationItem>> watchNotifications(String userId) {
     if (userId.isEmpty) {
@@ -70,10 +74,25 @@ class CommunityNotificationRepositoryImpl
     if (userId.isEmpty || notificationId.isEmpty) return;
 
     try {
-      await _collection(userId).doc(notificationId).set({
-        'isRead': true,
-        'readAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      await _firestore.runTransaction((transaction) async {
+        final notificationRef = _collection(userId).doc(notificationId);
+        final userRef = _userDoc(userId);
+        final notificationSnap = await transaction.get(notificationRef);
+        if (!notificationSnap.exists) return;
+
+        final notificationData = notificationSnap.data() ?? const {};
+        final isRead = notificationData['isRead'] as bool? ?? false;
+        if (isRead) return;
+
+        transaction.set(notificationRef, {
+          'isRead': true,
+          'readAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        transaction.set(userRef, {
+          'unreadNotificationCount': FieldValue.increment(-1),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      });
     } catch (e) {
       AppLogger.e(
         '[CommunityNotification][Repository] markAsRead failed userId=$userId notificationId=$notificationId',
@@ -101,6 +120,10 @@ class CommunityNotificationRepositoryImpl
           'readAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       }
+      batch.set(_userDoc(userId), {
+        'unreadNotificationCount': 0,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
       await batch.commit();
     } catch (e) {
       AppLogger.e(
@@ -119,7 +142,23 @@ class CommunityNotificationRepositoryImpl
     if (userId.isEmpty || notificationId.isEmpty) return;
 
     try {
-      await _collection(userId).doc(notificationId).delete();
+      await _firestore.runTransaction((transaction) async {
+        final notificationRef = _collection(userId).doc(notificationId);
+        final userRef = _userDoc(userId);
+        final notificationSnap = await transaction.get(notificationRef);
+        if (!notificationSnap.exists) return;
+
+        final notificationData = notificationSnap.data() ?? const {};
+        final isRead = notificationData['isRead'] as bool? ?? false;
+
+        transaction.delete(notificationRef);
+        if (!isRead) {
+          transaction.set(userRef, {
+            'unreadNotificationCount': FieldValue.increment(-1),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      });
     } catch (e) {
       AppLogger.e(
         '[CommunityNotification][Repository] deleteNotification failed userId=$userId notificationId=$notificationId',
@@ -141,6 +180,10 @@ class CommunityNotificationRepositoryImpl
       for (final doc in snapshot.docs) {
         batch.delete(doc.reference);
       }
+      batch.set(_userDoc(userId), {
+        'unreadNotificationCount': 0,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
       await batch.commit();
     } catch (e) {
       AppLogger.e(

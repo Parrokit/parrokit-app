@@ -199,6 +199,7 @@ async function saveNotification(payload: NotificationPayload): Promise<void> {
     .doc(payload.recipientUserId)
     .collection("notifications")
     .doc(notificationId);
+  const userRef = db.collection("users").doc(payload.recipientUserId);
 
   const notificationData: Record<string, unknown> = {
     recipientUserId: payload.recipientUserId,
@@ -224,10 +225,19 @@ async function saveNotification(payload: NotificationPayload): Promise<void> {
     notificationData.actorDisplayName = payload.actorDisplayName;
   }
 
-  await docRef.set(
-    notificationData,
-    {merge: true},
-  );
+  await db.runTransaction(async (transaction) => {
+    const existingSnap = await transaction.get(docRef);
+    if (!existingSnap.exists) {
+      transaction.set(docRef, notificationData, {merge: true});
+      transaction.set(userRef, {
+        unreadNotificationCount: admin.firestore.FieldValue.increment(1),
+        updatedAt: admin.firestore.Timestamp.now(),
+      }, {merge: true});
+      return;
+    }
+
+    transaction.set(docRef, notificationData, {merge: true});
+  });
 }
 
 async function safeSendPushNotification(payload: NotificationPayload): Promise<void> {

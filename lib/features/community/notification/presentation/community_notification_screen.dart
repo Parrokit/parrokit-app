@@ -5,8 +5,37 @@ import 'package:parrokit/features/community/notification/presentation/providers/
 import 'package:parrokit/features/community/notification/presentation/sections/community_notification_list_section.dart';
 import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 
-class CommunityNotificationScreen extends StatelessWidget {
+class CommunityNotificationScreen extends StatefulWidget {
   const CommunityNotificationScreen({super.key});
+
+  @override
+  State<CommunityNotificationScreen> createState() =>
+      _CommunityNotificationScreenState();
+}
+
+class _CommunityNotificationScreenState extends State<CommunityNotificationScreen> {
+  CommunityNotificationProvider? _provider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextProvider = context.read<CommunityNotificationProvider>();
+    if (_provider == nextProvider) {
+      return;
+    }
+
+    _provider = nextProvider;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _provider?.activate();
+    });
+  }
+
+  @override
+  void dispose() {
+    _provider?.deactivate();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

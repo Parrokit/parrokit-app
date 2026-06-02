@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/router/app_routes.dart';
-import 'package:parrokit/features/community/notification/presentation/providers/community_notification_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/features/community/board/presentation/board_screen.dart';
 import 'package:parrokit/features/community/question/presentation/question_screen.dart';
 import 'package:parrokit/features/community/vote/presentation/vote_screen.dart';
@@ -138,8 +138,9 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
                 icon: Icon(Icons.search, color: colorScheme.onSurface),
                 onPressed: () {},
               ),
-              Consumer<CommunityNotificationProvider>(
-                builder: (context, notificationProvider, _) {
+              Consumer<UserProvider>(
+                builder: (context, userProvider, _) {
+                  final unreadCount = userProvider.unreadNotificationCount;
                   return Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -149,7 +150,7 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
                         onPressed: () =>
                             context.push(AppRoutes.communityNotificationPath),
                       ),
-                      if (notificationProvider.unreadCount > 0)
+                      if (unreadCount > 0)
                         Positioned(
                           right: 1,
                           bottom: 1,
@@ -164,9 +165,7 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
                                   color: colorScheme.surface, width: 2),
                             ),
                             child: Text(
-                              notificationProvider.unreadCount > 99
-                                  ? '99+'
-                                  : notificationProvider.unreadCount.toString(),
+                              unreadCount > 99 ? '99+' : unreadCount.toString(),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 9,

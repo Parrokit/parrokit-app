@@ -73,6 +73,10 @@ class UserRepository {
       photoUrl: fbUser.photoURL ?? serverUser?.photoUrl ?? localUser?.photoUrl,
       parrots: serverUser?.parrots ?? localUser?.parrots ?? 0,
       crackers: serverUser?.crackers ?? localUser?.crackers ?? 0,
+      unreadNotificationCount:
+          serverUser?.unreadNotificationCount ??
+          localUser?.unreadNotificationCount ??
+          0,
       blockedUserIds:
           serverUser?.blockedUserIds ?? localUser?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? localUser?.createdAt,
@@ -93,6 +97,10 @@ class UserRepository {
     } catch (_) {
       return null;
     }
+  }
+
+  Stream<AppUser?> watchUserById(String uid) {
+    return _firebaseUserService.watchUserDocument(uid: uid);
   }
 
   /// 이메일 + 비밀번호로 회원가입을 수행합니다.
@@ -131,6 +139,7 @@ class UserRepository {
       email: fbUser.email,
       parrots: 0,
       crackers: 0,
+      unreadNotificationCount: 0,
       createdAt: now,
       updatedAt: now,
     );
@@ -176,6 +185,10 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
+      unreadNotificationCount:
+          serverUser?.unreadNotificationCount ??
+          existingLocal?.unreadNotificationCount ??
+          0,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
@@ -232,6 +245,10 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
+      unreadNotificationCount:
+          serverUser?.unreadNotificationCount ??
+          existingLocal?.unreadNotificationCount ??
+          0,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
@@ -288,6 +305,10 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
+      unreadNotificationCount:
+          serverUser?.unreadNotificationCount ??
+          existingLocal?.unreadNotificationCount ??
+          0,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
@@ -400,6 +421,10 @@ class UserRepository {
           refreshed.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
+      unreadNotificationCount:
+          serverUser?.unreadNotificationCount ??
+          existingLocal?.unreadNotificationCount ??
+          0,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
@@ -600,6 +625,10 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 20,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 1000,
+      unreadNotificationCount:
+          serverUser?.unreadNotificationCount ??
+          existingLocal?.unreadNotificationCount ??
+          0,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),

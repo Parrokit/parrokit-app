@@ -21,6 +21,7 @@ class UserPrefs {
   static const _keyPhotoUrl = 'user.photoUrl';
   static const _keyParrots = 'user.parrots';
   static const _keyCrackers = 'user.crackers';
+  static const _keyUnreadNotificationCount = 'user.unreadNotificationCount';
   static const _keyBlockedUserIds = 'user.blockedUserIds';
   static const _keyLastNicknameChangedAt = 'user.lastNicknameChangedAt';
 
@@ -41,6 +42,7 @@ class UserPrefs {
     final photoUrl = _prefs.getString(_keyPhotoUrl);
     final parrots = _prefs.getInt(_keyParrots) ?? 0;
     final crackers = _prefs.getInt(_keyCrackers) ?? 0;
+    final unreadNotificationCount = _prefs.getInt(_keyUnreadNotificationCount) ?? 0;
     final blockedUserIds = _prefs.getStringList(_keyBlockedUserIds) ?? const [];
     
     final lastNicknameStr = _prefs.getString(_keyLastNicknameChangedAt);
@@ -53,6 +55,7 @@ class UserPrefs {
       photoUrl: photoUrl,
       parrots: parrots,
       crackers: crackers,
+      unreadNotificationCount: unreadNotificationCount,
       blockedUserIds: blockedUserIds,
       lastNicknameChangedAt: lastNicknameChangedAt,
     );
@@ -81,6 +84,7 @@ class UserPrefs {
 
     await _prefs.setInt(_keyParrots, user.parrots);
     await _prefs.setInt(_keyCrackers, user.crackers);
+    await _prefs.setInt(_keyUnreadNotificationCount, user.unreadNotificationCount);
     await _prefs.setStringList(_keyBlockedUserIds, user.blockedUserIds);
 
     if (user.lastNicknameChangedAt != null) {
@@ -99,6 +103,7 @@ class UserPrefs {
       _prefs.remove(_keyPhotoUrl),
       _prefs.remove(_keyParrots),
       _prefs.remove(_keyCrackers),
+      _prefs.remove(_keyUnreadNotificationCount),
       _prefs.remove(_keyBlockedUserIds),
       _prefs.remove(_keyLastNicknameChangedAt),
     ]);

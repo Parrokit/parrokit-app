@@ -22,6 +22,7 @@ class FirebaseUserService {
       if (photoUrl != null) 'photoUrl': photoUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'coins': 0,
+      'unreadNotificationCount': 0,
       'blockedUserIds': <String>[],
       'fcmTokens': <String>[],
       'isPremium': false,
@@ -218,6 +219,8 @@ class FirebaseUserService {
       photoUrl: data['photoUrl'],
       parrots: (data['parrots'] as num?)?.toInt() ?? 0,
       crackers: (data['crackers'] as num?)?.toInt() ?? 0,
+      unreadNotificationCount:
+          (data['unreadNotificationCount'] as num?)?.toInt() ?? 0,
       blockedUserIds: (data['blockedUserIds'] as List<dynamic>?)
               ?.map((value) => value.toString())
               .where((value) => value.isNotEmpty)
@@ -278,6 +281,8 @@ class FirebaseUserService {
       photoUrl: data['photoUrl'],
       parrots: (data['parrots'] as num?)?.toInt() ?? 0,
       crackers: (data['crackers'] as num?)?.toInt() ?? 0,
+      unreadNotificationCount:
+          (data['unreadNotificationCount'] as num?)?.toInt() ?? 0,
       blockedUserIds: (data['blockedUserIds'] as List<dynamic>?)
               ?.map((value) => value.toString())
               .where((value) => value.isNotEmpty)
@@ -289,5 +294,43 @@ class FirebaseUserService {
           ? (data['lastNicknameChangedAt'] as Timestamp).toDate()
           : null,
     );
+  }
+
+  Stream<AppUser?> watchUserDocument({required String uid}) {
+    if (uid.isEmpty) {
+      return Stream<AppUser?>.value(null);
+    }
+
+    return _firestore.collection('users').doc(uid).snapshots().map((snap) {
+      if (!snap.exists) {
+        return null;
+      }
+
+      final data = snap.data()!;
+      return AppUser(
+        id: uid,
+        displayName: data['displayName'],
+        email: data['email'],
+        photoUrl: data['photoUrl'],
+        parrots: (data['parrots'] as num?)?.toInt() ?? 0,
+        crackers: (data['crackers'] as num?)?.toInt() ?? 0,
+        unreadNotificationCount:
+            (data['unreadNotificationCount'] as num?)?.toInt() ?? 0,
+        blockedUserIds: (data['blockedUserIds'] as List<dynamic>?)
+                ?.map((value) => value.toString())
+                .where((value) => value.isNotEmpty)
+                .toList() ??
+            const [],
+        createdAt: data['createdAt'] != null
+            ? (data['createdAt'] as Timestamp).toDate()
+            : null,
+        updatedAt: data['updatedAt'] != null
+            ? (data['updatedAt'] as Timestamp).toDate()
+            : null,
+        lastNicknameChangedAt: data['lastNicknameChangedAt'] != null
+            ? (data['lastNicknameChangedAt'] as Timestamp).toDate()
+            : null,
+      );
+    });
   }
 }

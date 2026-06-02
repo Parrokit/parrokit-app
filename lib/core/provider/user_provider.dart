@@ -22,6 +22,8 @@ class UserProvider extends ChangeNotifier {
 
   AppUser? _currentUser;
   bool _isLoading = false;
+  StreamSubscription<AppUser?>? _userSubscription;
+  String? _watchedUserId;
 
   /// 라우터 새로고침 전용 Notifier (로그인 상태, 온보딩 상태 변경 시에만 호출)
   final ChangeNotifier routerRefreshNotifier = ChangeNotifier();
@@ -48,6 +50,9 @@ class UserProvider extends ChangeNotifier {
   /// 현재 차단한 유저 ID 목록
   List<String> get blockedUserIds => _currentUser?.blockedUserIds ?? const [];
 
+  /// 읽지 않은 알림 수
+  int get unreadNotificationCount => _currentUser?.unreadNotificationCount ?? 0;
+
   /// 앱 시작 시 혹은 필요한 시점에 호출해서
   /// - 저장된 유저를 불러오거나
   /// - 없으면 게스트 유저를 생성합니다.
@@ -56,6 +61,7 @@ class UserProvider extends ChangeNotifier {
 
     try {
       _currentUser = await _userRepository.getCurrentUser();
+      _startUserSubscription();
       _checkAndNotifyRouter();
     } finally {
       _setLoading(false);
@@ -93,6 +99,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> updateUser(AppUser user) async {
     await _userRepository.saveUser(user);
     _currentUser = user;
+    _startUserSubscription();
     notifyListeners();
     _checkAndNotifyRouter();
   }
@@ -124,7 +131,8 @@ class UserProvider extends ChangeNotifier {
       } else {
         _currentUser = user;
       }
-      
+      _startUserSubscription();
+
       unawaited(Purchases.logIn(_currentUser!.id));
       notifyListeners();
       _checkAndNotifyRouter();
@@ -145,6 +153,7 @@ class UserProvider extends ChangeNotifier {
         password: password,
       );
       _currentUser = user;
+      _startUserSubscription();
       unawaited(Purchases.logIn(user.id));
       notifyListeners();
       _checkAndNotifyRouter();
@@ -160,6 +169,7 @@ class UserProvider extends ChangeNotifier {
       final user = await _userRepository.signInWithGoogle();
       if (user != null) {
         _currentUser = user;
+        _startUserSubscription();
         unawaited(Purchases.logIn(user.id));
         notifyListeners();
         _checkAndNotifyRouter();
@@ -176,6 +186,7 @@ class UserProvider extends ChangeNotifier {
       final user = await _userRepository.signInWithKakao();
       if (user != null) {
         _currentUser = user;
+        _startUserSubscription();
         unawaited(Purchases.logIn(user.id));
         notifyListeners();
       }
@@ -191,6 +202,7 @@ class UserProvider extends ChangeNotifier {
       final user = await _userRepository.signInWithNaver();
       if (user != null) {
         _currentUser = user;
+        _startUserSubscription();
         unawaited(Purchases.logIn(user.id));
         _checkAndNotifyRouter();
         notifyListeners();
@@ -206,6 +218,7 @@ class UserProvider extends ChangeNotifier {
       final user = await _userRepository.signInWithApple();
       if (user != null) {
         _currentUser = user;
+        _startUserSubscription();
         unawaited(Purchases.logIn(user.id));
         _checkAndNotifyRouter();
         notifyListeners();
@@ -237,6 +250,7 @@ class UserProvider extends ChangeNotifier {
       final refreshed = await _userRepository.reloadFirebaseUser();
       if (refreshed != null) {
         _currentUser = refreshed;
+        _startUserSubscription();
         notifyListeners();
         _checkAndNotifyRouter();
       }
@@ -358,6 +372,7 @@ class UserProvider extends ChangeNotifier {
       await _userRepository.deleteAccount();
       () async { try { await Purchases.logOut(); } catch (_) {} }();
       _currentUser = null;
+      _stopUserSubscription();
       _checkAndNotifyRouter();
       notifyListeners();
     } finally {
@@ -373,6 +388,7 @@ class UserProvider extends ChangeNotifier {
       await _userRepository.signOut();
       () async { try { await Purchases.logOut(); } catch (_) {} }();
       _currentUser = null;
+      _stopUserSubscription();
       _checkAndNotifyRouter();
       notifyListeners();
     } finally {
@@ -384,5 +400,54 @@ class UserProvider extends ChangeNotifier {
     if (_isLoading == value) return;
     _isLoading = value;
     notifyListeners();
+  }
+
+  void _startUserSubscription() {
+    final userId = _currentUser?.id;
+    if (userId == null || userId.isEmpty) {
+      _stopUserSubscription();
+      return;
+    }
+
+    if (_watchedUserId == userId && _userSubscription != null) {
+      return;
+    }
+
+    _stopUserSubscription();
+    _watchedUserId = userId;
+
+    _userSubscription = _userRepository.watchUserById(userId).listen(
+      (user) {
+        if (user == null) return;
+        _currentUser = _currentUser == null ? user : _currentUser!.copyWith(
+          displayName: user.displayName,
+          email: user.email,
+          photoUrl: user.photoUrl,
+          parrots: user.parrots,
+          crackers: user.crackers,
+          unreadNotificationCount: user.unreadNotificationCount,
+          blockedUserIds: user.blockedUserIds,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          lastNicknameChangedAt: user.lastNicknameChangedAt,
+        );
+        notifyListeners();
+      },
+      onError: (error) {
+        AppLogger.e('[UserProvider] user watch failed userId=$userId', error: error);
+      },
+    );
+  }
+
+  void _stopUserSubscription() {
+    unawaited(_userSubscription?.cancel());
+    _userSubscription = null;
+    _watchedUserId = null;
+  }
+
+  @override
+  void dispose() {
+    _stopUserSubscription();
+    super.dispose();
   }
 }

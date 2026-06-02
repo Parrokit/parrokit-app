@@ -26,6 +26,7 @@ class CommunityNotificationProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   List<CommunityNotificationItem> _notifications = [];
+  bool _isActive = false;
 
   CommunityNotificationProvider({
     required WatchNotificationsUseCase watchNotificationsUseCase,
@@ -59,8 +60,7 @@ class CommunityNotificationProvider extends ChangeNotifier {
     _currentUserId = userId;
     _errorMessage = null;
     _notifications = [];
-    unawaited(_subscription?.cancel());
-    _subscription = null;
+    _stopListening();
 
     if (userId == null || userId.isEmpty) {
       if (previousUserId != null && previousUserId.isNotEmpty) {
@@ -72,9 +72,33 @@ class CommunityNotificationProvider extends ChangeNotifier {
       return;
     }
 
+    _notifyListenersSafe();
+    unawaited(_messagingService.syncUserToken(userId));
+
+    if (_isActive) {
+      _isLoading = true;
+      _notifyListenersSafe();
+      unawaited(_initForUser(userId));
+    }
+  }
+
+  Future<void> activate() async {
+    final userId = _currentUserId;
+    if (userId == null || userId.isEmpty) return;
+
+    if (_isActive) return;
+    _isActive = true;
     _isLoading = true;
     _notifyListenersSafe();
-    _initForUser(userId);
+
+    await _initForUser(userId);
+  }
+
+  Future<void> deactivate() async {
+    _isActive = false;
+    _stopListening();
+    _isLoading = false;
+    _notifyListenersSafe();
   }
 
   Future<void> refresh() async {
@@ -172,14 +196,19 @@ class CommunityNotificationProvider extends ChangeNotifier {
 
   Future<void> _initForUser(String userId) async {
     try {
-      await _messagingService.syncUserToken(userId);
-
       final initialNotifications =
           await _fetchNotificationsUseCase.execute(userId);
       _notifications = initialNotifications;
 
+      if (!_isActive) {
+        _isLoading = false;
+        _notifyListenersSafe();
+        return;
+      }
+
       _subscription = _watchNotificationsUseCase.execute(userId).listen(
         (items) {
+          if (!_isActive) return;
           _notifications = items;
           _errorMessage = null;
           _isLoading = false;
@@ -207,6 +236,11 @@ class CommunityNotificationProvider extends ChangeNotifier {
     }
   }
 
+  void _stopListening() {
+    unawaited(_subscription?.cancel());
+    _subscription = null;
+  }
+
   void _notifyListenersSafe() {
     if (hasListeners) {
       notifyListeners();
@@ -215,7 +249,7 @@ class CommunityNotificationProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    unawaited(_subscription?.cancel());
+    _stopListening();
     _messagingService.dispose();
     super.dispose();
   }
