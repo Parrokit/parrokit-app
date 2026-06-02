@@ -352,18 +352,4 @@ class FirebaseUserService {
     });
   }
 
-  Stream<int> watchUnreadNotificationCount({required String uid}) {
-    if (uid.isEmpty) {
-      return Stream<int>.value(0);
-    }
-
-    return _firestore.collection('users').doc(uid).snapshots().map((snap) {
-      if (!snap.exists) {
-        return 0;
-      }
-
-      final data = snap.data() ?? const <String, dynamic>{};
-      return (data['unreadNotificationCount'] as num?)?.toInt() ?? 0;
-    });
-  }
 }

@@ -38,14 +38,6 @@ class UserRepository {
         _naverSsoService = naverSsoService ?? NaverSsoService(),
         _appleSsoService = appleSsoService ?? AppleSsoService();
 
-  Future<int> _syncUnreadCount(String uid, {int fallback = 0}) async {
-    try {
-      return await _firebaseUserService.syncUnreadNotificationCount(uid: uid);
-    } catch (_) {
-      return fallback;
-    }
-  }
-
   /// 현재 로컬에 저장된 유저를 반환합니다.
   /// 저장된 유저가 없으면 null을 반환합니다.
   /// 현재 로그인된 Firebase 유저 + Firestore 유저 문서를 기준으로
@@ -71,12 +63,9 @@ class UserRepository {
     // 3. 로컬 캐시(SharedPreferences)에 저장된 유저 (폴백용)
     final localUser = _userPrefs.loadUser();
 
-    final syncedUnreadCount = await _syncUnreadCount(
-      fbUser.uid,
-      fallback: serverUser?.unreadNotificationCount ??
-          localUser?.unreadNotificationCount ??
-          0,
-    );
+    final unreadCount = serverUser?.unreadNotificationCount ??
+        localUser?.unreadNotificationCount ??
+        0;
 
     // 4. 최종적으로 앱에서 쓸 AppUser 조합
     final user = AppUser(
@@ -88,7 +77,7 @@ class UserRepository {
       photoUrl: fbUser.photoURL ?? serverUser?.photoUrl ?? localUser?.photoUrl,
       parrots: serverUser?.parrots ?? localUser?.parrots ?? 0,
       crackers: serverUser?.crackers ?? localUser?.crackers ?? 0,
-      unreadNotificationCount: syncedUnreadCount,
+      unreadNotificationCount: unreadCount,
       blockedUserIds:
           serverUser?.blockedUserIds ?? localUser?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? localUser?.createdAt,
@@ -113,10 +102,6 @@ class UserRepository {
 
   Stream<AppUser?> watchUserById(String uid) {
     return _firebaseUserService.watchUserDocument(uid: uid);
-  }
-
-  Stream<int> watchUnreadNotificationCount(String uid) {
-    return _firebaseUserService.watchUnreadNotificationCount(uid: uid);
   }
 
   /// 이메일 + 비밀번호로 회원가입을 수행합니다.
@@ -198,12 +183,9 @@ class UserRepository {
 
     // 2) 로컬에 저장된 유저는 캐시/폴백 용도로만 사용
     final existingLocal = _userPrefs.loadUser();
-    final syncedUnreadCount = await _syncUnreadCount(
-      fbUser.uid,
-      fallback: serverUser?.unreadNotificationCount ??
-          existingLocal?.unreadNotificationCount ??
-          0,
-    );
+    final unreadCount = serverUser?.unreadNotificationCount ??
+        existingLocal?.unreadNotificationCount ??
+        0;
 
     final user = AppUser(
       id: fbUser.uid,
@@ -215,7 +197,7 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
-      unreadNotificationCount: syncedUnreadCount,
+      unreadNotificationCount: unreadCount,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
@@ -261,12 +243,9 @@ class UserRepository {
 
     // 4) 로컬 캐시 조회
     final existingLocal = _userPrefs.loadUser();
-    final syncedUnreadCount = await _syncUnreadCount(
-      fbUser.uid,
-      fallback: serverUser?.unreadNotificationCount ??
-          existingLocal?.unreadNotificationCount ??
-          0,
-    );
+    final unreadCount = serverUser?.unreadNotificationCount ??
+        existingLocal?.unreadNotificationCount ??
+        0;
 
     final user = AppUser(
       id: fbUser.uid,
@@ -278,7 +257,7 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
-      unreadNotificationCount: syncedUnreadCount,
+      unreadNotificationCount: unreadCount,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
@@ -324,12 +303,9 @@ class UserRepository {
 
     // 4) 로컬 캐시 조회
     final existingLocal = _userPrefs.loadUser();
-    final syncedUnreadCount = await _syncUnreadCount(
-      fbUser.uid,
-      fallback: serverUser?.unreadNotificationCount ??
-          existingLocal?.unreadNotificationCount ??
-          0,
-    );
+    final unreadCount = serverUser?.unreadNotificationCount ??
+        existingLocal?.unreadNotificationCount ??
+        0;
 
     final user = AppUser(
       id: fbUser.uid,
@@ -341,7 +317,7 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
-      unreadNotificationCount: syncedUnreadCount,
+      unreadNotificationCount: unreadCount,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
@@ -384,12 +360,9 @@ class UserRepository {
 
     // 3) 로컬 캐시 조회
     final existingLocal = _userPrefs.loadUser();
-    final syncedUnreadCount = await _syncUnreadCount(
-      fbUser.uid,
-      fallback: serverUser?.unreadNotificationCount ??
-          existingLocal?.unreadNotificationCount ??
-          0,
-    );
+    final unreadCount = serverUser?.unreadNotificationCount ??
+        existingLocal?.unreadNotificationCount ??
+        0;
 
     final user = AppUser(
       id: fbUser.uid,
@@ -401,7 +374,7 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
-      unreadNotificationCount: syncedUnreadCount,
+      unreadNotificationCount: unreadCount,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
@@ -453,12 +426,9 @@ class UserRepository {
         await _firebaseUserService.loadUserDocument(uid: refreshed.uid);
 
     final existingLocal = _userPrefs.loadUser();
-    final syncedUnreadCount = await _syncUnreadCount(
-      refreshed.uid,
-      fallback: serverUser?.unreadNotificationCount ??
-          existingLocal?.unreadNotificationCount ??
-          0,
-    );
+    final unreadCount = serverUser?.unreadNotificationCount ??
+        existingLocal?.unreadNotificationCount ??
+        0;
     final user = AppUser(
       id: refreshed.uid,
       displayName: refreshed.displayName ??
@@ -469,7 +439,7 @@ class UserRepository {
           refreshed.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
-      unreadNotificationCount: syncedUnreadCount,
+      unreadNotificationCount: unreadCount,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
@@ -658,10 +628,10 @@ class UserRepository {
       );
     }
 
-    final syncedUnreadCount =
-        await _firebaseUserService.syncUnreadNotificationCount(uid: fbUser.uid);
-
     final existingLocal = _userPrefs.loadUser();
+    final unreadCount = serverUser?.unreadNotificationCount ??
+        existingLocal?.unreadNotificationCount ??
+        0;
 
     final user = AppUser(
       id: fbUser.uid,
@@ -673,7 +643,7 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 20,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 1000,
-      unreadNotificationCount: syncedUnreadCount,
+      unreadNotificationCount: unreadCount,
       blockedUserIds:
           serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),

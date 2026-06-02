@@ -53,10 +53,6 @@ class UserProvider extends ChangeNotifier {
   /// 읽지 않은 알림 수
   int get unreadNotificationCount => _currentUser?.unreadNotificationCount ?? 0;
 
-  Stream<int> watchUnreadNotificationCount(String userId) {
-    return _userRepository.watchUnreadNotificationCount(userId);
-  }
-
   /// 앱 시작 시 혹은 필요한 시점에 호출해서
   /// - 저장된 유저를 불러오거나
   /// - 없으면 게스트 유저를 생성합니다.
