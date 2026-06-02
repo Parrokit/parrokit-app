@@ -19,6 +19,7 @@ import 'package:parrokit/data/models/comment.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'vote_screen.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_block_actions.dart';
 import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 
 class VoteViewScreen extends StatefulWidget {
@@ -503,6 +504,12 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
             },
           ),
         if (!isMyComment)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: comment.authorId,
+            targetDisplayName: comment.authorNickname,
+          ),
+        if (!isMyComment)
           CommunityOptionAction(
             label: '신고',
             icon: Icons.report_outlined,
@@ -556,6 +563,12 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                 );
               }
             },
+          ),
+        if (!isMyPost)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: vote.authorId,
+            targetDisplayName: vote.authorNickname,
           ),
         if (!isMyPost)
           CommunityOptionAction(

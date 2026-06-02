@@ -6,6 +6,7 @@ import 'package:parrokit/features/community/shell/presentation/providers/communi
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_block_actions.dart';
 import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 
 class QuestionViewScreen extends StatefulWidget {
@@ -210,6 +211,12 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
             },
           ),
         if (!isMyPost)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: question.authorId,
+            targetDisplayName: question.authorNickname,
+          ),
+        if (!isMyPost)
           CommunityOptionAction(
             label: '신고',
             icon: Icons.report_outlined,
@@ -243,6 +250,12 @@ class _QuestionViewScreenState extends State<QuestionViewScreen> {
                 SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
               );
             },
+          ),
+        if (!isMyComment)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: answer.authorId,
+            targetDisplayName: answer.authorNickname,
           ),
         if (!isMyComment)
           CommunityOptionAction(

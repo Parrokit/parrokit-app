@@ -3,6 +3,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_block_actions.dart';
 import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
@@ -220,6 +221,12 @@ class QuestionRepliesSection extends StatelessWidget {
                 SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
               );
             },
+          ),
+        if (!isMyComment)
+          buildCommunityBlockAction(
+            context: context,
+            targetUid: answer.authorId,
+            targetDisplayName: answer.authorNickname,
           ),
         if (!isMyComment)
           CommunityOptionAction(

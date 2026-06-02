@@ -128,6 +128,8 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
     BoardOptionsHandler.showCommentOptionsSheet(
       context: context,
       isMyComment: isMyComment,
+      blockedUserId: comment.authorId,
+      blockedUserDisplayName: comment.authorNickname,
       onDelete: () async {
         final provider = context.read<CommunityProvider>();
         final colorScheme = Theme.of(context).colorScheme;
