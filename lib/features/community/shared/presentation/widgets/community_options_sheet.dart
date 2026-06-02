@@ -33,7 +33,7 @@ Future<void> showCommunityOptionsSheet({
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            children: [
               ...actions.map(
                 (action) => _CommunityOptionActionTile(
                   action: action,
@@ -78,7 +78,7 @@ class _CommunityOptionActionTile extends StatelessWidget {
     final foregroundColor =
         action.isDestructive ? AppColors.danger : colorScheme.onSurface;
 
-    return InkWell(
+      return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -88,6 +88,14 @@ class _CommunityOptionActionTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (action.icon != null) ...[
+              Icon(
+                action.icon,
+                size: 20,
+                color: foregroundColor,
+              ),
+              const SizedBox(width: 10),
+            ],
             Text(
               action.label,
               style: TextStyle(

@@ -26,7 +26,7 @@ class CommunityNotificationTile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _buildLeadingIcon(colorScheme),
               const SizedBox(width: 12),

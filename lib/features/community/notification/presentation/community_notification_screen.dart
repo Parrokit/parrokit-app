@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 import 'package:parrokit/features/community/notification/presentation/providers/community_notification_provider.dart';
 import 'package:parrokit/features/community/notification/presentation/sections/community_notification_list_section.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 
 class CommunityNotificationScreen extends StatelessWidget {
   const CommunityNotificationScreen({super.key});
@@ -34,45 +35,11 @@ class CommunityNotificationScreen extends StatelessWidget {
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: provider.unreadCount == 0 ? null : provider.markAllAsRead,
-                child: const Text(
-                  '모두 읽음',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: provider.hasNotifications
-                    ? () async {
-                        await provider.deleteAllNotifications();
-                        if (!context.mounted) return;
-                        if (provider.errorMessage == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('알림을 모두 삭제했습니다.')),
-                          );
-                        }
-                      }
-                    : null,
-                child: const Text(
-                  '모두 지우기',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.danger,
-                  ),
-                ),
-              ),
               IconButton(
-                onPressed: provider.refresh,
-                icon: const Icon(
-                  Icons.refresh_rounded,
-                  size: 24,
-                  color: Colors.black87,
-                ),
+                onPressed: provider.hasNotifications
+                    ? () => _showNotificationActionsSheet(context, provider)
+                    : null,
+                icon: const Icon(Icons.more_vert_rounded, size: 24, color: Colors.black87),
               ),
               const SizedBox(width: 4),
             ],
@@ -106,6 +73,44 @@ class CommunityNotificationScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _showNotificationActionsSheet(
+    BuildContext context,
+    CommunityNotificationProvider provider,
+  ) async {
+    await showCommunityOptionsSheet(
+      context: context,
+      title: '알림 메뉴',
+      actions: [
+        CommunityOptionAction(
+          label: '모두 읽음',
+          icon: Icons.done_all_rounded,
+          onTap: provider.unreadCount == 0 ? () async {} : provider.markAllAsRead,
+        ),
+        CommunityOptionAction(
+          label: '모두 지우기',
+          icon: Icons.delete_sweep_outlined,
+          isDestructive: true,
+          onTap: provider.hasNotifications
+              ? () async {
+                  await provider.deleteAllNotifications();
+                  if (!context.mounted) return;
+                  if (provider.errorMessage == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('알림을 모두 삭제했습니다.')),
+                    );
+                  }
+                }
+              : () async {},
+        ),
+        CommunityOptionAction(
+          label: '새로 고침',
+          icon: Icons.refresh_rounded,
+          onTap: provider.refresh,
+        ),
+      ],
     );
   }
 }
