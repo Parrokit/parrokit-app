@@ -130,12 +130,22 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: 16,
-                child: Center(
-                  child: DashboardStudioSwitchFab(
-                    selectedIndex: _selectedIndex,
-                    onSelectedIndexChanged: _setPage,
-                  ),
+                bottom: 24,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    DashboardStudioSwitchFab(
+                      selectedIndex: _selectedIndex,
+                      onSelectedIndexChanged: _setPage,
+                    ),
+                    const SizedBox(width: 8),
+                    AnimatedScale(
+                      scale: _isChatBotVisible ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
+                      child: const ChatBotFab(),
+                    ),
+                  ],
                 ),
               ),
               Positioned(
@@ -153,7 +163,8 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                         color: bg,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                            color: Colors.black
+                                .withValues(alpha: isDark ? 0.3 : 0.05),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -167,9 +178,15 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                             SizedBox(
                               width: MediaQuery.of(context).size.width / 3,
                               child: _AppBarOptionItem(
-                                icon: _isChatBotVisible ? Icons.visibility_off : Icons.visibility,
-                                label: _isChatBotVisible ? 'AI 챗봇 숨기기' : 'AI 챗봇 켜기',
-                                iconColor: _isChatBotVisible ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.primary,
+                                icon: _isChatBotVisible
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                label: _isChatBotVisible
+                                    ? 'AI 챗봇 숨기기'
+                                    : 'AI 챗봇 켜기',
+                                iconColor: _isChatBotVisible
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : theme.colorScheme.primary,
                                 onTap: () {
                                   setState(() {
                                     _isChatBotVisible = !_isChatBotVisible;
@@ -200,16 +217,6 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                       ),
                     ),
                   ),
-                ),
-              ),
-              Positioned(
-                right: 16,
-                bottom: 96,
-                child: AnimatedScale(
-                  scale: _isChatBotVisible ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutBack,
-                  child: const ChatBotFab(),
                 ),
               ),
             ],
