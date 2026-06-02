@@ -421,7 +421,7 @@ class UserRepository {
       return null;
     }
 
-    // 서버의 유저 문서를 먼저 조회해서 coins 등을 동기화
+    // 서버의 유저 문서를 먼저 조회해서 parrots 등을 동기화
     final serverUser =
         await _firebaseUserService.loadUserDocument(uid: refreshed.uid);
 

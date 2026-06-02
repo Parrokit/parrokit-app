@@ -3,12 +3,15 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:parrokit/data/models/user.dart';
+import 'package:parrokit/core/services/firebase/migrations/coins_to_parrots_migration.dart';
 
 class FirebaseUserService {
   final FirebaseFirestore _firestore;
+  final CoinsToParrotsMigration _coinsToParrotsMigration;
 
   FirebaseUserService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _coinsToParrotsMigration = CoinsToParrotsMigration();
 
   Future<void> initUserDocument({
     required String uid,
@@ -21,7 +24,8 @@ class FirebaseUserService {
       'email': email,
       if (photoUrl != null) 'photoUrl': photoUrl,
       'createdAt': FieldValue.serverTimestamp(),
-      'coins': 0,
+      'parrots': 0,
+      'coins': FieldValue.delete(),
       'unreadNotificationCount': 0,
       'blockedUserIds': <String>[],
       'fcmTokens': <String>[],
@@ -42,6 +46,7 @@ class FirebaseUserService {
   }) async {
     await _firestore.collection('users').doc(uid).update({
       'parrots': parrots,
+      'coins': FieldValue.delete(),
       'crackers': crackers,
       'lastPurchaseAt': FieldValue.serverTimestamp(),
     });
@@ -81,6 +86,7 @@ class FirebaseUserService {
       
       transaction.update(userRef, {
         'parrots': currentParrots,
+        'coins': FieldValue.delete(),
         'crackers': currentCrackers,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -230,30 +236,11 @@ class FirebaseUserService {
     }
 
     final data = snap.data()!;
-    return AppUser(
-      id: uid,
-      displayName: data['displayName'],
-      email: data['email'],
-      photoUrl: data['photoUrl'],
-      parrots: (data['parrots'] as num?)?.toInt() ?? 0,
-      crackers: (data['crackers'] as num?)?.toInt() ?? 0,
-      unreadNotificationCount:
-          (data['unreadNotificationCount'] as num?)?.toInt() ?? 0,
-      blockedUserIds: (data['blockedUserIds'] as List<dynamic>?)
-              ?.map((value) => value.toString())
-              .where((value) => value.isNotEmpty)
-              .toList() ??
-          const [],
-      createdAt: data['createdAt'] != null
-          ? (data['createdAt'] as Timestamp).toDate()
-          : null,
-      updatedAt: data['updatedAt'] != null
-          ? (data['updatedAt'] as Timestamp).toDate()
-          : null,
-      lastNicknameChangedAt: data['lastNicknameChangedAt'] != null
-          ? (data['lastNicknameChangedAt'] as Timestamp).toDate()
-          : null,
+    await _coinsToParrotsMigration.migrateLegacyCoinsField(
+      userRef: snap.reference,
+      data: data,
     );
+    return _coinsToParrotsMigration.buildAppUser(uid: uid, data: data);
   }
 
   Future<void> deleteUserDocument({required String uid}) async {
@@ -292,26 +279,11 @@ class FirebaseUserService {
 
     final doc = snapshot.docs.first;
     final data = doc.data();
-    return AppUser(
-      id: doc.id,
-      displayName: data['displayName'],
-      email: data['email'],
-      photoUrl: data['photoUrl'],
-      parrots: (data['parrots'] as num?)?.toInt() ?? 0,
-      crackers: (data['crackers'] as num?)?.toInt() ?? 0,
-      unreadNotificationCount:
-          (data['unreadNotificationCount'] as num?)?.toInt() ?? 0,
-      blockedUserIds: (data['blockedUserIds'] as List<dynamic>?)
-              ?.map((value) => value.toString())
-              .where((value) => value.isNotEmpty)
-              .toList() ??
-          const [],
-      createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : null,
-      updatedAt: data['updatedAt'] != null ? (data['updatedAt'] as Timestamp).toDate() : null,
-      lastNicknameChangedAt: data['lastNicknameChangedAt'] != null
-          ? (data['lastNicknameChangedAt'] as Timestamp).toDate()
-          : null,
+    await _coinsToParrotsMigration.migrateLegacyCoinsField(
+      userRef: doc.reference,
+      data: data,
     );
+    return _coinsToParrotsMigration.buildAppUser(uid: doc.id, data: data);
   }
 
   Stream<AppUser?> watchUserDocument({required String uid}) {
@@ -319,36 +291,17 @@ class FirebaseUserService {
       return Stream<AppUser?>.value(null);
     }
 
-    return _firestore.collection('users').doc(uid).snapshots().map((snap) {
+    return _firestore.collection('users').doc(uid).snapshots().asyncMap((snap) async {
       if (!snap.exists) {
         return null;
       }
 
       final data = snap.data()!;
-      return AppUser(
-        id: uid,
-        displayName: data['displayName'],
-        email: data['email'],
-        photoUrl: data['photoUrl'],
-        parrots: (data['parrots'] as num?)?.toInt() ?? 0,
-        crackers: (data['crackers'] as num?)?.toInt() ?? 0,
-        unreadNotificationCount:
-            (data['unreadNotificationCount'] as num?)?.toInt() ?? 0,
-        blockedUserIds: (data['blockedUserIds'] as List<dynamic>?)
-                ?.map((value) => value.toString())
-                .where((value) => value.isNotEmpty)
-                .toList() ??
-            const [],
-        createdAt: data['createdAt'] != null
-            ? (data['createdAt'] as Timestamp).toDate()
-            : null,
-        updatedAt: data['updatedAt'] != null
-            ? (data['updatedAt'] as Timestamp).toDate()
-            : null,
-        lastNicknameChangedAt: data['lastNicknameChangedAt'] != null
-            ? (data['lastNicknameChangedAt'] as Timestamp).toDate()
-            : null,
+      await _coinsToParrotsMigration.migrateLegacyCoinsField(
+        userRef: snap.reference,
+        data: data,
       );
+      return _coinsToParrotsMigration.buildAppUser(uid: uid, data: data);
     });
   }
 

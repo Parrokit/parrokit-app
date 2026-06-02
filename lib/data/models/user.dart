@@ -5,7 +5,7 @@
 /// - displayName : 화면에 표시할 이름
 /// - email       : 로그인 이메일 (없을 수도 있음)
 /// - photoUrl    : 프로필 이미지 URL (없을 수도 있음)
-/// - coins       : 유저가 보유한 코인 수 (기본값 0)
+/// - parrots     : 유저가 보유한 패롯 수 (기본값 0)
 /// - unreadNotificationCount: 읽지 않은 알림 수
 /// - blockedUserIds: 차단한 유저 ID 목록
 /// - createdAt   : 계정이 처음 생성된 시각 (없으면 null)
@@ -121,7 +121,6 @@ class AppUser {
       'parrots': parrots,
       'crackers': crackers,
       'unreadNotificationCount': unreadNotificationCount,
-      'coins': parrots, // 호환용
       'blockedUserIds': blockedUserIds,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
