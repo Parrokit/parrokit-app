@@ -1,5 +1,7 @@
+/* eslint-disable require-jsdoc, max-len, indent */
+
 import * as admin from "firebase-admin";
-import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import * as functions from "firebase-functions/v1";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 
 const db = admin.firestore();
@@ -24,15 +26,13 @@ type NotificationPayload = {
   routePath: string;
 };
 
-export const onCommunityCommentCreated = onDocumentCreated(
-  "posts/{postId}/comments/{commentId}",
-  async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) return;
-
+export const onCommunityCommentCreated = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}/comments/{commentId}")
+  .onCreate(async (snapshot: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
     const commentData = snapshot.data() as Record<string, unknown>;
-    const postId = event.params.postId;
-    const commentId = event.params.commentId;
+    const postId = context.params.postId;
+    const commentId = context.params.commentId;
     const authorId = asString(commentData.authorId);
     if (!authorId) return;
 
@@ -110,8 +110,7 @@ export const onCommunityCommentCreated = onDocumentCreated(
         await safeSendPushNotification(payload);
       }),
     );
-  }
-);
+  });
 
 export const onVoteEndNotification = onSchedule(
   "every 10 minutes",
@@ -183,13 +182,32 @@ async function saveNotification(payload: NotificationPayload): Promise<void> {
     .collection("notifications")
     .doc(notificationId);
 
+  const notificationData: Record<string, unknown> = {
+    recipientUserId: payload.recipientUserId,
+    notificationType: payload.notificationType,
+    boardType: payload.boardType,
+    postId: payload.postId,
+    actorId: payload.actorId,
+    title: payload.title,
+    body: payload.body,
+    routePath: payload.routePath,
+    isRead: false,
+    createdAt: admin.firestore.Timestamp.now(),
+    readAt: null,
+  };
+
+  if (payload.commentId) {
+    notificationData.commentId = payload.commentId;
+  }
+  if (payload.parentCommentId) {
+    notificationData.parentCommentId = payload.parentCommentId;
+  }
+  if (payload.actorDisplayName) {
+    notificationData.actorDisplayName = payload.actorDisplayName;
+  }
+
   await docRef.set(
-    {
-      ...payload,
-      isRead: false,
-      createdAt: admin.firestore.Timestamp.now(),
-      readAt: null,
-    },
+    notificationData,
     {merge: true},
   );
 }
