@@ -17,6 +17,7 @@ class _FakeActivityRepository implements ActivityRepository {
     required String userId,
     required String boardType,
     required String activityType,
+    int limit = 100,
   }) async {
     return [];
   }

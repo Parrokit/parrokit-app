@@ -360,7 +360,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
@@ -395,7 +395,7 @@ class _BoardWriteScreenState extends State<BoardWriteScreen> {
                                 fontSize: 18,
                                 height: 1.6,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ),

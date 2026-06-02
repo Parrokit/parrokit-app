@@ -17,6 +17,7 @@ class ActivityRepositoryImpl implements ActivityRepository {
     required String userId,
     required String boardType,
     required String activityType,
+    int limit = 100,
   }) async {
     if (userId.isEmpty) return [];
 
@@ -31,6 +32,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
               .collection('users')
               .doc(userId)
               .collection('voted_posts')
+              .orderBy('votedAt', descending: true)
+              .limit(limit)
               .get();
           for (final votedDoc in votedPostsSnapshot.docs) {
             latestVotedAtByPostId[votedDoc.id] =
@@ -53,6 +56,7 @@ class ActivityRepositoryImpl implements ActivityRepository {
               .where('authorId', isEqualTo: userId)
               .where('postType', isEqualTo: boardType)
               .orderBy('createdAt', descending: true)
+              .limit(limit)
               .get();
 
           for (final doc in snapshot.docs) {
@@ -68,6 +72,7 @@ class ActivityRepositoryImpl implements ActivityRepository {
             .where('authorId', isEqualTo: userId)
             .where('postType', isEqualTo: boardType)
             .orderBy('createdAt', descending: true)
+            .limit(limit)
             .get();
 
         for (final doc in snapshot.docs) {
@@ -104,6 +109,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
             .collection('users')
             .doc(userId)
             .collection('likes')
+            .orderBy('createdAt', descending: true)
+            .limit(limit)
             .get();
 
         final postIds = likesSnapshot.docs.map((doc) => doc.id).toList();
@@ -121,6 +128,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
             .collection('users')
             .doc(userId)
             .collection('comment_likes')
+            .orderBy('createdAt', descending: true)
+            .limit(limit)
             .get();
 
         for (final likeDoc in likesSnapshot.docs) {
@@ -152,6 +161,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
             .collection('users')
             .doc(userId)
             .collection('scraps')
+            .orderBy('createdAt', descending: true)
+            .limit(limit)
             .get();
 
         final postIds = scrapsSnapshot.docs.map((doc) => doc.id).toList();

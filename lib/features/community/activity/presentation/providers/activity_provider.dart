@@ -22,6 +22,7 @@ class ActivityProvider extends ChangeNotifier {
     required String userId,
     required String boardType,
     required String activityType,
+    int limit = 100,
   }) async {
     _isLoading = true;
     _error = null;
@@ -32,6 +33,7 @@ class ActivityProvider extends ChangeNotifier {
         userId: userId,
         boardType: boardType,
         activityType: activityType,
+        limit: limit,
       );
     } catch (e) {
       _error = e.toString();

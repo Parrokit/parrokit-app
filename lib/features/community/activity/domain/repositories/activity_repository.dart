@@ -5,5 +5,6 @@ abstract class ActivityRepository {
     required String userId,
     required String boardType,
     required String activityType,
+    int limit,
   });
 }

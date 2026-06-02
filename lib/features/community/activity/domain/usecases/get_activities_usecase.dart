@@ -10,11 +10,13 @@ class GetActivitiesUseCase {
     required String userId,
     required String boardType,
     required String activityType,
+    int limit = 100,
   }) {
     return _repository.getActivities(
       userId: userId,
       boardType: boardType,
       activityType: activityType,
+      limit: limit,
     );
   }
 }
