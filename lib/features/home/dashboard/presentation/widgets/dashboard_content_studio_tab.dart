@@ -21,8 +21,6 @@ class DashboardContentStudioTab extends StatelessWidget {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       height: 56,
-      width: isExtended ? null : 56,
-      padding: EdgeInsets.symmetric(horizontal: isExtended ? 20 : 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
@@ -40,46 +38,49 @@ class DashboardContentStudioTab extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
           onTap: () => context.go(AppRoutes.contentStudioHubPath),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.auto_awesome_rounded, color: accent, size: 19),
-              ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                child: SizedBox(
-                  width: isExtended ? null : 0,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(width: 8),
-                      AnimatedOpacity(
-                        duration: const Duration(milliseconds: 200),
-                        opacity: isExtended ? 1 : 0,
-                        child: const Text(
-                          '콘텐츠 제작',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.clip,
-                        ),
-                      ),
-                    ],
+          child: Padding(
+            padding:
+                EdgeInsets.symmetric(horizontal: isExtended ? 20.0 : 16.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    color: accent,
+                    size: 19,
                   ),
                 ),
-              ),
-            ],
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  child: ClipRect(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: isExtended ? 1 : 0,
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(width: 8),
+                          Text(
+                            '콘텐츠 제작',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.clip,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
