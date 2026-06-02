@@ -111,6 +111,7 @@ class CommunityActivityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final userId = userProvider.currentUser?.id ?? '';
 
@@ -142,7 +143,7 @@ class CommunityActivityScreen extends StatelessWidget {
             if (provider.error != null) {
               return Center(
                 child: Text('오류가 발생했습니다: ${provider.error}',
-                    style: const TextStyle(color: Colors.red)),
+                    style: TextStyle(color: colorScheme.error)),
               );
             }
 
@@ -154,10 +155,10 @@ class CommunityActivityScreen extends StatelessWidget {
                     const Icon(Icons.inbox_rounded,
                         size: 64, color: AppColors.textDisabled),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       '아직 활동 내역이 없습니다.',
                       style: TextStyle(
-                          fontSize: 16, color: AppColors.textSecondary),
+                          fontSize: 16, color: colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -172,17 +173,17 @@ class CommunityActivityScreen extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: colorScheme.surface,
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey[200]!),
+                      bottom: BorderSide(color: colorScheme.outlineVariant),
                     ),
                   ),
                   child: Text(
                     _getTotalCountLabel(provider.activities.length),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

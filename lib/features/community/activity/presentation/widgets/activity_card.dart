@@ -15,14 +15,15 @@ class ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           border: Border(
-            bottom: BorderSide(color: Colors.grey[200]!),
+            bottom: BorderSide(color: colorScheme.outlineVariant),
           ),
         ),
         child: Column(
@@ -30,15 +31,15 @@ class ActivityCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                _buildBoardBadge(),
+                _buildBoardBadge(context),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -49,9 +50,9 @@ class ActivityCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               item.content,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
                 height: 1.4,
               ),
               maxLines: 2,
@@ -62,20 +63,21 @@ class ActivityCard extends StatelessWidget {
               children: [
                 Text(
                   DateFormat('yyyy.MM.dd HH:mm').format(item.createdAt),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textTertiary,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const Spacer(),
-                _buildCountIcon(Icons.thumb_up_alt_outlined, item.likeCount),
+                _buildCountIcon(context, Icons.thumb_up_alt_outlined, item.likeCount),
                 const SizedBox(width: 12),
                 _buildCountIcon(
+                  context,
                   Icons.chat_bubble_outline_rounded,
                   item.commentCount,
                 ),
                 const SizedBox(width: 12),
-                _buildCountIcon(Icons.remove_red_eye_outlined, item.viewCount),
+                _buildCountIcon(context, Icons.remove_red_eye_outlined, item.viewCount),
               ],
             ),
           ],
@@ -84,42 +86,57 @@ class ActivityCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCountIcon(IconData icon, int count) {
+  Widget _buildCountIcon(BuildContext context, IconData icon, int count) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Icon(icon, size: 14, color: AppColors.textTertiary),
+        Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 4),
         Text(
           count.toString(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: AppColors.textTertiary,
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBoardBadge() {
+  Widget _buildBoardBadge(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Color bgColor;
     Color textColor;
     String label;
 
     switch (item.boardType) {
       case 'question':
-        bgColor = AppColors.communityQuestionAccentSoft;
-        textColor = AppColors.communityQuestionAccent;
+        bgColor = isDark
+            ? colorScheme.secondaryContainer
+            : AppColors.communityQuestionAccentSoft;
+        textColor = isDark
+            ? colorScheme.onSecondaryContainer
+            : AppColors.communityQuestionAccent;
         label = '질문';
         break;
       case 'vote':
-        bgColor = AppColors.communityVoteAccentSoft;
-        textColor = AppColors.communityVoteAccent;
+        bgColor = isDark
+            ? colorScheme.tertiaryContainer
+            : AppColors.communityVoteAccentSoft;
+        textColor = isDark
+            ? colorScheme.onTertiaryContainer
+            : AppColors.communityVoteAccent;
         label = '투표';
         break;
       case 'board':
       default:
-        bgColor = AppColors.communityBoardAccentSoft;
-        textColor = AppColors.communityBoardAccent;
+        bgColor = isDark
+            ? colorScheme.primaryContainer
+            : AppColors.communityBoardAccentSoft;
+        textColor = isDark
+            ? colorScheme.onPrimaryContainer
+            : AppColors.communityBoardAccent;
         label = '일반';
         break;
     }
