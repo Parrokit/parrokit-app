@@ -115,6 +115,10 @@ class UserRepository {
     return _firebaseUserService.watchUserDocument(uid: uid);
   }
 
+  Stream<int> watchUnreadNotificationCount(String uid) {
+    return _firebaseUserService.watchUnreadNotificationCount(uid: uid);
+  }
+
   /// 이메일 + 비밀번호로 회원가입을 수행합니다.
   /// - Firebase Auth 에 사용자 생성
   /// - 생성된 사용자 정보를 기반으로 AppUser 생성

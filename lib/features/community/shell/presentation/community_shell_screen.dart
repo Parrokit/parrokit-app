@@ -140,43 +140,64 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
               ),
               Consumer<UserProvider>(
                 builder: (context, userProvider, _) {
-                  final unreadCount = userProvider.unreadNotificationCount;
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.notifications_none,
-                            color: colorScheme.onSurface),
-                        onPressed: () =>
-                            context.push(AppRoutes.communityNotificationPath),
-                      ),
-                      if (unreadCount > 0)
-                        Positioned(
-                          right: 1,
-                          bottom: 1,
-                          child: Container(
-                            constraints: const BoxConstraints(
-                                minWidth: 20, minHeight: 20),
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: colorScheme.surface, width: 2),
-                            ),
-                            child: Text(
-                              unreadCount > 99 ? '99+' : unreadCount.toString(),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                height: 1,
+                  final userId = userProvider.currentUser?.id;
+                  final initialUnreadCount =
+                      userProvider.unreadNotificationCount;
+
+                  if (userId == null || userId.isEmpty) {
+                    return IconButton(
+                      icon: Icon(Icons.notifications_none,
+                          color: colorScheme.onSurface),
+                      onPressed: () =>
+                          context.push(AppRoutes.communityNotificationPath),
+                    );
+                  }
+
+                  return StreamBuilder<int>(
+                    stream: userProvider.watchUnreadNotificationCount(userId),
+                    initialData: initialUnreadCount,
+                    builder: (context, snapshot) {
+                      final unreadCount = snapshot.data ?? 0;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.notifications_none,
+                                color: colorScheme.onSurface),
+                            onPressed: () => context
+                                .push(AppRoutes.communityNotificationPath),
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              right: 1,
+                              bottom: 1,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                    minWidth: 20, minHeight: 20),
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: colorScheme.surface, width: 2),
+                                ),
+                                child: Text(
+                                  unreadCount > 99
+                                      ? '99+'
+                                      : unreadCount.toString(),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    height: 1,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                    ],
+                        ],
+                      );
+                    },
                   );
                 },
               ),
