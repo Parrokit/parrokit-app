@@ -34,5 +34,5 @@ void showToast(String msg) {
       ),
     );
 
-  AppLogger.d('🍞 Toast: $msg');
+  AppLogger.d('[🍞] $msg');
 }
