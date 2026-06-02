@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/activity_item.dart';
 

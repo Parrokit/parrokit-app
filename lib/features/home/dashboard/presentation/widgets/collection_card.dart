@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// 모음집 카드 위젯.
 ///

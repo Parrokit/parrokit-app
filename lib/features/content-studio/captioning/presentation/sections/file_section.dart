@@ -16,7 +16,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 
 import '../widgets/file_hero_card.dart';
 import '../clip_editor_view_model.dart';

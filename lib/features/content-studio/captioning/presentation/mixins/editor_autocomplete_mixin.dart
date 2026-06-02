@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:parrokit/data/local/dao/collections_dao.dart';
 
 /// 자동완성 데이터 로드 mixin.

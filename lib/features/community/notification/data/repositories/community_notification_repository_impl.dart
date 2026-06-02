@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:parrokit/core/utils/app_logger.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/features/community/notification/data/models/community_notification_model.dart';
 import 'package:parrokit/features/community/notification/domain/entities/community_notification_item.dart';
 import 'package:parrokit/features/community/notification/domain/repositories/community_notification_repository.dart';

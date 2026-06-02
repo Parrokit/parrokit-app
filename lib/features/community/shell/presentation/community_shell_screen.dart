@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/router/app_routes.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/app/router/app_routes.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/community/board/presentation/board_screen.dart';
 import 'package:parrokit/features/community/question/presentation/question_screen.dart';
 import 'package:parrokit/features/community/vote/presentation/vote_screen.dart';
@@ -11,7 +11,7 @@ import 'package:parrokit/features/community/shell/presentation/sections/communit
 import 'package:parrokit/features/community/shell/presentation/sections/community_shell_write_sheet.dart';
 import 'package:parrokit/features/community/shell/presentation/widgets/community_header_delegate.dart';
 import 'package:parrokit/features/community/shell/presentation/widgets/community_write_fab.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 class CommunityShellScreen extends StatefulWidget {
   const CommunityShellScreen({super.key});

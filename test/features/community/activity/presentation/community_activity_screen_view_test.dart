@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/community/activity/domain/entities/activity_page.dart';
 import 'package:parrokit/features/community/activity/domain/entities/activity_cursor.dart';
 import 'package:parrokit/features/community/activity/domain/repositories/activity_repository.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// [역할]
 /// 라이브러리 폴더 계층 구조를 나타내는 브레드크럼 네비게이션 바.

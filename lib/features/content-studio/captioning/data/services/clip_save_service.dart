@@ -9,7 +9,7 @@
 // Data Layer > Services
 // ============================================================================
 
-import 'package:parrokit/core/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/media_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
 import '../../domain/clip_form_data.dart';

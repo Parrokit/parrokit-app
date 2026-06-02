@@ -17,10 +17,10 @@
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:provider/provider.dart';
 
-import 'package:parrokit/core/provider/clip_activity_provider.dart';
+import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
 import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
 
 import 'widgets/recent_clip_card.dart';

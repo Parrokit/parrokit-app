@@ -13,12 +13,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/board/presentation/board_write_screen.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'vote_screen.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/features/community/shared/presentation/widgets/community_block_actions.dart';
 import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 

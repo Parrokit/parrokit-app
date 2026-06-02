@@ -13,13 +13,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:parrokit/core/config/app_config.dart';
-import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/app/config/app_config.dart';
+import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
 import 'clip_editor_view_model.dart';
-import '../../../../core/widgets/tip_dialog.dart';
+import '../../../../core/shared/widgets/tip_dialog.dart';
 import 'widgets/exit_confirm_sheet.dart';
 import 'sections/sections.dart';
 

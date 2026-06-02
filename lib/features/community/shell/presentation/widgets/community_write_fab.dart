@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 class CommunityWriteFab extends StatelessWidget {
   const CommunityWriteFab({

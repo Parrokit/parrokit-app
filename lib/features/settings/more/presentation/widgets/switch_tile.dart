@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'leading_icon.dart';
 
 class SwitchTile extends StatelessWidget {

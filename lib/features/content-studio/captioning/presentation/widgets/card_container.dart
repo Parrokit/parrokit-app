@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 class CardContainer extends StatelessWidget {
   const CardContainer({super.key, required this.child, this.padding});

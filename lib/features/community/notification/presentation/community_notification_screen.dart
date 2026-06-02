@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/features/community/notification/presentation/providers/community_notification_provider.dart';
 import 'package:parrokit/features/community/notification/presentation/sections/community_notification_list_section.dart';
 import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// [역할]
 /// 에피소드 썸네일 표시 위젯.

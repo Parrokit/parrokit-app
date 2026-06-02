@@ -17,16 +17,16 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:parrokit/core/config/app_config.dart';
-import 'package:parrokit/core/router/app_router.dart';
+import 'package:parrokit/core/app/config/app_config.dart';
+import 'package:parrokit/core/app/router/app_router.dart';
 import 'package:parrokit/features/content/shorts/presentation/providers/ad_provider.dart';
-import 'package:parrokit/core/provider/clip_activity_provider.dart';
+import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
 import 'package:parrokit/features/content/shorts/presentation/providers/shorts_provider.dart';
-import 'package:parrokit/core/services/ad_service.dart';
+import 'package:parrokit/core/infrastructure/services/ad_service.dart';
 
 import 'widgets/shorts_page.dart';
 import 'widgets/progress_bar.dart';

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/community/board/presentation/board_write_screen.dart';
 import 'package:parrokit/features/community/board/presentation/widgets/board_action_tile.dart';
 import 'package:parrokit/features/community/board/presentation/widgets/board_comment_input_bar.dart';
@@ -13,7 +13,7 @@ import 'package:parrokit/features/community/board/presentation/widgets/board_pos
 import 'package:parrokit/features/community/board/presentation/widgets/board_post_content_section.dart';
 import 'package:parrokit/features/community/board/presentation/sections/board_comments_section.dart';
 import 'package:parrokit/features/community/board/presentation/handlers/board_options_handler.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 class BoardViewScreen extends StatefulWidget {
   final String postId;

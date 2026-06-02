@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/app_routes.dart';
+import 'package:parrokit/core/app/router/app_routes.dart';
 import 'package:parrokit/features/community/notification/domain/entities/community_notification_item.dart';
 import 'package:parrokit/features/community/notification/presentation/providers/community_notification_provider.dart';
 import 'package:parrokit/features/community/notification/presentation/widgets/community_notification_empty_state.dart';

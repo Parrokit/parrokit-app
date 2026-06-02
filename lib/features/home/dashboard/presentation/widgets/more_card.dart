@@ -11,8 +11,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// "더 보러가기" 또는 빈 상태 카드 위젯.
 class MoreCard extends StatelessWidget {

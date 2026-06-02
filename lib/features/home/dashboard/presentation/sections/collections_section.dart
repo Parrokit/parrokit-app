@@ -12,8 +12,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/app_router.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/app/router/app_router.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 import '../widgets/section_header.dart';
 import '../widgets/collection_card.dart';
 import '../widgets/empty_card.dart';

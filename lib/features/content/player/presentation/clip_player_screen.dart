@@ -20,8 +20,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
-import 'package:parrokit/core/provider/clip_activity_provider.dart';
-import 'package:parrokit/core/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
+import 'package:parrokit/core/state/provider/media_provider.dart';
 import 'package:parrokit/features/content/player/domain/player_state.dart';
 
 import 'clip_player_view_model.dart';

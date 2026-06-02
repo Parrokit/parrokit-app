@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 class DashboardStudioSwitchFab extends StatefulWidget {
   const DashboardStudioSwitchFab({

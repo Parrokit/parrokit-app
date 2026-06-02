@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/models/user.dart';
 import 'package:parrokit/features/community/block/data/repositories/block_repository_impl.dart';
 import 'package:parrokit/features/community/block/domain/entities/blocked_user.dart';

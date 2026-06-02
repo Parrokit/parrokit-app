@@ -7,7 +7,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/widgets/tip_dialog.dart';
+import 'package:parrokit/core/shared/widgets/tip_dialog.dart';
 
 import '../widgets/card_container.dart';
 import '../widgets/hairline_divider.dart';

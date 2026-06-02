@@ -10,7 +10,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/services/cache_service.dart';
+import 'package:parrokit/core/infrastructure/services/cache_service.dart';
 import '../widgets/card_container.dart';
 import '../widgets/nav_tile.dart';
 import '../widgets/section_title.dart';

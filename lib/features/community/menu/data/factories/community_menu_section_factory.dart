@@ -1,4 +1,4 @@
-import 'package:parrokit/core/router/app_routes.dart';
+import 'package:parrokit/core/app/router/app_routes.dart';
 import 'package:parrokit/features/community/menu/domain/entities/community_menu_entry.dart';
 
 class CommunityMenuSectionFactory {

@@ -12,7 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/media_provider.dart';
 import 'package:parrokit/features/collection/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/data/local/app_database.dart'; // Tag definition
 

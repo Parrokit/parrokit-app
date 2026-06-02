@@ -52,6 +52,17 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
     );
   }
 
+  Future<void> _handleBack() async {
+    if (_selectedIndex == 0) return;
+    await _pageController.animateToPage(
+      0,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+    if (!mounted) return;
+    setState(() => _selectedIndex = 0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -60,36 +71,43 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 108),
-              child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                if (_selectedIndex == index) return;
-                setState(() => _selectedIndex = index);
-              },
-              children: const [
-                _StudioPageSlot(child: CaptioningScreen()),
-                _StudioPageSlot(child: TtsScreen()),
-                _StudioPageSlot(child: VideoScreen()),
-              ],
-              ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 16,
-              child: Center(
-                child: DashboardStudioSwitchFab(
-                  selectedIndex: _selectedIndex,
-                  onSelectedIndexChanged: _setPage,
+      body: PopScope(
+        canPop: _selectedIndex == 0,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          _handleBack();
+        },
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 108),
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    if (_selectedIndex == index) return;
+                    setState(() => _selectedIndex = index);
+                  },
+                  children: const [
+                    _StudioPageSlot(child: CaptioningScreen()),
+                    _StudioPageSlot(child: TtsScreen()),
+                    _StudioPageSlot(child: VideoScreen()),
+                  ],
                 ),
               ),
-            ),
-          ],
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 16,
+                child: Center(
+                  child: DashboardStudioSwitchFab(
+                    selectedIndex: _selectedIndex,
+                    onSelectedIndexChanged: _setPage,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

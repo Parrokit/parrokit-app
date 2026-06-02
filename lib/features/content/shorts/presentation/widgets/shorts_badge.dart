@@ -15,7 +15,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 
 /// [역할]
 /// 쇼츠 화면에서 클립의 태그 정보를 아이콘과 함께 표시하는 배지 위젯.

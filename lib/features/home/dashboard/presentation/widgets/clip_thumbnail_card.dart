@@ -12,8 +12,8 @@
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// 클립 썸네일 카드 위젯.
 ///

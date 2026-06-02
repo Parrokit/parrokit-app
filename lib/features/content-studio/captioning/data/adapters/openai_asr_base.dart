@@ -22,7 +22,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:parrokit/core/utils/app_logger.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 
 // relative
 import '../constants/openai_constants.dart';

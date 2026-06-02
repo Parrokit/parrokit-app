@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:video_player/video_player.dart';
 import 'seek_gesture_layer.dart';
 

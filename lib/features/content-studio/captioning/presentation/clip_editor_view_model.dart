@@ -14,10 +14,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widgets/stt_confirm_dialog.dart';
 
-import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/dao/collections_dao.dart';
-import 'package:parrokit/core/utils/show_toast.dart' as utils;
+import 'package:parrokit/core/shared/utils/show_toast.dart' as utils;
 
 import '../data/adapters/asr_engine.dart';
 import '../data/adapters/openai_llm_adapter.dart';

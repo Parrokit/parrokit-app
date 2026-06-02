@@ -13,8 +13,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/router/app_router.dart';
-import 'package:parrokit/core/provider/media_provider.dart';
+import 'package:parrokit/core/app/router/app_router.dart';
+import 'package:parrokit/core/state/provider/media_provider.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/folder_grid.dart';
 import '../widgets/clip_list_view.dart';

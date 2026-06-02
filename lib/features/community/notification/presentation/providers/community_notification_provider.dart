@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:parrokit/core/services/firebase/firebase_messaging_service.dart';
-import 'package:parrokit/core/utils/app_logger.dart';
+import 'package:parrokit/core/infrastructure/services/firebase/firebase_messaging_service.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/features/community/notification/domain/entities/community_notification_item.dart';
 import 'package:parrokit/features/community/notification/domain/usecases/delete_all_notifications_usecase.dart';
 import 'package:parrokit/features/community/notification/domain/usecases/delete_notification_usecase.dart';

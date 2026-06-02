@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/core/services/ad_service.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
+import 'package:parrokit/core/infrastructure/services/ad_service.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/community/block/presentation/providers/block_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:provider/provider.dart';

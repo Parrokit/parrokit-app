@@ -17,7 +17,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 
 /// [역할]
 /// 쇼츠 우측 패널의 개별 액션 버튼 위젯.

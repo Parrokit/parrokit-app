@@ -16,7 +16,7 @@ import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
-import 'package:parrokit/core/utils/app_logger.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 
 abstract class AudioToVideoService {
   /// mp3 → mp4 변환하고 mp4 경로를 반환

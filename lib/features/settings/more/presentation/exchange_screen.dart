@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 
 class ExchangeScreen extends StatefulWidget {
   const ExchangeScreen({super.key});

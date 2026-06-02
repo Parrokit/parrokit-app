@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 
 import '../../data/constants/editor_strings.dart';
 import '../../domain/editor_state.dart';

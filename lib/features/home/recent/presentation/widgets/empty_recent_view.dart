@@ -10,7 +10,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 
 /// 최근 본 클립 빈 상태 뷰.
 class EmptyRecentView extends StatelessWidget {

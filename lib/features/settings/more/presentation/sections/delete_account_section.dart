@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 
 /// 회원탈퇴 섹션.

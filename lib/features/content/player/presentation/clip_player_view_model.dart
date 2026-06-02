@@ -22,9 +22,9 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
-import 'package:parrokit/core/config/app_config.dart';
-import 'package:parrokit/core/provider/media_provider.dart';
-import 'package:parrokit/core/utils/audio_bg.dart';
+import 'package:parrokit/core/app/config/app_config.dart';
+import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/shared/utils/audio_bg.dart';
 import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/features/content/player/domain/player_state.dart';
 

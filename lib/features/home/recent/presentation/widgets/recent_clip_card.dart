@@ -12,9 +12,9 @@
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// 최근 본 클립 카드.
 class RecentClipCard extends StatelessWidget {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/features/community/shell/domain/data/community_filters.dart';
 
 class CommunityShellFiltersSection extends StatelessWidget {

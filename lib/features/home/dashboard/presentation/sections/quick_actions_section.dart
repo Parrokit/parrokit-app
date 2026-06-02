@@ -12,7 +12,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 import '../widgets/quick_action_button.dart';
 
 /// 대시보드 퀵 액션 버튼 섹션.

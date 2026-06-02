@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/core/router/app_routes.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
+import 'package:parrokit/core/app/router/app_routes.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:parrokit/features/community/block/presentation/providers/block_provider.dart';
 import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 import 'package:provider/provider.dart';

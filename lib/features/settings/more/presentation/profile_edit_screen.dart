@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/features/settings/more/presentation/widgets/editable_avatar.dart';
 

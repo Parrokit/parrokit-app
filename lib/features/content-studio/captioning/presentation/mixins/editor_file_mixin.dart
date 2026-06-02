@@ -16,7 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 
 import '../../data/adapters/video_picker_files.dart';
 import '../../data/adapters/video_picker_gallery.dart';

@@ -11,7 +11,7 @@
 
 import 'package:flutter/material.dart';
 
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 import '../../domain/editor_state.dart';
 
 /// 세그먼트 관리 mixin.

@@ -21,10 +21,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/app_router.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/app/router/app_router.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/provider/clip_activity_provider.dart';
+import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
 import 'package:parrokit/features/home/dashboard/presentation/widgets/dashboard_content_studio_tab.dart';
 
 import 'sections/header_section.dart';
@@ -33,7 +33,7 @@ import 'sections/quick_actions_section.dart';
 import 'sections/continue_watching_section.dart';
 import 'sections/collections_section.dart';
 import 'sections/random_subtitle_section.dart';
-import '../../../../core/widgets/tip_dialog.dart';
+import '../../../../core/shared/widgets/tip_dialog.dart';
 
 /// 대시보드 메인 화면 (앱 홈).
 ///

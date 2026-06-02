@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 class MiniChip extends StatelessWidget {
   const MiniChip({super.key, required this.label});

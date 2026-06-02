@@ -9,6 +9,7 @@
 // main.dart → bootstrap() → App
 // ============================================================================
 
-import 'package:parrokit/core/bootstrap/bootstrap.dart';
+
+import 'package:parrokit/core/app/bootstrap/bootstrap.dart';
 
 void main() => bootstrap();

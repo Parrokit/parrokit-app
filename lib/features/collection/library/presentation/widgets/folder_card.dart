@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 
 /// [역할]
 /// 라이브러리 폴더 뷰의 폴더 카드 아이템.

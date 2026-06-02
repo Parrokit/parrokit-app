@@ -14,8 +14,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/provider/clip_activity_provider.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 import '../widgets/gradient_icon.dart';
 
 /// 대시보드 상단 헤더 섹션.

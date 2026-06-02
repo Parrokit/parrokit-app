@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// 최근 본 클립 목록 로딩 스켈레톤.
 class RecentListSkeleton extends StatelessWidget {

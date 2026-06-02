@@ -9,7 +9,7 @@
 // Data Layer > Services
 // ============================================================================
 
-import 'package:parrokit/core/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/media_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 import 'package:parrokit/features/content-studio/captioning/data/services/time_code_service.dart';
 import 'package:parrokit/features/content-studio/captioning/domain/clip_form_data.dart';

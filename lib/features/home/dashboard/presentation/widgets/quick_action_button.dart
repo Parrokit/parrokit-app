@@ -11,8 +11,8 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// 퀵 액션 버튼 위젯.
 ///
