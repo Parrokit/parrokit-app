@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 
@@ -102,8 +103,7 @@ class VoteCommentsSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         isDeleted ? '알 수 없음' : comment.authorNickname,
@@ -120,6 +120,14 @@ class VoteCommentsSection extends StatelessWidget {
                       const Spacer(),
                       if (comment.createdAt != null)
                         Text(formatTimeAgo(comment.createdAt), style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert_rounded, size: 18),
+                        color: Colors.grey[500],
+                        onPressed: () => _showCommentOptionsSheet(context, comment),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -168,6 +176,43 @@ class VoteCommentsSection extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _showCommentOptionsSheet(BuildContext context, Comment comment) async {
+    if (comment.status == 'deleted') return;
+
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyComment = currentUser != null && comment.authorId == currentUser.id;
+
+    await showCommunityOptionsSheet(
+      context: context,
+      title: '댓글 옵션',
+      actions: [
+        if (isMyComment)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await context.read<CommunityProvider>().deleteComment(postId, comment.id);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
+              );
+            },
+          ),
+        if (!isMyComment)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
     );
   }
 }

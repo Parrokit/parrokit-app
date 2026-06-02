@@ -270,7 +270,7 @@ class _BoardViewScreenState extends State<BoardViewScreen> {
                   ),
                   IconButton(
                     onPressed: () => _showPostOptionsSheet(post),
-                    icon: const Icon(Icons.more_vert, size: 24),
+                    icon: const Icon(Icons.more_vert_rounded, size: 24),
                   ),
                 ],
               ),

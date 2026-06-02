@@ -3,6 +3,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
+import 'package:parrokit/features/community/shared/presentation/widgets/community_options_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/theme/app_colors.dart';
 
@@ -104,6 +105,14 @@ class QuestionRepliesSection extends StatelessWidget {
                     Text(answererName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary)),
                     const Spacer(),
                     Text(formatTimeAgo(answer.createdAt), style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.more_vert_rounded, size: 18),
+                      color: colorScheme.onSurfaceVariant,
+                      onPressed: () => _showAnswerOptionsSheet(context, answer),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -188,6 +197,41 @@ class QuestionRepliesSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _showAnswerOptionsSheet(BuildContext context, Comment answer) async {
+    final currentUser = context.read<UserProvider>().currentUser;
+    final isMyComment = currentUser != null && answer.authorId == currentUser.id;
+
+    await showCommunityOptionsSheet(
+      context: context,
+      title: '댓글 옵션',
+      actions: [
+        if (isMyComment)
+          CommunityOptionAction(
+            label: '삭제',
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: () async {
+              final deleted = await context.read<CommunityProvider>().deleteComment(question.id, answer.id);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(deleted ? '댓글이 삭제되었습니다.' : '삭제에 실패했습니다.')),
+              );
+            },
+          ),
+        if (!isMyComment)
+          CommunityOptionAction(
+            label: '신고',
+            icon: Icons.report_outlined,
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('신고가 접수되었습니다.')),
+              );
+            },
+          ),
+      ],
     );
   }
 }

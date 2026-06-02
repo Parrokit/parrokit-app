@@ -164,10 +164,10 @@ class BoardCommentItem extends StatelessWidget {
             ),
           ),
           if (!isDeleted)
-            IconButton(
-              onPressed: onMore,
-              icon: const Icon(Icons.more_vert, color: AppColors.textDisabled, size: 20),
-            )
+          IconButton(
+            onPressed: onMore,
+            icon: const Icon(Icons.more_vert_rounded, color: AppColors.textDisabled, size: 20),
+          )
           else
             const SizedBox(width: 48),
         ],
