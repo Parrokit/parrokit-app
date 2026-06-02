@@ -1,0 +1,299 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/router/app_routes.dart';
+import 'package:provider/provider.dart';
+import 'package:parrokit/data/models/post.dart';
+import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
+import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/features/community/shell/presentation/utils/community_post_ui_utils.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
+
+class QuestionScreen extends StatefulWidget {
+  final String selectedFilter;
+
+  const QuestionScreen({super.key, required this.selectedFilter});
+
+  @override
+  State<QuestionScreen> createState() => _QuestionScreenState();
+}
+
+class _QuestionScreenState extends State<QuestionScreen> {
+  bool _isInitialLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadInitialQuestions();
+      if (!mounted) return;
+      setState(() {
+        _isInitialLoading = false;
+      });
+    });
+  }
+
+  Future<void> _loadInitialQuestions() async {
+    final provider = context.read<CommunityProvider>();
+
+    // 다른 탭 로딩과 경합 중이면 질문 fetch가 _isLoading guard로 스킵될 수 있어
+    // 질문 초기화 전용 로딩은 반드시 실제 fetch가 수행된 뒤 끝낸다.
+    while (mounted && provider.isLoading) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+
+    if (!mounted) return;
+    await provider.fetchPosts(
+      postType: 'question',
+      refresh: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final provider = context.watch<CommunityProvider>();
+
+    if (_isInitialLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (provider.isLoading && provider.posts.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // 1. postType이 'question'인 것만 먼저 필터링
+    var questionPosts = provider.posts.where((p) => p.postType == 'question').toList();
+
+    // 2. 선택된 탭(필터)에 따라 한 번 더 필터링
+    if (widget.selectedFilter == '채택 완료') {
+      questionPosts = questionPosts.where((p) => p.questionStatus == 'resolved').toList();
+    } else if (widget.selectedFilter == '답변 대기중') {
+      // 대기중이거나 만료된 것도 아직 채택 안 된 상태이므로 묶어서 보여주거나 필터링 가능. 일단 'waiting' 상태만
+      questionPosts = questionPosts.where((p) => p.questionStatus == 'waiting').toList();
+    }
+
+    if (questionPosts.isEmpty) {
+      return Center(
+        child: Text(
+          '해당 조건의 질문이 없습니다.',
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 16),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => context.read<CommunityProvider>().fetchPosts(postType: 'question', refresh: true),
+      child: ListView.separated(
+        padding: const EdgeInsets.only(bottom: 80), // Fab space
+        itemCount: questionPosts.length,
+        separatorBuilder: (context, index) => const Divider(
+          color: AppColors.disabled,
+          thickness: 8,
+        ),
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            onTap: () {
+              context.push(AppRoutes.communityQuestionViewPathOf(questionPosts[index].id));
+            },
+            behavior: HitTestBehavior.opaque,
+            child: _buildFeedItem(questionPosts[index], provider),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFeedItem(Post question, CommunityProvider provider) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final userProvider = context.watch<UserProvider>();
+    final authorName = resolveCommunityAuthorName(
+      post: question,
+      provider: provider,
+      userProvider: userProvider,
+    );
+    final avatarUrl = resolveCommunityAuthorAvatarUrl(
+      post: question,
+      provider: provider,
+      userProvider: userProvider,
+    );
+
+    final isResolved = question.questionStatus == 'resolved';
+    final isExpired = question.questionStatus == 'expired';
+
+    String statusText = '답변 대기중';
+    Color statusColor = AppColors.primary;
+    Color statusBgColor = AppColors.primarySoft;
+
+    if (isResolved) {
+      statusText = '채택 완료';
+      statusColor = colorScheme.onSurfaceVariant;
+      statusBgColor = colorScheme.surfaceContainerHigh;
+    } else if (isExpired) {
+      statusText = '만료됨';
+      statusColor = AppColors.danger;
+      statusBgColor = AppColors.dangerSoft;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Avatar + Author + Time + Status
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: colorScheme.surfaceContainerHigh,
+                  backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  child: avatarUrl == null ? Icon(Icons.person, color: colorScheme.onSurfaceVariant) : null,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              authorName,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // 크래커 보상 뱃지
+                          if (question.rewardCrackers > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySoft,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('🍪', style: TextStyle(fontSize: 10)),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    '${question.rewardCrackers}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      Text(
+                        formatCommunityTimeAgo(question.createdAt),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusBgColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Title & Content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              question.title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              question.snippet,
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurface,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Image Placeholder
+          if (question.hasImage && question.imageUrls.isNotEmpty)
+            Container(
+              width: double.infinity,
+              height: 250,
+              color: colorScheme.surfaceContainerHigh,
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Image.network(
+                question.imageUrls.first,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    Icon(Icons.image_not_supported, color: colorScheme.onSurfaceVariant),
+              ),
+            ),
+
+          // Actions Row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Icon(Icons.favorite_border, size: 24, color: colorScheme.onSurface),
+                const SizedBox(width: 6),
+                Text(
+                  '${question.likeCount}',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.chat_bubble_outline, size: 22, color: colorScheme.onSurface),
+                const SizedBox(width: 6),
+                Text(
+                  '${question.commentCount}',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                Icon(Icons.bookmark_border, size: 24, color: colorScheme.onSurface),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

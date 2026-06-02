@@ -46,6 +46,7 @@ abstract class AppRoutes {
   static const communityVoteView = 'community_vote_view';
   static const communityMenu = 'community_menu';
   static const communityNotification = 'community_notification';
+  static const communityActivity = 'community_activity';
 
   // ─────────────────────────────────────────────────────────────────
   // Route Paths
@@ -61,6 +62,7 @@ abstract class AppRoutes {
   static const communityVoteViewPath = '/community/vote/:voteId';
   static const communityMenuPath = '/community/menu';
   static const communityNotificationPath = '/community/notification';
+  static const communityActivityPath = '/community/activity';
   static const explorePath = '/explore';
   static const libraryPath = '/library';
   static const morePath = '/more';
@@ -88,4 +90,7 @@ abstract class AppRoutes {
 
   static String communityVoteViewPathOf(String voteId) =>
       '/community/vote/$voteId';
+
+  static String communityActivityPathOf({required String boardType, required String activityType}) =>
+      '/community/activity?boardType=$boardType&activityType=$activityType';
 }

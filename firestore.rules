@@ -25,6 +25,9 @@ service cloud.firestore {
       match /comment_likes/{commentId} {
         allow read, write: if true;
       }
+      match /voted_posts/{postId} {
+        allow read, write: if true;
+      }
     }
 
     // 디바이스 토큰 관리
@@ -52,6 +55,15 @@ service cloud.firestore {
         allow read: if true;
         allow write: if true;
       }
+    }
+
+    // collectionGroup 쿼리 허용 (내가 쓴 댓글 활동 조회용)
+    match /{path=**}/comments/{commentId} {
+      allow read: if true;
+    }
+    // collectionGroup 쿼리 허용 (투표 참여 내역 조회용)
+    match /{path=**}/voters/{voterId} {
+      allow read: if true;
     }
 
     // 전역 닉네임 유일성 체크 (기존 추가본)

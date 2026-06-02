@@ -1,0 +1,47 @@
+import 'package:flutter/material.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
+
+class CommunityMenuHeaderSection extends StatelessWidget {
+  const CommunityMenuHeaderSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SliverAppBar(
+      pinned: true,
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: colorScheme.surface,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
+      titleSpacing: 0,
+      title: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '커뮤니티 메뉴',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: Icon(Icons.close, size: 24, color: colorScheme.onSurface),
+              tooltip: '닫기',
+            ),
+          ],
+        ),
+      ),
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(height: 1, color: AppColors.disabled),
+      ),
+    );
+  }
+}

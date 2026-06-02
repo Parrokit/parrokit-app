@@ -20,22 +20,23 @@ import 'package:parrokit/features/auth/sign-up/sign_up_screen.dart';
 import 'package:parrokit/features/auth/find-pw/find_pw_screen.dart';
 import 'package:parrokit/features/auth/onboarding/onboarding_screen.dart';
 import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
-import 'package:parrokit/features/community/presentation/community_screen.dart';
-import 'package:parrokit/features/community/presentation/board/board_view_screen.dart';
-import 'package:parrokit/features/community/presentation/board/board_write_screen.dart';
-import 'package:parrokit/features/community/presentation/question/question_write_screen.dart';
-import 'package:parrokit/features/community/presentation/question/question_view_screen.dart';
-import 'package:parrokit/features/community/presentation/vote/vote_write_screen.dart';
-import 'package:parrokit/features/community/presentation/vote/vote_view_screen.dart';
-import 'package:parrokit/features/community/presentation/community_menu_screen.dart';
-import 'package:parrokit/features/community/presentation/community_notification_screen.dart';
-import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
-import 'package:parrokit/features/content/library/presentation/library_screen.dart';
+import 'package:parrokit/features/community/shell/presentation/community_shell_screen.dart';
+import 'package:parrokit/features/community/board/presentation/board_view_screen.dart';
+import 'package:parrokit/features/community/board/presentation/board_write_screen.dart';
+import 'package:parrokit/features/community/question/presentation/question_write_screen.dart';
+import 'package:parrokit/features/community/question/presentation/question_view_screen.dart';
+import 'package:parrokit/features/community/vote/presentation/vote_write_screen.dart';
+import 'package:parrokit/features/community/vote/presentation/vote_view_screen.dart';
+import 'package:parrokit/features/community/menu/presentation/community_menu_screen.dart';
+import 'package:parrokit/features/community/notification/presentation/community_notification_screen.dart';
+import 'package:parrokit/features/community/activity/presentation/activity_screen.dart';
+import 'package:parrokit/features/contents/shorts/presentation/shorts_screen.dart';
+import 'package:parrokit/features/contents/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/profile_edit_screen.dart';
 import 'package:parrokit/features/discovery/recent/presentation/recent_screen.dart';
-import 'package:parrokit/features/content/clip-editor/presentation/clip_editor_screen.dart';
-import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
+import 'package:parrokit/features/contents/clip-editor/presentation/clip_editor_screen.dart';
+import 'package:parrokit/features/contents/player/presentation/clip_player_screen.dart';
 
 // Router 관련
 import 'app_routes.dart';
@@ -119,6 +120,18 @@ GoRouter buildAppRouter({
         path: AppRoutes.communityNotificationPath,
         name: AppRoutes.communityNotification,
         builder: (context, state) => const CommunityNotificationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityActivityPath,
+        name: AppRoutes.communityActivity,
+        builder: (context, state) {
+          final boardType = state.uri.queryParameters['boardType'] ?? 'unknown';
+          final activityType = state.uri.queryParameters['activityType'] ?? 'unknown';
+          return CommunityActivityScreen(
+            boardType: boardType,
+            activityType: activityType,
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.communityBoardViewPath,
@@ -263,7 +276,7 @@ ShellRoute get _shellRoute => ShellRoute(
           name: AppRoutes.community,
           pageBuilder: (context, state) => const NoTransitionPage(
             name: AppRoutes.community,
-            child: CommunityScreen(),
+            child: CommunityShellScreen(),
           ),
         ),
 

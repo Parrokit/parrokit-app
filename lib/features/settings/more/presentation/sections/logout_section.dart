@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
 import 'package:parrokit/core/router/app_routes.dart';
-import 'package:parrokit/features/community/providers/community_provider.dart';
+import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/core/utils/show_toast.dart';
 import 'package:provider/provider.dart';
 

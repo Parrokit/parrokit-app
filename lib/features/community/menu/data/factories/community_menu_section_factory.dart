@@ -1,0 +1,71 @@
+import 'package:parrokit/features/community/menu/domain/entities/community_menu_entry.dart';
+
+class CommunityMenuSectionFactory {
+  const CommunityMenuSectionFactory();
+
+  List<CommunityMenuSectionEntry> build() {
+    return [
+      CommunityMenuSectionEntry(
+        title: '나의 활동',
+        categories: [
+          CommunityMenuCategoryEntry(
+            title: '일반 게시판',
+            items: _boardItems(),
+          ),
+          CommunityMenuCategoryEntry(
+            title: '질문 게시판',
+            items: _questionItems(),
+          ),
+          CommunityMenuCategoryEntry(
+            title: '투표 게시판',
+            items: _voteItems(),
+          ),
+        ],
+      ),
+      CommunityMenuSectionEntry(
+        title: '커뮤니티 설정',
+        categories: [
+          CommunityMenuCategoryEntry(
+            title: null,
+            items: const [
+              CommunityMenuEntry(title: '알림 설정', iconKey: 'notifications', colorKey: 'settings'),
+              CommunityMenuEntry(title: '차단 사용자 관리', iconKey: 'shield', colorKey: 'settings'),
+            ],
+          ),
+        ],
+      ),
+    ];
+  }
+
+  List<CommunityMenuEntry> _boardItems() {
+    return const [
+      CommunityMenuEntry(title: '작성한 글', iconKey: 'article', colorKey: 'board', boardType: 'board', activityType: 'written'),
+      CommunityMenuEntry(title: '작성한 댓글', iconKey: 'chat_bubble', colorKey: 'board', boardType: 'board', activityType: 'commented'),
+      CommunityMenuEntry(title: '공감한 글', iconKey: 'thumb_up', colorKey: 'board', boardType: 'board', activityType: 'liked'),
+      CommunityMenuEntry(title: '공감한 댓글', iconKey: 'favorite', colorKey: 'board', boardType: 'board', activityType: 'liked_comment'),
+      CommunityMenuEntry(title: '스크랩', iconKey: 'bookmark', colorKey: 'board', boardType: 'board', activityType: 'scraped'),
+    ];
+  }
+
+  List<CommunityMenuEntry> _questionItems() {
+    return const [
+      CommunityMenuEntry(title: '작성한 질문', iconKey: 'help', colorKey: 'question', boardType: 'question', activityType: 'written'),
+      CommunityMenuEntry(title: '작성한 답변', iconKey: 'forum', colorKey: 'question', boardType: 'question', activityType: 'commented'),
+      CommunityMenuEntry(title: '답변에 달린 댓글', iconKey: 'chat', colorKey: 'question', boardType: 'question', activityType: 'commented_reply'),
+      CommunityMenuEntry(title: '공감한 질문', iconKey: 'thumb_up', colorKey: 'question', boardType: 'question', activityType: 'liked'),
+      CommunityMenuEntry(title: '공감한 답변 및 댓글', iconKey: 'favorite', colorKey: 'question', boardType: 'question', activityType: 'liked_comment'),
+      CommunityMenuEntry(title: '스크랩', iconKey: 'bookmark', colorKey: 'question', boardType: 'question', activityType: 'scraped'),
+    ];
+  }
+
+  List<CommunityMenuEntry> _voteItems() {
+    return const [
+      CommunityMenuEntry(title: '참여한 투표', iconKey: 'how_to_vote', colorKey: 'vote', boardType: 'vote', activityType: 'written'),
+      CommunityMenuEntry(title: '게시한 투표', iconKey: 'campaign', colorKey: 'vote', boardType: 'vote', activityType: 'written_posted'),
+      CommunityMenuEntry(title: '작성한 댓글', iconKey: 'chat', colorKey: 'vote', boardType: 'vote', activityType: 'commented'),
+      CommunityMenuEntry(title: '공감한 투표', iconKey: 'thumb_up', colorKey: 'vote', boardType: 'vote', activityType: 'liked'),
+      CommunityMenuEntry(title: '공감한 댓글', iconKey: 'favorite', colorKey: 'vote', boardType: 'vote', activityType: 'liked_comment'),
+      CommunityMenuEntry(title: '스크랩', iconKey: 'bookmark', colorKey: 'vote', boardType: 'vote', activityType: 'scraped'),
+    ];
+  }
+}

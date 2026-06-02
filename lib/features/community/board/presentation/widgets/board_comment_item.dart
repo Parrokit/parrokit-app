@@ -1,0 +1,177 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:parrokit/data/models/comment.dart';
+import 'package:parrokit/data/models/user.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:parrokit/core/theme/app_colors.dart';
+
+class BoardCommentItem extends StatelessWidget {
+  const BoardCommentItem({
+    super.key,
+    required this.comment,
+    required this.isReply,
+    required this.isAuthor,
+    required this.isMyComment,
+    required this.isLiked,
+    required this.currentUser,
+    required this.cachedUser,
+    required this.onLike,
+    required this.onReply,
+    required this.onMore,
+    required this.formatTimeAgo,
+  });
+
+  final Comment comment;
+  final bool isReply;
+  final bool isAuthor;
+  final bool isMyComment;
+  final bool isLiked;
+  final AppUser? currentUser;
+  final AppUser? cachedUser;
+  final VoidCallback onLike;
+  final VoidCallback onReply;
+  final VoidCallback onMore;
+  final String Function(DateTime?) formatTimeAgo;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDeleted = comment.status == 'deleted';
+    final photoUrl = (isMyComment ? currentUser?.photoUrl : cachedUser?.photoUrl) ?? comment.authorAvatarUrl;
+    final displayName = (isMyComment ? currentUser?.displayName : cachedUser?.displayName) ?? comment.authorNickname;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(isReply ? 52 : 18, 18, 18, 0),
+      decoration: isReply
+          ? const BoxDecoration(
+              border: Border(left: BorderSide(color: AppColors.disabled, width: 3)),
+            )
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: isReply ? 36 : 44,
+            height: isReply ? 36 : 44,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: colorScheme.surfaceContainerHigh),
+            child: ClipOval(
+              child: (photoUrl != null && photoUrl.isNotEmpty && !isDeleted)
+                  ? CachedNetworkImage(
+                      imageUrl: photoUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: colorScheme.surfaceContainerHigh,
+                        highlightColor: colorScheme.surfaceContainer,
+                        child: Container(color: colorScheme.surface),
+                      ),
+                      errorWidget: (context, url, error) => Center(
+                        child: Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.textDisabled),
+                      ),
+                    )
+                  : Center(
+                      child: isDeleted ? const SizedBox() : Icon(Icons.person, size: isReply ? 20 : 26, color: AppColors.textDisabled),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      isDeleted ? '(삭제됨)' : displayName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDeleted ? AppColors.textDisabled : colorScheme.onSurface,
+                      ),
+                    ),
+                    if (!isDeleted && isAuthor) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(4)),
+                        child: const Text('작성자', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                      ),
+                    ],
+                    if (!isDeleted && isMyComment && !isAuthor) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.surfaceContainerHigh, borderRadius: BorderRadius.circular(4)),
+                        child: const Text('내 댓글', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textTertiary)),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                if (!isDeleted)
+                  Text(
+                    formatTimeAgo(comment.createdAt),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDisabled),
+                  ),
+                const SizedBox(height: 8),
+                if (!isDeleted && isReply && comment.replyToNickname != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '@${comment.replyToNickname}',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
+                    ),
+                  ),
+                Text(
+                  comment.content,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: isDeleted ? AppColors.textDisabled : colorScheme.onSurface,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (!isDeleted)
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: onLike,
+                        child: Row(
+                          children: [
+                            Icon(isLiked ? Icons.favorite : Icons.favorite_border, size: 18, color: isLiked ? AppColors.danger : AppColors.textDisabled),
+                            const SizedBox(width: 4),
+                            Text(
+                              comment.likeCount > 0 ? '${comment.likeCount}' : '좋아요',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isLiked ? AppColors.danger : AppColors.textDisabled),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      GestureDetector(
+                        onTap: onReply,
+                        child: const Row(
+                          children: [
+                            Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.textDisabled),
+                            SizedBox(width: 4),
+                            Text('답글쓰기', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDisabled)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          if (!isDeleted)
+            IconButton(
+              onPressed: onMore,
+              icon: const Icon(Icons.more_vert, color: AppColors.textDisabled, size: 20),
+            )
+          else
+            const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+}

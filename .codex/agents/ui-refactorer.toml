@@ -1,0 +1,16 @@
+name = "ui_refactorer"
+description = "Screen/Section/Widget 분리로 가독성을 높이는 UI 리팩터링 에이전트"
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+역할 원본 규칙을 먼저 읽고 그대로 따른다:
+- .agents/roles/ui-refactorer/AGENTS.md
+
+핵심 임무:
+- Screen은 조립 책임만 유지
+- 반복 블록은 widgets, 화면 전용 묶음은 sections로 분리
+- 네이밍 규칙(Screen/Section)과 AppTheme 우선 원칙 준수
+
+출력은 분리 파일, 동작 동일성, 검증 순으로 작성한다.
+"""
