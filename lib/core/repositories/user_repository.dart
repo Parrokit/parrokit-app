@@ -73,6 +73,8 @@ class UserRepository {
       photoUrl: fbUser.photoURL ?? serverUser?.photoUrl ?? localUser?.photoUrl,
       parrots: serverUser?.parrots ?? localUser?.parrots ?? 0,
       crackers: serverUser?.crackers ?? localUser?.crackers ?? 0,
+      blockedUserIds:
+          serverUser?.blockedUserIds ?? localUser?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? localUser?.createdAt,
       updatedAt: DateTime.now(),
       lastNicknameChangedAt: serverUser?.lastNicknameChangedAt ?? localUser?.lastNicknameChangedAt,
@@ -174,6 +176,8 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
+      blockedUserIds:
+          serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -228,6 +232,8 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
+      blockedUserIds:
+          serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -282,6 +288,8 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
+      blockedUserIds:
+          serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -392,6 +400,8 @@ class UserRepository {
           refreshed.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 0,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 0,
+      blockedUserIds:
+          serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -590,6 +600,8 @@ class UserRepository {
           fbUser.photoURL ?? serverUser?.photoUrl ?? existingLocal?.photoUrl,
       parrots: serverUser?.parrots ?? existingLocal?.parrots ?? 20,
       crackers: serverUser?.crackers ?? existingLocal?.crackers ?? 1000,
+      blockedUserIds:
+          serverUser?.blockedUserIds ?? existingLocal?.blockedUserIds ?? const [],
       createdAt: serverUser?.createdAt ?? existingLocal?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );

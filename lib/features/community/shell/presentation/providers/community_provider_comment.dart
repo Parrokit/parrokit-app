@@ -10,9 +10,16 @@ extension CommunityProviderComment on CommunityProvider {
 
     try {
       final comments = await _repository.getComments(postId);
-      _currentPostComments.addAll(comments);
+      _currentPostComments.addAll(
+        comments.where((comment) => !_blockedUserIds.contains(comment.authorId)),
+      );
 
-      await _fetchMissingUsers(comments.map((c) => c.authorId).whereType<String>());
+      await _fetchMissingUsers(
+        comments
+            .where((comment) => !_blockedUserIds.contains(comment.authorId))
+            .map((c) => c.authorId)
+            .whereType<String>(),
+      );
 
       if (currentUserId != null) {
         _likedCommentIds = await _repository.getLikedCommentIds(currentUserId);

@@ -22,6 +22,7 @@ class FirebaseUserService {
       if (photoUrl != null) 'photoUrl': photoUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'coins': 0,
+      'blockedUserIds': <String>[],
       'isPremium': false,
       'lastPurchaseAt': null,
     }, SetOptions(merge: true)); // 이미 있으면 덮어쓰지 않고 병합
@@ -129,6 +130,44 @@ class FirebaseUserService {
     await batch.commit();
   }
 
+  Future<void> blockUser({
+    required String uid,
+    required String blockedUserId,
+  }) async {
+    final userRef = _firestore.collection('users').doc(uid);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(userRef);
+      if (!snapshot.exists) {
+        throw Exception('유저 정보를 찾을 수 없습니다.');
+      }
+
+      transaction.update(userRef, {
+        'blockedUserIds': FieldValue.arrayUnion([blockedUserId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  Future<void> unblockUser({
+    required String uid,
+    required String blockedUserId,
+  }) async {
+    final userRef = _firestore.collection('users').doc(uid);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(userRef);
+      if (!snapshot.exists) {
+        throw Exception('유저 정보를 찾을 수 없습니다.');
+      }
+
+      transaction.update(userRef, {
+        'blockedUserIds': FieldValue.arrayRemove([blockedUserId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
   /// 닉네임 중복 확인 (이미 해당 문서가 있으면 누군가 사용 중)
   Future<bool> isNicknameAvailable(String nickname) async {
     if (nickname.isEmpty) return false;
@@ -154,6 +193,11 @@ class FirebaseUserService {
       photoUrl: data['photoUrl'],
       parrots: (data['parrots'] as num?)?.toInt() ?? 0,
       crackers: (data['crackers'] as num?)?.toInt() ?? 0,
+      blockedUserIds: (data['blockedUserIds'] as List<dynamic>?)
+              ?.map((value) => value.toString())
+              .where((value) => value.isNotEmpty)
+              .toList() ??
+          const [],
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : null,
@@ -168,5 +212,57 @@ class FirebaseUserService {
 
   Future<void> deleteUserDocument({required String uid}) async {
     await _firestore.collection('users').doc(uid).delete();
+  }
+
+  Future<AppUser?> loadUserDocumentByNickname(String nickname) async {
+    if (nickname.isEmpty) return null;
+
+    final nicknameSnap = await _firestore.collection('nicknames').doc(nickname).get();
+    if (!nicknameSnap.exists) {
+      return null;
+    }
+
+    final data = nicknameSnap.data();
+    final uid = data?['uid'] as String?;
+    if (uid == null || uid.isEmpty) {
+      return null;
+    }
+
+    return loadUserDocument(uid: uid);
+  }
+
+  Future<AppUser?> loadUserDocumentByDisplayName(String displayName) async {
+    if (displayName.isEmpty) return null;
+
+    final snapshot = await _firestore
+        .collection('users')
+        .where('displayName', isEqualTo: displayName)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    final doc = snapshot.docs.first;
+    final data = doc.data();
+    return AppUser(
+      id: doc.id,
+      displayName: data['displayName'],
+      email: data['email'],
+      photoUrl: data['photoUrl'],
+      parrots: (data['parrots'] as num?)?.toInt() ?? 0,
+      crackers: (data['crackers'] as num?)?.toInt() ?? 0,
+      blockedUserIds: (data['blockedUserIds'] as List<dynamic>?)
+              ?.map((value) => value.toString())
+              .where((value) => value.isNotEmpty)
+              .toList() ??
+          const [],
+      createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : null,
+      updatedAt: data['updatedAt'] != null ? (data['updatedAt'] as Timestamp).toDate() : null,
+      lastNicknameChangedAt: data['lastNicknameChangedAt'] != null
+          ? (data['lastNicknameChangedAt'] as Timestamp).toDate()
+          : null,
+    );
   }
 }

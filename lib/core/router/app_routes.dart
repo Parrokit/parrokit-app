@@ -47,6 +47,7 @@ abstract class AppRoutes {
   static const communityMenu = 'community_menu';
   static const communityNotification = 'community_notification';
   static const communityActivity = 'community_activity';
+  static const communityBlockedUsers = 'community_blocked_users';
 
   // ─────────────────────────────────────────────────────────────────
   // Route Paths
@@ -63,6 +64,7 @@ abstract class AppRoutes {
   static const communityMenuPath = '/community/menu';
   static const communityNotificationPath = '/community/notification';
   static const communityActivityPath = '/community/activity';
+  static const communityBlockedUsersPath = '/community/blocked-users';
   static const explorePath = '/explore';
   static const libraryPath = '/library';
   static const morePath = '/more';

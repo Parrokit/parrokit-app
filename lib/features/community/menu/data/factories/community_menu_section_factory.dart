@@ -1,3 +1,4 @@
+import 'package:parrokit/core/router/app_routes.dart';
 import 'package:parrokit/features/community/menu/domain/entities/community_menu_entry.dart';
 
 class CommunityMenuSectionFactory {
@@ -29,7 +30,12 @@ class CommunityMenuSectionFactory {
             title: null,
             items: const [
               CommunityMenuEntry(title: '알림 설정', iconKey: 'notifications', colorKey: 'settings'),
-              CommunityMenuEntry(title: '차단 사용자 관리', iconKey: 'shield', colorKey: 'settings'),
+              CommunityMenuEntry(
+                title: '차단 사용자 관리',
+                iconKey: 'shield',
+                colorKey: 'settings',
+                routePath: AppRoutes.communityBlockedUsersPath,
+              ),
             ],
           ),
         ],

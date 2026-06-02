@@ -45,6 +45,9 @@ class UserProvider extends ChangeNotifier {
   /// 현재 코인 수 (유저가 없으면 0)
   int get coins => _currentUser?.coins ?? 0;
 
+  /// 현재 차단한 유저 ID 목록
+  List<String> get blockedUserIds => _currentUser?.blockedUserIds ?? const [];
+
   /// 앱 시작 시 혹은 필요한 시점에 호출해서
   /// - 저장된 유저를 불러오거나
   /// - 없으면 게스트 유저를 생성합니다.

@@ -23,7 +23,10 @@ import 'package:parrokit/core/provider/media_provider.dart';
 import 'package:parrokit/features/contents/shorts/presentation/providers/shorts_provider.dart';
 import 'package:parrokit/features/contents/shorts/data/shorts_repository.dart';
 import 'package:parrokit/features/contents/library/presentation/providers/tag_filter_provider.dart';
+import 'package:parrokit/features/community/block/data/repositories/block_repository_impl.dart';
+import 'package:parrokit/features/community/block/presentation/providers/block_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
+import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
 
 /// Provider 목록 생성.
 ///
@@ -54,6 +57,12 @@ List<SingleChildWidget> buildProviders({
     // 사용자 관련
     // ─────────────────────────────────────────────────────────────────
     ChangeNotifierProvider<UserProvider>.value(value: userProvider),
+    ChangeNotifierProvider<BlockProvider>(
+      create: (c) => BlockProvider(
+        BlockRepositoryImpl(FirebaseUserService()),
+        c.read<UserProvider>(),
+      ),
+    ),
 
     // ─────────────────────────────────────────────────────────────────
     // 기능별 Provider들
@@ -71,8 +80,13 @@ List<SingleChildWidget> buildProviders({
     ChangeNotifierProvider<TagFilterProvider>(
       create: (c) => TagFilterProvider(c.read<AppDatabase>()),
     ),
-    ChangeNotifierProvider<CommunityProvider>(
+    ChangeNotifierProxyProvider<BlockProvider, CommunityProvider>(
       create: (_) => CommunityProvider(),
+      update: (_, blockProvider, communityProvider) {
+        final provider = communityProvider ?? CommunityProvider();
+        provider.setBlockedUserIds(blockProvider.blockedUserIds);
+        return provider;
+      },
     ),
   ];
 }
