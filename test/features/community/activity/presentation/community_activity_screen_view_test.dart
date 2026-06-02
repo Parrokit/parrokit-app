@@ -3,7 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/features/community/activity/domain/entities/activity_item.dart';
+import 'package:parrokit/features/community/activity/domain/entities/activity_page.dart';
+import 'package:parrokit/features/community/activity/domain/entities/activity_cursor.dart';
 import 'package:parrokit/features/community/activity/domain/repositories/activity_repository.dart';
 import 'package:parrokit/features/community/activity/domain/usecases/get_activities_usecase.dart';
 import 'package:parrokit/features/community/activity/presentation/activity_screen.dart';
@@ -13,13 +14,14 @@ class _MockUserProvider extends Mock implements UserProvider {}
 
 class _FakeActivityRepository implements ActivityRepository {
   @override
-  Future<List<ActivityItem>> getActivities({
+  Future<ActivityPage> getActivities({
     required String userId,
     required String boardType,
     required String activityType,
     int limit = 100,
+    ActivityCursor? startAfter,
   }) async {
-    return [];
+    return const ActivityPage(items: [], hasMore: false);
   }
 }
 

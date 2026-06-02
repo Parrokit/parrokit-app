@@ -7,7 +7,7 @@ import 'package:parrokit/core/provider/user_provider.dart';
 import 'providers/activity_provider.dart';
 import 'widgets/activity_card.dart';
 
-class CommunityActivityScreen extends StatelessWidget {
+class CommunityActivityScreen extends StatefulWidget {
   const CommunityActivityScreen({
     super.key,
     required this.boardType,
@@ -19,9 +19,28 @@ class CommunityActivityScreen extends StatelessWidget {
   final String activityType;
   final ActivityProvider Function()? activityProviderFactory;
 
+  @override
+  State<CommunityActivityScreen> createState() =>
+      _CommunityActivityScreenState();
+}
+
+class _CommunityActivityScreenState extends State<CommunityActivityScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   String _getAppBarTitle() {
     String boardName = '';
-    switch (boardType) {
+    switch (widget.boardType) {
       case 'board':
         boardName = '일반 게시판';
         break;
@@ -36,7 +55,7 @@ class CommunityActivityScreen extends StatelessWidget {
     }
 
     String activityName = '';
-    switch (activityType) {
+    switch (widget.activityType) {
       case 'written':
         activityName = '작성한 글';
         break;
@@ -59,11 +78,10 @@ class CommunityActivityScreen extends StatelessWidget {
         activityName = '활동';
     }
 
-    // 투표 등 특정 조합에 대한 특별 처리
-    if (boardType == 'vote' && activityType == 'written') {
+    if (widget.boardType == 'vote' && widget.activityType == 'written') {
       activityName = '참여한 투표';
     }
-    if (boardType == 'question' && activityType == 'written') {
+    if (widget.boardType == 'question' && widget.activityType == 'written') {
       activityName = '작성한 질문/답변';
     }
 
@@ -72,12 +90,12 @@ class CommunityActivityScreen extends StatelessWidget {
 
   String _getTotalCountLabel(int count) {
     String typeLabel = '';
-    switch (activityType) {
+    switch (widget.activityType) {
       case 'written':
       case 'written_posted':
         typeLabel = '글';
-        if (boardType == 'vote') typeLabel = '투표';
-        if (boardType == 'question') typeLabel = '질문/답변';
+        if (widget.boardType == 'vote') typeLabel = '투표';
+        if (widget.boardType == 'question') typeLabel = '질문/답변';
         break;
       case 'commented':
       case 'commented_reply':
@@ -117,11 +135,11 @@ class CommunityActivityScreen extends StatelessWidget {
 
     return ChangeNotifierProvider(
       create: (context) =>
-          (activityProviderFactory?.call() ?? ActivityProvider())
+          (widget.activityProviderFactory?.call() ?? ActivityProvider())
             ..fetchActivities(
               userId: userId,
-              boardType: boardType,
-              activityType: activityType,
+              boardType: widget.boardType,
+              activityType: widget.activityType,
             ),
       child: Scaffold(
         appBar: AppBar(
@@ -188,23 +206,50 @@ class CommunityActivityScreen extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: provider.activities.length,
-                    itemBuilder: (context, index) {
-                      final item = provider.activities[index];
-                      return ActivityCard(
-                        item: item,
-                        onTap: () {
-                          final path = _resolveDetailPath(
-                            item.boardType,
-                            item.sourcePostId,
+                  child: RefreshIndicator(
+                    onRefresh: provider.refresh,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification.metrics.extentAfter <= 300) {
+                          provider.loadMore();
+                        }
+                        return false;
+                      },
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: provider.activities.length +
+                            (provider.hasMore || provider.isLoadingMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index >= provider.activities.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          }
+
+                          final item = provider.activities[index];
+                          return ActivityCard(
+                            item: item,
+                            onTap: () {
+                              final path = _resolveDetailPath(
+                                item.boardType,
+                                item.sourcePostId,
+                              );
+                              if (path == null) return;
+                              context.push(path);
+                            },
                           );
-                          if (path == null) return;
-                          context.push(path);
                         },
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
               ],

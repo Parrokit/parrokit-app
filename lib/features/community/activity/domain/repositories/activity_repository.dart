@@ -1,10 +1,12 @@
-import '../entities/activity_item.dart';
+import '../entities/activity_page.dart';
+import '../entities/activity_cursor.dart';
 
 abstract class ActivityRepository {
-  Future<List<ActivityItem>> getActivities({
+  Future<ActivityPage> getActivities({
     required String userId,
     required String boardType,
     required String activityType,
     int limit,
+    ActivityCursor? startAfter,
   });
 }

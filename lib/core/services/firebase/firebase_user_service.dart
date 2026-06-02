@@ -175,6 +175,24 @@ class FirebaseUserService {
     }, SetOptions(merge: true));
   }
 
+  Future<int> syncUnreadNotificationCount({required String uid}) async {
+    final unreadSnapshot = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('notifications')
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final unreadCount = unreadSnapshot.docs.length;
+
+    await _firestore.collection('users').doc(uid).set({
+      'unreadNotificationCount': unreadCount,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    return unreadCount;
+  }
+
   Future<void> unblockUser({
     required String uid,
     required String blockedUserId,

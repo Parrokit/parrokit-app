@@ -98,7 +98,6 @@ class CommunityNotificationProvider extends ChangeNotifier {
     _isActive = false;
     _stopListening();
     _isLoading = false;
-    _notifyListenersSafe();
   }
 
   Future<void> refresh() async {
@@ -242,7 +241,7 @@ class CommunityNotificationProvider extends ChangeNotifier {
   }
 
   void _notifyListenersSafe() {
-    if (hasListeners) {
+    if (_isActive && hasListeners) {
       notifyListeners();
     }
   }

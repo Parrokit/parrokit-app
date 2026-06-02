@@ -1,4 +1,5 @@
-import '../entities/activity_item.dart';
+import '../entities/activity_page.dart';
+import '../entities/activity_cursor.dart';
 import '../repositories/activity_repository.dart';
 
 class GetActivitiesUseCase {
@@ -6,17 +7,19 @@ class GetActivitiesUseCase {
 
   GetActivitiesUseCase(this._repository);
 
-  Future<List<ActivityItem>> call({
+  Future<ActivityPage> call({
     required String userId,
     required String boardType,
     required String activityType,
     int limit = 100,
+    ActivityCursor? startAfter,
   }) {
     return _repository.getActivities(
       userId: userId,
       boardType: boardType,
       activityType: activityType,
       limit: limit,
+      startAfter: startAfter,
     );
   }
 }
