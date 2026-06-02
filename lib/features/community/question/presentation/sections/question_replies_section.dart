@@ -66,6 +66,7 @@ class QuestionRepliesSection extends StatelessWidget {
     final currentUser = context.read<UserProvider>().currentUser;
     final isMe = currentUser != null && question.authorId == currentUser.id;
     final provider = context.read<CommunityProvider>();
+    final isBlocked = provider.isAuthorBlocked(answer.authorId);
 
     final answererName = (answer.authorId == currentUser?.id)
         ? (currentUser?.displayName ?? answer.authorNickname)
@@ -88,9 +89,9 @@ class QuestionRepliesSection extends StatelessWidget {
               CircleAvatar(
                 radius: isReply ? 14 : 18,
                 backgroundColor: AppColors.surfaceContainerHigh,
-                backgroundImage: answererAvatar != null ? NetworkImage(answererAvatar) : null,
-                child: answererAvatar == null
-                    ? Icon(Icons.person, size: isReply ? 14 : 18, color: colorScheme.onSurfaceVariant)
+                backgroundImage: (!isBlocked && answererAvatar != null) ? NetworkImage(answererAvatar) : null,
+                child: answererAvatar == null || isBlocked
+                    ? Icon(isBlocked ? Icons.block_rounded : Icons.person, size: isReply ? 14 : 18, color: colorScheme.onSurfaceVariant)
                     : null,
               ),
               if (!isReply) Container(width: 2, height: 40, color: AppColors.surfaceContainerHigh),
@@ -103,17 +104,19 @@ class QuestionRepliesSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(answererName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary)),
+                    Text(isBlocked ? '차단한 사용자' : answererName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary)),
                     const Spacer(),
-                    Text(formatTimeAgo(answer.createdAt), style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(Icons.more_vert_rounded, size: 18),
-                      color: colorScheme.onSurfaceVariant,
-                      onPressed: () => _showAnswerOptionsSheet(context, answer),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
+                    if (!isBlocked) ...[
+                      Text(formatTimeAgo(answer.createdAt), style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert_rounded, size: 18),
+                        color: colorScheme.onSurfaceVariant,
+                        onPressed: () => _showAnswerOptionsSheet(context, answer),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -137,7 +140,7 @@ class QuestionRepliesSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                 ],
-                if (isReply && answer.replyToNickname != null)
+                if (isReply && answer.replyToNickname != null && !isBlocked)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
@@ -145,54 +148,58 @@ class QuestionRepliesSection extends StatelessWidget {
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
                     ),
                   ),
-                Text(answer.content, style: const TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.45)),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            provider.likedCommentIds.contains(answer.id) ? Icons.bolt : Icons.bolt_outlined,
-                            size: 18,
-                            color: provider.likedCommentIds.contains(answer.id) ? AppColors.warning : AppColors.textSecondary,
-                          ),
-                          onPressed: () {
-                            if (currentUser != null) {
-                              provider.toggleCommentLike(question.id, answer.id, currentUser.id);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
-                            }
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const SizedBox(width: 4),
-                        Text('${answer.likeCount}', style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          icon: const Icon(Icons.mode_comment_outlined, size: 18, color: AppColors.textSecondary),
-                          onPressed: () {
-                            provider.setReplyingTo(answer);
-                            onFocusReplyInput();
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                    if (!isReply && isMe && question.questionStatus == 'waiting' && answer.authorId != question.authorId)
-                      GestureDetector(
-                        onTap: () => onAcceptAnswer(answer),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(color: AppColors.successSoft, borderRadius: BorderRadius.circular(6)),
-                          child: const Text('채택하기', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                  ],
+                Text(
+                  isBlocked ? '차단된 사용자의 답변입니다.' : answer.content,
+                  style: const TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.45),
                 ),
+                const SizedBox(height: 12),
+                if (!isBlocked)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              provider.likedCommentIds.contains(answer.id) ? Icons.bolt : Icons.bolt_outlined,
+                              size: 18,
+                              color: provider.likedCommentIds.contains(answer.id) ? AppColors.warning : AppColors.textSecondary,
+                            ),
+                            onPressed: () {
+                              if (currentUser != null) {
+                                provider.toggleCommentLike(question.id, answer.id, currentUser.id);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
+                              }
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          const SizedBox(width: 4),
+                          Text('${answer.likeCount}', style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                          const SizedBox(width: 12),
+                          IconButton(
+                            icon: const Icon(Icons.mode_comment_outlined, size: 18, color: AppColors.textSecondary),
+                            onPressed: () {
+                              provider.setReplyingTo(answer);
+                              onFocusReplyInput();
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      if (!isReply && isMe && question.questionStatus == 'waiting' && answer.authorId != question.authorId)
+                        GestureDetector(
+                          onTap: () => onAcceptAnswer(answer),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(color: AppColors.successSoft, borderRadius: BorderRadius.circular(6)),
+                            child: const Text('채택하기', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                    ],
+                  ),
               ],
             ),
           ),

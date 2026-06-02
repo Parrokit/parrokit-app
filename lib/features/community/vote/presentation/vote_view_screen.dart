@@ -315,6 +315,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
     final isDeleted = comment.status == 'deleted';
     final provider = context.watch<CommunityProvider>();
     final isLiked = provider.likedCommentIds.contains(comment.id);
+    final isBlocked = provider.isAuthorBlocked(comment.authorId);
 
     return GestureDetector(
       onLongPress: () => _showCommentOptionsSheet(comment),
@@ -336,13 +337,15 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
               backgroundColor: AppColors.surfaceContainerHigh,
               backgroundImage: (comment.authorAvatarUrl != null &&
                       comment.authorAvatarUrl!.isNotEmpty &&
-                      !isDeleted)
+                      !isDeleted &&
+                      !isBlocked)
                   ? CachedNetworkImageProvider(comment.authorAvatarUrl!)
                   : null,
               child: (comment.authorAvatarUrl == null ||
                       comment.authorAvatarUrl!.isEmpty ||
-                      isDeleted)
-                  ? const Icon(Icons.person, color: AppColors.textDisabled, size: 20)
+                      isDeleted ||
+                      isBlocked)
+                  ? Icon(isBlocked ? Icons.block_rounded : Icons.person, color: AppColors.textDisabled, size: 20)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -354,14 +357,18 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        isDeleted ? '알 수 없음' : comment.authorNickname,
+                        isDeleted
+                            ? '알 수 없음'
+                            : isBlocked
+                                ? '차단한 사용자'
+                                : comment.authorNickname,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                           color: colorScheme.onSurface,
                         ),
                       ),
-                      if (comment.authorId == postAuthorId && !isDeleted) ...[
+                      if (comment.authorId == postAuthorId && !isDeleted && !isBlocked) ...[
                         const SizedBox(width: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -381,7 +388,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                         ),
                       ],
                       const Spacer(),
-                      if (comment.createdAt != null)
+                      if (comment.createdAt != null && !isBlocked)
                         Text(
                           _formatTimeAgo(comment.createdAt),
                           style: TextStyle(
@@ -389,18 +396,20 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: const Icon(Icons.more_vert_rounded, size: 18),
-                        color: colorScheme.onSurfaceVariant,
-                        onPressed: () => _showCommentOptionsSheet(comment),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
+                      if (!isBlocked) ...[
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(Icons.more_vert_rounded, size: 18),
+                          color: colorScheme.onSurfaceVariant,
+                          onPressed: () => _showCommentOptionsSheet(comment),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
-                  if (isReply && comment.replyToNickname != null && !isDeleted)
+                if (isReply && comment.replyToNickname != null && !isDeleted && !isBlocked)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
@@ -413,7 +422,11 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                       ),
                     ),
                   Text(
-                    isDeleted ? '삭제된 댓글입니다.' : comment.content,
+                    isDeleted
+                        ? '삭제된 댓글입니다.'
+                        : isBlocked
+                            ? '차단된 사용자의 댓글입니다.'
+                            : comment.content,
                     style: TextStyle(
                       fontSize: 14,
                       color: isDeleted
@@ -423,7 +436,7 @@ class _VoteViewScreenState extends State<VoteViewScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (!isDeleted)
+                  if (!isDeleted && !isBlocked)
                     Row(
                       children: [
                         GestureDetector(

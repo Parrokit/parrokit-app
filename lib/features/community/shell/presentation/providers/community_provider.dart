@@ -62,6 +62,8 @@ class CommunityProvider with ChangeNotifier {
     Future.microtask(notifyListeners);
   }
 
+  bool isAuthorBlocked(String authorId) => _blockedUserIds.contains(authorId);
+
   bool _isBlockedAuthor(String authorId) => _blockedUserIds.contains(authorId);
 
   AppUser? getCachedUser(String uid) => _userCache[uid];
