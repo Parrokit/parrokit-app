@@ -19,7 +19,7 @@ import 'package:parrokit/features/auth/sign-in/sign_in_screen.dart';
 import 'package:parrokit/features/auth/sign-up/sign_up_screen.dart';
 import 'package:parrokit/features/auth/find-pw/find_pw_screen.dart';
 import 'package:parrokit/features/auth/onboarding/onboarding_screen.dart';
-import 'package:parrokit/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:parrokit/features/home/dashboard/presentation/dashboard_screen.dart';
 import 'package:parrokit/features/community/shell/presentation/community_shell_screen.dart';
 import 'package:parrokit/features/community/board/presentation/board_view_screen.dart';
 import 'package:parrokit/features/community/board/presentation/board_write_screen.dart';
@@ -31,13 +31,14 @@ import 'package:parrokit/features/community/menu/presentation/community_menu_scr
 import 'package:parrokit/features/community/block/presentation/blocked_users_screen.dart';
 import 'package:parrokit/features/community/notification/presentation/community_notification_screen.dart';
 import 'package:parrokit/features/community/activity/presentation/activity_screen.dart';
-import 'package:parrokit/features/contents/shorts/presentation/shorts_screen.dart';
-import 'package:parrokit/features/contents/library/presentation/library_screen.dart';
+import 'package:parrokit/features/content/shorts/presentation/shorts_screen.dart';
+import 'package:parrokit/features/collection/library/presentation/library_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/profile_edit_screen.dart';
-import 'package:parrokit/features/discovery/recent/presentation/recent_screen.dart';
-import 'package:parrokit/features/contents/clip-editor/presentation/clip_editor_screen.dart';
-import 'package:parrokit/features/contents/player/presentation/clip_player_screen.dart';
+import 'package:parrokit/features/home/recent/presentation/recent_screen.dart';
+import 'package:parrokit/features/content-studio/captioning/presentation/clip_editor_screen.dart';
+import 'package:parrokit/features/content/player/presentation/clip_player_screen.dart';
+import 'package:parrokit/features/content-studio/hub/presentation/content_studio_hub_screen.dart';
 
 // Router 관련
 import 'app_routes.dart';
@@ -132,7 +133,8 @@ GoRouter buildAppRouter({
         name: AppRoutes.communityActivity,
         builder: (context, state) {
           final boardType = state.uri.queryParameters['boardType'] ?? 'unknown';
-          final activityType = state.uri.queryParameters['activityType'] ?? 'unknown';
+          final activityType =
+              state.uri.queryParameters['activityType'] ?? 'unknown';
           return CommunityActivityScreen(
             boardType: boardType,
             activityType: activityType,
@@ -196,14 +198,15 @@ String? _handleRedirect(BuildContext context, GoRouterState state) {
 
   // 3) 닉네임 체크 방어막 (로그인 상태)
   if (user.isLoggedIn) {
-    final hasNickname = user.currentUser?.displayName != null && user.currentUser!.displayName!.isNotEmpty;
+    final hasNickname = user.currentUser?.displayName != null &&
+        user.currentUser!.displayName!.isNotEmpty;
     final isOnOnboarding = loc == AppRoutes.onboardingPath;
 
     // 닉네임이 없는데 온보딩 화면이 아니면 -> 강제로 온보딩 이동
     if (!hasNickname && !isOnOnboarding) {
       return AppRoutes.onboardingPath;
     }
-    
+
     // 닉네임이 있는데 온보딩 화면이나 Auth 화면에 있으면 -> 대시보드로
     if (hasNickname && (isOnOnboarding || isOnAuth)) {
       return AppRoutes.dashboardPath;
@@ -338,6 +341,61 @@ ShellRoute get _shellRoute => ShellRoute(
           ),
         ),
 
+        // Content Studio
+        GoRoute(
+          path: AppRoutes.contentStudioHubPath,
+          name: AppRoutes.contentStudioHub,
+          pageBuilder: (context, state) => CustomTransitionPage(
+            name: AppRoutes.contentStudioHub,
+            transitionDuration: const Duration(milliseconds: 280),
+            reverseTransitionDuration: const Duration(milliseconds: 240),
+            child: const ContentStudioHubScreen(initialIndex: 0),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0.14, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              ));
+              final fade = CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              );
+
+              return FadeTransition(
+                opacity: fade,
+                child: SlideTransition(position: slide, child: child),
+              );
+            },
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.contentStudioCaptioningPath,
+          name: AppRoutes.contentStudioCaptioning,
+          pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.contentStudioCaptioning,
+            child: CaptioningScreen(),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.contentStudioTtsPath,
+          name: AppRoutes.contentStudioTts,
+          pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.contentStudioTts,
+            child: ContentStudioHubScreen(initialIndex: 1),
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.contentStudioVideoPath,
+          name: AppRoutes.contentStudioVideo,
+          pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.contentStudioVideo,
+            child: ContentStudioHubScreen(initialIndex: 2),
+          ),
+        ),
+
         // Clips (with nested routes)
         GoRoute(
           path: AppRoutes.clipsPath,
@@ -347,7 +405,7 @@ ShellRoute get _shellRoute => ShellRoute(
             GoRoute(
               path: AppRoutes.clipsCreatePath,
               name: AppRoutes.clipsCreate,
-              builder: (context, state) => ClipEditorScreen(
+              builder: (context, state) => CaptioningScreen(
                 initialCollectionName:
                     state.uri.queryParameters['collectionName'],
               ),
@@ -358,7 +416,7 @@ ShellRoute get _shellRoute => ShellRoute(
               builder: (context, state) {
                 final clipIdStr = state.uri.queryParameters['clipId'];
                 final clipId = int.tryParse(clipIdStr ?? '');
-                return ClipEditorScreen(clipId: clipId);
+                return CaptioningScreen(clipId: clipId);
               },
             ),
             GoRoute(

@@ -29,6 +29,10 @@ abstract class AppRoutes {
   static const clipsCreate = 'clips_create';
   static const clipsEdit = 'clips_edit';
   static const clipsPlay = 'clips_play';
+  static const contentStudioHub = 'content_studio_hub';
+  static const contentStudioCaptioning = 'content_studio_captioning';
+  static const contentStudioTts = 'content_studio_tts';
+  static const contentStudioVideo = 'content_studio_video';
   static const intro = 'intro';
   static const auth = 'auth';
   static const signIn = 'sign_in';
@@ -74,6 +78,10 @@ abstract class AppRoutes {
   static const clipsCreatePath = 'create';
   static const clipsEditPath = 'edit';
   static const clipsPlayPath = 'play';
+  static const contentStudioHubPath = '/content-studio/hub';
+  static const contentStudioCaptioningPath = '/content-studio/captioning';
+  static const contentStudioTtsPath = '/content-studio/tts';
+  static const contentStudioVideoPath = '/content-studio/video';
   static const introPath = '/intro';
   static const authPath = '/auth'; // Root of auth flows
   static const signInPath = 'sign-in';

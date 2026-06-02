@@ -40,8 +40,9 @@ class AppShell extends StatelessWidget {
     final currentIndex = _indexFromLocation(location);
 
     // 네비바 숨김 조건
-    final hideNav =
-        location.startsWith('/clips/') || location == AppRoutes.recentsPath;
+    final hideNav = location.startsWith('/clips/') ||
+        location == AppRoutes.recentsPath ||
+        location.startsWith('/content-studio/');
 
     return Scaffold(
       body: child,
