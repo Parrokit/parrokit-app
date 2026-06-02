@@ -32,13 +32,38 @@ class CommunityNotificationListSection extends StatelessWidget {
         separatorBuilder: (_, __) => const Divider(height: 1),
         itemBuilder: (context, index) {
           final item = provider.notifications[index];
-          return CommunityNotificationTile(
-            item: item,
-            onTap: () async {
-              await provider.markAsRead(item.id);
+          return Dismissible(
+            key: ValueKey(item.id),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              color: Colors.transparent,
+            ),
+            secondaryBackground: Container(
+              color: Theme.of(context).colorScheme.error,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.white,
+              ),
+            ),
+            onDismissed: (_) async {
+              await provider.deleteNotification(item.id);
               if (!context.mounted) return;
-              context.push(_resolveRoutePath(item));
+              if (provider.errorMessage == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('알림을 삭제했습니다.')),
+                );
+              }
             },
+            child: CommunityNotificationTile(
+              item: item,
+              onTap: () async {
+                await provider.markAsRead(item.id);
+                if (!context.mounted) return;
+                context.push(_resolveRoutePath(item));
+              },
+            ),
           );
         },
       ),

@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:parrokit/core/services/firebase/firebase_messaging_service.dart';
 import 'package:parrokit/core/utils/app_logger.dart';
 import 'package:parrokit/features/community/notification/domain/entities/community_notification_item.dart';
+import 'package:parrokit/features/community/notification/domain/usecases/delete_all_notifications_usecase.dart';
+import 'package:parrokit/features/community/notification/domain/usecases/delete_notification_usecase.dart';
 import 'package:parrokit/features/community/notification/domain/usecases/fetch_notifications_usecase.dart';
 import 'package:parrokit/features/community/notification/domain/usecases/mark_all_notifications_read_usecase.dart';
 import 'package:parrokit/features/community/notification/domain/usecases/mark_notification_read_usecase.dart';
@@ -14,6 +16,8 @@ class CommunityNotificationProvider extends ChangeNotifier {
   final FetchNotificationsUseCase _fetchNotificationsUseCase;
   final MarkNotificationReadUseCase _markNotificationReadUseCase;
   final MarkAllNotificationsReadUseCase _markAllNotificationsReadUseCase;
+  final DeleteNotificationUseCase _deleteNotificationUseCase;
+  final DeleteAllNotificationsUseCase _deleteAllNotificationsUseCase;
   final FirebaseMessagingService _messagingService;
 
   StreamSubscription<List<CommunityNotificationItem>>? _subscription;
@@ -28,11 +32,15 @@ class CommunityNotificationProvider extends ChangeNotifier {
     required FetchNotificationsUseCase fetchNotificationsUseCase,
     required MarkNotificationReadUseCase markNotificationReadUseCase,
     required MarkAllNotificationsReadUseCase markAllNotificationsReadUseCase,
+    required DeleteNotificationUseCase deleteNotificationUseCase,
+    required DeleteAllNotificationsUseCase deleteAllNotificationsUseCase,
     required FirebaseMessagingService messagingService,
   })  : _watchNotificationsUseCase = watchNotificationsUseCase,
         _fetchNotificationsUseCase = fetchNotificationsUseCase,
         _markNotificationReadUseCase = markNotificationReadUseCase,
         _markAllNotificationsReadUseCase = markAllNotificationsReadUseCase,
+        _deleteNotificationUseCase = deleteNotificationUseCase,
+        _deleteAllNotificationsUseCase = deleteAllNotificationsUseCase,
         _messagingService = messagingService;
 
   bool get isLoading => _isLoading;
@@ -121,6 +129,41 @@ class CommunityNotificationProvider extends ChangeNotifier {
       _errorMessage = e.toString();
       AppLogger.e(
         '[CommunityNotification][Provider] markAllAsRead failed userId=$userId',
+        error: e,
+      );
+      _notifyListenersSafe();
+    }
+  }
+
+  Future<void> deleteNotification(String notificationId) async {
+    final userId = _currentUserId;
+    if (userId == null || userId.isEmpty || notificationId.isEmpty) return;
+
+    try {
+      await _deleteNotificationUseCase.execute(
+        userId: userId,
+        notificationId: notificationId,
+      );
+    } catch (e) {
+      _errorMessage = e.toString();
+      AppLogger.e(
+        '[CommunityNotification][Provider] deleteNotification failed notificationId=$notificationId',
+        error: e,
+      );
+      _notifyListenersSafe();
+    }
+  }
+
+  Future<void> deleteAllNotifications() async {
+    final userId = _currentUserId;
+    if (userId == null || userId.isEmpty) return;
+
+    try {
+      await _deleteAllNotificationsUseCase.execute(userId);
+    } catch (e) {
+      _errorMessage = e.toString();
+      AppLogger.e(
+        '[CommunityNotification][Provider] deleteAllNotifications failed userId=$userId',
         error: e,
       );
       _notifyListenersSafe();

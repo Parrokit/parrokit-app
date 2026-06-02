@@ -8,4 +8,9 @@ abstract class CommunityNotificationRepository {
     required String notificationId,
   });
   Future<void> markAllAsRead(String userId);
+  Future<void> deleteNotification({
+    required String userId,
+    required String notificationId,
+  });
+  Future<void> deleteAllNotifications(String userId);
 }

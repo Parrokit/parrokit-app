@@ -26,6 +26,8 @@ import 'package:parrokit/features/contents/library/presentation/providers/tag_fi
 import 'package:parrokit/features/community/block/data/repositories/block_repository_impl.dart';
 import 'package:parrokit/features/community/block/presentation/providers/block_provider.dart';
 import 'package:parrokit/features/community/notification/data/repositories/community_notification_repository_impl.dart';
+import 'package:parrokit/features/community/notification/domain/usecases/delete_all_notifications_usecase.dart';
+import 'package:parrokit/features/community/notification/domain/usecases/delete_notification_usecase.dart';
 import 'package:parrokit/features/community/notification/domain/usecases/fetch_notifications_usecase.dart';
 import 'package:parrokit/features/community/notification/domain/usecases/mark_all_notifications_read_usecase.dart';
 import 'package:parrokit/features/community/notification/domain/usecases/mark_notification_read_usecase.dart';
@@ -109,6 +111,12 @@ List<SingleChildWidget> buildProviders({
         markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase(
           CommunityNotificationRepositoryImpl(),
         ),
+        deleteNotificationUseCase: DeleteNotificationUseCase(
+          CommunityNotificationRepositoryImpl(),
+        ),
+        deleteAllNotificationsUseCase: DeleteAllNotificationsUseCase(
+          CommunityNotificationRepositoryImpl(),
+        ),
         messagingService: FirebaseMessagingService(
           firebaseUserService: FirebaseUserService(),
         ),
@@ -126,6 +134,12 @@ List<SingleChildWidget> buildProviders({
                 CommunityNotificationRepositoryImpl(),
               ),
               markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase(
+                CommunityNotificationRepositoryImpl(),
+              ),
+              deleteNotificationUseCase: DeleteNotificationUseCase(
+                CommunityNotificationRepositoryImpl(),
+              ),
+              deleteAllNotificationsUseCase: DeleteAllNotificationsUseCase(
                 CommunityNotificationRepositoryImpl(),
               ),
               messagingService: FirebaseMessagingService(

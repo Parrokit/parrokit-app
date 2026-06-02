@@ -45,6 +45,27 @@ class CommunityNotificationScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              TextButton(
+                onPressed: provider.hasNotifications
+                    ? () async {
+                        await provider.deleteAllNotifications();
+                        if (!context.mounted) return;
+                        if (provider.errorMessage == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('알림을 모두 삭제했습니다.')),
+                          );
+                        }
+                      }
+                    : null,
+                child: const Text(
+                  '모두 지우기',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.danger,
+                  ),
+                ),
+              ),
               IconButton(
                 onPressed: provider.refresh,
                 icon: const Icon(

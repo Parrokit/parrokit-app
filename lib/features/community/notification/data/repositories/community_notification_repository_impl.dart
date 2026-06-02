@@ -110,4 +110,44 @@ class CommunityNotificationRepositoryImpl
       throw Exception('알림 전체 읽음 처리에 실패했어요.');
     }
   }
+
+  @override
+  Future<void> deleteNotification({
+    required String userId,
+    required String notificationId,
+  }) async {
+    if (userId.isEmpty || notificationId.isEmpty) return;
+
+    try {
+      await _collection(userId).doc(notificationId).delete();
+    } catch (e) {
+      AppLogger.e(
+        '[CommunityNotification][Repository] deleteNotification failed userId=$userId notificationId=$notificationId',
+        error: e,
+      );
+      throw Exception('알림을 삭제하지 못했어요.');
+    }
+  }
+
+  @override
+  Future<void> deleteAllNotifications(String userId) async {
+    if (userId.isEmpty) return;
+
+    try {
+      final snapshot = await _collection(userId).get();
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    } catch (e) {
+      AppLogger.e(
+        '[CommunityNotification][Repository] deleteAllNotifications failed userId=$userId',
+        error: e,
+      );
+      throw Exception('알림 전체 삭제에 실패했어요.');
+    }
+  }
 }
