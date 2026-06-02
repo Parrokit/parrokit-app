@@ -195,7 +195,7 @@ class Post {
       'updatedAt': updatedAt?.toIso8601String(),
       'editHistory': editHistory.map((e) => e.toIso8601String()).toList(),
       if (voteOptions != null) 'voteOptions': voteOptions!.map((e) => e.toJson()).toList(),
-      if (voteEndTime != null) 'voteEndTime': voteEndTime!.toIso8601String(),
+      if (voteEndTime != null) 'voteEndTime': voteEndTime!.toUtc().toIso8601String(),
       'questionStatus': questionStatus,
       'acceptedCommentId': acceptedCommentId,
       'rewardCrackers': rewardCrackers,

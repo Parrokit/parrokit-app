@@ -116,39 +116,54 @@ export const onVoteEndNotification = onSchedule(
   "every 10 minutes",
   async () => {
     const now = new Date();
+    console.log(
+      `[CommunityNotification][VoteEnd] scan start now=${now.toISOString()}`
+    );
     const voteSnapshot = await db
       .collection("posts")
       .where("postType", "==", "vote")
       .get();
 
+    console.log(
+      `[CommunityNotification][VoteEnd] vote candidates=${voteSnapshot.size}`
+    );
+
     const duePosts = voteSnapshot.docs.filter((doc) => {
       const data = doc.data() as Record<string, unknown>;
-      const voteEndTime = asString(data.voteEndTime);
+      const voteEndTime = parseVoteEndTime(data.voteEndTime);
       const notifiedAt = data.voteEndNotificationSentAt;
       if (notifiedAt) return false;
       if (!voteEndTime) return false;
 
-      const endDate = new Date(voteEndTime);
-      return !Number.isNaN(endDate.getTime()) && endDate <= now;
+      return voteEndTime <= now;
     });
+
+    console.log(
+      `[CommunityNotification][VoteEnd] due posts=${duePosts.length}`
+    );
 
     for (const postDoc of duePosts) {
       const postId = postDoc.id;
       const postData = postDoc.data() as Record<string, unknown>;
       const postTitle = asString(postData.title) || "투표";
       const routePath = buildRoutePath("vote", postId);
+      const voteEndTime = parseVoteEndTime(postData.voteEndTime);
 
       const votersSnapshot = await db
         .collectionGroup("voted_posts")
         .where("postId", "==", postId)
         .get();
 
+      console.log(
+        `[CommunityNotification][VoteEnd] dispatch postId=${postId} title=${postTitle} endAt=${voteEndTime?.toISOString() ?? "unknown"} voters=${votersSnapshot.size}`
+      );
+
       await Promise.all(
         votersSnapshot.docs.map(async (doc) => {
           const userId = doc.ref.parent.parent?.id;
           if (!userId) return;
 
-        const payload = buildVoteEndNotification({
+          const payload = buildVoteEndNotification({
             recipientUserId: userId,
             boardType: "vote",
             postId,
@@ -160,6 +175,9 @@ export const onVoteEndNotification = onSchedule(
 
           await saveNotification(payload);
           await safeSendPushNotification(payload);
+          console.log(
+            `[CommunityNotification][VoteEnd] sent recipient=${userId} postId=${postId}`
+          );
         }),
       );
 
@@ -308,5 +326,37 @@ function asString(value: unknown): string | null {
   if (typeof value === "string" && value.length > 0) {
     return value;
   }
+  return null;
+}
+
+function parseVoteEndTime(value: unknown): Date | null {
+  if (value instanceof admin.firestore.Timestamp) {
+    return value.toDate();
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === "number") {
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+
+  if (typeof value === "string" && value.length > 0) {
+    const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value);
+    const normalizedValue = hasTimezone ? value : `${value}+09:00`;
+    const parsedDate = new Date(normalizedValue);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+      if (!hasTimezone) {
+        console.log(
+          `[CommunityNotification][VoteEnd] normalized naive voteEndTime value=${value} normalized=${normalizedValue}`
+        );
+      }
+      return parsedDate;
+    }
+  }
+
   return null;
 }
