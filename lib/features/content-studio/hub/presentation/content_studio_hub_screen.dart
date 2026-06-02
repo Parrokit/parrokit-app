@@ -9,6 +9,7 @@ import 'package:parrokit/features/content-studio/video/presentation/video_screen
 import 'package:parrokit/features/home/dashboard/presentation/widgets/dashboard_studio_switch_fab.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'content_studio_app_bar.dart';
+import 'widgets/content_studio_exit_confirm_sheet.dart';
 
 class ContentStudioHubScreen extends StatefulWidget {
   const ContentStudioHubScreen({
@@ -59,18 +60,10 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
   }
 
   Future<void> _handleBack() async {
-    if (_selectedIndex == 0) {
-      context.go(AppRoutes.dashboardPath);
-      return;
-    }
-
-    await _pageController.animateToPage(
-      0,
-      duration: const Duration(milliseconds: 240),
-      curve: Curves.easeOutCubic,
-    );
-    if (!mounted) return;
-    setState(() => _selectedIndex = 0);
+    final router = GoRouter.of(context);
+    final shouldExit = await showContentStudioExitConfirmSheet(context);
+    if (shouldExit != true) return;
+    router.go(AppRoutes.dashboardPath);
   }
 
   @override
@@ -114,6 +107,7 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                   children: [
                     _StudioPageSlot(
                       child: CaptioningScreen(
+                        showAppBar: false,
                         onClose: (_) async => context.go(
                           AppRoutes.dashboardPath,
                         ),

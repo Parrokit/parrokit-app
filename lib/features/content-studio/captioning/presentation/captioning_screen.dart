@@ -29,11 +29,13 @@ class CaptioningScreen extends StatelessWidget {
     this.clipId,
     this.initialCollectionName,
     this.onClose,
+    this.showAppBar = true,
   });
 
   final int? clipId;
   final String? initialCollectionName;
   final Future<void> Function(Object? result)? onClose;
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context) {
@@ -45,15 +47,22 @@ class CaptioningScreen extends StatelessWidget {
         clipId: clipId,
         initialCollectionName: initialCollectionName,
       ),
-      child: _ClipEditorBody(onClose: onClose),
+      child: _ClipEditorBody(
+        onClose: onClose,
+        showAppBar: showAppBar,
+      ),
     );
   }
 }
 
 class _ClipEditorBody extends StatefulWidget {
-  const _ClipEditorBody({required this.onClose});
+  const _ClipEditorBody({
+    required this.onClose,
+    required this.showAppBar,
+  });
 
   final Future<void> Function(Object? result)? onClose;
+  final bool showAppBar;
 
   @override
   State<_ClipEditorBody> createState() => _ClipEditorBodyState();
@@ -66,7 +75,7 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
   Widget build(BuildContext context) {
     final vm = context.watch<CaptioningViewModel>();
     final userProvider = context.watch<UserProvider>();
-    final isEmbedded = widget.onClose != null;
+    final showAppBar = widget.showAppBar;
 
     // 저장 후 닫기 - 한 번만 처리
     if (vm.shouldClose && !_hasHandledClose) {
@@ -86,16 +95,16 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        appBar: isEmbedded
-            ? null
-            : ContentStudioAppBar(
+        appBar: showAppBar
+            ? ContentStudioAppBar(
                 title: '편집',
                 coins: userProvider.coins,
                 onBack: () => _showExitConfirmation(context, vm),
                 backgroundColor: Theme.of(context).colorScheme.surface,
-              ),
+              )
+            : null,
         body: SafeArea(
-          top: !isEmbedded,
+          top: !showAppBar,
           child: Stack(
             children: [
               Column(

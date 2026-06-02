@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 
 import '../../data/constants/editor_strings.dart';
 import 'time_triplet_field.dart';
@@ -27,27 +30,82 @@ class SegmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final tt = theme.textTheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final mutedText =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
     return IgnorePointer(
       ignoring: !enabled,
       child: Opacity(
         opacity: enabled ? 1.0 : 0.5,
         child: CardContainer(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                EditorStrings.segmentCardTitle(index),
-                style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
+              Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.primarySubtleDark
+                          : AppColors.primarySubtle,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Icon(
+                      Icons.notes_rounded,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          EditorStrings.segmentCardTitle(index),
+                          style: tt.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '시간과 자막을 함께 조정합니다.',
+                          style: tt.bodySmall?.copyWith(color: mutedText),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              TimeTripletField(label: '시작', target: startCtl, showGuide: false),
-              const SizedBox(height: 12),
-              TimeTripletField(label: '끝', target: endCtl),
-              const SizedBox(height: 14),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.surfaceContainerDark
+                      : AppColors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TimeTripletField(
+                      label: '시작',
+                      target: startCtl,
+                      showGuide: false,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TimeTripletField(label: '끝', target: endCtl),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
               LabeledTextField(
                 label: EditorStrings.originalLabel,
                 hint: EditorStrings.originalHint,
@@ -55,7 +113,7 @@ class SegmentCard extends StatelessWidget {
                 prefixIcon: Icons.translate,
                 clearable: true,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.sm),
               LabeledTextField(
                 label: EditorStrings.koLabel,
                 hint: EditorStrings.koHint,
@@ -63,7 +121,7 @@ class SegmentCard extends StatelessWidget {
                 prefixIcon: Icons.subtitles_outlined,
                 clearable: true,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.sm),
               LabeledTextField(
                 label: EditorStrings.pronLabel,
                 hint: EditorStrings.pronHint,
@@ -71,7 +129,6 @@ class SegmentCard extends StatelessWidget {
                 prefixIcon: Icons.record_voice_over_outlined,
                 clearable: true,
               ),
-              const SizedBox(height: 10),
             ],
           ),
         ),

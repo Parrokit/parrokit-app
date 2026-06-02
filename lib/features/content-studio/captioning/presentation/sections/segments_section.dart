@@ -12,6 +12,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 
 import '../../data/constants/editor_strings.dart';
 import '../../domain/editor_state.dart';
@@ -105,12 +108,81 @@ class _SegmentsSectionState extends State<SegmentsSection> {
   Widget build(BuildContext context) {
     final vm = widget.vm;
     final total = vm.segmentForms.length;
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mutedText =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.surfaceContainerDark
+                : AppColors.surfaceContainer,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: isDark
+                  ? AppColors.dividerSubtleDark
+                  : AppColors.dividerSubtle,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: const Icon(
+                  Icons.subtitles_rounded,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '자막 구간',
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '구간을 넘겨보며 시작/끝 시간, 원문, 발음, 번역을 한 화면에서 정리합니다.',
+                      style: tt.bodyMedium?.copyWith(color: mutedText),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        _StatusChip(
+                          icon: Icons.list_alt_rounded,
+                          label: '총 $total개 구간',
+                        ),
+                        _StatusChip(
+                          icon: Icons.swipe_rounded,
+                          label: '가로 스와이프',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
         // STT 진행 상황
         if (vm.isSttProcessing) ...[
           SttProgressCard(
@@ -122,53 +194,20 @@ class _SegmentsSectionState extends State<SegmentsSection> {
         ],
 
         if (total > 0) ...[
-          // 페이지 인디케이터 + 삭제 버튼
-          Row(
-            children: [
-              const SizedBox(width: 10),
-              Text(
-                '구간 ${_currentPage + 1} / $total',
-                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-              ),
-              Spacer(),
-              TextButton.icon(
-                icon: vm.isSttProcessing
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.subtitles_outlined, size: 18),
-                label: Text(vm.isSttProcessing
-                    ? _sttStatusText(vm.sttState)
-                    : EditorStrings.sttButtonLabel),
-                onPressed:
-                    vm.isSttProcessing ? null : () => vm.onSttAndDraft(context),
-              ),
-              TextButton.icon(
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text(EditorStrings.addSegmentButtonLabel),
-                onPressed: vm.isSttProcessing ? null : _addAndJump,
-              ),
-              const SizedBox(width: 4),
-              TextButton.icon(
-                icon: Icon(
-                  Icons.delete_outline_rounded,
-                  size: 16,
-                  color: cs.error,
-                ),
-                label: Text(
-                  EditorStrings.removeSegmentButtonLabel,
-                  style: TextStyle(color: cs.error),
-                ),
-                onPressed: vm.isSttProcessing ? null : _deleteCurrentAndAdjust,
-              ),
-            ],
+          _ActionBar(
+            currentPage: _currentPage + 1,
+            total: total,
+            isProcessing: vm.isSttProcessing,
+            sttLabel: vm.isSttProcessing
+                ? _sttStatusText(vm.sttState)
+                : EditorStrings.sttButtonLabel,
+            onSttPressed:
+                vm.isSttProcessing ? null : () => vm.onSttAndDraft(context),
+            onAddPressed: vm.isSttProcessing ? null : _addAndJump,
+            onDeletePressed:
+                vm.isSttProcessing ? null : _deleteCurrentAndAdjust,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm),
           SingleChildScrollView(
             controller: _scrollCtrl,
             scrollDirection: Axis.horizontal,
@@ -211,5 +250,143 @@ class _SegmentsSectionState extends State<SegmentsSection> {
       default:
         return EditorStrings.sttButtonLabel;
     }
+  }
+}
+
+class _ActionBar extends StatelessWidget {
+  const _ActionBar({
+    required this.currentPage,
+    required this.total,
+    required this.isProcessing,
+    required this.sttLabel,
+    required this.onSttPressed,
+    required this.onAddPressed,
+    required this.onDeletePressed,
+  });
+
+  final int currentPage;
+  final int total;
+  final bool isProcessing;
+  final String sttLabel;
+  final VoidCallback? onSttPressed;
+  final VoidCallback? onAddPressed;
+  final VoidCallback? onDeletePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final border =
+        isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceContainerDark : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '구간 $currentPage / $total',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            alignment: WrapAlignment.start,
+            children: [
+              TextButton.icon(
+                icon: isProcessing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.subtitles_outlined, size: 18),
+                label: Text(sttLabel),
+                onPressed: onSttPressed,
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(EditorStrings.addSegmentButtonLabel),
+                onPressed: onAddPressed,
+              ),
+              TextButton.icon(
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 16,
+                  color: cs.error,
+                ),
+                label: Text(
+                  EditorStrings.removeSegmentButtonLabel,
+                  style: TextStyle(color: cs.error),
+                ),
+                onPressed: onDeletePressed,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.primarySubtleDark : AppColors.primarySubtle,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
