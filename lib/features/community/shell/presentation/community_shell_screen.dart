@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:parrokit/core/router/app_routes.dart';
+import 'package:parrokit/features/community/notification/presentation/providers/community_notification_provider.dart';
 import 'package:parrokit/features/community/board/presentation/board_screen.dart';
 import 'package:parrokit/features/community/question/presentation/question_screen.dart';
 import 'package:parrokit/features/community/vote/presentation/vote_screen.dart';
@@ -33,7 +35,9 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
 
   String _normalizedVoteFilter(String value) {
     if (value == '랜덤 보기') return CommunityFilters.vote[0];
-    return CommunityFilters.vote.contains(value) ? value : CommunityFilters.defaultVote;
+    return CommunityFilters.vote.contains(value)
+        ? value
+        : CommunityFilters.defaultVote;
   }
 
   @override
@@ -134,9 +138,48 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
                 icon: Icon(Icons.search, color: colorScheme.onSurface),
                 onPressed: () {},
               ),
-              IconButton(
-                icon: Icon(Icons.notifications_none, color: colorScheme.onSurface),
-                onPressed: () => context.push(AppRoutes.communityNotificationPath),
+              Consumer<CommunityNotificationProvider>(
+                builder: (context, notificationProvider, _) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.notifications_none,
+                            color: colorScheme.onSurface),
+                        onPressed: () =>
+                            context.push(AppRoutes.communityNotificationPath),
+                      ),
+                      if (notificationProvider.unreadCount > 0)
+                        Positioned(
+                          right: 1,
+                          bottom: 1,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                                minWidth: 20, minHeight: 20),
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: colorScheme.surface, width: 2),
+                            ),
+                            child: Text(
+                              notificationProvider.unreadCount > 99
+                                  ? '99+'
+                                  : notificationProvider.unreadCount.toString(),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               IconButton(
                 icon: Icon(Icons.menu, color: colorScheme.onSurface),
@@ -159,7 +202,8 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
       labelColor: colorScheme.onSurface,
       labelStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       unselectedLabelColor: colorScheme.onSurfaceVariant,
-      unselectedLabelStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      unselectedLabelStyle:
+          const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       indicatorColor: colorScheme.onSurface,
       indicatorSize: TabBarIndicatorSize.label,
       dividerColor: Colors.transparent,
@@ -184,10 +228,12 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
             selectedBoardFilter: _selectedBoardFilter,
             selectedQuestionFilter: _selectedQuestionFilter,
             selectedVoteFilter: _selectedVoteFilter,
-            onBoardFilterSelected: (value) => setState(() => _selectedBoardFilter = value),
-            onQuestionFilterSelected: (value) => setState(() => _selectedQuestionFilter = value),
-            onVoteFilterSelected: (value) =>
-                setState(() => _selectedVoteFilter = _normalizedVoteFilter(value)),
+            onBoardFilterSelected: (value) =>
+                setState(() => _selectedBoardFilter = value),
+            onQuestionFilterSelected: (value) =>
+                setState(() => _selectedQuestionFilter = value),
+            onVoteFilterSelected: (value) => setState(
+                () => _selectedVoteFilter = _normalizedVoteFilter(value)),
           ),
         ),
         const SizedBox(height: 11),

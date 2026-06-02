@@ -88,14 +88,6 @@ class _CommunityOptionActionTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (action.icon != null) ...[
-              Icon(
-                action.icon,
-                size: 20,
-                color: foregroundColor,
-              ),
-              const SizedBox(width: 10),
-            ],
             Text(
               action.label,
               style: TextStyle(

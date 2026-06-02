@@ -50,6 +50,7 @@ class CommunityNotificationScreen extends StatelessWidget {
           ),
           body: Column(
             children: [
+              _NotificationSummaryBar(provider: provider),
               if (provider.errorMessage != null)
                 Container(
                   width: double.infinity,
@@ -111,6 +112,50 @@ class CommunityNotificationScreen extends StatelessWidget {
           onTap: provider.refresh,
         ),
       ],
+    );
+  }
+}
+
+class _NotificationSummaryBar extends StatelessWidget {
+  const _NotificationSummaryBar({
+    required this.provider,
+  });
+
+  final CommunityNotificationProvider provider;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: const Border(
+          bottom: BorderSide(color: AppColors.disabled, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            '읽지 않은 알림 ${provider.unreadCount}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '전체 ${provider.notifications.length}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
