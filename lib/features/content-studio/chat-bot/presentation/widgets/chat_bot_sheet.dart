@@ -14,27 +14,37 @@ Future<void> showChatBotSheet(
       onTriggerAction,
 }) async {
   final chatBotProvider = Provider.of<ChatBotProvider>(context, listen: false);
+  final mediaQuery = MediaQuery.of(context);
+  final statusBarHeight = mediaQuery.padding.top;
 
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.5),
     showDragHandle: false,
     builder: (context) {
       return ChangeNotifierProvider.value(
         value: chatBotProvider,
-        child: _ChatBotSheet(onTriggerAction: onTriggerAction),
+        child: _ChatBotSheet(
+          onTriggerAction: onTriggerAction,
+          statusBarHeight: statusBarHeight,
+        ),
       );
     },
   );
 }
 
 class _ChatBotSheet extends StatefulWidget {
-  const _ChatBotSheet({this.onTriggerAction});
+  const _ChatBotSheet({
+    this.onTriggerAction,
+    required this.statusBarHeight,
+  });
 
   final void Function(int tabIndex, Map<String, dynamic>? actionData)?
       onTriggerAction;
+  final double statusBarHeight;
 
   @override
   State<_ChatBotSheet> createState() => _ChatBotSheetState();
@@ -98,12 +108,23 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
       });
     }
 
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final statusBarHeight = widget.statusBarHeight;
+
+    final maxSheetHeight = screenHeight - keyboardHeight - statusBarHeight - 16;
+    final defaultSheetHeight = screenHeight * 0.7;
+    final sheetHeight = defaultSheetHeight > maxSheetHeight
+        ? (maxSheetHeight > 0 ? maxSheetHeight : 0.0)
+        : defaultSheetHeight;
+
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: keyboardHeight,
       ),
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.7,
+        height: sheetHeight,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: const BorderRadius.vertical(
@@ -303,8 +324,13 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                     ? MediaQuery.of(context).padding.bottom + 8
                     : 24,
               ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  _focusNode.requestFocus();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
                   color: isDark
                       ? AppColors.surfaceContainerHighDark
@@ -585,6 +611,7 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                 ),
               ),
             ),
+          ),
           ],
         ),
       ),
