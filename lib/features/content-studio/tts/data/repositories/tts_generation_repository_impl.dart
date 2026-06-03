@@ -10,7 +10,12 @@ class TtsGenerationRepositoryImpl implements TtsGenerationRepository {
   Future<String> generateTts({
     required String text,
     required String voiceType,
+    String? language,
   }) async {
-    return remoteDataSource.generateTts(text: text, voiceType: voiceType);
+    return remoteDataSource.generateTts(
+      text: text, 
+      voiceType: voiceType,
+      language: language,
+    );
   }
 }

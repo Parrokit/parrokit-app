@@ -3,5 +3,6 @@ abstract class TtsGenerationRepository {
   Future<String> generateTts({
     required String text,
     required String voiceType,
+    String? language,
   });
 }

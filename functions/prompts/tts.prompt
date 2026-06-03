@@ -5,6 +5,7 @@ config:
 input:
   schema:
     text: string
+    language?: string
 output:
   schema:
     voiceType: string
@@ -15,5 +16,9 @@ output:
 
 [텍스트]
 {{text}}
+{{#if language}}
+[언어]
+{{language}}
+{{/if}}
 
 위 텍스트에 가장 어울리는 voiceType 1개만 골라서 JSON 형태로 응답해 줘.
