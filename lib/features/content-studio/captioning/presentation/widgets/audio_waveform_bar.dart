@@ -182,6 +182,14 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     return ((posMs - _windowStartMs) / actualWindowDurMs).clamp(0.0, 1.0);
   }
 
+  String _formatDuration(int ms) {
+    final d = Duration(milliseconds: ms);
+    final mm = d.inMinutes.toString().padLeft(2, '0');
+    final ss = (d.inSeconds % 60).toString().padLeft(2, '0');
+    final deci = ((d.inMilliseconds % 1000) ~/ 100).toString();
+    return '$mm:$ss.$deci';
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -199,56 +207,97 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
 
     final progress = _progressInWindow;
 
-    return SizedBox(
-      height: widget.height,
-      child: GestureDetector(
-        onTapDown: (details) => _seekTo(context, details.localPosition.dx),
-        onHorizontalDragUpdate: (details) =>
-            _seekTo(context, details.localPosition.dx),
-        behavior: HitTestBehavior.opaque,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final totalWidth = constraints.maxWidth;
-            final barWidth = (totalWidth / _bars.length) * 0.65;
-            final gap = (totalWidth / _bars.length) * 0.35;
-            final progressIndex = (progress * _bars.length).floor();
+    final c = widget.videoController;
+    int actualWindowDurMs = 0;
+    if (c != null && c.value.isInitialized) {
+      final durMs = c.value.duration.inMilliseconds;
+      final minDur = math.min(10000.0, durMs.toDouble());
+      final windowDurMs =
+          (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+      actualWindowDurMs = math.min(windowDurMs, durMs);
+    }
+    final int endMs = _windowStartMs + actualWindowDurMs;
 
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: List.generate(_bars.length, (i) {
-                final isPlayed = i < progressIndex;
-                final isCurrent = i == progressIndex;
-                final barH =
-                    (_bars[i] * widget.height * 0.85).clamp(3.0, widget.height);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: widget.height,
+          child: GestureDetector(
+            onTapDown: (details) => _seekTo(context, details.localPosition.dx),
+            onHorizontalDragUpdate: (details) =>
+                _seekTo(context, details.localPosition.dx),
+            behavior: HitTestBehavior.opaque,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final totalWidth = constraints.maxWidth;
+                final barWidth = (totalWidth / _bars.length) * 0.65;
+                final gap = (totalWidth / _bars.length) * 0.35;
+                final progressIndex = (progress * _bars.length).floor();
 
-                Color barColor;
-                if (isPlayed) {
-                  barColor = cs.primary;
-                } else if (isCurrent) {
-                  barColor = cs.primary.withValues(alpha: 0.7);
-                } else {
-                  barColor = isDark
-                      ? cs.onSurface.withValues(alpha: 0.18)
-                      : cs.onSurface.withValues(alpha: 0.13);
-                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: List.generate(_bars.length, (i) {
+                    final isPlayed = i < progressIndex;
+                    final isCurrent = i == progressIndex;
+                    final barH = (_bars[i] * widget.height * 0.85)
+                        .clamp(3.0, widget.height);
 
-                return Padding(
-                  padding: EdgeInsets.only(right: gap),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 80),
-                    width: barWidth,
-                    height: barH,
-                    decoration: BoxDecoration(
-                      color: barColor,
-                      borderRadius: BorderRadius.circular(barWidth / 2),
-                    ),
-                  ),
+                    Color barColor;
+                    if (isPlayed) {
+                      barColor = cs.primary;
+                    } else if (isCurrent) {
+                      barColor = cs.primary.withValues(alpha: 0.7);
+                    } else {
+                      barColor = isDark
+                          ? cs.onSurface.withValues(alpha: 0.18)
+                          : cs.onSurface.withValues(alpha: 0.13);
+                    }
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: gap),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 80),
+                        width: barWidth,
+                        height: barH,
+                        decoration: BoxDecoration(
+                          color: barColor,
+                          borderRadius: BorderRadius.circular(barWidth / 2),
+                        ),
+                      ),
+                    );
+                  }),
                 );
-              }),
-            );
-          },
+              },
+            ),
+          ),
         ),
-      ),
+        if (actualWindowDurMs > 0) ...[
+          const SizedBox(height: 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _formatDuration(_windowStartMs),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: cs.onSurface.withValues(alpha: 0.4),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                _formatDuration(endMs),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: cs.onSurface.withValues(alpha: 0.4),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 

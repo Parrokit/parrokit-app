@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 
 import 'audio_waveform_bar.dart';
 import 'video_controls_bar.dart';
+import '../../../../../core/shared/utils/show_toast.dart';
 
 class PickedState extends StatefulWidget {
   const PickedState({
@@ -48,12 +49,31 @@ class _PickedStateState extends State<PickedState> {
   double _zoomFactor = 1.0;
 
   void _zoomIn() {
+    final c = widget.playerController;
+    if (c == null || !c.value.isInitialized) return;
+
+    final durMs = c.value.duration.inMilliseconds.toDouble();
+    if (durMs <= 10000.0) {
+      showToast('이 영상은 10초 미만이라 더 이상 확대할 수 없어요.');
+      return;
+    }
+
+    final maxZoom = durMs / 10000.0;
+    if (_zoomFactor >= maxZoom) {
+      showToast('더 이상 확대할 수 없어요.');
+      return;
+    }
+
     setState(() {
-      _zoomFactor = (_zoomFactor * 1.25);
+      _zoomFactor = (_zoomFactor * 1.25).clamp(1.0, maxZoom);
     });
   }
 
   void _zoomOut() {
+    if (_zoomFactor <= 1.0) {
+      showToast('더 이상 축소할 수 없어요.');
+      return;
+    }
     setState(() {
       _zoomFactor = (_zoomFactor / 1.25).clamp(1.0, double.infinity);
     });
