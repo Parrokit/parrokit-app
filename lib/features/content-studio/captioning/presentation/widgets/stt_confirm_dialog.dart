@@ -22,59 +22,72 @@ Future<AsrEngine?> showSttConfirmDialog(
   BuildContext context, {
   AsrEngine initial = AsrEngine.diarize,
 }) async {
-  return showDialog<AsrEngine>(
+  return showModalBottomSheet<AsrEngine>(
     context: context,
+    isScrollControlled: true,
     builder: (ctx) {
       AsrEngine selected = initial;
       final cs = Theme.of(ctx).colorScheme;
 
       return StatefulBuilder(
         builder: (ctx, setState) {
-          return AlertDialog(
-            title: const Text('자막 자동 생성'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('30초당 1코인이 소모됩니다.'),
-                const SizedBox(height: 16),
-                const Text(
-                  '인식 모델 선택',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                RadioGroup<AsrEngine>(
-                  groupValue: selected,
-                  onChanged: (v) => setState(() => selected = v ?? selected),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: AsrEngine.values.map((e) {
-                      return RadioListTile<AsrEngine>(
-                        value: e,
-                        title: Text(e.label),
-                        subtitle: Text(
-                          e.description,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).padding.bottom,
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, null),
-                child: const Text('취소'),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('자막 자동 생성', style: Theme.of(ctx).textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  const Text('30초당 1코인이 소모됩니다.'),
+                  const SizedBox(height: 24),
+                  const Text(
+                    '인식 모델 선택',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  RadioGroup<AsrEngine>(
+                    groupValue: selected,
+                    onChanged: (v) => setState(() => selected = v ?? selected),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: AsrEngine.values.map((e) {
+                        return RadioListTile<AsrEngine>(
+                          value: e,
+                          title: Text(e.label),
+                          subtitle: Text(
+                            e.description,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, null),
+                        child: const Text('취소'),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx, selected),
+                        style: FilledButton.styleFrom(backgroundColor: cs.primary),
+                        child: const Text('시작'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, selected),
-                style: FilledButton.styleFrom(backgroundColor: cs.primary),
-                child: const Text('시작'),
-              ),
-            ],
+            ),
           );
         },
       );

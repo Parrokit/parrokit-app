@@ -11,6 +11,7 @@ import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import '../../../../../core/shared/utils/show_toast.dart';
 import 'video_picker_sheet.dart';
+import 'stt_confirm_dialog.dart';
 
 class PickedState extends StatefulWidget {
   const PickedState({
@@ -265,7 +266,18 @@ class _VideoSettingsBar extends StatefulWidget {
 }
 
 class _VideoSettingsBarState extends State<_VideoSettingsBar> {
-  final List<bool> _isExpanded = [false, false, false];
+  final List<bool> _isExpanded = [false, false, false]; // 탭 닫아두기
+
+  String _formatDuration(Duration? d) {
+    if (d == null) return '알 수 없음';
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(d.inMinutes.remainder(60));
+    final seconds = twoDigits(d.inSeconds.remainder(60));
+    if (d.inHours > 0) {
+      return '${d.inHours}:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
+  }
 
   @override
   void initState() {
@@ -480,6 +492,20 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _TabButton(
+                icon: Icons.auto_awesome_rounded,
+                label: '자동자막',
+                isActive: false,
+                isGradient: true,
+                onTap: () => showSttConfirmDialog(context),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                height: 32,
+                width: 1,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+              ),
+              const SizedBox(width: 8),
+              _TabButton(
                 icon: Icons.info_outline_rounded,
                 label: '메타데이터',
                 isActive: _isExpanded[0],
@@ -487,8 +513,8 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
               ),
               const SizedBox(width: 8),
               _TabButton(
-                icon: Icons.auto_awesome_rounded,
-                label: '자동자막 & A-B',
+                icon: Icons.list_alt_rounded,
+                label: 'A-B 리스트',
                 isActive: _isExpanded[1],
                 onTap: () => setState(() => _isExpanded[1] = !_isExpanded[1]),
               ),
@@ -550,6 +576,28 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                           children: [
                             SizedBox(
                               width: 70,
+                              child: Text('동영상 길이',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onSurfaceVariant)),
+                            ),
+                            Text(
+                              _formatDuration(
+                                  widget.controller?.value.duration),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 70,
                               child: Text('확장자',
                                   style: TextStyle(
                                       fontSize: 12,
@@ -580,31 +628,7 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                   const SizedBox(height: 16),
                 ],
                 if (_isExpanded[1]) ...[
-                  // 2. 자동자막 서비스 & A-B 리스트
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '자동자막 서비스',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: () {
-                          // 기능 추가 예정
-                        },
-                        icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-                        label: const Text('자막 자동 생성'),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                      ),
-                    ],
-                  ),
+                  // 2. A-B 리스트
                   const SizedBox(height: 16),
                   if (widget.segmentsWidget != null) ...[
                     widget.segmentsWidget!,
@@ -686,46 +710,61 @@ class _TabButton extends StatelessWidget {
     required this.label,
     required this.isActive,
     required this.onTap,
+    this.isGradient = false,
   });
 
   final IconData icon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
+  final bool isGradient;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final color = isActive ? cs.primary : cs.onSurfaceVariant;
+    final color = isGradient ? Colors.white : (isActive ? cs.primary : cs.onSurfaceVariant);
+
+    Widget child = Column(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Icon(icon, size: 28, color: color),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isActive || isGradient ? FontWeight.w800 : FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
+    );
+
+    if (isGradient) {
+      child = ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          colors: [AppColors.gradientStart, AppColors.gradientEnd],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(bounds),
+        child: child,
+      );
+    }
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        child: Column(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(icon,
-                  size: 28, color: isActive ? cs.primary : cs.onSurfaceVariant),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
+        child: child,
       ),
     );
   }
