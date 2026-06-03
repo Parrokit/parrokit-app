@@ -9,7 +9,8 @@ import '../../domain/entities/ai_chat_message.dart';
 
 Future<void> showChatBotSheet(
   BuildContext context, {
-  void Function(int tabIndex, Map<String, dynamic>? actionData)? onTriggerAction,
+  void Function(int tabIndex, Map<String, dynamic>? actionData)?
+      onTriggerAction,
 }) async {
   final chatBotProvider = Provider.of<ChatBotProvider>(context, listen: false);
 
@@ -54,7 +55,8 @@ LinearGradient _getGradientForMode(String mode) {
 class _ChatBotSheet extends StatefulWidget {
   const _ChatBotSheet({this.onTriggerAction});
 
-  final void Function(int tabIndex, Map<String, dynamic>? actionData)? onTriggerAction;
+  final void Function(int tabIndex, Map<String, dynamic>? actionData)?
+      onTriggerAction;
 
   @override
   State<_ChatBotSheet> createState() => _ChatBotSheetState();
@@ -194,35 +196,24 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                       ],
                     ),
                   ),
-                  // "처음으로" 리셋 버튼
-                  if (provider.chatbotMode != 'general') ...[
-                    TextButton.icon(
-                      onPressed: () => provider.resetChatbot(),
-                      icon: const Icon(Icons.refresh_rounded, size: 14),
-                      label: const Text('처음으로'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: isDark ? AppColors.textPrimaryDark : AppColors.primary,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        textStyle: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                  ],
+
                   // 모델 선택 칩
                   InkWell(
-                    onTap: () => _showModelSelectorBottomSheet(context, provider),
+                    onTap: () =>
+                        _showModelSelectorBottomSheet(context, provider),
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isDark 
-                            ? AppColors.surfaceContainerHighDark 
+                        color: isDark
+                            ? AppColors.surfaceContainerHighDark
                             : AppColors.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+                          color: isDark
+                              ? AppColors.dividerSubtleDark
+                              : AppColors.dividerSubtle,
                         ),
                       ),
                       child: Row(
@@ -231,21 +222,29 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                           Icon(
                             Icons.tune_rounded,
                             size: 12,
-                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            provider.selectedModel == 'gemini-2.5-flash' ? 'Gemini Flash' : 'Gemini Pro',
+                            provider.selectedModel == 'gemini-2.5-flash'
+                                ? 'Gemini Flash'
+                                : 'Gemini Pro',
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondary,
                             ),
                           ),
                           const SizedBox(width: 2),
                           Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 14,
-                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondary,
                           ),
                         ],
                       ),
@@ -284,7 +283,8 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                   final messages = vm.messages;
                   return ListView.builder(
                     reverse: true,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
                     itemCount: messages.length + (vm.isTyping ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (vm.isTyping && index == 0) {
@@ -325,7 +325,8 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -333,6 +334,193 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                 ),
                 child: Row(
                   children: [
+                    PopupMenuButton<String>(
+                      constraints: const BoxConstraints(
+                        minWidth: 180,
+                        maxWidth: 240,
+                      ),
+                      icon: Icon(
+                        Icons.menu_rounded,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondary,
+                      ),
+                      offset: const Offset(12, -210),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: isDark
+                              ? AppColors.dividerDark
+                              : AppColors.divider,
+                          width: 1, // 테두리 두께
+                        ),
+                      ),
+                      onSelected: (value) {
+                        if (value == 'reset') {
+                          provider.resetChatbot();
+                        } else if (value == 'mode_general') {
+                          provider.updateChatbotMode('general');
+                        } else if (value == 'mode_tts') {
+                          provider.updateChatbotMode('tts');
+                        } else if (value == 'mode_video') {
+                          provider.updateChatbotMode('video');
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem<String>(
+                          value: 'reset',
+                          height: 38,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.delete_outline_rounded,
+                                size: 18,
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : AppColors.textPrimary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '대화 초기화',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: isDark
+                                      ? AppColors.textPrimaryDark
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(
+                          height: 1,
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'mode_general',
+                          height: 38,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: Center(
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF8B5CF6), // 퍼플
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '일반 안내 모드',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (provider.chatbotMode == 'general')
+                                const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: Color(0xFF8B5CF6),
+                                ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'mode_tts',
+                          height: 38,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: Center(
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFEC4899), // 핑크
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'TTS 전문가 모드',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (provider.chatbotMode == 'tts')
+                                const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: Color(0xFFEC4899),
+                                ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'mode_video',
+                          height: 38,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: Center(
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF3B82F6), // 블루
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '비디오 전문가 모드',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (provider.chatbotMode == 'video')
+                                const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: Color(0xFF3B82F6),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                     Expanded(
                       child: TextField(
                         controller: _textController,
@@ -341,7 +529,9 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                         decoration: InputDecoration(
                           hintText: 'TTS나 비디오 생성 요청을 입력하세요...',
                           hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                            color: isDark
+                                ? AppColors.textTertiaryDark
+                                : AppColors.textTertiary,
                           ),
                           border: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -364,7 +554,10 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                       decoration: BoxDecoration(
                         gradient: _hasText
                             ? const LinearGradient(
-                                colors: [AppColors.primary, AppColors.secondary],
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.secondary
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
@@ -414,7 +607,8 @@ class _ChatBubble extends StatelessWidget {
   });
 
   final AiChatMessage message;
-  final void Function(int tabIndex, Map<String, dynamic>? actionData)? onTriggerAction;
+  final void Function(int tabIndex, Map<String, dynamic>? actionData)?
+      onTriggerAction;
 
   @override
   Widget build(BuildContext context) {
@@ -493,7 +687,8 @@ class _ChatBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: isDark
                           ? AppColors.surfaceContainerHighDark
@@ -520,13 +715,18 @@ class _ChatBubble extends StatelessWidget {
                           builders: {
                             'code': CodeElementBuilder(context),
                           },
-                          styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                          styleSheet:
+                              MarkdownStyleSheet.fromTheme(theme).copyWith(
                             p: theme.textTheme.bodyMedium?.copyWith(
-                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                              color: isDark
+                                  ? AppColors.textPrimaryDark
+                                  : AppColors.textPrimary,
                               height: 1.4,
                             ),
-                            code: const TextStyle(backgroundColor: Colors.transparent),
-                            codeblockDecoration: const BoxDecoration(color: Colors.transparent),
+                            code: const TextStyle(
+                                backgroundColor: Colors.transparent),
+                            codeblockDecoration:
+                                const BoxDecoration(color: Colors.transparent),
                           ),
                         ),
                         if (message.actionType == 'ask_routing') ...[
@@ -536,7 +736,8 @@ class _ChatBubble extends StatelessWidget {
                             runSpacing: 8,
                             children: [
                               ActionChip(
-                                avatar: const Icon(Icons.audiotrack_rounded, size: 16, color: Colors.white),
+                                avatar: const Icon(Icons.audiotrack_rounded,
+                                    size: 16, color: Colors.white),
                                 label: Text(
                                   '🎙️ 음성 생성 요청하기',
                                   style: theme.textTheme.labelMedium?.copyWith(
@@ -557,7 +758,8 @@ class _ChatBubble extends StatelessWidget {
                                 },
                               ),
                               ActionChip(
-                                avatar: const Icon(Icons.videocam_rounded, size: 16, color: Colors.white),
+                                avatar: const Icon(Icons.videocam_rounded,
+                                    size: 16, color: Colors.white),
                                 label: Text(
                                   '🎬 비디오 생성 요청하기',
                                   style: theme.textTheme.labelMedium?.copyWith(
@@ -579,12 +781,14 @@ class _ChatBubble extends StatelessWidget {
                               ),
                             ],
                           ),
-                        ] else if (message.actionType == 'tts_trigger' || message.actionType == 'video_trigger') ...[
+                        ] else if (message.actionType == 'tts_trigger' ||
+                            message.actionType == 'video_trigger') ...[
                           const SizedBox(height: 12),
                           InkWell(
                             onTap: () {
                               if (onTriggerAction != null) {
-                                final isVideo = message.actionType == 'video_trigger';
+                                final isVideo =
+                                    message.actionType == 'video_trigger';
                                 final targetTab = isVideo ? 2 : 1;
                                 onTriggerAction!(targetTab, message.actionData);
                                 Navigator.of(context).pop();
@@ -603,22 +807,30 @@ class _ChatBubble extends StatelessWidget {
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Ink(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: message.actionType == 'video_trigger'
-                                      ? [AppColors.primary, const Color(0xFF00C6FF)]
-                                      : [AppColors.secondary, const Color(0xFFC084FC)],
+                                      ? [
+                                          AppColors.primary,
+                                          const Color(0xFF00C6FF)
+                                        ]
+                                      : [
+                                          AppColors.secondary,
+                                          const Color(0xFFC084FC)
+                                        ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (message.actionType == 'video_trigger'
-                                            ? AppColors.primary
-                                            : AppColors.secondary)
-                                        .withValues(alpha: 0.25),
+                                    color:
+                                        (message.actionType == 'video_trigger'
+                                                ? AppColors.primary
+                                                : AppColors.secondary)
+                                            .withValues(alpha: 0.25),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                   ),
@@ -636,8 +848,11 @@ class _ChatBubble extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    message.actionType == 'video_trigger' ? '비디오 생성하기' : 'TTS 생성하기',
-                                    style: theme.textTheme.labelMedium?.copyWith(
+                                    message.actionType == 'video_trigger'
+                                        ? '비디오 생성하기'
+                                        : 'TTS 생성하기',
+                                    style:
+                                        theme.textTheme.labelMedium?.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -720,14 +935,17 @@ class _TypingIndicator extends StatelessWidget {
                   height: 12,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(AppColors.secondary),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Text(
                   'AI가 답변을 생성하고 있어요',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -741,7 +959,8 @@ class _TypingIndicator extends StatelessWidget {
   }
 }
 
-void _showModelSelectorBottomSheet(BuildContext context, ChatBotProvider provider) {
+void _showModelSelectorBottomSheet(
+    BuildContext context, ChatBotProvider provider) {
   final theme = Theme.of(context);
   final isDark = theme.brightness == Brightness.dark;
   final bg = isDark ? AppColors.surfaceContainerDark : AppColors.surface;
@@ -774,11 +993,13 @@ void _showModelSelectorBottomSheet(BuildContext context, ChatBotProvider provide
             Text(
               '작업 성격에 맞는 Gemini AI 모델을 선택하세요.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: isDark ? AppColors.textTertiaryDark : AppColors.textSecondary,
+                color: isDark
+                    ? AppColors.textTertiaryDark
+                    : AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // 모델 1: Gemini 2.5 Flash
             _ModelOptionCard(
               title: 'Gemini 2.5 Flash',
@@ -793,11 +1014,12 @@ void _showModelSelectorBottomSheet(BuildContext context, ChatBotProvider provide
               },
             ),
             const SizedBox(height: 12),
-            
+
             // 모델 2: Gemini 2.5 Pro
             _ModelOptionCard(
               title: 'Gemini 2.5 Pro',
-              description: '정교한 논리 추론과 긴 문맥 파악에 특화되어 복잡한 씬 연출 및 고품질 대사 다듬기에 적합합니다.',
+              description:
+                  '정교한 논리 추론과 긴 문맥 파악에 특화되어 복잡한 씬 연출 및 고품질 대사 다듬기에 적합합니다.',
               speedText: '보통',
               costText: '보통',
               isSelected: provider.selectedModel == 'gemini-2.5-pro',
@@ -894,7 +1116,9 @@ class _ModelOptionCard extends StatelessWidget {
                   Text(
                     description,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
                       height: 1.35,
                     ),
                   ),
@@ -911,7 +1135,9 @@ class _ModelOptionCard extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? accentColor
-                      : (isDark ? AppColors.textDisabledDark : AppColors.textDisabled),
+                      : (isDark
+                          ? AppColors.textDisabledDark
+                          : AppColors.textDisabled),
                   width: 2,
                 ),
               ),
@@ -994,7 +1220,9 @@ class CodeElementBuilder extends MarkdownElementBuilder {
       margin: const EdgeInsets.symmetric(vertical: 8),
       width: double.infinity,
       decoration: BoxDecoration(
-        color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.3)
+            : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
@@ -1011,7 +1239,9 @@ class CodeElementBuilder extends MarkdownElementBuilder {
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontFamily: 'monospace',
                   fontSize: 13,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimary,
                   height: 1.4,
                 ),
               ),
@@ -1039,7 +1269,9 @@ class CodeElementBuilder extends MarkdownElementBuilder {
                   child: Icon(
                     Icons.copy_rounded,
                     size: 16,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),
