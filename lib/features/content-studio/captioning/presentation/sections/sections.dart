@@ -10,7 +10,5 @@
 // ============================================================================
 
 export 'file_section.dart';
-export 'work_name_section.dart';
-export 'titles_section.dart';
-export 'tags_section.dart';
+export 'metadata_inputs_section.dart';
 export 'segments_section.dart';

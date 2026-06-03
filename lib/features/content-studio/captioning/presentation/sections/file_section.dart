@@ -25,6 +25,7 @@ import 'package:parrokit/core/shared/utils/show_toast.dart';
 
 import '../widgets/file_hero_card.dart';
 import '../captioning_view_model.dart';
+import 'segments_section.dart';
 
 /// 파일 선택 섹션.
 class FileSection extends StatefulWidget {
@@ -146,6 +147,7 @@ class _FileSectionState extends State<FileSection> {
           lastSourceLabel: '파일',
           waveformData: _waveformData,
           waveformLoading: _waveformLoading,
+          segmentsWidget: SegmentsSection(vm: vm),
         ),
       ],
     );

@@ -24,6 +24,12 @@
 @import audio_session;
 #endif
 
+#if __has_include(<audio_waveforms/AudioWaveformsPlugin.h>)
+#import <audio_waveforms/AudioWaveformsPlugin.h>
+#else
+@import audio_waveforms;
+#endif
+
 #if __has_include(<cloud_firestore/FLTFirebaseFirestorePlugin.h>)
 #import <cloud_firestore/FLTFirebaseFirestorePlugin.h>
 #else
@@ -246,6 +252,7 @@
   [AdvertisingIdPlugin registerWithRegistrar:[registry registrarForPlugin:@"AdvertisingIdPlugin"]];
   [AudioServicePlugin registerWithRegistrar:[registry registrarForPlugin:@"AudioServicePlugin"]];
   [AudioSessionPlugin registerWithRegistrar:[registry registrarForPlugin:@"AudioSessionPlugin"]];
+  [AudioWaveformsPlugin registerWithRegistrar:[registry registrarForPlugin:@"AudioWaveformsPlugin"]];
   [FLTFirebaseFirestorePlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseFirestorePlugin"]];
   [FirebaseFunctionsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FirebaseFunctionsPlugin"]];
   [FPPDeviceInfoPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPDeviceInfoPlusPlugin"]];

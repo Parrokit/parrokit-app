@@ -114,48 +114,36 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
                     child: ListView(
                       padding: const EdgeInsets.only(bottom: 16),
                       children: [
-                        const SizedBox(height: 24),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: WorkNameSection(vm: vm),
-                        ),
-                        const SizedBox(height: 24),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: TitlesSection(vm: vm),
-                        ),
-                        const SizedBox(height: 24),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: TagsSection(vm: vm),
-                        ),
-                        const SizedBox(height: 24),
                         const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: MetadataInputsSection(vm: vm),
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            8,
+                            16,
+                            16 + MediaQuery.of(context).padding.bottom,
+                          ),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: (vm.isSaving || vm.isSttProcessing)
+                                  ? null
+                                  : vm.save,
+                              child: vm.isSaving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Text('저장'),
+                            ),
+                          ),
+                        ),
                       ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      8,
-                      16,
-                      16 + MediaQuery.of(context).padding.bottom,
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: (vm.isSaving || vm.isSttProcessing)
-                            ? null
-                            : vm.save,
-                        child: vm.isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('저장'),
-                      ),
                     ),
                   ),
                 ],
