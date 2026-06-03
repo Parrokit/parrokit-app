@@ -1,58 +1,67 @@
 # AGENTS.md
 
-이 파일은 저장소 최상위 강제 규칙이다.
-세부 작업 규칙은 `.agents/roles/*/AGENTS.md`, `.agents/workflows/*`를 따른다.
+이 파일은 저장소 최상위 강제 규칙이다.  
+세부 규칙은 `.agents/workflows/*`, `.agents/rules/*`를 따른다.
 
-## 1) 우선순위
+## 우선순위
+
 1. 사용자 요청
-2. 이 파일
-3. 역할 문서(`.agents/roles/*/AGENTS.md`)
-4. 워크플로(`.agents/workflows/*`)
+2. `AGENTS.md`
+3. `.agents/rules/*`
+4. `.agents/workflows/*`
 5. 기존 코드 패턴
 
-## 2) 작업 범위
-1. 요청 범위 밖 수정 금지
-2. 무관한 리팩터링/포맷 변경 금지
-3. 생성 파일(`*.g.dart`, 플랫폼 generated)은 필요 시에만 갱신
-4. 사용자가 `리팩터링`을 요청하면 기본 의미를 `클린 아키텍처 경계 재설계`로 해석한다(단순 코드 정리로 축소 해석 금지)
-5. 4번 요청 시 코드 수정 전에 `경계/의존성/폴더 이동 계획`을 먼저 제시하고 합의 후 구현한다
+## 작업 범위
 
-## 3) 아키텍처/코드 규칙
-1. 기본: MVVM + Clean Architecture
-2. `domain`: 순수 Dart(Flutter 의존 금지)
-3. 비즈니스 로직은 Widget이 아니라 service/usecase/provider에 배치
-4. import 순서: `dart:*` -> `package:*` -> 로컬
-5. async 이후 UI 접근 전 `mounted` 확인
-6. 스타일 값은 `AppTheme` 우선 사용
+- 요청 범위 밖 수정은 하지 않는다.
+- 무관한 리팩터링, 포맷 변경은 하지 않는다.
+- 생성 파일은 필요할 때만 갱신한다.
+- 사용자가 `리팩터링`을 요청하면 클린 아키텍처 경계 재설계로 해석한다.
+- 리팩터링 전에는 경계, 의존성, 폴더 이동 계획을 먼저 제시한다.
 
-## 4) 검증 최소 규칙
-1. 수정 범위 기준 `flutter analyze` 최소 1회 실행
-2. Drift/Dart 모델 변경 시 build_runner 재생성 필요 여부 확인
+## 기본 개발 규칙
 
-## 5) 보안
-1. 키/토큰/비밀값 코드/로그 노출 금지
-2. `.env` 커밋 금지
-3. Rules 수정 시 최소 권한 원칙 적용
+- 기본 구조는 MVVM + Clean Architecture를 따른다.
+- `domain`은 순수 Dart만 사용한다.
+- 비즈니스 로직은 Widget이 아니라 provider, usecase, service에 둔다.
+- import 순서는 `dart:*` -> `package:*` -> 로컬 순서로 유지한다.
+- `async` 이후 UI 접근 전 `mounted`를 확인한다.
+- 스타일 값은 `AppTheme`을 우선 사용한다.
 
-## 6) 로그/QA 규칙
-1. 테스트 영향 코드 변경 시 `test/qa/logging_guideline.md` 준수
-2. 로그 포맷은 `[Feature][Action] message key=value` 사용
-3. `catch` 블록에는 원인 파악 가능한 로그를 남긴다
-4. QA 종료 전 `error` 로그 0건 확인
+## 검증
 
-## 7) 보고 형식(필수)
-완료 보고에는 반드시 포함:
-1. 변경 파일 목록
-2. 동작 변화 요약
-3. 실행한 검증 명령과 결과
-4. 남은 리스크/후속 작업
-5. 마지막 줄 단독: `[하네스 사용]`
+- 수정 후 가능한 범위에서 `flutter analyze`를 실행한다.
+- Drift 또는 Dart 모델 변경 시 build_runner 재생성 필요 여부를 확인한다.
+- 검증하지 못한 항목은 완료 보고에 남긴다.
 
-## 8) 역할/워크플로 사용 규칙
-1. 작업 시작 전 관련 역할 문서 1개 이상 선택
-2. 필요 워크플로만 최소 로드(과다 로드 금지)
-3. 커밋/병합은 `commit-keeper` 및 관련 워크플로 준수
-4. `docs/` 경로 문서 작업은 반드시 `doc-sync-writer` 역할을 먼저 적용
-5. `docs/` 경로 문서 작업은 반드시 `/product-docs-guideline`을 먼저 참조
-6. 모든 작업의 첫 진행 메시지에 `적용 역할`과 `적용 워크플로`를 경로와 함께 1회 명시
-7. 6번 선언 전에는 탐색/수정/커밋을 시작하지 않는다
+## 보안
+
+- 키, 토큰, 비밀값을 코드와 로그에 남기지 않는다.
+- `.env`는 커밋하지 않는다.
+- Rules 수정 시 최소 권한 원칙을 적용한다.
+
+## 참조 규칙
+
+- 아키텍처 변경은 `.agents/rules/architecture.md`를 따른다.
+- 커밋 메시지는 `.agents/rules/commit-message.md`를 따른다.
+- 문서 작업은 `.agents/rules/documentation.md`를 따른다.
+- 로그 작업은 `.agents/rules/logging.md`를 따른다.
+- 네이밍과 스타일은 `.agents/rules/naming-style.md`를 따른다.
+- UI 테마 작업은 `.agents/rules/theme.md`를 따른다.
+
+## 워크플로
+
+- 일반 개발은 `.agents/workflows/development.md`를 따른다.
+- dev 병합은 `.agents/workflows/git-merge.md`를 따른다.
+- 하네스 수정은 `.agents/workflows/harness-update.md`를 따른다.
+- 필요한 워크플로만 최소로 참조한다.
+
+## 완료 보고
+
+완료 보고에는 다음 항목을 포함한다.
+
+- 변경 파일 목록
+- 동작 변화 요약
+- 실행한 검증 명령과 결과
+- 남은 리스크 또는 후속 작업
+- 마지막 줄 단독: `[하네스 사용]`
