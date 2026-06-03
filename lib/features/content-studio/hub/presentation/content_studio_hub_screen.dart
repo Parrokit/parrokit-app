@@ -8,6 +8,7 @@ import 'package:parrokit/features/content-studio/tts/presentation/tts_screen.dar
 import 'package:parrokit/features/content-studio/tts/presentation/tts_provider.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_screen.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
+import 'package:parrokit/features/content-studio/chat-bot/presentation/chat_bot_provider.dart';
 import 'package:parrokit/features/home/dashboard/presentation/widgets/dashboard_studio_switch_fab.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/features/content-studio/chat-bot/presentation/widgets/chat_bot_fab.dart';
@@ -87,6 +88,7 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
       providers: [
         ChangeNotifierProvider(create: (_) => TtsProvider()),
         ChangeNotifierProvider(create: (_) => VideoProvider()),
+        ChangeNotifierProvider(create: (_) => ChatBotProvider()),
       ],
       child: Builder(
         builder: (context) {

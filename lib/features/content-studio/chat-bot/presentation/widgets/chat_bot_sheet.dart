@@ -11,6 +11,8 @@ Future<void> showChatBotSheet(
   BuildContext context, {
   void Function(int tabIndex, String text)? onTriggerAction,
 }) async {
+  final chatBotProvider = Provider.of<ChatBotProvider>(context, listen: false);
+
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -18,8 +20,8 @@ Future<void> showChatBotSheet(
     barrierColor: Colors.black.withValues(alpha: 0.5),
     showDragHandle: false,
     builder: (context) {
-      return ChangeNotifierProvider(
-        create: (_) => ChatBotProvider(),
+      return ChangeNotifierProvider.value(
+        value: chatBotProvider,
         child: _ChatBotSheet(onTriggerAction: onTriggerAction),
       );
     },
