@@ -241,8 +241,9 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
         SizedBox(
           height: widget.height,
           child: GestureDetector(
-            onHorizontalDragUpdate: (details) =>
-                _handleDrag(context, details),
+            onHorizontalDragUpdate: _selectedOverlaySegmentIndex == null
+                ? (details) => _handleDrag(context, details)
+                : null,
             behavior: HitTestBehavior.opaque,
             child: ClipRect(
               child: LayoutBuilder(
@@ -532,31 +533,37 @@ class _OverlayRangeTile extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onSelected,
-            onTapDown: (_) => onSelected(),
-            onPanStart: (_) => onSelected(),
-            onPanUpdate: canInteract
-                ? (details) => _moveRange(details.delta.dx)
-                : null,
-            child: Container(
-              decoration: BoxDecoration(
-                color: bodyColor,
-                border: Border.all(
-                  color: borderColor,
-                  width: isSelected ? 2 : 1,
+          Positioned.fill(
+            bottom: 22,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onSelected,
+              onTapDown: (_) => onSelected(),
+              onPanStart: (_) => onSelected(),
+              onPanUpdate: canInteract
+                  ? (details) => _moveRange(details.delta.dx)
+                  : null,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: bodyColor,
+                  border: Border.all(
+                    color: borderColor,
+                    width: isSelected ? 2 : 1,
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(8),
+                    bottom: Radius.circular(0),
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
           if (isSelected)
             Positioned(
               left: 0,
-              top: 0,
               bottom: 0,
               width: handleWidth,
+              height: 22,
               child: _OverlayHandle(
                 color: cs.primary,
                 alignLeft: true,
@@ -568,9 +575,9 @@ class _OverlayRangeTile extends StatelessWidget {
           if (isSelected)
             Positioned(
               right: 0,
-              top: 0,
               bottom: 0,
               width: handleWidth,
+              height: 22,
               child: _OverlayHandle(
                 color: cs.primary,
                 alignLeft: false,
@@ -693,12 +700,41 @@ class _OverlayHandle extends StatelessWidget {
       onPanUpdate: onPanUpdate,
       child: Align(
         alignment: alignLeft ? Alignment.centerLeft : Alignment.centerRight,
-        child: Container(
-          width: 3,
+        child: SizedBox(
+          width: 18,
           height: double.infinity,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(3),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                width: 3,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.72),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(height: 3),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanUpdate: onPanUpdate,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.18),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
