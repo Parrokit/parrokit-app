@@ -14,6 +14,9 @@ class ChatBotProvider extends ChangeNotifier {
     ),
   ];
 
+  String _selectedModel = 'gemini-2.5-flash';
+  String get selectedModel => _selectedModel;
+
   ChatBotProvider({SendChatMessageUseCase? useCase}) {
     // 임시 의존성 주입 (차후 get_it 등으로 교체 가능)
     _sendMessageUseCase = useCase ??
@@ -27,6 +30,13 @@ class ChatBotProvider extends ChangeNotifier {
   bool _isTyping = false;
   bool get isTyping => _isTyping;
 
+  void updateSelectedModel(String model) {
+    if (_selectedModel != model) {
+      _selectedModel = model;
+      notifyListeners();
+    }
+  }
+
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
@@ -39,8 +49,8 @@ class ChatBotProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // AI 응답 호출 (대화 히스토리 포함)
-      final aiResponse = await _sendMessageUseCase.call(text, history);
+      // AI 응답 호출 (대화 히스토리 및 모델 정보 포함)
+      final aiResponse = await _sendMessageUseCase.call(text, history, _selectedModel);
       _messages.insert(0, aiResponse);
     } catch (e) {
       _messages.insert(

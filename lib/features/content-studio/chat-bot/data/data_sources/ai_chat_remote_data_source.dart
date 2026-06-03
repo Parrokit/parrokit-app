@@ -2,7 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import '../../domain/entities/ai_chat_message.dart';
 
 class AiChatRemoteDataSource {
-  Future<Map<String, dynamic>> sendMessage(String text, List<AiChatMessage> history) async {
+  Future<Map<String, dynamic>> sendMessage(String text, List<AiChatMessage> history, String model) async {
     // 1. 대화 기록을 Genkit 및 Cloud Functions 요구 구조로 매핑 (시간순 정렬을 위해 reversed 적용)
     final historyData = history.reversed.map((msg) {
       return {
@@ -17,6 +17,7 @@ class AiChatRemoteDataSource {
     final response = await callable.call({
       'message': text,
       'history': historyData,
+      'model': model,
     });
 
     final String aiText = response.data as String;

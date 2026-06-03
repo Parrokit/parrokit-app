@@ -68,6 +68,7 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
     final isDark = theme.brightness == Brightness.dark;
     final bg = isDark ? AppColors.surfaceContainerDark : AppColors.surface;
     final dividerColor = isDark ? AppColors.dividerDark : AppColors.divider;
+    final provider = context.watch<ChatBotProvider>();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -149,6 +150,48 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                       ],
                     ),
                   ),
+                  // 모델 선택 칩
+                  InkWell(
+                    onTap: () => _showModelSelectorBottomSheet(context, provider),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark 
+                            ? AppColors.surfaceContainerHighDark 
+                            : AppColors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.tune_rounded,
+                            size: 12,
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            provider.selectedModel == 'gemini-2.5-flash' ? 'Gemini Flash' : 'Gemini Pro',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 14,
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Material(
                     color: isDark
                         ? AppColors.surfaceContainerHighDark
@@ -561,6 +604,227 @@ class _TypingIndicator extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+void _showModelSelectorBottomSheet(BuildContext context, ChatBotProvider provider) {
+  final theme = Theme.of(context);
+  final isDark = theme.brightness == Brightness.dark;
+  final bg = isDark ? AppColors.surfaceContainerDark : AppColors.surface;
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.4),
+    showDragHandle: false,
+    builder: (context) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'AI 모델 선택',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '작업 성격에 맞는 Gemini AI 모델을 선택하세요.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isDark ? AppColors.textTertiaryDark : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // 모델 1: Gemini 2.5 Flash
+            _ModelOptionCard(
+              title: 'Gemini 2.5 Flash',
+              description: '빠르고 경량화된 모델로 간단한 아이디어 구상과 신속한 생성 요청에 이상적입니다.',
+              speedText: '매우 빠름',
+              costText: '가장 저렴함',
+              isSelected: provider.selectedModel == 'gemini-2.5-flash',
+              accentColor: AppColors.primary,
+              onTap: () {
+                provider.updateSelectedModel('gemini-2.5-flash');
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: 12),
+            
+            // 모델 2: Gemini 2.5 Pro
+            _ModelOptionCard(
+              title: 'Gemini 2.5 Pro',
+              description: '정교한 논리 추론과 긴 문맥 파악에 특화되어 복잡한 씬 연출 및 고품질 대사 다듬기에 적합합니다.',
+              speedText: '보통',
+              costText: '보통',
+              isSelected: provider.selectedModel == 'gemini-2.5-pro',
+              accentColor: AppColors.secondary,
+              onTap: () {
+                provider.updateSelectedModel('gemini-2.5-pro');
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _ModelOptionCard extends StatelessWidget {
+  const _ModelOptionCard({
+    required this.title,
+    required this.description,
+    required this.speedText,
+    required this.costText,
+    required this.isSelected,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  final String title;
+  final String description;
+  final String speedText;
+  final String costText;
+  final bool isSelected;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final cardBg = isDark
+        ? (isSelected
+            ? accentColor.withValues(alpha: 0.1)
+            : AppColors.surfaceContainerHighDark)
+        : (isSelected
+            ? accentColor.withValues(alpha: 0.05)
+            : AppColors.surfaceContainerHigh);
+
+    final borderColor = isSelected
+        ? accentColor
+        : (isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: borderColor,
+            width: isSelected ? 2.0 : 1.0,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: isSelected
+                              ? (isDark ? Colors.white : accentColor)
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // 특성 칩
+                      _FeatureChip(label: speedText, isDark: isDark),
+                      const SizedBox(width: 4),
+                      _FeatureChip(label: costText, isDark: isDark),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? accentColor : Colors.transparent,
+                border: Border.all(
+                  color: isSelected
+                      ? accentColor
+                      : (isDark ? AppColors.textDisabledDark : AppColors.textDisabled),
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 12,
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureChip extends StatelessWidget {
+  const _FeatureChip({
+    required this.label,
+    required this.isDark,
+  });
+
+  final String label;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+        ),
       ),
     );
   }
