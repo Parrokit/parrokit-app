@@ -23,6 +23,8 @@ class FileHeroCard extends StatelessWidget {
     required this.onReopenFile,
     required this.onReopenPhotos,
     required this.lastSourceLabel,
+    this.waveformData,
+    this.waveformLoading = false,
   });
 
   final PlatformFile? picked;
@@ -41,6 +43,10 @@ class FileHeroCard extends StatelessWidget {
   final VoidCallback onReopenFile;
   final VoidCallback onReopenPhotos;
   final String lastSourceLabel;
+
+  /// 실제 오디오 파형 데이터 (null이면 로딩 or 미추출)
+  final List<double>? waveformData;
+  final bool waveformLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +74,8 @@ class FileHeroCard extends StatelessWidget {
               onPlayInline: onPlayInline,
               onToggleInline: onToggleInline,
               onStopInline: onStopInline,
+              waveformData: waveformData,
+              waveformLoading: waveformLoading,
             ),
     );
   }

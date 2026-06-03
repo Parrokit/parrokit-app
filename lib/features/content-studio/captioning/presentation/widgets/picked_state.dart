@@ -19,6 +19,8 @@ class PickedState extends StatelessWidget {
     required this.onPlayInline,
     required this.onToggleInline,
     required this.onStopInline,
+    this.waveformData,
+    this.waveformLoading = false,
   });
 
   final PlatformFile picked;
@@ -32,6 +34,10 @@ class PickedState extends StatelessWidget {
   final VoidCallback onPlayInline;
   final VoidCallback onToggleInline;
   final VoidCallback onStopInline;
+
+  /// 실제 오디오 파형 데이터 (null이면 로딩 or 미추출)
+  final List<double>? waveformData;
+  final bool waveformLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +95,9 @@ class PickedState extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: AudioWaveformBar(
-            controller: playerController,
+            videoController: playerController,
+            waveformData: waveformData,
+            isLoading: waveformLoading,
             height: 44,
           ),
         ),

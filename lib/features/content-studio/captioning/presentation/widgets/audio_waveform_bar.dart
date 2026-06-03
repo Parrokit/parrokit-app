@@ -1,19 +1,33 @@
 import 'dart:math' as math;
 
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-/// 음성 파형 그래프 위젯.
+/// 오디오 파형 그래프 위젯.
+///
+/// [waveformData]가 null이면 로딩 상태를 표시한다.
+/// [waveformData]가 비어있으면 폴백 더미 파형을 사용한다.
 /// 재생 진행도에 따라 왼쪽 구간은 primary 색상, 나머지는 흐리게 표시한다.
+/// 탭·드래그로 비디오를 탐색(seek)할 수 있다.
 class AudioWaveformBar extends StatefulWidget {
   const AudioWaveformBar({
     super.key,
-    required this.controller,
+    required this.videoController,
+    this.waveformData,
+    this.isLoading = false,
     this.barCount = 60,
     this.height = 48,
   });
 
-  final VideoPlayerController? controller;
+  /// 재생 위치 동기화에 사용하는 비디오 컨트롤러.
+  final VideoPlayerController? videoController;
+
+  /// 실제 오디오 파형 데이터 (0.0 ~ 1.0).
+  /// null이면 로딩 상태, 빈 리스트면 더미 파형으로 폴백.
+  final List<double>? waveformData;
+
+  final bool isLoading;
   final int barCount;
   final double height;
 
@@ -22,46 +36,77 @@ class AudioWaveformBar extends StatefulWidget {
 }
 
 class _AudioWaveformBarState extends State<AudioWaveformBar> {
-  // 고정된 난수 파형 값 (실제 오디오 분석 없이 시각적 데모용)
-  late final List<double> _bars;
+  late List<double> _bars;
 
   @override
   void initState() {
     super.initState();
-    final rng = math.Random(42);
-    _bars = List.generate(
-      widget.barCount,
-      (i) {
-        // 양끝은 낮게, 가운데는 높게 — 자연스러운 파형 분포
-        final center = math.sin(i / widget.barCount * math.pi);
-        final noise = rng.nextDouble() * 0.5 + 0.1;
-        return (center * 0.6 + noise * 0.4).clamp(0.08, 1.0);
-      },
-    );
-    widget.controller?.addListener(_onControllerUpdate);
+    _bars = _computeBars();
+    widget.videoController?.addListener(_onVideoUpdate);
   }
 
   @override
   void didUpdateWidget(AudioWaveformBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
-      oldWidget.controller?.removeListener(_onControllerUpdate);
-      widget.controller?.addListener(_onControllerUpdate);
+    if (oldWidget.videoController != widget.videoController) {
+      oldWidget.videoController?.removeListener(_onVideoUpdate);
+      widget.videoController?.addListener(_onVideoUpdate);
+    }
+    if (oldWidget.waveformData != widget.waveformData) {
+      _bars = _computeBars();
     }
   }
 
   @override
   void dispose() {
-    widget.controller?.removeListener(_onControllerUpdate);
+    widget.videoController?.removeListener(_onVideoUpdate);
     super.dispose();
   }
 
-  void _onControllerUpdate() {
+  void _onVideoUpdate() {
     if (mounted) setState(() {});
   }
 
+  /// waveformData를 barCount 개수로 다운샘플링.
+  /// 데이터가 없으면 시드 고정 랜덤 더미를 반환.
+  List<double> _computeBars() {
+    final raw = widget.waveformData;
+    if (raw == null || raw.isEmpty) {
+      // 더미 파형 (폴백)
+      final rng = math.Random(42);
+      return List.generate(widget.barCount, (i) {
+        final center = math.sin(i / widget.barCount * math.pi);
+        final noise = rng.nextDouble() * 0.5 + 0.1;
+        return (center * 0.6 + noise * 0.4).clamp(0.08, 1.0);
+      });
+    }
+
+    // 다운샘플링: 균등 구간 최댓값
+    final count = widget.barCount;
+    final result = <double>[];
+    final step = raw.length / count;
+    for (int i = 0; i < count; i++) {
+      final start = (i * step).floor();
+      final end = ((i + 1) * step).ceil().clamp(0, raw.length);
+      double peak = 0;
+      for (int j = start; j < end; j++) {
+        final v = raw[j].abs();
+        if (v > peak) peak = v;
+      }
+      result.add(peak.clamp(0.04, 1.0));
+    }
+    // 0~1 정규화
+    final maxVal = result.reduce(math.max);
+    if (maxVal > 0) {
+      for (int i = 0; i < result.length; i++) {
+        result[i] = result[i] / maxVal;
+      }
+    }
+    return result;
+  }
+
   double get _progress {
-    final c = widget.controller;
+    final c = widget.videoController;
     if (c == null || !c.value.isInitialized) return 0.0;
     final dur = c.value.duration.inMilliseconds;
     if (dur == 0) return 0.0;
@@ -72,6 +117,12 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // 로딩 중 - 스켈레톤 표시
+    if (widget.isLoading) {
+      return _LoadingSkeleton(height: widget.height, cs: cs);
+    }
+
     final progress = _progress;
 
     return SizedBox(
@@ -84,16 +135,17 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final totalWidth = constraints.maxWidth;
-            final barWidth = (totalWidth / widget.barCount) * 0.55;
-            final gap = (totalWidth / widget.barCount) * 0.45;
-            final progressIndex = (progress * widget.barCount).floor();
+            final barWidth = (totalWidth / _bars.length) * 0.55;
+            final gap = (totalWidth / _bars.length) * 0.45;
+            final progressIndex = (progress * _bars.length).floor();
 
             return Row(
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: List.generate(widget.barCount, (i) {
+              children: List.generate(_bars.length, (i) {
                 final isPlayed = i < progressIndex;
                 final isCurrent = i == progressIndex;
-                final barH = _bars[i] * widget.height * 0.85;
+                final barH = (_bars[i] * widget.height * 0.85)
+                    .clamp(3.0, widget.height);
 
                 Color barColor;
                 if (isPlayed) {
@@ -111,7 +163,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 80),
                     width: barWidth,
-                    height: barH.clamp(3.0, widget.height),
+                    height: barH,
                     decoration: BoxDecoration(
                       color: barColor,
                       borderRadius: BorderRadius.circular(barWidth / 2),
@@ -127,12 +179,97 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   }
 
   void _seekTo(BuildContext context, double localX) {
-    final c = widget.controller;
+    final c = widget.videoController;
     if (c == null || !c.value.isInitialized) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
     final ratio = (localX / box.size.width).clamp(0.0, 1.0);
-    final dur = c.value.duration;
-    c.seekTo(dur * ratio);
+    c.seekTo(c.value.duration * ratio);
   }
 }
+
+/// 로딩 중 표시할 스켈레톤 파형.
+class _LoadingSkeleton extends StatefulWidget {
+  const _LoadingSkeleton({required this.height, required this.cs});
+  final double height;
+  final ColorScheme cs;
+
+  @override
+  State<_LoadingSkeleton> createState() => _LoadingSkeletonState();
+}
+
+class _LoadingSkeletonState extends State<_LoadingSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rng = math.Random(7);
+    return SizedBox(
+      height: widget.height,
+      child: AnimatedBuilder(
+        animation: _anim,
+        builder: (context, _) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(40, (i) {
+              final h = (rng.nextDouble() * 0.7 + 0.1) * widget.height;
+              final alpha = 0.08 + _anim.value * 0.10;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                  child: Container(
+                    height: h,
+                    decoration: BoxDecoration(
+                      color:
+                          widget.cs.onSurface.withValues(alpha: alpha),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// audio_waveforms WaveformExtractionController를 사용해
+/// 오디오 파일에서 파형 데이터를 추출한다.
+/// 반환값: 0.0 ~ 1.0 정규화된 `List<double>`.
+Future<List<double>> extractWaveformData(
+  String audioFilePath, {
+  int sampleCount = 200,
+}) async {
+  final extractor = WaveformExtractionController();
+  try {
+    final raw = await extractor.extractWaveformData(
+      path: audioFilePath,
+      noOfSamples: sampleCount,
+    );
+    if (raw.isEmpty) return [];
+    final maxVal = raw.reduce(math.max);
+    if (maxVal <= 0) return raw.map((_) => 0.0).toList();
+    return raw.map((v) => (v / maxVal).clamp(0.0, 1.0)).toList();
+  } catch (_) {
+    return [];
+  }
+}
+
