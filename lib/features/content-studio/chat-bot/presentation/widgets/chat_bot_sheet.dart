@@ -845,6 +845,9 @@ class _TypingIndicator extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final mode = context.watch<ChatBotProvider>().chatbotMode;
+    final currentGradient = _getGradientForMode(mode);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -854,11 +857,7 @@ class _TypingIndicator extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.secondary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: currentGradient,
               shape: BoxShape.circle,
             ),
             child: const Center(
