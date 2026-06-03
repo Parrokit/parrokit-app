@@ -17,6 +17,9 @@ class SegmentCard extends StatelessWidget {
     required this.originalCtl,
     required this.pronCtl,
     required this.koCtl,
+    this.onStartCommitted,
+    this.onEndCommitted,
+    this.onRangeUpdated,
     this.enabled = true,
     this.onDelete,
   });
@@ -27,6 +30,9 @@ class SegmentCard extends StatelessWidget {
   final TextEditingController originalCtl;
   final TextEditingController pronCtl;
   final TextEditingController koCtl;
+  final VoidCallback? onStartCommitted;
+  final VoidCallback? onEndCommitted;
+  final VoidCallback? onRangeUpdated;
   final bool enabled;
   final VoidCallback? onDelete;
 
@@ -88,9 +94,14 @@ class SegmentCard extends StatelessWidget {
                     label: '시작',
                     target: startCtl,
                     showGuide: false,
+                    onCommitted: onStartCommitted,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  TimeTripletField(label: '끝', target: endCtl),
+                  TimeTripletField(
+                    label: '끝',
+                    target: endCtl,
+                    onCommitted: onEndCommitted,
+                  ),
                 ],
               ),
             ),
@@ -134,6 +145,7 @@ class SegmentCard extends StatelessWidget {
       endCtl.text = next;
     }
     startCtl.text = next;
+    onRangeUpdated?.call();
   }
 
   void _registerB() {
@@ -146,6 +158,7 @@ class SegmentCard extends StatelessWidget {
       startCtl.text = next;
     }
     endCtl.text = next;
+    onRangeUpdated?.call();
   }
 
   int? _currentPositionMs() {

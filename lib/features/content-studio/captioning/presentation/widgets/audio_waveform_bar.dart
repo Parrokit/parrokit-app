@@ -45,6 +45,7 @@ class AudioWaveformBar extends StatefulWidget {
 class _AudioWaveformBarState extends State<AudioWaveformBar> {
   late List<double> _bars;
   int _windowStartMs = 0;
+  int? _selectedOverlaySegmentIndex;
 
   List<double>? _cachedFullBars;
   double _cachedZoomFactor = -1;
@@ -74,6 +75,13 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       _bars = _computeBars();
     } else if (oldWidget.zoomFactor != widget.zoomFactor) {
       _bars = _computeBars();
+    }
+
+    if (_selectedOverlaySegmentIndex != null &&
+        !widget.overlayRanges.any(
+          (range) => range.segmentIndex == _selectedOverlaySegmentIndex,
+        )) {
+      _selectedOverlaySegmentIndex = null;
     }
   }
 
@@ -243,67 +251,107 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                   final itemWidth = totalWidth / widget.barCount;
                   final barWidth = itemWidth * 0.35;
                   final gap = itemWidth * 0.65;
-                  final visibleOverlays = _buildVisibleOverlays(
-                    context: context,
+                  final overlayLayouts = _buildVisibleOverlayLayouts(
                     totalWidth: totalWidth,
                     actualWindowDurMs: actualWindowDurMs,
                     endMs: endMs,
                     videoDurationMs: c?.value.duration.inMilliseconds ?? 0,
                   );
 
-                  return Stack(
-                    children: [
-                      OverflowBox(
-                        maxWidth: double.infinity,
-                        alignment: Alignment.centerLeft,
-                        child: Transform.translate(
-                          offset: Offset(-fraction * itemWidth, 0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: List.generate(widget.barCount + 2, (i) {
-                              final idx = startIndex + i;
-                              final barHeightRatio = (idx >= 0 && idx < _bars.length)
-                                  ? _bars[idx]
-                                  : 0.04;
-                              final barH = (barHeightRatio * widget.height * 0.85)
-                                  .clamp(3.0, widget.height);
+                  return Listener(
+                    behavior: HitTestBehavior.translucent,
+                    onPointerDown: (event) {
+                      _handleOverlaySelection(
+                        event.localPosition,
+                        overlayLayouts,
+                      );
+                    },
+                    child: Stack(
+                      children: [
+                        OverflowBox(
+                          maxWidth: double.infinity,
+                          alignment: Alignment.centerLeft,
+                          child: Transform.translate(
+                            offset: Offset(-fraction * itemWidth, 0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: List.generate(widget.barCount + 2, (i) {
+                                final idx = startIndex + i;
+                                final barHeightRatio = (idx >= 0 && idx < _bars.length)
+                                    ? _bars[idx]
+                                    : 0.04;
+                                final barH = (barHeightRatio * widget.height * 0.85)
+                                    .clamp(3.0, widget.height);
 
-                              final playheadIdx =
-                                  (exactIndex + widget.barCount / 2).floor();
-                              final isPlayed = idx < playheadIdx;
-                              final isCurrent = idx == playheadIdx;
+                                final playheadIdx =
+                                    (exactIndex + widget.barCount / 2).floor();
+                                final isPlayed = idx < playheadIdx;
+                                final isCurrent = idx == playheadIdx;
 
-                              Color barColor;
-                              if (isPlayed) {
-                                barColor = cs.primary;
-                              } else if (isCurrent) {
-                                barColor = cs.primary.withValues(alpha: 0.7);
-                              } else {
-                                barColor = isDark
-                                    ? cs.onSurface.withValues(alpha: 0.18)
-                                    : cs.onSurface.withValues(alpha: 0.13);
-                              }
+                                Color barColor;
+                                if (isPlayed) {
+                                  barColor = cs.primary;
+                                } else if (isCurrent) {
+                                  barColor = cs.primary.withValues(alpha: 0.7);
+                                } else {
+                                  barColor = isDark
+                                      ? cs.onSurface.withValues(alpha: 0.18)
+                                      : cs.onSurface.withValues(alpha: 0.13);
+                                }
 
-                              return Padding(
-                                padding: EdgeInsets.only(right: gap),
-                                child: Container(
-                                  width: barWidth,
-                                  height: barH,
-                                  decoration: BoxDecoration(
-                                    color: barColor,
-                                    borderRadius: BorderRadius.circular(barWidth / 2),
+                                return Padding(
+                                  padding: EdgeInsets.only(right: gap),
+                                  child: Container(
+                                    width: barWidth,
+                                    height: barH,
+                                    decoration: BoxDecoration(
+                                      color: barColor,
+                                      borderRadius: BorderRadius.circular(barWidth / 2),
+                                    ),
                                   ),
-                                ),
-                              );
-                            }),
+                                );
+                              }),
+                            ),
                           ),
                         ),
-                      ),
-                      if (visibleOverlays.isNotEmpty)
-                        Positioned.fill(
-                          child: Stack(children: visibleOverlays),
-                        ),
-                    ],
+                        if (overlayLayouts.isNotEmpty)
+                          Positioned.fill(
+                            child: Stack(
+                              children: overlayLayouts
+                                  .map(
+                                    (layout) => Positioned(
+                                      left: layout.left.clamp(0.0, totalWidth),
+                                      top: 0,
+                                      bottom: 0,
+                                      width: layout.width.clamp(0.0, totalWidth),
+                                      child: _OverlayRangeTile(
+                                        range: layout.range,
+                                        isSelected:
+                                            _selectedOverlaySegmentIndex ==
+                                                layout.range.segmentIndex,
+                                        totalWidth: totalWidth,
+                                        windowStartMs: _windowStartMs,
+                                        actualWindowDurMs: actualWindowDurMs,
+                                        windowEndMs: endMs,
+                                        videoDurationMs: c?.value.duration.inMilliseconds ?? 0,
+                                        onChanged: widget.onOverlayRangeChanged,
+                                        onSelected: () {
+                                          if (_selectedOverlaySegmentIndex !=
+                                              layout.range.segmentIndex) {
+                                            setState(() {
+                                              _selectedOverlaySegmentIndex =
+                                                  layout.range.segmentIndex;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -372,8 +420,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     c.seekTo(Duration(milliseconds: targetMs));
   }
 
-  List<Widget> _buildVisibleOverlays({
-    required BuildContext context,
+  List<_VisibleOverlayLayout> _buildVisibleOverlayLayouts({
     required double totalWidth,
     required int actualWindowDurMs,
     required int endMs,
@@ -383,7 +430,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       return const [];
     }
 
-    final overlays = <Widget>[];
+    final overlays = <_VisibleOverlayLayout>[];
     for (final range in widget.overlayRanges) {
       final visibleStart = math.max(range.startMs, _windowStartMs);
       final visibleEnd = math.min(range.endMs, endMs);
@@ -394,25 +441,55 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       final width = ((visibleEnd - visibleStart) / actualWindowDurMs) * totalWidth;
 
       overlays.add(
-        Positioned(
+        _VisibleOverlayLayout(
+          range: range,
           left: left.clamp(0.0, totalWidth),
-          top: 0,
-          bottom: 0,
           width: width.clamp(0.0, totalWidth),
-          child: _OverlayRangeTile(
-            range: range,
-            totalWidth: totalWidth,
-            windowStartMs: _windowStartMs,
-            actualWindowDurMs: actualWindowDurMs,
-            windowEndMs: endMs,
-            videoDurationMs: videoDurationMs,
-            onChanged: widget.onOverlayRangeChanged,
-          ),
         ),
       );
     }
     return overlays;
   }
+
+  void _handleOverlaySelection(
+    Offset localPosition,
+    List<_VisibleOverlayLayout> overlayLayouts,
+  ) {
+    final selected = overlayLayouts
+        .where(
+          (layout) =>
+              localPosition.dx >= layout.left &&
+              localPosition.dx <= layout.left + layout.width &&
+              localPosition.dy >= 0 &&
+              localPosition.dy <= widget.height,
+        )
+        .map((layout) => layout.range.segmentIndex)
+        .toList();
+
+    if (selected.isNotEmpty) {
+      final next = selected.last;
+      if (_selectedOverlaySegmentIndex != next) {
+        setState(() => _selectedOverlaySegmentIndex = next);
+      }
+      return;
+    }
+
+    if (_selectedOverlaySegmentIndex != null) {
+      setState(() => _selectedOverlaySegmentIndex = null);
+    }
+  }
+}
+
+class _VisibleOverlayLayout {
+  const _VisibleOverlayLayout({
+    required this.range,
+    required this.left,
+    required this.width,
+  });
+
+  final WaveformOverlayRange range;
+  final double left;
+  final double width;
 }
 
 class _OverlayRangeTile extends StatelessWidget {
@@ -424,6 +501,8 @@ class _OverlayRangeTile extends StatelessWidget {
     required this.windowEndMs,
     required this.videoDurationMs,
     required this.onChanged,
+    required this.isSelected,
+    required this.onSelected,
   });
 
   final WaveformOverlayRange range;
@@ -433,69 +512,74 @@ class _OverlayRangeTile extends StatelessWidget {
   final int windowEndMs;
   final int videoDurationMs;
   final ValueChanged<WaveformOverlayRange>? onChanged;
+  final bool isSelected;
+  final VoidCallback onSelected;
 
   @override
   Widget build(BuildContext context) {
     final canInteract = onChanged != null;
     final cs = Theme.of(context).colorScheme;
-    final bodyColor = range.color.withValues(alpha: 0.16);
-    final borderColor = range.color.withValues(alpha: 0.38);
-    final handleWidth = _handleWidth;
-    final bodyPadding = EdgeInsets.symmetric(horizontal: handleWidth);
+    final bodyColor = isSelected
+        ? range.color.withValues(alpha: 0.24)
+        : range.color.withValues(alpha: 0.16);
+    final borderColor = isSelected
+        ? range.color.withValues(alpha: 0.75)
+        : range.color.withValues(alpha: 0.38);
+    final handleWidth = isSelected ? _handleWidth : 0.0;
 
     return IgnorePointer(
       ignoring: !canInteract,
       child: Stack(
         clipBehavior: Clip.none,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: bodyColor,
-            border: Border.all(
-              color: borderColor,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
-        if (canInteract)
-          Positioned.fill(
-            child: Padding(
-              padding: bodyPadding,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onPanUpdate: (details) => _moveRange(details.delta.dx),
-                child: Container(color: Colors.transparent),
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onSelected,
+            onTapDown: (_) => onSelected(),
+            onPanStart: (_) => onSelected(),
+            onPanUpdate: canInteract
+                ? (details) => _moveRange(details.delta.dx)
+                : null,
+            child: Container(
+              decoration: BoxDecoration(
+                color: bodyColor,
+                border: Border.all(
+                  color: borderColor,
+                  width: isSelected ? 2 : 1,
+                ),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: handleWidth,
-          child: _OverlayHandle(
-            color: cs.primary,
-            alignLeft: true,
-            onPanUpdate: canInteract
-                ? (details) => _resizeRange(details.delta.dx, isStart: true)
-                : null,
-          ),
-        ),
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: handleWidth,
-          child: _OverlayHandle(
-            color: cs.primary,
-            alignLeft: false,
-            onPanUpdate: canInteract
-                ? (details) => _resizeRange(details.delta.dx, isStart: false)
-                : null,
-          ),
-        ),
-      ],
+          if (isSelected)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: handleWidth,
+              child: _OverlayHandle(
+                color: cs.primary,
+                alignLeft: true,
+                onPanUpdate: canInteract
+                    ? (details) => _resizeRange(details.delta.dx, isStart: true)
+                    : null,
+              ),
+            ),
+          if (isSelected)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: handleWidth,
+              child: _OverlayHandle(
+                color: cs.primary,
+                alignLeft: false,
+                onPanUpdate: canInteract
+                    ? (details) => _resizeRange(details.delta.dx, isStart: false)
+                    : null,
+              ),
+            ),
+        ],
       ),
     );
   }

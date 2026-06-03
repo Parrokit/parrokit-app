@@ -9,6 +9,8 @@
 // Presentation Layer > ViewModel > Mixin
 // ============================================================================
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'package:parrokit/core/shared/utils/show_toast.dart';
@@ -23,6 +25,7 @@ mixin EditorSegmentMixin on ChangeNotifier {
   // 상태
   // ─────────────────────────────────────────────────────────────────
   final List<SegmentFormData> segmentForms = [];
+  final List<_SegmentRangeSnapshot> _segmentSnapshots = [];
 
   // ─────────────────────────────────────────────────────────────────
   // 세그먼트 관리
@@ -31,6 +34,7 @@ mixin EditorSegmentMixin on ChangeNotifier {
   /// 초기 세그먼트(폼) 하나를 추가 생성합니다.
   void initSegmentForms() {
     segmentForms.add(SegmentFormData.empty());
+    _segmentSnapshots.add(_SegmentRangeSnapshot.empty());
   }
 
   /// 새로운 세그먼트 폼을 추가합니다.
@@ -41,6 +45,7 @@ mixin EditorSegmentMixin on ChangeNotifier {
       nf.startCtl.text = segmentForms.last.endCtl.text;
     }
     segmentForms.add(nf);
+    _segmentSnapshots.add(_SegmentRangeSnapshot.fromForm(nf));
     notifyListeners();
   }
 
@@ -53,6 +58,9 @@ mixin EditorSegmentMixin on ChangeNotifier {
     }
     final f = segmentForms.removeAt(index);
     f.dispose();
+    if (index < _segmentSnapshots.length) {
+      _segmentSnapshots.removeAt(index);
+    }
     notifyListeners();
   }
 
@@ -66,11 +74,15 @@ mixin EditorSegmentMixin on ChangeNotifier {
           nf.startCtl.text = segmentForms.last.endCtl.text;
         }
         segmentForms.add(nf);
+        _segmentSnapshots.add(_SegmentRangeSnapshot.fromForm(nf));
       }
     } else if (segmentForms.length > count) {
       while (segmentForms.length > count) {
         final removed = segmentForms.removeLast();
         removed.dispose();
+        if (_segmentSnapshots.isNotEmpty) {
+          _segmentSnapshots.removeLast();
+        }
       }
     }
     notifyListeners();
@@ -91,6 +103,7 @@ mixin EditorSegmentMixin on ChangeNotifier {
     f.originalCtl.text = original;
     f.pronCtl.text = pron;
     f.koCtl.text = ko;
+    _syncSnapshotAt(index);
     notifyListeners();
   }
 
@@ -117,11 +130,128 @@ mixin EditorSegmentMixin on ChangeNotifier {
     notifyListeners();
   }
 
+  /// 편집 중인 특정 세그먼트를 검증하고, 겹치면 자동 보정합니다.
+  bool validateSegmentAt(int index) {
+    if (index < 0 || index >= segmentForms.length) return true;
+
+    final form = segmentForms[index];
+    final startMs = _parseMs(form.startCtl.text);
+    final endMs = _parseMs(form.endCtl.text);
+    if (startMs == null || endMs == null || startMs <= 0 || endMs <= 0) {
+      showToast('구간 시간 형식을 다시 확인해 주세요.');
+      return false;
+    }
+
+    const gapMs = 10;
+    var adjustedStart = startMs;
+    var adjustedEnd = endMs;
+    var lowerBound = 0;
+    var upperBound = 2147483647;
+
+    if (index > 0) {
+      final prevEndMs = _parseMs(segmentForms[index - 1].endCtl.text);
+      if (prevEndMs != null) {
+        lowerBound = prevEndMs + gapMs;
+      }
+    }
+
+    if (index < segmentForms.length - 1) {
+      final nextStartMs = _parseMs(segmentForms[index + 1].startCtl.text);
+      if (nextStartMs != null) {
+        upperBound = nextStartMs - gapMs;
+      }
+    }
+
+    if (upperBound < lowerBound) {
+      upperBound = lowerBound + gapMs;
+    }
+
+    if (adjustedStart < lowerBound) {
+      adjustedStart = lowerBound;
+    }
+    if (adjustedStart > upperBound - gapMs) {
+      adjustedStart = upperBound - gapMs;
+    }
+    if (adjustedStart < lowerBound) {
+      adjustedStart = lowerBound;
+    }
+
+    adjustedEnd = adjustedEnd.clamp(adjustedStart + gapMs, upperBound);
+    if (adjustedEnd <= adjustedStart) {
+      adjustedEnd = math.min(upperBound, adjustedStart + gapMs);
+    }
+    if (adjustedEnd <= adjustedStart) {
+      adjustedStart = math.max(lowerBound, upperBound - gapMs);
+      adjustedEnd = math.min(upperBound, adjustedStart + gapMs);
+    }
+
+    final tc = TimecodeService();
+    final startText = tc.msToMMSSmmm(adjustedStart);
+    final endText = tc.msToMMSSmmm(adjustedEnd);
+    final changed =
+        startText != form.startCtl.text || endText != form.endCtl.text;
+    form.startCtl.value = TextEditingValue(
+      text: startText,
+      selection: TextSelection.collapsed(offset: startText.length),
+    );
+    form.endCtl.value = TextEditingValue(
+      text: endText,
+      selection: TextSelection.collapsed(offset: endText.length),
+    );
+    _syncSnapshotAt(index);
+    if (changed) {
+      showToast('겹침 방지를 위해 구간을 자동 조정했습니다.');
+    }
+    notifyListeners();
+    return true;
+  }
+
   /// 모든 세그먼트 폼 리소스를 해제합니다.
   void disposeSegmentForms() {
     for (final f in segmentForms) {
       f.dispose();
     }
     segmentForms.clear();
+    _segmentSnapshots.clear();
   }
+
+  void _syncSnapshotAt(int index) {
+    if (index < 0 || index >= segmentForms.length) return;
+    final form = segmentForms[index];
+    final snapshot = _SegmentRangeSnapshot.fromForm(form);
+    if (index < _segmentSnapshots.length) {
+      _segmentSnapshots[index] = snapshot;
+    } else {
+      _segmentSnapshots.add(snapshot);
+    }
+  }
+
+  int? _parseMs(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    try {
+      return TimecodeService().parseToMs(text);
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+class _SegmentRangeSnapshot {
+  const _SegmentRangeSnapshot({required this.start, required this.end});
+
+  final String start;
+  final String end;
+
+  factory _SegmentRangeSnapshot.fromForm(SegmentFormData form) {
+    return _SegmentRangeSnapshot(
+      start: form.startCtl.text,
+      end: form.endCtl.text,
+    );
+  }
+
+  factory _SegmentRangeSnapshot.empty() => const _SegmentRangeSnapshot(
+        start: '',
+        end: '',
+      );
 }

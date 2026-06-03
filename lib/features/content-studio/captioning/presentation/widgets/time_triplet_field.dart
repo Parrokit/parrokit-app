@@ -8,11 +8,13 @@ class TimeTripletField extends StatefulWidget {
     required this.label,
     required this.target,
     this.showGuide = true,
+    this.onCommitted,
   });
 
   final String label;
   final TextEditingController target;
   final bool showGuide;
+  final VoidCallback? onCommitted;
 
   @override
   State<TimeTripletField> createState() => _TimeTripletFieldState();
@@ -95,6 +97,7 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
     if (!(_mFn.hasFocus || _sFn.hasFocus || _msFn.hasFocus)) {
       _syncToTarget();
       _applyPaddingToFields(); // "04" / "07" / "005" 같은 형식으로 보여주기
+      widget.onCommitted?.call();
     }
   }
 
