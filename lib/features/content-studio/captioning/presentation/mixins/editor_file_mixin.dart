@@ -15,7 +15,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 
 import '../../data/adapters/video_picker_files.dart';
@@ -53,6 +56,17 @@ mixin EditorFileMixin on ChangeNotifier {
   Uint8List? _thumb;
   Uint8List? get thumb => _thumb;
 
+  bool _isVideoLoading = false;
+  bool get isVideoLoading => _isVideoLoading;
+
+  List<double>? _waveformData;
+  List<double>? get waveformData => _waveformData;
+
+  bool _waveformLoading = false;
+  bool get waveformLoading => _waveformLoading;
+
+  String? _tempPcmPath;
+
   // ─────────────────────────────────────────────────────────────────
   // 파일 선택
   // ─────────────────────────────────────────────────────────────────
@@ -82,6 +96,9 @@ mixin EditorFileMixin on ChangeNotifier {
     required String name,
     required int size,
   }) async {
+    _isVideoLoading = true;
+    notifyListeners();
+
     // 원본 경로 보존 (STT에서 이중 변환 방지용)
     _originalStagedPath = path;
 
@@ -89,30 +106,38 @@ mixin EditorFileMixin on ChangeNotifier {
     try {
       effectivePath = await audioToVideo.ensureMp4(path);
     } catch (e) {
+      _isVideoLoading = false;
+      notifyListeners();
       showToast('오디오를 영상으로 변환 중 오류: $e');
       return;
     }
 
     _picked = PlatformFile(name: name, size: size, path: effectivePath);
     _thumb = null;
-    notifyListeners();
 
     await _setThumb(effectivePath);
     final ms = await _probeDurationMs(effectivePath);
     if (ms != null) {
       durationCtl.text = ms.toString();
     }
+    _isVideoLoading = false;
     notifyListeners();
+    
+    // 비디오 로딩 후 파형 추출 (1회 수행)
+    _extractWaveform(effectivePath);
   }
 
-  /// 기존 파일 경로를 설정합니다 (편집 모드용).
-  /// DB에 저장된 상대 경로를 절대 경로로 변환합니다.
   Future<void> setExistingFile(String relPath) async {
+    _isVideoLoading = true;
+    notifyListeners();
+
     final docsDir = await getApplicationDocumentsDirectory();
     final absPath = '${docsDir.path}/$relPath';
 
     final file = File(absPath);
     if (!await file.exists()) {
+      _isVideoLoading = false;
+      notifyListeners();
       showToast('기존 파일을 찾을 수 없습니다.');
       return;
     }
@@ -122,10 +147,13 @@ mixin EditorFileMixin on ChangeNotifier {
 
     _picked = PlatformFile(name: name, size: stat.size, path: absPath);
     _thumb = null;
-    notifyListeners();
 
     await _setThumb(absPath);
+    _isVideoLoading = false;
     notifyListeners();
+
+    // 편집 모드 로드 후 파형 추출 (1회 수행)
+    _extractWaveform(absPath);
   }
 
   void removePicked() {
@@ -133,6 +161,10 @@ mixin EditorFileMixin on ChangeNotifier {
     _picked = null;
     _thumb = null;
     _originalStagedPath = null;
+    _waveformData = null;
+    _waveformLoading = false;
+    _cleanupTempPcm();
+    
     if (p != null && staging.isInStaging(p)) {
       staging.discard(p);
     }
@@ -147,6 +179,104 @@ mixin EditorFileMixin on ChangeNotifier {
 
   Future<int?> _probeDurationMs(String path) async {
     return await extractDuration(path);
+  }
+
+  // ── 오디오 파형 추출 ──────────────────────────────────────────────────────
+
+  Future<void> _extractWaveform(String videoPath) async {
+    _waveformLoading = true;
+    _waveformData = null;
+    notifyListeners();
+
+    AppLogger.i('[Captioning][Waveform] 파형 추출 시작 path=$videoPath');
+
+    try {
+      final tmpDir = await getTemporaryDirectory();
+      final pcmOut = '${tmpDir.path}/aw_tmp_audio.pcm';
+
+      await _cleanupTempPcm();
+      _tempPcmPath = pcmOut;
+
+      final outFile = File(pcmOut);
+      if (await outFile.exists()) await outFile.delete();
+
+      final session = await FFmpegKit.executeWithArguments([
+        '-y',
+        '-i', videoPath,
+        '-vn',
+        '-ac', '1',
+        '-ar', '8000',
+        '-f', 's16le',
+        '-t', '180',
+        pcmOut,
+      ]);
+      final rc = await session.getReturnCode();
+
+      if (!ReturnCode.isSuccess(rc) || !await outFile.exists()) {
+        final logs = await session.getAllLogsAsString();
+        AppLogger.w('[Captioning][Waveform] ffmpeg PCM 추출 실패 logs=$logs');
+        _waveformLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      AppLogger.d('[Captioning][Waveform] PCM 추출 성공 out=$pcmOut');
+
+      final bytes = await outFile.readAsBytes();
+      final data = _computeWaveformFromPcm(bytes);
+
+      AppLogger.i('[Captioning][Waveform] 파형 계산 완료 samples=${data.length}');
+
+      _waveformData = data;
+      _waveformLoading = false;
+      notifyListeners();
+    } catch (e) {
+      AppLogger.e('[Captioning][Waveform] 파형 추출 예외', error: e);
+      _waveformLoading = false;
+      notifyListeners();
+    }
+  }
+
+  static List<double> _computeWaveformFromPcm(Uint8List bytes) {
+    final sampleCount = bytes.length ~/ 2;
+    if (sampleCount == 0) return [];
+
+    final byteData = ByteData.sublistView(bytes);
+    const int samplesPerPoint = 160;
+    final int pointCount = (sampleCount / samplesPerPoint).ceil();
+    final result = <double>[];
+
+    for (int i = 0; i < pointCount; i++) {
+      final start = i * samplesPerPoint;
+      if (start >= sampleCount) break;
+      final end = (start + samplesPerPoint).clamp(0, sampleCount);
+
+      double sumSq = 0;
+      for (int j = start; j < end; j++) {
+        final sample = byteData.getInt16(j * 2, Endian.little).toDouble();
+        sumSq += sample * sample;
+      }
+      final rms = (end > start) ? (sumSq / (end - start)) : 0.0;
+      result.add(rms);
+    }
+
+    if (result.isEmpty) return [];
+
+    final maxVal = result.reduce((a, b) => a > b ? a : b);
+    if (maxVal <= 0) return result.map((_) => 0.0).toList();
+    return result.map((v) => (v / maxVal).clamp(0.0, 1.0)).toList();
+  }
+
+  Future<void> _cleanupTempPcm() async {
+    final path = _tempPcmPath;
+    if (path == null) return;
+    try {
+      final f = File(path);
+      if (await f.exists()) await f.delete();
+    } catch (e) {
+      AppLogger.w('[Captioning][Waveform] 임시 PCM 파일 삭제 실패', error: e);
+    }
+    _tempPcmPath = null;
   }
 
   // Mixin 초기화 헬퍼

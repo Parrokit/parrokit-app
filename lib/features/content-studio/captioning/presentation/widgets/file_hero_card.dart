@@ -25,6 +25,7 @@ class FileHeroCard extends StatelessWidget {
     required this.lastSourceLabel,
     this.waveformData,
     this.waveformLoading = false,
+    this.isVideoLoading = false,
     this.segmentsWidget,
   });
 
@@ -47,21 +48,24 @@ class FileHeroCard extends StatelessWidget {
 
   final List<double>? waveformData;
   final bool waveformLoading;
+  final bool isVideoLoading;
   final Widget? segmentsWidget;
 
   @override
   Widget build(BuildContext context) {
-    final isEmpty = picked == null;
+    final bool showLoading = isVideoLoading || waveformLoading;
+    final bool showEmpty = picked == null || showLoading;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       transitionBuilder: (child, anim) =>
           FadeTransition(opacity: anim, child: child),
-      child: isEmpty
+      child: showEmpty
           ? EmptyState(
               key: const ValueKey('empty'),
               onPick: onPick,
               onPickFromPhotos: onPickFromPhotos,
+              isLoading: showLoading,
             )
           : PickedState(
               key: const ValueKey('picked'),

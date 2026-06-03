@@ -117,29 +117,33 @@ class _PickedStateState extends State<PickedState> {
                   child: Stack(
                     children: [
                       Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.zero,
-                          child: showPlayer
-                              ? VideoPlayer(widget.playerController!)
-                              : GestureDetector(
-                                  onTap: widget.onPlayInline,
-                                  behavior: HitTestBehavior.opaque,
-                                  child: widget.thumb == null
-                                      ? Container(
-                                          color: cs.onSurface
-                                              .withValues(alpha: 0.05),
-                                          child: Center(
-                                            child: Icon(
-                                              Icons.video_file_rounded,
-                                              size: 56,
-                                              color: cs.onSurface
-                                                  .withValues(alpha: 0.35),
-                                            ),
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onVerticalDragUpdate: (details) {
+                            if (details.primaryDelta! < -3 && !_isVideoCollapsed) {
+                              setState(() => _isVideoCollapsed = true);
+                            }
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.zero,
+                            child: showPlayer
+                                ? VideoPlayer(widget.playerController!)
+                                : widget.thumb == null
+                                    ? Container(
+                                        color: cs.onSurface
+                                            .withValues(alpha: 0.05),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.video_file_rounded,
+                                            size: 56,
+                                            color: cs.onSurface
+                                                .withValues(alpha: 0.35),
                                           ),
-                                        )
-                                      : Image.memory(widget.thumb!,
-                                          fit: BoxFit.cover),
-                                ),
+                                        ),
+                                      )
+                                    : Image.memory(widget.thumb!,
+                                        fit: BoxFit.cover),
+                          ),
                         ),
                       ),
                     ],
