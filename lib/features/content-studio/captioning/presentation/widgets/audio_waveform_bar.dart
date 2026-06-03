@@ -42,6 +42,9 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   late List<double> _bars;
   int _windowStartMs = 0;
 
+  List<double>? _cachedFullBars;
+  double _cachedZoomFactor = -1;
+
   @override
   void initState() {
     super.initState();
@@ -62,8 +65,10 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       widget.videoController?.addListener(_onVideoUpdate);
     }
     
-    if (oldWidget.waveformData != widget.waveformData ||
-        oldWidget.zoomFactor != widget.zoomFactor) {
+    if (oldWidget.waveformData != widget.waveformData) {
+      _cachedFullBars = null; // reset cache
+      _bars = _computeBars();
+    } else if (oldWidget.zoomFactor != widget.zoomFactor) {
       _bars = _computeBars();
     }
   }
@@ -87,7 +92,6 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       // 실시간 부드러운 스크롤 (Center-locked):
       // 재생 위치를 항상 화면 중앙에 두도록 윈도우를 지속적으로 이동
       _windowStartMs = posMs - (windowDurMs ~/ 2);
-      _windowStartMs = _windowStartMs.clamp(0, math.max(0, durMs - windowDurMs));
       
       // 창 위치가 변했거나 재생 중이면 UI 업데이트
       if (oldStart != _windowStartMs || c.value.isPlaying) {
@@ -107,76 +111,70 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     
     // 현재 재생 위치를 화면 중앙에 맞추도록 윈도우 이동
     _windowStartMs = posMs - (windowDurMs ~/ 2);
-    _windowStartMs = _windowStartMs.clamp(0, math.max(0, durMs - windowDurMs));
   }
 
-  /// waveformData 중 현재 window 구간만 잘라서 barCount 개수로 다운샘플링.
-  List<double> _computeBars() {
+  void _updateCacheIfNeeded() {
+    if (_cachedFullBars != null && _cachedZoomFactor == widget.zoomFactor) {
+      return;
+    }
+
     final raw = widget.waveformData;
-    if (raw == null || raw.isEmpty) return [];
+    if (raw == null || raw.isEmpty) {
+      _cachedFullBars = [];
+      _cachedZoomFactor = widget.zoomFactor;
+      return;
+    }
 
     final c = widget.videoController;
     if (c == null || !c.value.isInitialized) {
-       // 비디오 정보가 없으면 전체 다운샘플링
-       return _downsample(raw, 0, raw.length, widget.barCount);
+      _cachedFullBars = _downsampleFull(raw, widget.barCount);
+      _cachedZoomFactor = widget.zoomFactor;
+      return;
     }
 
     final durMs = c.value.duration.inMilliseconds;
-    if (durMs <= 0) return [];
-    
-    final minDur = math.min(10000.0, durMs.toDouble());
+    if (durMs <= 0) {
+      _cachedFullBars = [];
+      _cachedZoomFactor = widget.zoomFactor;
+      return;
+    }
+
+    final minDur = math.min(3000.0, durMs.toDouble());
     final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
     final actualWindowDurMs = math.min(windowDurMs, durMs);
-    
-    final startRatio = _windowStartMs / durMs;
-    final endRatio = (_windowStartMs + actualWindowDurMs) / durMs;
-    
-    final rawStart = (startRatio * raw.length).floor().clamp(0, raw.length);
-    final rawEnd = (endRatio * raw.length).ceil().clamp(0, raw.length);
-    
-    return _downsample(raw, rawStart, rawEnd, widget.barCount);
+
+    final totalBars = ((durMs / actualWindowDurMs) * widget.barCount).ceil();
+    _cachedFullBars = _downsampleFull(raw, totalBars);
+    _cachedZoomFactor = widget.zoomFactor;
   }
 
-  List<double> _downsample(List<double> raw, int start, int end, int count) {
-    final length = end - start;
-    if (length <= 0) return List.filled(count, 0.0);
+  List<double> _downsampleFull(List<double> raw, int count) {
+    if (count <= 0) return [];
+    if (raw.isEmpty) return List.filled(count, 0.0);
     
     final result = <double>[];
-    final step = length / count;
+    final step = raw.length / count;
     for (int i = 0; i < count; i++) {
-      final s = start + (i * step).floor();
-      final e = start + ((i + 1) * step).ceil();
-      final actualE = math.min(e, end);
+      final s = (i * step).floor();
+      final e = ((i + 1) * step).ceil();
+      final actualE = math.min(e, raw.length);
       
       double peak = 0;
       for (int j = s; j < actualE; j++) {
-        if (raw[j] > peak) peak = raw[j];
+        if (j >= 0 && j < raw.length) {
+          if (raw[j] > peak) peak = raw[j];
+        }
       }
       result.add(peak.clamp(0.04, 1.0));
     }
     
-    // 현재 창 내에서 다시 정규화
-    final maxVal = result.reduce(math.max);
-    if (maxVal > 0) {
-      for (int i = 0; i < result.length; i++) {
-        result[i] = result[i] / maxVal;
-      }
-    }
+    // 전체 범위에서 이미 정규화되어 있으므로, 구간별 재정규화 생략
     return result;
   }
 
-  double get _progressInWindow {
-    final c = widget.videoController;
-    if (c == null || !c.value.isInitialized) return 0.0;
-    final durMs = c.value.duration.inMilliseconds;
-    if (durMs <= 0) return 0.0;
-    
-    final minDur = math.min(10000.0, durMs.toDouble());
-    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
-    final actualWindowDurMs = math.min(windowDurMs, durMs);
-    final posMs = c.value.position.inMilliseconds;
-    
-    return ((posMs - _windowStartMs) / actualWindowDurMs).clamp(0.0, 1.0);
+  List<double> _computeBars() {
+    _updateCacheIfNeeded();
+    return _cachedFullBars ?? [];
   }
 
   String _formatDuration(int ms) {
@@ -202,16 +200,25 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       return _LoadingSkeleton(height: widget.height, cs: cs);
     }
 
-    final progress = _progressInWindow;
-
     final c = widget.videoController;
     int actualWindowDurMs = 0;
+    double exactIndex = 0.0;
+    int startIndex = 0;
+    double fraction = 0.0;
+
     if (c != null && c.value.isInitialized) {
       final durMs = c.value.duration.inMilliseconds;
       final minDur = math.min(3000.0, durMs.toDouble());
       final windowDurMs =
           (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
       actualWindowDurMs = math.min(windowDurMs, durMs);
+
+      if (durMs > 0 && _bars.isNotEmpty) {
+        final startRatio = _windowStartMs / durMs;
+        exactIndex = startRatio * _bars.length;
+        startIndex = exactIndex.floor();
+        fraction = exactIndex - startIndex;
+      }
     }
     final int endMs = _windowStartMs + actualWindowDurMs;
 
@@ -222,73 +229,99 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
         SizedBox(
           height: widget.height,
           child: GestureDetector(
-            onTapDown: (details) => _seekTo(context, details.localPosition.dx),
             onHorizontalDragUpdate: (details) =>
-                _seekTo(context, details.localPosition.dx),
+                _handleDrag(context, details),
             behavior: HitTestBehavior.opaque,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final totalWidth = constraints.maxWidth;
-                final barWidth = (totalWidth / _bars.length) * 0.65;
-                final gap = (totalWidth / _bars.length) * 0.35;
-                final progressIndex = (progress * _bars.length).floor();
+            child: ClipRect(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final totalWidth = constraints.maxWidth;
+                  final itemWidth = totalWidth / widget.barCount;
+                  final barWidth = itemWidth * 0.35;
+                  final gap = itemWidth * 0.65;
 
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: List.generate(_bars.length, (i) {
-                    final isPlayed = i < progressIndex;
-                    final isCurrent = i == progressIndex;
-                    final barH = (_bars[i] * widget.height * 0.85)
-                        .clamp(3.0, widget.height);
-
-                    Color barColor;
-                    if (isPlayed) {
-                      barColor = cs.primary;
-                    } else if (isCurrent) {
-                      barColor = cs.primary.withValues(alpha: 0.7);
-                    } else {
-                      barColor = isDark
-                          ? cs.onSurface.withValues(alpha: 0.18)
-                          : cs.onSurface.withValues(alpha: 0.13);
-                    }
-
-                    return Padding(
-                      padding: EdgeInsets.only(right: gap),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 80),
-                        width: barWidth,
-                        height: barH,
-                        decoration: BoxDecoration(
-                          color: barColor,
-                          borderRadius: BorderRadius.circular(barWidth / 2),
-                        ),
+                  return OverflowBox(
+                    maxWidth: double.infinity,
+                    alignment: Alignment.centerLeft,
+                    child: Transform.translate(
+                      offset: Offset(-fraction * itemWidth, 0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: List.generate(widget.barCount + 2, (i) {
+                          final idx = startIndex + i;
+                          final barHeightRatio = (idx >= 0 && idx < _bars.length)
+                              ? _bars[idx]
+                              : 0.04;
+                          final barH = (barHeightRatio * widget.height * 0.85)
+                              .clamp(3.0, widget.height);
+  
+                          final playheadIdx = (exactIndex + widget.barCount / 2).floor();
+                          final isPlayed = idx < playheadIdx;
+                          final isCurrent = idx == playheadIdx;
+  
+                          Color barColor;
+                          if (isPlayed) {
+                            barColor = cs.primary;
+                          } else if (isCurrent) {
+                            barColor = cs.primary.withValues(alpha: 0.7);
+                          } else {
+                            barColor = isDark
+                                ? cs.onSurface.withValues(alpha: 0.18)
+                                : cs.onSurface.withValues(alpha: 0.13);
+                          }
+  
+                          return Padding(
+                            padding: EdgeInsets.only(right: gap),
+                            child: Container(
+                              width: barWidth,
+                              height: barH,
+                              decoration: BoxDecoration(
+                                color: barColor,
+                                borderRadius: BorderRadius.circular(barWidth / 2),
+                              ),
+                            ),
+                          );
+                        }),
                       ),
-                    );
-                  }),
-                );
-              },
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
         if (actualWindowDurMs > 0) ...[
           const SizedBox(height: 2),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Stack(
+            alignment: Alignment.center,
             children: [
-              Text(
-                _formatDuration(_windowStartMs),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: cs.onSurface.withValues(alpha: 0.4),
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(math.max(0, _windowStartMs)),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: cs.onSurface.withValues(alpha: 0.4),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(math.min(c?.value.duration.inMilliseconds ?? endMs, endMs)),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: cs.onSurface.withValues(alpha: 0.4),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
               Text(
-                _formatDuration(endMs),
+                _formatDuration(c?.value.position.inMilliseconds ?? 0),
                 style: TextStyle(
-                  fontSize: 10,
-                  color: cs.onSurface.withValues(alpha: 0.4),
-                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  color: cs.primary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
@@ -298,20 +331,25 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     );
   }
 
-  void _seekTo(BuildContext context, double localX) {
+  void _handleDrag(BuildContext context, DragUpdateDetails details) {
     final c = widget.videoController;
     if (c == null || !c.value.isInitialized) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
     
     final durMs = c.value.duration.inMilliseconds;
-    final minDur = math.min(10000.0, durMs.toDouble());
+    final minDur = math.min(3000.0, durMs.toDouble());
     final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
     final actualWindowDurMs = math.min(windowDurMs, durMs);
     
-    final ratio = (localX / box.size.width).clamp(0.0, 1.0);
-    final targetMs = _windowStartMs + (ratio * actualWindowDurMs);
-    c.seekTo(Duration(milliseconds: targetMs.toInt()));
+    final msPerPixel = actualWindowDurMs / box.size.width;
+    // 왼쪽으로 드래그(음수 delta)하면 시간이 미래로 가야 하므로 -를 붙임
+    final deltaMs = -details.delta.dx * msPerPixel;
+    
+    final currentMs = c.value.position.inMilliseconds;
+    final targetMs = (currentMs + deltaMs).clamp(0, durMs.toDouble()).toInt();
+    
+    c.seekTo(Duration(milliseconds: targetMs));
   }
 }
 
