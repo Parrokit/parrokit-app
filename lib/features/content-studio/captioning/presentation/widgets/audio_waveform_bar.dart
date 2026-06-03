@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -68,18 +67,10 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   }
 
   /// waveformData를 barCount 개수로 다운샘플링.
-  /// 데이터가 없으면 시드 고정 랜덤 더미를 반환.
+  /// 데이터가 없으면 빈 리스트를 반환 (더미 파형 없음).
   List<double> _computeBars() {
     final raw = widget.waveformData;
-    if (raw == null || raw.isEmpty) {
-      // 더미 파형 (폴백)
-      final rng = math.Random(42);
-      return List.generate(widget.barCount, (i) {
-        final center = math.sin(i / widget.barCount * math.pi);
-        final noise = rng.nextDouble() * 0.5 + 0.1;
-        return (center * 0.6 + noise * 0.4).clamp(0.08, 1.0);
-      });
-    }
+    if (raw == null || raw.isEmpty) return [];
 
     // 다운샘플링: 균등 구간 최댓값
     final count = widget.barCount;
@@ -117,6 +108,11 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // 데이터 없고 로딩 중도 아니면 공간 차지 없이 숨김
+    if (!widget.isLoading && _bars.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     // 로딩 중 - 스켈레톤 표시
     if (widget.isLoading) {
@@ -250,26 +246,3 @@ class _LoadingSkeletonState extends State<_LoadingSkeleton>
     );
   }
 }
-
-/// audio_waveforms WaveformExtractionController를 사용해
-/// 오디오 파일에서 파형 데이터를 추출한다.
-/// 반환값: 0.0 ~ 1.0 정규화된 `List<double>`.
-Future<List<double>> extractWaveformData(
-  String audioFilePath, {
-  int sampleCount = 200,
-}) async {
-  final extractor = WaveformExtractionController();
-  try {
-    final raw = await extractor.extractWaveformData(
-      path: audioFilePath,
-      noOfSamples: sampleCount,
-    );
-    if (raw.isEmpty) return [];
-    final maxVal = raw.reduce(math.max);
-    if (maxVal <= 0) return raw.map((_) => 0.0).toList();
-    return raw.map((v) => (v / maxVal).clamp(0.0, 1.0)).toList();
-  } catch (_) {
-    return [];
-  }
-}
-

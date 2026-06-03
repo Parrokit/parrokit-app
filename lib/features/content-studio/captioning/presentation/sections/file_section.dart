@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/_content/editor/presentation/sections/file_section.dart
+// lib/features/content-studio/captioning/presentation/sections/file_section.dart
 // ============================================================================
 //
 // [역할]
@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
@@ -19,9 +20,9 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 
-import '../widgets/audio_waveform_bar.dart';
 import '../widgets/file_hero_card.dart';
 import '../captioning_view_model.dart';
 
@@ -43,25 +44,70 @@ class _FileSectionState extends State<FileSection> {
   List<double>? _waveformData;
   bool _waveformLoading = false;
 
+  /// 마지막으로 파형을 추출한 파일 경로 (중복 추출 방지)
+  String? _lastExtractedPath;
+
+  /// 임시 PCM 파일 경로
+  String? _tempPcmPath;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.vm.addListener(_onVmChanged);
+    // 이미 파일이 선택돼 있을 경우 즉시 추출
+    final path = widget.vm.picked?.path;
+    if (path != null) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _extractWaveform(path));
+    }
+  }
+
+  @override
+  void didUpdateWidget(FileSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.vm != widget.vm) {
+      oldWidget.vm.removeListener(_onVmChanged);
+      widget.vm.addListener(_onVmChanged);
+    }
+  }
+
   @override
   void dispose() {
+    widget.vm.removeListener(_onVmChanged);
     _vp?.dispose();
-    _cleanupTempAudio();
+    _cleanupTempPcm();
     super.dispose();
   }
 
-  // ── 임시 오디오 파일 경로 ──────────────────────────────────────────────────
-  String? _tempAudioPath;
-
-  Future<void> _cleanupTempAudio() async {
-    final path = _tempAudioPath;
-    if (path != null) {
-      try {
-        final f = File(path);
-        if (await f.exists()) await f.delete();
-      } catch (_) {}
-      _tempAudioPath = null;
+  void _onVmChanged() {
+    final path = widget.vm.picked?.path;
+    if (path == null) {
+      if (_lastExtractedPath != null) {
+        setState(() => _resetWaveform());
+      }
+      return;
     }
+    if (path != _lastExtractedPath) {
+      _extractWaveform(path);
+    }
+  }
+
+  void _resetWaveform() {
+    _waveformData = null;
+    _waveformLoading = false;
+    _lastExtractedPath = null;
+  }
+
+  Future<void> _cleanupTempPcm() async {
+    final path = _tempPcmPath;
+    if (path == null) return;
+    try {
+      final f = File(path);
+      if (await f.exists()) await f.delete();
+    } catch (e) {
+      AppLogger.w('[Captioning][Waveform] 임시 PCM 파일 삭제 실패', error: e);
+    }
+    _tempPcmPath = null;
   }
 
   @override
@@ -75,6 +121,7 @@ class _FileSectionState extends State<FileSection> {
           onPick: vm.pickFromSandbox,
           onRemove: () {
             _stopInline();
+            setState(() => _resetWaveform());
             vm.removePicked();
           },
           onAddToSandbox: () async {
@@ -110,6 +157,7 @@ class _FileSectionState extends State<FileSection> {
       showToast('재생할 파일 경로가 없습니다.');
       return;
     }
+    AppLogger.d('[Captioning][Player] 인라인 재생 시작 path=$path');
     try {
       await _vp?.dispose();
       final c = VideoPlayerController.file(File(path));
@@ -129,13 +177,10 @@ class _FileSectionState extends State<FileSection> {
         _vpReady = true;
       });
       await _vp!.play();
+      AppLogger.i('[Captioning][Player] 인라인 재생 성공');
     } catch (e) {
+      AppLogger.e('[Captioning][Player] 재생 초기화 실패', error: e);
       if (mounted) showToast('재생 초기화 실패: $e');
-    }
-
-    // 파형 추출 (비디오가 처음 재생될 때 한 번만)
-    if (_waveformData == null) {
-      _extractWaveform(widget.vm.picked!.path!);
     }
   }
 
@@ -156,56 +201,114 @@ class _FileSectionState extends State<FileSection> {
 
   // ── 오디오 파형 추출 ──────────────────────────────────────────────────────
 
-  /// 비디오 파일에서 오디오를 추출한 뒤 파형 데이터를 로드한다.
+  /// 비디오 파일에서 오디오를 raw PCM으로 추출하고
+  /// Dart에서 직접 파형 데이터를 계산한다.
+  ///
+  /// audio_waveforms 플랫폼 채널 없이 순수 Dart 연산으로 처리해
+  /// iOS 시뮬레이터를 포함한 모든 환경에서 동작한다.
   Future<void> _extractWaveform(String videoPath) async {
+    if (_lastExtractedPath == videoPath) return;
     if (!mounted) return;
+
+    _lastExtractedPath = videoPath;
     setState(() {
       _waveformLoading = true;
       _waveformData = null;
     });
 
+    AppLogger.i('[Captioning][Waveform] 파형 추출 시작 path=$videoPath');
+
     try {
       final tmpDir = await getTemporaryDirectory();
-      final audioOut = '${tmpDir.path}/aw_tmp_audio.m4a';
+      final pcmOut = '${tmpDir.path}/aw_tmp_audio.pcm';
 
-      // 기존 임시 파일 제거
-      await _cleanupTempAudio();
-      _tempAudioPath = audioOut;
-      final outFile = File(audioOut);
+      await _cleanupTempPcm();
+      _tempPcmPath = pcmOut;
+
+      final outFile = File(pcmOut);
       if (await outFile.exists()) await outFile.delete();
 
-      // ffmpeg: 비디오 → m4a (오디오만, 최대 3분)
-      final session = await FFmpegKit.execute(
-        '-y -i "$videoPath" -vn -acodec aac -b:a 64k -t 180 "$audioOut"',
-      );
+      // ffmpeg: 비디오 → 원시 PCM (mono, 8 kHz, s16le)
+      // 8 kHz × 2 bytes × 60 s ≈ 960 KB — 파형 계산에 충분한 해상도
+      final session = await FFmpegKit.executeWithArguments([
+        '-y',
+        '-i', videoPath,
+        '-vn',
+        '-ac', '1',       // mono
+        '-ar', '8000',    // 8 kHz
+        '-f', 's16le',    // signed 16-bit little-endian
+        '-t', '180',      // 최대 3분
+        pcmOut,
+      ]);
       final rc = await session.getReturnCode();
 
       if (!mounted) return;
 
-      if (ReturnCode.isSuccess(rc) && await outFile.exists()) {
-        final data = await extractWaveformData(audioOut, sampleCount: 200);
-        if (mounted) {
-          setState(() {
-            _waveformData = data;
-            _waveformLoading = false;
-          });
-        }
-      } else {
-        // ffmpeg 실패 → 더미 파형으로 폴백
-        if (mounted) {
-          setState(() {
-            _waveformData = [];
-            _waveformLoading = false;
-          });
-        }
+      if (!ReturnCode.isSuccess(rc) || !await outFile.exists()) {
+        final logs = await session.getAllLogsAsString();
+        AppLogger.w(
+          '[Captioning][Waveform] ffmpeg PCM 추출 실패 — 파형 미표시 logs=$logs',
+        );
+        if (mounted) setState(() => _waveformLoading = false);
+        return;
       }
-    } catch (_) {
+
+      AppLogger.d('[Captioning][Waveform] PCM 추출 성공 out=$pcmOut');
+
+      // Dart에서 PCM 바이트 → 파형 계산
+      final bytes = await outFile.readAsBytes();
+      final data = _computeWaveformFromPcm(bytes, barCount: 200);
+
+      AppLogger.i(
+        '[Captioning][Waveform] 파형 계산 완료 samples=${data.length}',
+      );
+
       if (mounted) {
         setState(() {
-          _waveformData = [];
+          _waveformData = data;
           _waveformLoading = false;
         });
       }
+    } catch (e) {
+      AppLogger.e('[Captioning][Waveform] 파형 추출 예외', error: e);
+      if (mounted) setState(() => _waveformLoading = false);
     }
+  }
+
+  /// s16le PCM 바이트 배열에서 [barCount]개의 정규화 파형 값을 계산한다.
+  ///
+  /// 각 구간의 RMS(Root Mean Square)를 구해 0.0 ~ 1.0으로 정규화한다.
+  static List<double> _computeWaveformFromPcm(
+    Uint8List bytes, {
+    int barCount = 200,
+  }) {
+    // s16le: 2바이트 = 1 샘플
+    final sampleCount = bytes.length ~/ 2;
+    if (sampleCount == 0) return [];
+
+    final byteData = ByteData.sublistView(bytes);
+    final segmentSize = (sampleCount / barCount).ceil();
+    final result = <double>[];
+
+    for (int i = 0; i < barCount; i++) {
+      final start = i * segmentSize;
+      if (start >= sampleCount) break;
+      final end = (start + segmentSize).clamp(0, sampleCount);
+
+      double sumSq = 0;
+      for (int j = start; j < end; j++) {
+        final sample = byteData.getInt16(j * 2, Endian.little).toDouble();
+        sumSq += sample * sample;
+      }
+      final rms = (end > start) ? (sumSq / (end - start)) : 0.0;
+      result.add(rms);
+    }
+
+    if (result.isEmpty) return [];
+
+    // 0~1 정규화
+    final maxVal = result.reduce((a, b) => a > b ? a : b);
+    if (maxVal <= 0) return result.map((_) => 0.0).toList();
+    return result.map((v) => (v / maxVal).clamp(0.0, 1.0)).toList();
   }
 }
