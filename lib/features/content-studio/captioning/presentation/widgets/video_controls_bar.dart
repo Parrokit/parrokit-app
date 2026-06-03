@@ -93,7 +93,7 @@ class _VideoControlsBarState extends State<VideoControlsBar> {
 
     final bgColor = isDark
         ? cs.surfaceContainerHigh
-        : cs.surfaceContainerLow;
+        : cs.surface; // 화이트 모드에서는 기본 배경색 사용
 
     return Container(
       color: bgColor,
@@ -272,14 +272,14 @@ class _ControlButton extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: isActive ? cs.primaryContainer : Colors.transparent,
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               icon,
               size: size,
               color: enabled
-                  ? (isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant)
+                  ? (isActive ? cs.primary : cs.onSurfaceVariant)
                   : cs.onSurface.withValues(alpha: 0.3),
             ),
           ),

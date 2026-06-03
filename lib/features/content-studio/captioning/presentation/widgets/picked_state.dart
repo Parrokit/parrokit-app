@@ -6,6 +6,9 @@ import 'package:video_player/video_player.dart';
 
 import 'audio_waveform_bar.dart';
 import 'video_controls_bar.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import '../../../../../core/shared/utils/show_toast.dart';
 
 class PickedState extends StatefulWidget {
@@ -122,17 +125,19 @@ class _PickedStateState extends State<PickedState> {
                                   behavior: HitTestBehavior.opaque,
                                   child: widget.thumb == null
                                       ? Container(
-                                          color: cs.onSurface.withValues(alpha: 0.05),
+                                          color: cs.onSurface
+                                              .withValues(alpha: 0.05),
                                           child: Center(
                                             child: Icon(
                                               Icons.video_file_rounded,
                                               size: 56,
-                                              color:
-                                                  cs.onSurface.withValues(alpha: 0.35),
+                                              color: cs.onSurface
+                                                  .withValues(alpha: 0.35),
                                             ),
                                           ),
                                         )
-                                      : Image.memory(widget.thumb!, fit: BoxFit.cover),
+                                      : Image.memory(widget.thumb!,
+                                          fit: BoxFit.cover),
                                 ),
                         ),
                       ),
@@ -141,87 +146,88 @@ class _PickedStateState extends State<PickedState> {
                 ),
         ),
 
-        // 하단 고정 컨트롤 영역 (파형, 버튼, 탭)을 제스처로 묶음
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragUpdate: (details) {
-            // 위로 스와이프 (접기)
-            if (details.primaryDelta! < -3 && !_isVideoCollapsed) {
-              setState(() => _isVideoCollapsed = true);
-            }
-            // 아래로 스와이프 (펼치기)
-            else if (details.primaryDelta! > 3 && _isVideoCollapsed) {
-              setState(() => _isVideoCollapsed = false);
-            }
-          },
-          child: Column(
-            children: [
-              // 드래그 핸들 (Pill)
-              const SizedBox(height: 12),
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: cs.onSurface.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(2),
+        // 하단 컨트롤 영역 (파형, 버튼, 탭)
+        Column(
+          children: [
+            // 드래그 핸들 (Pill) - 이 부분만 제스처 인식하여 스크롤 충돌 방지
+            const SizedBox(height: 12),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onVerticalDragUpdate: (details) {
+                if (details.primaryDelta! < -3 && !_isVideoCollapsed) {
+                  setState(() => _isVideoCollapsed = true);
+                } else if (details.primaryDelta! > 3 && _isVideoCollapsed) {
+                  setState(() => _isVideoCollapsed = false);
+                }
+              },
+              child: Container(
+                width: 60, // 터치 영역 확보를 위해 조금 더 넓게
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                color: Colors.transparent, // 터치 영역
+                child: Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+            ),
 
-              // ── 2. 음성 파형 그래프 ────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: AudioWaveformBar(
-                  videoController: widget.playerController,
-                  waveformData: widget.waveformData,
-                  isLoading: widget.waveformLoading,
-                  zoomFactor: _zoomFactor,
-                  height: 44,
-                ),
+            // ── 2. 음성 파형 그래프 ────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: AudioWaveformBar(
+                videoController: widget.playerController,
+                waveformData: widget.waveformData,
+                isLoading: widget.waveformLoading,
+                zoomFactor: _zoomFactor,
+                height: 44,
               ),
+            ),
 
-              // ── 3. 컨트롤러 ───────────────────────────────────────────────────
-              const SizedBox(height: 4),
-              VideoControlsBar(
-                controller: widget.playerController,
-                onPlayInline: widget.onPlayInline,
-                onToggleInline: widget.onToggleInline,
-                onStopInline: widget.onStopInline,
-                onZoomIn: _zoomIn,
-                onZoomOut: _zoomOut,
-                isSettingsExpanded: _isSettingsExpanded,
-                skipSeconds: _skipSeconds,
-                onToggleSettings: () {
-                  setState(() {
-                    _isSettingsExpanded = !_isSettingsExpanded;
-                  });
-                },
-              ),
+            // ── 3. 컨트롤러 ───────────────────────────────────────────────────
+            const SizedBox(height: 4),
+            VideoControlsBar(
+              controller: widget.playerController,
+              onPlayInline: widget.onPlayInline,
+              onToggleInline: widget.onToggleInline,
+              onStopInline: widget.onStopInline,
+              onZoomIn: _zoomIn,
+              onZoomOut: _zoomOut,
+              isSettingsExpanded: _isSettingsExpanded,
+              skipSeconds: _skipSeconds,
+              onToggleSettings: () {
+                setState(() {
+                  _isSettingsExpanded = !_isSettingsExpanded;
+                });
+              },
+            ),
 
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                child: _isSettingsExpanded
-                    ? _VideoSettingsBar(
-                        controller: widget.playerController,
-                        picked: widget.picked,
-                        onReplace: widget.onReplace,
-                        onPickFromPhotos: widget.onPickFromPhotos,
-                        onRemove: widget.onRemove,
-                        segmentsWidget: widget.segmentsWidget,
-                        skipSeconds: _skipSeconds,
-                        onSkipSecondsChanged: (val) {
-                          setState(() {
-                            _skipSeconds = val;
-                          });
-                        },
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              child: _isSettingsExpanded
+                  ? _VideoSettingsBar(
+                      controller: widget.playerController,
+                      picked: widget.picked,
+                      onReplace: widget.onReplace,
+                      onPickFromPhotos: widget.onPickFromPhotos,
+                      onRemove: widget.onRemove,
+                      segmentsWidget: widget.segmentsWidget,
+                      skipSeconds: _skipSeconds,
+                      onSkipSecondsChanged: (val) {
+                        setState(() {
+                          _skipSeconds = val;
+                        });
+                      },
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
       ],
     );
@@ -282,6 +288,7 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
   }
 
   void _showSkipPickerBottomSheet(BuildContext context) {
+    widget.controller?.pause();
     // 0.5부터 10.0까지 0.5단위 (20개)
     final skips = List.generate(20, (index) => 0.5 + (index * 0.5));
     final currentSkip = widget.skipSeconds;
@@ -347,6 +354,7 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
   }
 
   void _showSpeedPickerBottomSheet(BuildContext context) {
+    widget.controller?.pause();
     final speeds = List.generate(171, (index) => 0.30 + (index * 0.01));
     final currentSpeed = widget.controller?.value.playbackSpeed ?? 1.0;
 
@@ -387,6 +395,7 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                   onSelectedItemChanged: (index) {
                     final speed = speeds[index];
                     widget.controller?.setPlaybackSpeed(speed);
+                    setState(() {});
                   },
                   children: speeds.map((speed) {
                     return Center(
@@ -410,11 +419,39 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
     );
   }
 
+  void _showDeleteConfirmDialog(BuildContext context) {
+    widget.controller?.pause();
+    showDialog(
+      context: context,
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        return AlertDialog(
+          title: const Text('동영상 지우기', style: TextStyle(fontWeight: FontWeight.w700)),
+          content: const Text('현재 선택된 동영상을 정말 지우시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('취소', style: TextStyle(color: cs.onSurface)),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+                widget.onRemove();
+              },
+              style: FilledButton.styleFrom(backgroundColor: cs.error),
+              child: const Text('지우기'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? cs.surfaceContainerHigh : cs.surfaceContainerLow;
+    final bgColor = isDark ? cs.surfaceContainerHigh : cs.surface;
 
     final currentSpeed = widget.controller?.value.playbackSpeed ?? 1.0;
     final ext = (widget.picked.extension ?? 'file').toUpperCase();
@@ -571,85 +608,36 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                 ],
                 if (_isExpanded[2]) ...[
                   // 3. 동영상 설정
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        InkWell(
-                          onTap: () => _showSpeedPickerBottomSheet(context),
-                          borderRadius: BorderRadius.circular(4),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 70,
-                                  child: Text('배속',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: cs.onSurfaceVariant)),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: cs.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '${currentSpeed.toStringAsFixed(2)}x',
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: cs.primary),
-                                  ),
-                                ),
-                              ],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _OptionCard(
+                              icon: Icons.speed_rounded,
+                              title: '배속',
+                              value: '${currentSpeed.toStringAsFixed(2)}x',
+                              onTap: () => _showSpeedPickerBottomSheet(context),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => _showSkipPickerBottomSheet(context),
-                          borderRadius: BorderRadius.circular(4),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 70,
-                                  child: Text('스킵 간격',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: cs.onSurfaceVariant)),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: cs.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초',
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: cs.primary),
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: _OptionCard(
+                              icon: Icons.skip_next_rounded,
+                              title: '스킵 간격',
+                              value:
+                                  '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초',
+                              onTap: () => _showSkipPickerBottomSheet(context),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            PopupMenuButton<String>(
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: PopupMenuButton<String>(
                               onSelected: (v) {
                                 if (v == 'file') widget.onReplace();
                                 if (v == 'photos') widget.onPickFromPhotos();
@@ -670,22 +658,24 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                                   ),
                                 ),
                               ],
-                              child: const _SettingAction(
+                              child: const _OptionCard(
                                 icon: Icons.swap_horiz_rounded,
-                                label: '다시 선택',
+                                title: '다시 선택',
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            _SettingAction(
-                              icon: Icons.delete_outline_rounded,
-                              label: '지우기',
-                              onTap: widget.onRemove,
-                              isDestructive: true,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                              child: _OptionCard(
+                                icon: Icons.delete_outline_rounded,
+                                title: '지우기',
+                                accentColor: cs.error,
+                                onTap: () => _showDeleteConfirmDialog(context),
+                              ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -727,10 +717,11 @@ class _TabButton extends StatelessWidget {
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: isActive ? cs.primaryContainer : Colors.transparent,
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(icon, size: 24, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+              child: Icon(icon,
+                  size: 28, color: isActive ? cs.primary : cs.onSurfaceVariant),
             ),
             const SizedBox(height: 6),
             Text(
@@ -748,48 +739,64 @@ class _TabButton extends StatelessWidget {
   }
 }
 
-class _SettingAction extends StatelessWidget {
-  const _SettingAction({
+class _OptionCard extends StatelessWidget {
+  const _OptionCard({
     required this.icon,
-    required this.label,
+    required this.title,
+    this.value,
+    this.accentColor,
     this.onTap,
-    this.isDestructive = false,
   });
 
   final IconData icon;
-  final String label;
+  final String title;
+  final String? value;
+  final Color? accentColor;
   final VoidCallback? onTap;
-  final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final color = isDestructive ? cs.error : cs.onSurfaceVariant;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = accentColor ?? theme.colorScheme.primary;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        height: 48,
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: isDestructive
-              ? cs.errorContainer.withValues(alpha: 0.3)
-              : cs.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(10),
-          border: isDestructive ? Border.all(color: cs.error.withValues(alpha: 0.2)) : null,
+          color: isDark
+              ? AppColors.surfaceContainerHighDark
+              : AppColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: color),
+            Icon(icon, size: 20, color: primaryColor),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: color,
+            Expanded(
+              child: Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (value != null) ...[
+              const SizedBox(width: 4),
+              Text(
+                value!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
+            ],
           ],
         ),
       ),
