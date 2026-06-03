@@ -47,8 +47,19 @@ class ChatBotProvider extends ChangeNotifier {
     }
   }
 
+  bool _hasPendingRouting = false;
+  bool get hasPendingRouting => _hasPendingRouting;
+
+  void consumePendingRouting() {
+    if (_hasPendingRouting) {
+      _hasPendingRouting = false;
+      notifyListeners();
+    }
+  }
+
   void resetChatbot() {
     _chatbotMode = 'general';
+    _hasPendingRouting = false;
     _messages.clear();
     _messages.insert(
       0,
@@ -85,6 +96,13 @@ class ChatBotProvider extends ChangeNotifier {
         }
       }
       
+      debugPrint('[Chatbot][Provider] AI Response actionType=${aiResponse.actionType} actionData=${aiResponse.actionData}');
+
+      if (aiResponse.actionType == 'ask_routing') {
+        _hasPendingRouting = true;
+        debugPrint('[Chatbot][Provider] Routing action pending flag set to true');
+      }
+
       debugPrint('[Chatbot][Provider] Send message success replyLength=${aiResponse.text.length} actionType=${aiResponse.actionType}');
       _messages.insert(0, aiResponse);
     } catch (e) {
