@@ -4,59 +4,95 @@ class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
     required this.onPick,
-    required this.onAddToSandbox,
     required this.onPickFromPhotos,
   });
 
   final VoidCallback onPick;
-  final VoidCallback onAddToSandbox;
   final VoidCallback onPickFromPhotos;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
 
-    return Column(
-      children: [
-        AspectRatio(
-          aspectRatio: 16 / 9,
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: GestureDetector(
+        onTap: () => _showPickerBottomSheet(context),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          color: cs.surfaceContainerHigh,
           child: Center(
-            child: Icon(Icons.video_file_rounded,
-                size: 56, color: cs.onSurfaceVariant),
+            child: Icon(
+              Icons.add_circle_outline_rounded,
+              size: 48,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+            ),
           ),
         ),
-        const SizedBox(height: 12),
-        Text('영상 파일을 선택해 주세요',
-            style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 6),
-        Text('파일을 선택한 후, 미리보기와 관련 정보를 이어서 입력해 주세요.',
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: TextButton.icon(
-                icon: const Icon(Icons.file_open_rounded, size: 18),
-                label: Text('파일 선택',
-                    style:
-                        tt.bodyMedium?.copyWith(fontWeight: FontWeight.w800)),
-                onPressed: onPick,
-              ),
+      ),
+    );
+  }
+
+  void _showPickerBottomSheet(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextButton.icon(
-                icon: const Icon(Icons.photo_library_rounded, size: 18),
-                label: Text('사진에서 선택',
-                    style:
-                        tt.bodyMedium?.copyWith(fontWeight: FontWeight.w800)),
-                onPressed: onPickFromPhotos,
-              ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '영상 추가',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.file_open_rounded),
+                  title: Text(
+                    '파일에서 선택',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onPick();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_rounded),
+                  title: Text(
+                    '사진에서 선택',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    onPickFromPhotos();
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+        );
+      },
     );
   }
 }

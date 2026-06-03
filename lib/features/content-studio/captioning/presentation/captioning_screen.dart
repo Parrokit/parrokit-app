@@ -47,7 +47,7 @@ class CaptioningScreen extends StatelessWidget {
         clipId: clipId,
         initialCollectionName: initialCollectionName,
       ),
-      child: _ClipEditorBody(
+      child: _CaptioningBody(
         onClose: onClose,
         showAppBar: showAppBar,
       ),
@@ -55,8 +55,8 @@ class CaptioningScreen extends StatelessWidget {
   }
 }
 
-class _ClipEditorBody extends StatefulWidget {
-  const _ClipEditorBody({
+class _CaptioningBody extends StatefulWidget {
+  const _CaptioningBody({
     required this.onClose,
     required this.showAppBar,
   });
@@ -65,10 +65,10 @@ class _ClipEditorBody extends StatefulWidget {
   final bool showAppBar;
 
   @override
-  State<_ClipEditorBody> createState() => _ClipEditorBodyState();
+  State<_CaptioningBody> createState() => _CaptioningBodyState();
 }
 
-class _ClipEditorBodyState extends State<_ClipEditorBody> {
+class _CaptioningBodyState extends State<_CaptioningBody> {
   bool _hasHandledClose = false;
 
   @override
@@ -111,17 +111,29 @@ class _ClipEditorBodyState extends State<_ClipEditorBody> {
                 children: [
                   Expanded(
                     child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      padding: const EdgeInsets.only(bottom: 16),
                       children: [
                         FileSection(vm: vm),
                         const SizedBox(height: 24),
-                        WorkNameSection(vm: vm),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: WorkNameSection(vm: vm),
+                        ),
                         const SizedBox(height: 24),
-                        TitlesSection(vm: vm),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: TitlesSection(vm: vm),
+                        ),
                         const SizedBox(height: 24),
-                        TagsSection(vm: vm),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: TagsSection(vm: vm),
+                        ),
                         const SizedBox(height: 24),
-                        SegmentsSection(vm: vm),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SegmentsSection(vm: vm),
+                        ),
                         const SizedBox(height: 16),
                       ],
                     ),

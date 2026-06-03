@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'empty_state.dart';
 import 'picked_state.dart';
-import 'card_container.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
@@ -47,32 +46,29 @@ class FileHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEmpty = picked == null;
 
-    return CardContainer(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        transitionBuilder: (child, anim) =>
-            FadeTransition(opacity: anim, child: child),
-        child: isEmpty
-            ? EmptyState(
-                key: const ValueKey('empty'),
-                onPick: onPick,
-                onAddToSandbox: onAddToSandbox,
-                onPickFromPhotos: onPickFromPhotos,
-              )
-            : PickedState(
-                key: const ValueKey('picked'),
-                picked: picked!,
-                onReplace: onPick,
-                onPickFromPhotos: onPickFromPhotos,
-                onRemove: onRemove,
-                thumb: thumb,
-                isPlayingInline: isPlayingInline,
-                playerController: playerController,
-                onPlayInline: onPlayInline,
-                onToggleInline: onToggleInline,
-                onStopInline: onStopInline,
-              ),
-      ),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      transitionBuilder: (child, anim) =>
+          FadeTransition(opacity: anim, child: child),
+      child: isEmpty
+          ? EmptyState(
+              key: const ValueKey('empty'),
+              onPick: onPick,
+              onPickFromPhotos: onPickFromPhotos,
+            )
+          : PickedState(
+              key: const ValueKey('picked'),
+              picked: picked!,
+              onReplace: onPick,
+              onPickFromPhotos: onPickFromPhotos,
+              onRemove: onRemove,
+              thumb: thumb,
+              isPlayingInline: isPlayingInline,
+              playerController: playerController,
+              onPlayInline: onPlayInline,
+              onToggleInline: onToggleInline,
+              onStopInline: onStopInline,
+            ),
     );
   }
 }

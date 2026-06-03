@@ -55,7 +55,7 @@ class PickedState extends StatelessWidget {
               // 플레이어 or 썸네일
               Positioned.fill(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.zero,
                   child: showPlayer
                       ? VideoPlayer(playerController!)
                       : GestureDetector(
@@ -91,7 +91,7 @@ class PickedState extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.35),
                     borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(14)),
+                        bottom: Radius.zero),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -153,80 +153,87 @@ class PickedState extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: cs.primary, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
-            ),
-            const SizedBox(width: 8),
-            Text('$sizeKB KB', style: tt.bodySmall?.copyWith(color: subtle)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            // ▼ 드롭다운 트리거를 OutlinedButton처럼 보이게
-            Expanded(
-              child: PopupMenuButton<String>(
-                onSelected: (v) {
-                  if (v == 'file') onReplace(); // 파일에서 다시 선택
-                  if (v == 'photos') onPickFromPhotos(); // 사진에서 다시 선택
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: 'file',
-                    child: ListTile(
-                      leading: Icon(Icons.file_open_rounded),
-                      title: Text('파일에서 선택'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: cs.primary, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('$sizeKB KB', style: tt.bodySmall?.copyWith(color: subtle)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  // ▼ 드롭다운 트리거를 OutlinedButton처럼 보이게
+                  Expanded(
+                    child: PopupMenuButton<String>(
+                      onSelected: (v) {
+                        if (v == 'file') onReplace(); // 파일에서 다시 선택
+                        if (v == 'photos') onPickFromPhotos(); // 사진에서 다시 선택
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'file',
+                          child: ListTile(
+                            leading: Icon(Icons.file_open_rounded),
+                            title: Text('파일에서 선택'),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'photos',
+                          child: ListTile(
+                            leading: Icon(Icons.photo_library_rounded),
+                            title: Text('사진에서 선택'),
+                          ),
+                        ),
+                      ],
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: TextButton.icon(
+                          icon: Icon(
+                            Icons.swap_horiz_rounded,
+                            size: 18,
+                            color: cs.onSurfaceVariant,
+                          ),
+                          label: Text(
+                            '다시 선택',
+                            style: tt.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          onPressed: null,
+                        ),
+                      ),
                     ),
                   ),
-                  PopupMenuItem(
-                    value: 'photos',
-                    child: ListTile(
-                      leading: Icon(Icons.photo_library_rounded),
-                      title: Text('사진에서 선택'),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: Text(
+                        '지우기',
+                        style: tt.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w800, color: cs.primary),
+                      ),
+                      onPressed: onRemove,
                     ),
                   ),
                 ],
-                child: SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    icon: Icon(
-                      Icons.swap_horiz_rounded,
-                      size: 18,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    label: Text(
-                      '다시 선택',
-                      style: tt.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                    onPressed: null,
-                  ),
-                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextButton.icon(
-                icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                label: Text(
-                  '지우기',
-                  style: tt.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w800, color: cs.primary),
-                ),
-                onPressed: onRemove,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
