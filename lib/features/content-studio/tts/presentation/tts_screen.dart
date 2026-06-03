@@ -12,10 +12,7 @@ class TtsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<TtsProvider>(
-      create: (_) => TtsProvider(),
-      child: const _TtsScreenContent(),
-    );
+    return const _TtsScreenContent();
   }
 }
 
@@ -48,6 +45,13 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
     final mutedText =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
     final provider = context.watch<TtsProvider>();
+
+    if (_textController.text != provider.text) {
+      _textController.value = _textController.value.copyWith(
+        text: provider.text,
+        selection: TextSelection.collapsed(offset: provider.text.length),
+      );
+    }
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,

@@ -1,11 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 
-class VideoScreen extends StatelessWidget {
+class VideoScreen extends StatefulWidget {
   const VideoScreen({super.key});
+
+  @override
+  State<VideoScreen> createState() => _VideoScreenState();
+}
+
+class _VideoScreenState extends State<VideoScreen> {
+  late final TextEditingController _promptController;
+
+  @override
+  void initState() {
+    super.initState();
+    _promptController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _promptController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,6 +34,14 @@ class VideoScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final mutedText =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final provider = context.watch<VideoProvider>();
+
+    if (_promptController.text != provider.scenePrompt) {
+      _promptController.value = _promptController.value.copyWith(
+        text: provider.scenePrompt,
+        selection: TextSelection.collapsed(offset: provider.scenePrompt.length),
+      );
+    }
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -31,14 +60,16 @@ class VideoScreen extends StatelessWidget {
             _Panel(
               title: '영상 프롬프트',
               trailing: Text(
-                '0 / 500',
+                '${provider.scenePrompt.length} / 500',
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: mutedText,
                 ),
               ),
               child: TextField(
+                controller: _promptController,
                 minLines: 5,
                 maxLines: 8,
+                onChanged: provider.updateScenePrompt,
                 decoration: const InputDecoration(
                   hintText: '예: 책상 위 노트북 화면에 영어 회화 문장이 나타나는 밝은 학습 영상',
                   alignLabelWithHint: true,

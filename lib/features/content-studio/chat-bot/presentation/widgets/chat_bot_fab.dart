@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'chat_bot_sheet.dart';
 
 class ChatBotFab extends StatefulWidget {
-  const ChatBotFab({super.key});
+  const ChatBotFab({super.key, this.onTriggerAction});
+
+  final void Function(int tabIndex, String text)? onTriggerAction;
 
   @override
   State<ChatBotFab> createState() => _ChatBotFabState();
@@ -62,7 +64,10 @@ class _ChatBotFabState extends State<ChatBotFab>
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(30),
-                onTap: () => showChatBotSheet(context),
+                onTap: () => showChatBotSheet(
+                  context,
+                  onTriggerAction: widget.onTriggerAction,
+                ),
                 child: Ink(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(

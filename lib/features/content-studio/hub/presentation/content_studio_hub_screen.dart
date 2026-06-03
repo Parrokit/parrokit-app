@@ -5,7 +5,9 @@ import 'package:parrokit/core/app/router/app_routes.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/content-studio/captioning/presentation/captioning_screen.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/tts_screen.dart';
+import 'package:parrokit/features/content-studio/tts/presentation/tts_provider.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_screen.dart';
+import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 import 'package:parrokit/features/home/dashboard/presentation/widgets/dashboard_studio_switch_fab.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/features/content-studio/chat-bot/presentation/widgets/chat_bot_fab.dart';
@@ -81,81 +83,97 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
       _ => 'Video 생성',
     };
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: ContentStudioAppBar(
-        title: appBarTitle,
-        coins: userProvider.coins,
-        onBack: _handleBack,
-        backgroundColor: bg,
-        onToggleExpand: () {
-          setState(() {
-            _isAppBarExpanded = !_isAppBarExpanded;
-          });
-        },
-        isExpanded: _isAppBarExpanded,
-      ),
-      body: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (didPop) return;
-          _handleBack();
-        },
-        child: SafeArea(
-          top: false,
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 108),
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    if (_selectedIndex == index) return;
-                    setState(() => _selectedIndex = index);
-                  },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TtsProvider()),
+        ChangeNotifierProvider(create: (_) => VideoProvider()),
+      ],
+      child: Builder(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: bg,
+            appBar: ContentStudioAppBar(
+              title: appBarTitle,
+              coins: userProvider.coins,
+              onBack: _handleBack,
+              backgroundColor: bg,
+              onToggleExpand: () {
+                setState(() {
+                  _isAppBarExpanded = !_isAppBarExpanded;
+                });
+              },
+              isExpanded: _isAppBarExpanded,
+            ),
+            body: PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) {
+                if (didPop) return;
+                _handleBack();
+              },
+              child: SafeArea(
+                top: false,
+                child: Stack(
                   children: [
-                    _StudioPageSlot(
-                      child: CaptioningScreen(
-                        showAppBar: false,
-                        onClose: (_) async => context.go(
-                          AppRoutes.dashboardPath,
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 108),
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          if (_selectedIndex == index) return;
+                          setState(() => _selectedIndex = index);
+                        },
+                        children: [
+                          _StudioPageSlot(
+                            child: CaptioningScreen(
+                              showAppBar: false,
+                              onClose: (_) async => context.go(
+                                AppRoutes.dashboardPath,
+                              ),
+                            ),
+                          ),
+                          _StudioPageSlot(child: TtsScreen()),
+                          _StudioPageSlot(child: VideoScreen()),
+                        ],
                       ),
                     ),
-                    _StudioPageSlot(child: TtsScreen()),
-                    _StudioPageSlot(child: VideoScreen()),
-                  ],
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 24,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    DashboardStudioSwitchFab(
-                      selectedIndex: _selectedIndex,
-                      onSelectedIndexChanged: _setPage,
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 24,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          DashboardStudioSwitchFab(
+                            selectedIndex: _selectedIndex,
+                            onSelectedIndexChanged: _setPage,
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOutCubic,
+                            alignment: Alignment.centerLeft,
+                            child: _isChatBotVisible
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(width: 8),
+                                      ChatBotFab(
+                                        onTriggerAction: (tabIndex, text) {
+                                          _setPage(tabIndex);
+                                          if (tabIndex == 1) {
+                                            context.read<TtsProvider>().updateText(text);
+                                          } else if (tabIndex == 2) {
+                                            context.read<VideoProvider>().updateScenePrompt(text);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                          
+                        ],
+                      ),
                     ),
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOutCubic,
-                      alignment: Alignment.centerLeft,
-                      child: _isChatBotVisible
-                          ? const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(width: 8),
-                                ChatBotFab(),
-                              ],
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                    
-                  ],
-                ),
-              ),
               Positioned(
                 top: 0,
                 left: 0,
@@ -230,6 +248,9 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
             ],
           ),
         ),
+      ),
+          );
+        },
       ),
     );
   }

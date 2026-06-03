@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import '../chat_bot_provider.dart';
 import '../../domain/entities/ai_chat_message.dart';
 
-Future<void> showChatBotSheet(BuildContext context) async {
+Future<void> showChatBotSheet(
+  BuildContext context, {
+  void Function(int tabIndex, String text)? onTriggerAction,
+}) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -14,14 +20,16 @@ Future<void> showChatBotSheet(BuildContext context) async {
     builder: (context) {
       return ChangeNotifierProvider(
         create: (_) => ChatBotProvider(),
-        child: const _ChatBotSheet(),
+        child: _ChatBotSheet(onTriggerAction: onTriggerAction),
       );
     },
   );
 }
 
 class _ChatBotSheet extends StatefulWidget {
-  const _ChatBotSheet();
+  const _ChatBotSheet({this.onTriggerAction});
+
+  final void Function(int tabIndex, String text)? onTriggerAction;
 
   @override
   State<_ChatBotSheet> createState() => _ChatBotSheetState();
@@ -232,7 +240,10 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                       }
 
                       final msg = messages[vm.isTyping ? index - 1 : index];
-                      return _ChatBubble(message: msg);
+                      return _ChatBubble(
+                        message: msg,
+                        onTriggerAction: widget.onTriggerAction,
+                      );
                     },
                   );
                 },
@@ -345,9 +356,13 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
 }
 
 class _ChatBubble extends StatelessWidget {
-  const _ChatBubble({required this.message});
+  const _ChatBubble({
+    required this.message,
+    this.onTriggerAction,
+  });
 
   final AiChatMessage message;
+  final void Function(int tabIndex, String text)? onTriggerAction;
 
   @override
   Widget build(BuildContext context) {
@@ -447,27 +462,66 @@ class _ChatBubble extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          message.text,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
-                            height: 1.4,
+                        MarkdownBody(
+                          data: message.text,
+                          shrinkWrap: true,
+                          selectable: true,
+                          builders: {
+                            'code': CodeElementBuilder(context),
+                          },
+                          styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                            p: theme.textTheme.bodyMedium?.copyWith(
+                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                              height: 1.4,
+                            ),
+                            code: const TextStyle(backgroundColor: Colors.transparent),
+                            codeblockDecoration: const BoxDecoration(color: Colors.transparent),
                           ),
                         ),
                         if (message.actionType != null) ...[
                           const SizedBox(height: 12),
                           InkWell(
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    message.actionType == 'video'
-                                        ? '비디오 생성 화면으로 이동합니다'
-                                        : 'TTS 생성 화면으로 이동합니다',
+                              if (onTriggerAction != null) {
+                                String textToInject = message.text;
+                                
+                                // 1. 백틱 코드 블록 파싱 시도
+                                final codeBlockRegex = RegExp(r'```(?:[a-zA-Z0-9_\-]+)?\n([\s\S]*?)```');
+                                final match = codeBlockRegex.firstMatch(message.text);
+                                if (match != null && match.groupCount >= 1) {
+                                  textToInject = match.group(1)!.trim();
+                                } else {
+                                  // 2. 대괄호 [프롬프트] 파싱 시도
+                                  final promptIndex = message.text.indexOf('[프롬프트]');
+                                  if (promptIndex != -1) {
+                                    final subStr = message.text.substring(promptIndex + '[프롬프트]'.length).trim();
+                                    final lines = subStr.split('\n');
+                                    final promptLines = <String>[];
+                                    for (final line in lines) {
+                                      if (line.trim().startsWith('[')) break;
+                                      promptLines.add(line);
+                                    }
+                                    if (promptLines.isNotEmpty) {
+                                      textToInject = promptLines.join('\n').trim();
+                                    }
+                                  }
+                                }
+
+                                final targetTab = message.actionType == 'video' ? 2 : 1;
+                                onTriggerAction!(targetTab, textToInject);
+                                Navigator.of(context).pop();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      message.actionType == 'video'
+                                          ? '비디오 생성 화면으로 이동합니다'
+                                          : 'TTS 생성 화면으로 이동합니다',
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
                                   ),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                                );
+                              }
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Ink(
@@ -825,6 +879,95 @@ class _FeatureChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
         ),
+      ),
+    );
+  }
+}
+
+class CodeElementBuilder extends MarkdownElementBuilder {
+  final BuildContext context;
+  CodeElementBuilder(this.context);
+
+  @override
+  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final codeText = element.textContent.trim();
+
+    if (!element.textContent.contains('\n')) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white12 : Colors.black12,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          codeText,
+          style: preferredStyle?.copyWith(
+            fontFamily: 'monospace',
+            fontSize: 13,
+            color: isDark ? const Color(0xFFC084FC) : const Color(0xFF8B5CF6),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 48, 16),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Text(
+                codeText,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: codeText));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('추천 프롬프트가 복사되었습니다'),
+                      behavior: SnackBarBehavior.floating,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(
+                    Icons.copy_rounded,
+                    size: 16,
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
