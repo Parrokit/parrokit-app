@@ -57,6 +57,17 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
   }
 
   @override
+  void didUpdateWidget(covariant TimeTripletField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.target != widget.target) {
+      oldWidget.target.removeListener(_targetListener);
+      widget.target.addListener(_targetListener);
+      _syncFromTarget();
+    }
+  }
+
+  @override
   void dispose() {
     widget.target.removeListener(_targetListener);
     _mCtl.dispose();
@@ -70,6 +81,13 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
 
   void _setIfDiff(TextEditingController c, String v) {
     if (c.text != v) c.text = v;
+  }
+
+  void _syncFromTarget() {
+    final p = _fromMMSsMs(widget.target.text);
+    _setIfDiff(_mCtl, p.m.toString());
+    _setIfDiff(_sCtl, p.s.toString());
+    _setIfDiff(_msCtl, p.ms.toString());
   }
 
   void _onFocusChange() {

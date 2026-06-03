@@ -125,7 +125,7 @@ class DraftGenerationService {
     final coinCost = _calculateCoinCost(durationMs);
 
     return DraftResult(
-      segments: allDraftSegments,
+      segments: _normalizeSegments(allDraftSegments, durationMs),
       coinCost: coinCost,
     );
   }
@@ -134,5 +134,60 @@ class DraftGenerationService {
     final seconds = (durationMs / 1000).ceil();
     if (seconds <= 0) return 0;
     return ((seconds + 29) ~/ 30);
+  }
+
+  List<SegmentInput> _normalizeSegments(List<SegmentInput> segments, int durationMs) {
+    final indexed = <({int startMs, int endMs, SegmentInput segment})>[];
+
+    for (final segment in segments) {
+      final startMs = _parseMs(segment.start);
+      final endMs = _parseMs(segment.end);
+      if (startMs == null || endMs == null) continue;
+      if (startMs < 0 || endMs <= startMs) continue;
+      if (startMs >= durationMs) continue;
+
+      indexed.add((startMs: startMs, endMs: endMs, segment: segment));
+    }
+
+    indexed.sort((a, b) => a.startMs.compareTo(b.startMs));
+
+    final normalized = <SegmentInput>[];
+    var lastEnd = 0;
+
+    for (final item in indexed) {
+      var startMs = item.startMs;
+      var endMs = item.endMs;
+
+      if (startMs < lastEnd) {
+        startMs = lastEnd;
+      }
+
+      if (endMs > durationMs) {
+        endMs = durationMs;
+      }
+      if (endMs <= startMs) {
+        continue;
+      }
+
+      normalized.add(
+        item.segment.copyWith(
+          start: _timecode.msToMMSSmmm(startMs),
+          end: _timecode.msToMMSSmmm(endMs),
+        ),
+      );
+      lastEnd = endMs;
+    }
+
+    return normalized;
+  }
+
+  int? _parseMs(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    try {
+      return _timecode.parseToMs(text);
+    } catch (_) {
+      return null;
+    }
   }
 }

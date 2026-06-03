@@ -145,6 +145,11 @@ class _FileSectionState extends State<FileSection> {
             playerController: _vp,
           ),
           segmentForms: vm.segmentForms,
+          onOverlayRangeChanged: (range) => vm.updateSegmentRange(
+            range.segmentIndex,
+            startMs: range.startMs,
+            endMs: range.endMs,
+          ),
         ),
       ],
     );

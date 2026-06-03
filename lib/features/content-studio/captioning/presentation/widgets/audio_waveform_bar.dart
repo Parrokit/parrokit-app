@@ -15,6 +15,7 @@ class AudioWaveformBar extends StatefulWidget {
     required this.videoController,
     this.waveformData,
     this.overlayRanges = const [],
+    this.onOverlayRangeChanged,
     this.isLoading = false,
     this.zoomFactor = 1.0,
     this.barCount = 100,
@@ -27,6 +28,7 @@ class AudioWaveformBar extends StatefulWidget {
   /// 실제 오디오 파형 데이터 (고해상도, 0.0 ~ 1.0 정규화 완료)
   final List<double>? waveformData;
   final List<WaveformOverlayRange> overlayRanges;
+  final ValueChanged<WaveformOverlayRange>? onOverlayRangeChanged;
 
   final bool isLoading;
   
@@ -242,17 +244,15 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                   final barWidth = itemWidth * 0.35;
                   final gap = itemWidth * 0.65;
                   final visibleOverlays = _buildVisibleOverlays(
+                    context: context,
                     totalWidth: totalWidth,
                     actualWindowDurMs: actualWindowDurMs,
                     endMs: endMs,
+                    videoDurationMs: c?.value.duration.inMilliseconds ?? 0,
                   );
 
                   return Stack(
                     children: [
-                      if (visibleOverlays.isNotEmpty)
-                        Positioned.fill(
-                          child: IgnorePointer(child: Stack(children: visibleOverlays)),
-                        ),
                       OverflowBox(
                         maxWidth: double.infinity,
                         alignment: Alignment.centerLeft,
@@ -299,6 +299,10 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                           ),
                         ),
                       ),
+                      if (visibleOverlays.isNotEmpty)
+                        Positioned.fill(
+                          child: Stack(children: visibleOverlays),
+                        ),
                     ],
                   );
                 },
@@ -369,9 +373,11 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   }
 
   List<Widget> _buildVisibleOverlays({
+    required BuildContext context,
     required double totalWidth,
     required int actualWindowDurMs,
     required int endMs,
+    required int videoDurationMs,
   }) {
     if (actualWindowDurMs <= 0 || widget.overlayRanges.isEmpty) {
       return const [];
@@ -393,15 +399,14 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
           top: 0,
           bottom: 0,
           width: width.clamp(0.0, totalWidth),
-          child: Container(
-            decoration: BoxDecoration(
-              color: range.color.withValues(alpha: 0.16),
-              border: Border.all(
-                color: range.color.withValues(alpha: 0.38),
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(6),
-            ),
+          child: _OverlayRangeTile(
+            range: range,
+            totalWidth: totalWidth,
+            windowStartMs: _windowStartMs,
+            actualWindowDurMs: actualWindowDurMs,
+            windowEndMs: endMs,
+            videoDurationMs: videoDurationMs,
+            onChanged: widget.onOverlayRangeChanged,
           ),
         ),
       );
@@ -410,13 +415,222 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   }
 }
 
+class _OverlayRangeTile extends StatelessWidget {
+  const _OverlayRangeTile({
+    required this.range,
+    required this.totalWidth,
+    required this.windowStartMs,
+    required this.actualWindowDurMs,
+    required this.windowEndMs,
+    required this.videoDurationMs,
+    required this.onChanged,
+  });
+
+  final WaveformOverlayRange range;
+  final double totalWidth;
+  final int windowStartMs;
+  final int actualWindowDurMs;
+  final int windowEndMs;
+  final int videoDurationMs;
+  final ValueChanged<WaveformOverlayRange>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final canInteract = onChanged != null;
+    final cs = Theme.of(context).colorScheme;
+    final bodyColor = range.color.withValues(alpha: 0.16);
+    final borderColor = range.color.withValues(alpha: 0.38);
+    final handleWidth = _handleWidth;
+    final bodyPadding = EdgeInsets.symmetric(horizontal: handleWidth);
+
+    return IgnorePointer(
+      ignoring: !canInteract,
+      child: Stack(
+        clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: bodyColor,
+            border: Border.all(
+              color: borderColor,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        if (canInteract)
+          Positioned.fill(
+            child: Padding(
+              padding: bodyPadding,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onPanUpdate: (details) => _moveRange(details.delta.dx),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+          ),
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: handleWidth,
+          child: _OverlayHandle(
+            color: cs.primary,
+            alignLeft: true,
+            onPanUpdate: canInteract
+                ? (details) => _resizeRange(details.delta.dx, isStart: true)
+                : null,
+          ),
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: handleWidth,
+          child: _OverlayHandle(
+            color: cs.primary,
+            alignLeft: false,
+            onPanUpdate: canInteract
+                ? (details) => _resizeRange(details.delta.dx, isStart: false)
+                : null,
+          ),
+        ),
+      ],
+      ),
+    );
+  }
+
+  double get _handleWidth {
+    final width = _rangeWidth;
+    if (width <= 0) return 4.0;
+    return math.min(8.0, math.max(4.0, width / 4));
+  }
+
+  double get _rangeWidth {
+    final visibleStart = math.max(range.startMs, windowStartMs);
+    final visibleEnd = math.min(range.endMs, windowEndMs);
+    if (visibleEnd <= visibleStart) return 0;
+    return ((visibleEnd - visibleStart) / actualWindowDurMs) * totalWidth;
+  }
+
+  void _moveRange(double deltaDx) {
+    final changed = onChanged;
+    if (changed == null) return;
+    if (totalWidth <= 0 || actualWindowDurMs <= 0) return;
+    final deltaMs = (deltaDx / totalWidth * actualWindowDurMs).round();
+    if (deltaMs == 0) return;
+
+    final durationMs = videoDurationMs;
+    var start = range.startMs + deltaMs;
+    var end = range.endMs + deltaMs;
+
+    if (start < 0) {
+      end -= start;
+      start = 0;
+    }
+    if (end > durationMs) {
+      final overflow = end - durationMs;
+      start -= overflow;
+      end = durationMs;
+    }
+
+    start = start.clamp(0, durationMs).toInt();
+    end = end.clamp(0, durationMs).toInt();
+    if (end <= start) {
+      end = math.min(durationMs, start + 1);
+    }
+
+    changed(
+      WaveformOverlayRange(
+        segmentIndex: range.segmentIndex,
+        startMs: start,
+        endMs: end,
+        color: range.color,
+      ),
+    );
+  }
+
+  void _resizeRange(double deltaDx, {required bool isStart}) {
+    final changed = onChanged;
+    if (changed == null) return;
+    if (totalWidth <= 0 || actualWindowDurMs <= 0) return;
+    final deltaMs = (deltaDx / totalWidth * actualWindowDurMs).round();
+    if (deltaMs == 0) return;
+
+    final durationMs = videoDurationMs;
+    var start = range.startMs;
+    var end = range.endMs;
+    const minGapMs = 1;
+
+    if (isStart) {
+      start += deltaMs;
+      start = start.clamp(0, math.max(0, end - minGapMs)).toInt();
+    } else {
+      end += deltaMs;
+      end = end.clamp(start + minGapMs, durationMs).toInt();
+    }
+
+    if (start < 0) start = 0;
+    if (end > durationMs) end = durationMs;
+    if (end <= start) {
+      if (isStart) {
+        start = math.max(0, end - minGapMs);
+      } else {
+        end = math.min(durationMs, start + minGapMs);
+      }
+    }
+
+    changed(
+      WaveformOverlayRange(
+        segmentIndex: range.segmentIndex,
+        startMs: start,
+        endMs: end,
+        color: range.color,
+      ),
+    );
+  }
+}
+
+class _OverlayHandle extends StatelessWidget {
+  const _OverlayHandle({
+    required this.color,
+    required this.alignLeft,
+    required this.onPanUpdate,
+  });
+
+  final Color color;
+  final bool alignLeft;
+  final GestureDragUpdateCallback? onPanUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanUpdate: onPanUpdate,
+      child: Align(
+        alignment: alignLeft ? Alignment.centerLeft : Alignment.centerRight,
+        child: Container(
+          width: 3,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class WaveformOverlayRange {
   const WaveformOverlayRange({
+    required this.segmentIndex,
     required this.startMs,
     required this.endMs,
     required this.color,
   });
 
+  final int segmentIndex;
   final int startMs;
   final int endMs;
   final Color color;

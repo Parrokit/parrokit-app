@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'empty_state.dart';
+import 'audio_waveform_bar.dart';
 import 'picked_state.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -30,6 +31,7 @@ class FileHeroCard extends StatelessWidget {
     this.isVideoLoading = false,
     this.segmentsWidget,
     this.segmentForms = const [],
+    this.onOverlayRangeChanged,
   });
 
   final PlatformFile? picked;
@@ -54,6 +56,7 @@ class FileHeroCard extends StatelessWidget {
   final bool isVideoLoading;
   final Widget? segmentsWidget;
   final List<SegmentFormData> segmentForms;
+  final ValueChanged<WaveformOverlayRange>? onOverlayRangeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +90,7 @@ class FileHeroCard extends StatelessWidget {
               waveformLoading: waveformLoading,
               segmentsWidget: segmentsWidget,
               segmentForms: segmentForms,
+              onOverlayRangeChanged: onOverlayRangeChanged,
             ),
     );
   }

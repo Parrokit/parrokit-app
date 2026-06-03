@@ -32,6 +32,7 @@ class PickedState extends StatefulWidget {
     this.waveformLoading = false,
     this.segmentsWidget,
     this.segmentForms = const [],
+    this.onOverlayRangeChanged,
   });
 
   final PlatformFile picked;
@@ -51,6 +52,7 @@ class PickedState extends StatefulWidget {
   final bool waveformLoading;
   final Widget? segmentsWidget;
   final List<SegmentFormData> segmentForms;
+  final ValueChanged<WaveformOverlayRange>? onOverlayRangeChanged;
 
   @override
   State<PickedState> createState() => _PickedStateState();
@@ -102,13 +104,12 @@ class _PickedStateState extends State<PickedState> {
     final ext = (widget.picked.extension ?? 'file').toLowerCase();
     // ignore: unused_local_variable
     final sizeMB = (widget.picked.size / (1024 * 1024));
-    final overlayRanges = _buildOverlayRanges(cs);
-
     final bool showPlayer = widget.isPlayingInline &&
         widget.playerController != null &&
         widget.playerController!.value.isInitialized;
     final double aspect =
         showPlayer ? widget.playerController!.value.aspectRatio : 16 / 9;
+    final overlayRebuildListenable = _overlayRebuildListenable();
 
     return Column(
       children: [
@@ -192,14 +193,12 @@ class _PickedStateState extends State<PickedState> {
             // ── 2. 음성 파형 그래프 ────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: AudioWaveformBar(
-                  videoController: widget.playerController,
-                  waveformData: widget.waveformData,
-                  overlayRanges: overlayRanges,
-                  isLoading: widget.waveformLoading,
-                  zoomFactor: _zoomFactor,
-                  height: 44,
-                ),
+              child: overlayRebuildListenable == null
+                  ? _buildWaveform(context)
+                  : AnimatedBuilder(
+                      animation: overlayRebuildListenable,
+                      builder: (context, _) => _buildWaveform(context),
+                    ),
             ),
 
             // ── 3. 컨트롤러 ───────────────────────────────────────────────────
@@ -246,17 +245,44 @@ class _PickedStateState extends State<PickedState> {
     );
   }
 
+  Widget _buildWaveform(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final overlayRanges = _buildOverlayRanges(cs);
+
+    return AudioWaveformBar(
+      videoController: widget.playerController,
+      waveformData: widget.waveformData,
+      overlayRanges: overlayRanges,
+      onOverlayRangeChanged: widget.onOverlayRangeChanged ?? _updateOverlayRange,
+      isLoading: widget.waveformLoading,
+      zoomFactor: _zoomFactor,
+      height: 44,
+    );
+  }
+
+  Listenable? _overlayRebuildListenable() {
+    final listenables = <Listenable>[];
+    for (final form in widget.segmentForms) {
+      listenables.add(form.startCtl);
+      listenables.add(form.endCtl);
+    }
+    if (listenables.isEmpty) return null;
+    return Listenable.merge(listenables);
+  }
+
   List<WaveformOverlayRange> _buildOverlayRanges(ColorScheme cs) {
     final ranges = <WaveformOverlayRange>[];
-    for (final form in widget.segmentForms) {
+    for (var i = 0; i < widget.segmentForms.length; i++) {
+      final form = widget.segmentForms[i];
       final startMs = _parseMs(form.startCtl.text);
       final endMs = _parseMs(form.endCtl.text);
       if (startMs == null || endMs == null) continue;
+      if (startMs <= 0 || endMs <= 0) continue;
       if (endMs <= startMs) continue;
-      if (endMs <= 0) continue;
 
       ranges.add(
         WaveformOverlayRange(
+          segmentIndex: i,
           startMs: startMs,
           endMs: endMs,
           color: cs.primary,
@@ -264,6 +290,28 @@ class _PickedStateState extends State<PickedState> {
       );
     }
     return ranges;
+  }
+
+  void _updateOverlayRange(WaveformOverlayRange range) {
+    if (range.segmentIndex < 0 || range.segmentIndex >= widget.segmentForms.length) {
+      return;
+    }
+
+    final form = widget.segmentForms[range.segmentIndex];
+    final tc = TimecodeService();
+    final startText = tc.msToMMSSmmm(range.startMs);
+    final endText = tc.msToMMSSmmm(range.endMs);
+    form.startCtl.value = TextEditingValue(
+      text: startText,
+      selection: TextSelection.collapsed(offset: startText.length),
+    );
+    form.endCtl.value = TextEditingValue(
+      text: endText,
+      selection: TextSelection.collapsed(offset: endText.length),
+    );
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   int? _parseMs(String value) {

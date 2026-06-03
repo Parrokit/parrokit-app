@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:parrokit/core/shared/utils/show_toast.dart';
+import '../../data/services/time_code_service.dart';
 import '../../domain/editor_state.dart';
 
 /// 세그먼트 관리 mixin.
@@ -90,6 +91,29 @@ mixin EditorSegmentMixin on ChangeNotifier {
     f.originalCtl.text = original;
     f.pronCtl.text = pron;
     f.koCtl.text = ko;
+    notifyListeners();
+  }
+
+  /// 특정 인덱스의 시작/종료 구간을 밀리초 기준으로 갱신합니다.
+  void updateSegmentRange(
+    int index, {
+    required int startMs,
+    required int endMs,
+  }) {
+    if (index < 0 || index >= segmentForms.length) return;
+
+    final tc = TimecodeService();
+    final startText = tc.msToMMSSmmm(startMs);
+    final endText = tc.msToMMSSmmm(endMs);
+    final f = segmentForms[index];
+    f.startCtl.value = TextEditingValue(
+      text: startText,
+      selection: TextSelection.collapsed(offset: startText.length),
+    );
+    f.endCtl.value = TextEditingValue(
+      text: endText,
+      selection: TextSelection.collapsed(offset: endText.length),
+    );
     notifyListeners();
   }
 
