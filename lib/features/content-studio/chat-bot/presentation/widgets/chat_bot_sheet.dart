@@ -114,7 +114,8 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
           provider.consumePendingRouting();
           _showRoutingBottomSheet(context, provider);
         } else {
-          debugPrint('[Chatbot][UI] Routing pop skipped. mounted=$mounted, hasPendingRouting=${provider.hasPendingRouting}');
+          debugPrint(
+              '[Chatbot][UI] Routing pop skipped. mounted=$mounted, hasPendingRouting=${provider.hasPendingRouting}');
         }
       });
     }
@@ -358,7 +359,7 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                             ? AppColors.textSecondaryDark
                             : AppColors.textSecondary,
                       ),
-                      offset: const Offset(12, -210),
+                      offset: const Offset(-10, -210),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                         side: BorderSide(
@@ -1279,7 +1280,9 @@ void _showRoutingBottomSheet(BuildContext context, ChatBotProvider provider) {
                     '원하시는 작업을 선택해주세요',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary,
                     ),
                   ),
                   GestureDetector(
@@ -1287,7 +1290,9 @@ void _showRoutingBottomSheet(BuildContext context, ChatBotProvider provider) {
                     child: Icon(
                       Icons.close_rounded,
                       size: 20,
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -1353,14 +1358,18 @@ void _showRoutingBottomSheet(BuildContext context, ChatBotProvider provider) {
                               '🎙️ AI 음성(TTS) 생성 요청',
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '자연스러운 AI 목소리로 음성을 생성하고 튜닝합니다.',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary,
                                 height: 1.3,
                               ),
                             ),
@@ -1369,7 +1378,9 @@ void _showRoutingBottomSheet(BuildContext context, ChatBotProvider provider) {
                       ),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                        color: isDark
+                            ? AppColors.textTertiaryDark
+                            : AppColors.textTertiary,
                       ),
                     ],
                   ),
@@ -1436,14 +1447,18 @@ void _showRoutingBottomSheet(BuildContext context, ChatBotProvider provider) {
                               '🎬 AI 비디오 생성 요청',
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '텍스트 시나리오를 바탕으로 멋진 비디오 씬을 기획합니다.',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary,
                                 height: 1.3,
                               ),
                             ),
@@ -1452,7 +1467,9 @@ void _showRoutingBottomSheet(BuildContext context, ChatBotProvider provider) {
                       ),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+                        color: isDark
+                            ? AppColors.textTertiaryDark
+                            : AppColors.textTertiary,
                       ),
                     ],
                   ),
