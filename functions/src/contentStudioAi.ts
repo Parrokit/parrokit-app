@@ -4,6 +4,7 @@ import {genkit} from "genkit";
 import {vertexAI} from "@genkit-ai/google-genai";
 import {enableFirebaseTelemetry} from "@genkit-ai/firebase";
 import {ElevenLabsClient} from "@elevenlabs/elevenlabs-js";
+import textToSpeech from "@google-cloud/text-to-speech";
 import * as Buffer from "buffer";
 
 // 파이어베이스 시크릿 매니저에서 API 키를 안전하게 불러옵니다.
@@ -110,3 +111,48 @@ export const generateElevenLabsTts = onCall(
     return await generateAudioFlow(request.data);
   }
 );
+
+
+export const generateGoogleTtsFlow = ai.defineFlow(
+  "generateGoogleTtsFlow",
+  async (input: { text: string; language?: string; voiceName?: string }) => {
+    try {
+      if (!input.text) {
+        throw new Error("Text is required for TTS generation.");
+      }
+
+      // Google Cloud TTS 클라이언트 초기화
+      const client = new textToSpeech.TextToSpeechClient();
+
+      const languageCode = input.language || "ko-KR";
+      // 한국어 고품질 Neural2 모델을 기본값으로 사용 (Journey 모델은 한국어 미지원)
+      const name = input.voiceName || "ko-KR-Neural2-A";
+
+      const request = {
+        input: {text: input.text},
+        voice: {languageCode, name},
+        audioConfig: {audioEncoding: "MP3" as const},
+      };
+
+      const [response] = await client.synthesizeSpeech(request);
+
+      if (!response.audioContent) {
+        throw new Error("No audio content returned from Google Cloud TTS.");
+      }
+
+      const buffer = Buffer.Buffer.from(response.audioContent);
+
+      return {
+        audioBase64: buffer.toString("base64"),
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.error("Google Cloud TTS Error:", error);
+      throw new Error(error.message || "Failed to generate Google TTS");
+    }
+  }
+);
+
+export const generateGoogleTts = onCall(async (request) => {
+  return await generateGoogleTtsFlow(request.data);
+});
