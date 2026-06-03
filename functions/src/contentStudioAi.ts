@@ -30,6 +30,9 @@ export const chatbotFlow = ai.defineFlow(
     const MAX_HISTORY = 10;
     const recentHistory = (input.history || []).slice(-MAX_HISTORY);
 
+    const targetModel = input.model ? `vertexai/${input.model}` : undefined;
+    console.log(`[Chatbot][Flow] Model parameter details inputModel=${input.model} targetModel=${targetModel}`);
+
     const p = await ai.prompt("chatbot");
     const {text} = await p(
       {
@@ -38,7 +41,7 @@ export const chatbotFlow = ai.defineFlow(
       },
       {
         // 프론트엔드에서 모델 이름을 보냈다면 해당 모델로 덮어쓰기 (없으면 .prompt의 기본값 사용)
-        model: input.model ? `vertexai/${input.model}` : undefined,
+        model: targetModel,
       }
     );
     return text;
