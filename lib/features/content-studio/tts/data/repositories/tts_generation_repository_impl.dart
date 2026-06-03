@@ -9,13 +9,19 @@ class TtsGenerationRepositoryImpl implements TtsGenerationRepository {
   @override
   Future<String> generateTts({
     required String text,
-    required String voiceType,
-    String? language,
+    required String language,
+    TtsProviderType provider = TtsProviderType.google,
+    String? voiceId,
+    String? modelId,
+    ElevenLabsVoiceSettings? elevenLabsSettings,
   }) async {
     return remoteDataSource.generateTts(
       text: text, 
-      voiceType: voiceType,
       language: language,
+      provider: provider,
+      voiceId: voiceId,
+      modelId: modelId,
+      elevenLabsSettings: elevenLabsSettings,
     );
   }
 }

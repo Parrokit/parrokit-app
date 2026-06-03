@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../domain/usecases/generate_tts_usecase.dart';
 import '../data/data_sources/tts_remote_data_source.dart';
 import '../data/repositories/tts_generation_repository_impl.dart';
+import '../domain/repositories/tts_generation_repository.dart';
 
 class TtsProvider extends ChangeNotifier {
   late final GenerateTtsUseCase _useCase;
@@ -16,8 +17,17 @@ class TtsProvider extends ChangeNotifier {
   String _text = '';
   String get text => _text;
 
-  String _voiceType = 'female_1';
-  String get voiceType => _voiceType;
+  String _voiceId = '';
+  String get voiceId => _voiceId;
+
+  String _language = 'ko-KR';
+  String get language => _language;
+
+  TtsProviderType _providerType = TtsProviderType.google;
+  TtsProviderType get providerType => _providerType;
+
+  String? _modelId;
+  String? get modelId => _modelId;
 
   bool _isGenerating = false;
   bool get isGenerating => _isGenerating;
@@ -35,8 +45,23 @@ class TtsProvider extends ChangeNotifier {
     }
   }
 
-  void updateVoiceType(String newVoiceType) {
-    _voiceType = newVoiceType;
+  void updateVoiceId(String newVoiceId) {
+    _voiceId = newVoiceId;
+    notifyListeners();
+  }
+
+  void updateLanguage(String newLanguage) {
+    _language = newLanguage;
+    notifyListeners();
+  }
+
+  void updateProviderType(TtsProviderType newProviderType) {
+    _providerType = newProviderType;
+    notifyListeners();
+  }
+
+  void updateModelId(String? newModelId) {
+    _modelId = newModelId;
     notifyListeners();
   }
 
@@ -51,7 +76,10 @@ class TtsProvider extends ChangeNotifier {
     try {
       final path = await _useCase.call(
         text: _text,
-        voiceType: _voiceType,
+        language: _language,
+        provider: _providerType,
+        voiceId: _voiceId.isEmpty ? null : _voiceId,
+        modelId: _modelId,
       );
       _generatedFilePath = path;
     } catch (e) {

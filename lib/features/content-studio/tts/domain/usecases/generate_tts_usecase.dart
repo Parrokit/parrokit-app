@@ -8,15 +8,21 @@ class GenerateTtsUseCase {
 
   Future<String> call({
     required String text, 
-    required String voiceType,
-    String? language,
+    required String language,
+    TtsProviderType provider = TtsProviderType.google,
+    String? voiceId,
+    String? modelId,
+    ElevenLabsVoiceSettings? elevenLabsSettings,
   }) async {
     TtsValidator.validateText(text);
     // TODO: 패롯(재화) 잔액 검증 로직 추가 (NFR-TTS-03)
     return repository.generateTts(
       text: text, 
-      voiceType: voiceType,
       language: language,
+      provider: provider,
+      voiceId: voiceId,
+      modelId: modelId,
+      elevenLabsSettings: elevenLabsSettings,
     );
   }
 }

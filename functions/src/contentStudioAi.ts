@@ -51,49 +51,111 @@ export const chatbotFlow = ai.defineFlow(
   }
 );
 
+export interface ElevenLabsSettings {
+  stability?: number;
+  similarity_boost?: number;
+  style?: number;
+  use_speaker_boost?: boolean;
+}
 
-export const generateAudioFlow = ai.defineFlow(
-  "generateAudioFlow",
-  async (input: { text: string; voiceId?: string; language?: string }) => {
-    try {
-      if (!input.text) {
-        throw new Error("Text is required for TTS generation.");
+export const generateTtsFlow = ai.defineFlow(
+  "generateTtsFlow",
+  async (input: {
+    text: string;
+    language: string;
+    provider?: "google" | "elevenlabs";
+    voiceId?: string;
+    modelId?: string;
+    elevenLabsSettings?: ElevenLabsSettings;
+  }) => {
+    if (!input.text) {
+      throw new Error("Text is required for TTS generation.");
+    }
+    if (!input.language) {
+      throw new Error("Language is required for TTS generation.");
+    }
+
+    const provider = input.provider || "google";
+
+    if (provider === "elevenlabs") {
+      try {
+        const client = new ElevenLabsClient({
+          apiKey: elevenLabsApiKey.value(),
+        });
+
+        const targetVoice = input.voiceId || "21m00Tcm4TlvDq8ikWAM";
+        const targetModel = input.modelId || "eleven_multilingual_v2";
+
+        const audioStream = await client.textToSpeech.convert(targetVoice, {
+          text: input.text,
+          modelId: targetModel,
+          outputFormat: "mp3_44100_128",
+          voiceSettings: input.elevenLabsSettings ? {
+            stability: input.elevenLabsSettings.stability,
+            similarityBoost: input.elevenLabsSettings.similarity_boost,
+            style: input.elevenLabsSettings.style,
+            useSpeakerBoost: input.elevenLabsSettings.use_speaker_boost,
+          } : undefined,
+        });
+
+        const reader = audioStream.getReader();
+        const chunks: Uint8Array[] = [];
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const {done, value} = await reader.read();
+          if (done) break;
+          if (value) chunks.push(value);
+        }
+        const buffer = Buffer.Buffer.concat(chunks);
+
+        return {
+          audioBase64: buffer.toString("base64"),
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        console.error("ElevenLabs TTS Error:", error);
+        throw new Error(error.message || "Failed to generate ElevenLabs TTS");
       }
+    } else {
+      // Default to Google TTS
+      try {
+        const client = new textToSpeech.TextToSpeechClient();
 
-      // ElevenLabs 클라이언트 초기화 (시크릿 키 사용)
-      const client = new ElevenLabsClient({
-        apiKey: elevenLabsApiKey.value(),
-      });
+        // language is guaranteed to exist
+        const languageCode = input.language;
 
-      // TTS 생성 요청
-      // 기본 목소리 예시(Rachel 등), 플러터에서 voiceId를 보냈다면 덮어씁니다.
-      const targetVoice = input.voiceId || "21m00Tcm4TlvDq8ikWAM";
+        // If voiceId is not provided, pick a default based on language
+        let defaultVoice = "en-US-Journey-F"; // Default English
+        if (languageCode.startsWith("ko")) {
+          defaultVoice = "ko-KR-Neural2-A";
+        } else if (languageCode.startsWith("ja")) {
+          defaultVoice = "ja-JP-Neural2-B";
+        }
 
-      const audioStream = await client.textToSpeech.convert(targetVoice, {
-        text: input.text,
-        modelId: "eleven_multilingual_v2", // 다국어 지원 모델
-        outputFormat: "mp3_44100_128",
-      });
+        const name = input.voiceId || defaultVoice;
 
-      // ReadableStream (Web API) 데이터를 Buffer로 변환
-      const reader = audioStream.getReader();
-      const chunks: Uint8Array[] = [];
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const {done, value} = await reader.read();
-        if (done) break;
-        if (value) chunks.push(value);
+        const request = {
+          input: {text: input.text},
+          voice: {languageCode, name},
+          audioConfig: {audioEncoding: "MP3" as const},
+        };
+
+        const [response] = await client.synthesizeSpeech(request);
+
+        if (!response.audioContent) {
+          throw new Error("No audio content returned from Google Cloud TTS.");
+        }
+
+        const buffer = Buffer.Buffer.from(response.audioContent);
+
+        return {
+          audioBase64: buffer.toString("base64"),
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        console.error("Google Cloud TTS Error:", error);
+        throw new Error(error.message || "Failed to generate Google TTS");
       }
-      const buffer = Buffer.Buffer.concat(chunks);
-
-      // Base64 문자열로 변환하여 반환
-      return {
-        audioBase64: buffer.toString("base64"),
-      };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("ElevenLabs TTS Error:", error);
-      throw new Error(error.message || "Failed to generate TTS");
     }
   }
 );
@@ -104,55 +166,9 @@ export const generateChatbotResponse = onCall(async (request) => {
   return await chatbotFlow(request.data);
 });
 
-
-export const generateElevenLabsTts = onCall(
+export const generateTts = onCall(
   {secrets: [elevenLabsApiKey]},
   async (request) => {
-    return await generateAudioFlow(request.data);
+    return await generateTtsFlow(request.data);
   }
 );
-
-
-export const generateGoogleTtsFlow = ai.defineFlow(
-  "generateGoogleTtsFlow",
-  async (input: { text: string; language?: string; voiceName?: string }) => {
-    try {
-      if (!input.text) {
-        throw new Error("Text is required for TTS generation.");
-      }
-
-      // Google Cloud TTS 클라이언트 초기화
-      const client = new textToSpeech.TextToSpeechClient();
-
-      const languageCode = input.language || "ko-KR";
-      // 한국어 고품질 Neural2 모델을 기본값으로 사용 (Journey 모델은 한국어 미지원)
-      const name = input.voiceName || "ko-KR-Neural2-A";
-
-      const request = {
-        input: {text: input.text},
-        voice: {languageCode, name},
-        audioConfig: {audioEncoding: "MP3" as const},
-      };
-
-      const [response] = await client.synthesizeSpeech(request);
-
-      if (!response.audioContent) {
-        throw new Error("No audio content returned from Google Cloud TTS.");
-      }
-
-      const buffer = Buffer.Buffer.from(response.audioContent);
-
-      return {
-        audioBase64: buffer.toString("base64"),
-      };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Google Cloud TTS Error:", error);
-      throw new Error(error.message || "Failed to generate Google TTS");
-    }
-  }
-);
-
-export const generateGoogleTts = onCall(async (request) => {
-  return await generateGoogleTtsFlow(request.data);
-});
