@@ -101,61 +101,7 @@ class _VideoControlsBarState extends State<VideoControlsBar> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(width: 48), // 줌 컨트롤 등 좌측 여백 보상
-
-          // -n초
-          _ControlButton(
-            icon: Icons.replay_5_rounded,
-            label: '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초 전',
-            onTap: _isInitialized
-                ? () => _seekRelative(Duration(milliseconds: (widget.skipSeconds * 1000).toInt() * -1))
-                : null,
-            cs: cs,
-            size: 26,
-          ),
-          const SizedBox(width: 8),
-
-          // 처음으로
-          _ControlButton(
-            icon: Icons.skip_previous_rounded,
-            label: '처음으로',
-            onTap: _isInitialized ? _seekToStart : null,
-            cs: cs,
-            size: 26,
-          ),
-          const SizedBox(width: 8),
-          // 재생 / 일시정지 (강조)
-          _PlayButton(
-            icon: _playIcon,
-            onTap: () {
-              if (!_isInitialized) {
-                widget.onPlayInline();
-              } else {
-                widget.onToggleInline();
-              }
-            },
-            cs: cs,
-          ),
-          const SizedBox(width: 8),
-
-          // +n초
-          _ControlButton(
-            icon: Icons.forward_5_rounded,
-            label: '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초 후',
-            onTap: _isInitialized
-                ? () => _seekRelative(Duration(milliseconds: (widget.skipSeconds * 1000).toInt()))
-                : null,
-            cs: cs,
-            size: 26,
-          ),
-          const SizedBox(width: 12),
-          // 분리선 및 줌 버튼
-          Container(
-            height: 32,
-            width: 1,
-            color: cs.onSurface.withValues(alpha: 0.1),
-          ),
-          const SizedBox(width: 12),
+          // 줌 버튼 (좌측)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -183,13 +129,72 @@ class _VideoControlsBarState extends State<VideoControlsBar> {
             color: cs.onSurface.withValues(alpha: 0.1),
           ),
           const SizedBox(width: 12),
+
+          // -n초
           _ControlButton(
-            icon: Icons.tune_rounded,
-            label: '설정',
-            onTap: widget.onToggleSettings,
+            icon: Icons.replay_5_rounded,
+            label: '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초 전',
+            onTap: _isInitialized
+                ? () => _seekRelative(Duration(milliseconds: (widget.skipSeconds * 1000).toInt() * -1))
+                : null,
             cs: cs,
-            size: 24,
-            isActive: widget.isSettingsExpanded,
+            size: 26,
+          ),
+          const SizedBox(width: 8),
+
+          // 재생 / 일시정지 (강조)
+          _PlayButton(
+            icon: _playIcon,
+            onTap: () {
+              if (!_isInitialized) {
+                widget.onPlayInline();
+              } else {
+                widget.onToggleInline();
+              }
+            },
+            cs: cs,
+          ),
+          const SizedBox(width: 8),
+
+          // +n초
+          _ControlButton(
+            icon: Icons.forward_5_rounded,
+            label: '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초 후',
+            onTap: _isInitialized
+                ? () => _seekRelative(Duration(milliseconds: (widget.skipSeconds * 1000).toInt()))
+                : null,
+            cs: cs,
+            size: 26,
+          ),
+          const SizedBox(width: 12),
+          
+          // 분리선 및 우측 버튼 영역 (처음으로, 설정)
+          Container(
+            height: 32,
+            width: 1,
+            color: cs.onSurface.withValues(alpha: 0.1),
+          ),
+          const SizedBox(width: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ControlButton(
+                icon: Icons.skip_previous_rounded,
+                label: '처음으로',
+                onTap: _isInitialized ? _seekToStart : null,
+                cs: cs,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              _ControlButton(
+                icon: Icons.tune_rounded,
+                label: '설정',
+                onTap: widget.onToggleSettings,
+                cs: cs,
+                size: 24,
+                isActive: widget.isSettingsExpanded,
+              ),
+            ],
           ),
         ],
       ),
