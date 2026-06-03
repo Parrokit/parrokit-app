@@ -10,6 +10,7 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import '../../../../../core/shared/utils/show_toast.dart';
+import 'video_picker_sheet.dart';
 
 class PickedState extends StatefulWidget {
   const PickedState({
@@ -637,31 +638,18 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                       Row(
                         children: [
                           Expanded(
-                            child: PopupMenuButton<String>(
-                              onSelected: (v) {
-                                if (v == 'file') widget.onReplace();
-                                if (v == 'photos') widget.onPickFromPhotos();
+                            child: _OptionCard(
+                              icon: Icons.swap_horiz_rounded,
+                              title: '다시 선택',
+                              onTap: () {
+                                widget.controller?.pause();
+                                showVideoPickerSheet(
+                                  context: context,
+                                  title: '동영상 다시 선택',
+                                  onPickFile: widget.onReplace,
+                                  onPickPhotos: widget.onPickFromPhotos,
+                                );
                               },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: 'file',
-                                  child: ListTile(
-                                    leading: Icon(Icons.file_open_rounded),
-                                    title: Text('파일에서 선택'),
-                                  ),
-                                ),
-                                PopupMenuItem(
-                                  value: 'photos',
-                                  child: ListTile(
-                                    leading: Icon(Icons.photo_library_rounded),
-                                    title: Text('사진에서 선택'),
-                                  ),
-                                ),
-                              ],
-                              child: const _OptionCard(
-                                icon: Icons.swap_horiz_rounded,
-                                title: '다시 선택',
-                              ),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
