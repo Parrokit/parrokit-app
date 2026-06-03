@@ -52,6 +52,7 @@ class _PickedStateState extends State<PickedState> {
   double _zoomFactor = 1.0;
   bool _isSettingsExpanded = false;
   double _skipSeconds = 3.0;
+  bool _isVideoCollapsed = false;
 
   void _zoomIn() {
     final c = widget.playerController;
@@ -102,87 +103,125 @@ class _PickedStateState extends State<PickedState> {
     return Column(
       children: [
         // ── 1. 비디오 플레이어 ──────────────────────────────────────────────
-        AspectRatio(
-          aspectRatio: aspect,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.zero,
-                  child: showPlayer
-                      ? VideoPlayer(widget.playerController!)
-                      : GestureDetector(
-                          onTap: widget.onPlayInline,
-                          behavior: HitTestBehavior.opaque,
-                          child: widget.thumb == null
-                              ? Container(
-                                  color: cs.onSurface.withValues(alpha: 0.05),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.video_file_rounded,
-                                      size: 56,
-                                      color:
-                                          cs.onSurface.withValues(alpha: 0.35),
-                                    ),
-                                  ),
-                                )
-                              : Image.memory(widget.thumb!, fit: BoxFit.cover),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic,
+          child: _isVideoCollapsed
+              ? const SizedBox.shrink()
+              : AspectRatio(
+                  aspectRatio: aspect,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.zero,
+                          child: showPlayer
+                              ? VideoPlayer(widget.playerController!)
+                              : GestureDetector(
+                                  onTap: widget.onPlayInline,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: widget.thumb == null
+                                      ? Container(
+                                          color: cs.onSurface.withValues(alpha: 0.05),
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.video_file_rounded,
+                                              size: 56,
+                                              color:
+                                                  cs.onSurface.withValues(alpha: 0.35),
+                                            ),
+                                          ),
+                                        )
+                                      : Image.memory(widget.thumb!, fit: BoxFit.cover),
+                                ),
                         ),
+                      ),
+                    ],
+                  ),
                 ),
+        ),
+
+        // 하단 고정 컨트롤 영역 (파형, 버튼, 탭)을 제스처로 묶음
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragUpdate: (details) {
+            // 위로 스와이프 (접기)
+            if (details.primaryDelta! < -3 && !_isVideoCollapsed) {
+              setState(() => _isVideoCollapsed = true);
+            }
+            // 아래로 스와이프 (펼치기)
+            else if (details.primaryDelta! > 3 && _isVideoCollapsed) {
+              setState(() => _isVideoCollapsed = false);
+            }
+          },
+          child: Column(
+            children: [
+              // 드래그 핸들 (Pill)
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+
+              // ── 2. 음성 파형 그래프 ────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: AudioWaveformBar(
+                  videoController: widget.playerController,
+                  waveformData: widget.waveformData,
+                  isLoading: widget.waveformLoading,
+                  zoomFactor: _zoomFactor,
+                  height: 44,
+                ),
+              ),
+
+              // ── 3. 컨트롤러 ───────────────────────────────────────────────────
+              const SizedBox(height: 4),
+              VideoControlsBar(
+                controller: widget.playerController,
+                onPlayInline: widget.onPlayInline,
+                onToggleInline: widget.onToggleInline,
+                onStopInline: widget.onStopInline,
+                onZoomIn: _zoomIn,
+                onZoomOut: _zoomOut,
+                isSettingsExpanded: _isSettingsExpanded,
+                skipSeconds: _skipSeconds,
+                onToggleSettings: () {
+                  setState(() {
+                    _isSettingsExpanded = !_isSettingsExpanded;
+                  });
+                },
+              ),
+
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                child: _isSettingsExpanded
+                    ? _VideoSettingsBar(
+                        controller: widget.playerController,
+                        picked: widget.picked,
+                        onReplace: widget.onReplace,
+                        onPickFromPhotos: widget.onPickFromPhotos,
+                        onRemove: widget.onRemove,
+                        segmentsWidget: widget.segmentsWidget,
+                        skipSeconds: _skipSeconds,
+                        onSkipSecondsChanged: (val) {
+                          setState(() {
+                            _skipSeconds = val;
+                          });
+                        },
+                      )
+                    : const SizedBox.shrink(),
               ),
             ],
           ),
-        ),
-
-        // ── 2. 음성 파형 그래프 ────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: AudioWaveformBar(
-            videoController: widget.playerController,
-            waveformData: widget.waveformData,
-            isLoading: widget.waveformLoading,
-            zoomFactor: _zoomFactor,
-            height: 44,
-          ),
-        ),
-
-        // ── 3. 컨트롤러 ───────────────────────────────────────────────────
-        const SizedBox(height: 4),
-        VideoControlsBar(
-          controller: widget.playerController,
-          onPlayInline: widget.onPlayInline,
-          onToggleInline: widget.onToggleInline,
-          onStopInline: widget.onStopInline,
-          onZoomIn: _zoomIn,
-          onZoomOut: _zoomOut,
-          isSettingsExpanded: _isSettingsExpanded,
-          skipSeconds: _skipSeconds,
-          onToggleSettings: () {
-            setState(() {
-              _isSettingsExpanded = !_isSettingsExpanded;
-            });
-          },
-        ),
-
-        AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-          child: _isSettingsExpanded
-              ? _VideoSettingsBar(
-                  controller: widget.playerController,
-                  picked: widget.picked,
-                  onReplace: widget.onReplace,
-                  onPickFromPhotos: widget.onPickFromPhotos,
-                  onRemove: widget.onRemove,
-                  segmentsWidget: widget.segmentsWidget,
-                  skipSeconds: _skipSeconds,
-                  onSkipSecondsChanged: (val) {
-                    setState(() {
-                      _skipSeconds = val;
-                    });
-                  },
-                )
-              : const SizedBox.shrink(),
         ),
       ],
     );
