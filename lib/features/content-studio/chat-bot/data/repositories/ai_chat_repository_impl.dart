@@ -15,6 +15,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
       isUser: false,
       recommendedPrompt: response['recommendedPrompt'] as String?,
       actionType: response['actionType'] as String?,
+      actionData: response['actionData'] as Map<String, dynamic>?,
     );
   }
 }

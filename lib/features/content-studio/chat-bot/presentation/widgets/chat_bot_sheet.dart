@@ -9,7 +9,7 @@ import '../../domain/entities/ai_chat_message.dart';
 
 Future<void> showChatBotSheet(
   BuildContext context, {
-  void Function(int tabIndex, String text)? onTriggerAction,
+  void Function(int tabIndex, Map<String, dynamic>? actionData)? onTriggerAction,
 }) async {
   final chatBotProvider = Provider.of<ChatBotProvider>(context, listen: false);
 
@@ -31,7 +31,7 @@ Future<void> showChatBotSheet(
 class _ChatBotSheet extends StatefulWidget {
   const _ChatBotSheet({this.onTriggerAction});
 
-  final void Function(int tabIndex, String text)? onTriggerAction;
+  final void Function(int tabIndex, Map<String, dynamic>? actionData)? onTriggerAction;
 
   @override
   State<_ChatBotSheet> createState() => _ChatBotSheetState();
@@ -364,7 +364,7 @@ class _ChatBubble extends StatelessWidget {
   });
 
   final AiChatMessage message;
-  final void Function(int tabIndex, String text)? onTriggerAction;
+  final void Function(int tabIndex, Map<String, dynamic>? actionData)? onTriggerAction;
 
   @override
   Widget build(BuildContext context) {
@@ -480,43 +480,64 @@ class _ChatBubble extends StatelessWidget {
                             codeblockDecoration: const BoxDecoration(color: Colors.transparent),
                           ),
                         ),
-                        if (message.actionType != null) ...[
+                        if (message.actionType == 'ask_routing') ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ActionChip(
+                                avatar: const Icon(Icons.audiotrack_rounded, size: 16, color: Colors.white),
+                                label: Text(
+                                  '🎙️ 음성 생성 요청하기',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                backgroundColor: AppColors.secondary,
+                                side: BorderSide.none,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                onPressed: () {
+                                  context.read<ChatBotProvider>().sendMessage('음성(TTS) 생성을 진행하고 싶어');
+                                },
+                              ),
+                              ActionChip(
+                                avatar: const Icon(Icons.videocam_rounded, size: 16, color: Colors.white),
+                                label: Text(
+                                  '🎬 비디오 생성 요청하기',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                backgroundColor: AppColors.primary,
+                                side: BorderSide.none,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                onPressed: () {
+                                  context.read<ChatBotProvider>().sendMessage('비디오(영상) 생성을 진행하고 싶어');
+                                },
+                              ),
+                            ],
+                          ),
+                        ] else if (message.actionType == 'tts_trigger' || message.actionType == 'video_trigger') ...[
                           const SizedBox(height: 12),
                           InkWell(
                             onTap: () {
                               if (onTriggerAction != null) {
-                                String textToInject = message.text;
-                                
-                                // 1. 백틱 코드 블록 파싱 시도
-                                final codeBlockRegex = RegExp(r'```(?:[a-zA-Z0-9_\-]+)?\n([\s\S]*?)```');
-                                final match = codeBlockRegex.firstMatch(message.text);
-                                if (match != null && match.groupCount >= 1) {
-                                  textToInject = match.group(1)!.trim();
-                                } else {
-                                  // 2. 대괄호 [프롬프트] 파싱 시도
-                                  final promptIndex = message.text.indexOf('[프롬프트]');
-                                  if (promptIndex != -1) {
-                                    final subStr = message.text.substring(promptIndex + '[프롬프트]'.length).trim();
-                                    final lines = subStr.split('\n');
-                                    final promptLines = <String>[];
-                                    for (final line in lines) {
-                                      if (line.trim().startsWith('[')) break;
-                                      promptLines.add(line);
-                                    }
-                                    if (promptLines.isNotEmpty) {
-                                      textToInject = promptLines.join('\n').trim();
-                                    }
-                                  }
-                                }
-
-                                final targetTab = message.actionType == 'video' ? 2 : 1;
-                                onTriggerAction!(targetTab, textToInject);
+                                final isVideo = message.actionType == 'video_trigger';
+                                final targetTab = isVideo ? 2 : 1;
+                                onTriggerAction!(targetTab, message.actionData);
                                 Navigator.of(context).pop();
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      message.actionType == 'video'
+                                      message.actionType == 'video_trigger'
                                           ? '비디오 생성 화면으로 이동합니다'
                                           : 'TTS 생성 화면으로 이동합니다',
                                     ),
@@ -530,7 +551,7 @@ class _ChatBubble extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: message.actionType == 'video'
+                                  colors: message.actionType == 'video_trigger'
                                       ? [AppColors.primary, const Color(0xFF00C6FF)]
                                       : [AppColors.secondary, const Color(0xFFC084FC)],
                                   begin: Alignment.topLeft,
@@ -539,7 +560,7 @@ class _ChatBubble extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (message.actionType == 'video'
+                                    color: (message.actionType == 'video_trigger'
                                             ? AppColors.primary
                                             : AppColors.secondary)
                                         .withValues(alpha: 0.25),
@@ -552,7 +573,7 @@ class _ChatBubble extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    message.actionType == 'video'
+                                    message.actionType == 'video_trigger'
                                         ? Icons.videocam_rounded
                                         : Icons.audiotrack_rounded,
                                     size: 16,
@@ -560,7 +581,7 @@ class _ChatBubble extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    message.actionType == 'video' ? '비디오 생성하기' : 'TTS 생성하기',
+                                    message.actionType == 'video_trigger' ? '비디오 생성하기' : 'TTS 생성하기',
                                     style: theme.textTheme.labelMedium?.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,

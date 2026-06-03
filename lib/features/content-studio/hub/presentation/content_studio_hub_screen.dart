@@ -6,6 +6,7 @@ import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/content-studio/captioning/presentation/captioning_screen.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/tts_screen.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/tts_provider.dart';
+import 'package:parrokit/features/content-studio/tts/domain/repositories/tts_generation_repository.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_screen.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 import 'package:parrokit/features/content-studio/chat-bot/presentation/chat_bot_provider.dart';
@@ -159,13 +160,41 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                                     children: [
                                       const SizedBox(width: 8),
                                       ChatBotFab(
-                                        onTriggerAction: (tabIndex, text) {
-                                          _setPage(tabIndex);
+                                        onTriggerAction: (tabIndex, actionData) {
                                           if (tabIndex == 1) {
-                                            context.read<TtsProvider>().updateText(text);
+                                            final ttsProv = context.read<TtsProvider>();
+                                            if (actionData != null) {
+                                              if (actionData['text'] != null) {
+                                                ttsProv.updateText(actionData['text'] as String);
+                                              }
+                                              if (actionData['language'] != null) {
+                                                ttsProv.updateLanguage(actionData['language'] as String);
+                                              }
+                                              if (actionData['provider'] != null) {
+                                                final pType = actionData['provider'] == 'elevenlabs'
+                                                    ? TtsProviderType.elevenlabs
+                                                    : TtsProviderType.google;
+                                                ttsProv.updateProviderType(pType);
+                                              }
+                                              if (actionData['voiceId'] != null) {
+                                                ttsProv.updateVoiceId(actionData['voiceId'] as String);
+                                              }
+                                            }
                                           } else if (tabIndex == 2) {
-                                            context.read<VideoProvider>().updateScenePrompt(text);
+                                            final videoProv = context.read<VideoProvider>();
+                                            if (actionData != null) {
+                                              if (actionData['prompt'] != null) {
+                                                videoProv.updateScenePrompt(actionData['prompt'] as String);
+                                              }
+                                              if (actionData['ratio'] != null) {
+                                                videoProv.updateRatio(actionData['ratio'] as String);
+                                              }
+                                              if (actionData['dialogue'] != null) {
+                                                videoProv.updateDialogue(actionData['dialogue'] as String);
+                                              }
+                                            }
                                           }
+                                          _setPage(tabIndex);
                                         },
                                       ),
                                     ],

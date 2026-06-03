@@ -4,7 +4,7 @@ import 'chat_bot_sheet.dart';
 class ChatBotFab extends StatefulWidget {
   const ChatBotFab({super.key, this.onTriggerAction});
 
-  final void Function(int tabIndex, String text)? onTriggerAction;
+  final void Function(int tabIndex, Map<String, dynamic>? actionData)? onTriggerAction;
 
   @override
   State<ChatBotFab> createState() => _ChatBotFabState();

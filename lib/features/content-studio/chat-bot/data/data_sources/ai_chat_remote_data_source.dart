@@ -27,27 +27,27 @@ class AiChatRemoteDataSource {
       'model': model,
     });
 
-    final String aiText = response.data as String;
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data as Map);
 
-    // 3. AI 응답 텍스트로부터 액션 타입 및 프롬프트 추천 파싱 규칙 적용
-    String? actionType;
+    final String aiText = data['reply'] as String? ?? '';
+    final String? actionType = data['actionType'] as String?;
+    final Map<String, dynamic>? actionData = data['actionData'] != null
+        ? Map<String, dynamic>.from(data['actionData'] as Map)
+        : null;
+
+    // 이전과의 호환성을 위한 recommendedPrompt 매핑
     String? recommendedPrompt;
-
-    final promptMatch = RegExp(r'["“]([^"“]+)["”]').firstMatch(aiText);
-    final extracted = promptMatch?.group(1)?.trim();
-
-    if (aiText.contains('영상') || aiText.contains('비디오') || aiText.contains('장면')) {
-      actionType = 'video';
-      recommendedPrompt = extracted ?? '푸른 하늘을 날아오르는 화려한 깃털의 앵무새, 시네마틱 4k';
-    } else if (aiText.contains('음성') || aiText.contains('tts') || aiText.contains('TTS') || aiText.contains('목소리') || aiText.contains('대사')) {
-      actionType = 'tts';
-      recommendedPrompt = extracted ?? text;
+    if (actionType == 'video_trigger' && actionData != null) {
+      recommendedPrompt = actionData['prompt'] as String?;
+    } else if (actionType == 'tts_trigger' && actionData != null) {
+      recommendedPrompt = actionData['text'] as String?;
     }
 
     return {
       'text': aiText,
       'recommendedPrompt': recommendedPrompt,
       'actionType': actionType,
+      'actionData': actionData,
     };
   }
 }

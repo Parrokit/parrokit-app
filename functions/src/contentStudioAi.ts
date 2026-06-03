@@ -18,14 +18,35 @@ const ai = genkit({
   plugins: [vertexAI({location: "us-central1"})],
 });
 
+import { z } from "zod";
+
+export const ChatbotOutputSchema = z.object({
+  reply: z.string(),
+  actionType: z.enum(["none", "ask_routing", "tts_trigger", "video_trigger"]),
+  actionData: z.object({
+    text: z.string().optional(),
+    language: z.string().optional(),
+    provider: z.string().optional(),
+    voiceId: z.string().optional(),
+    prompt: z.string().optional(),
+    ratio: z.string().optional(),
+    duration: z.number().optional(),
+    routingOptions: z.array(z.string()).optional(),
+  }).nullable().optional(),
+});
+
 // 3. 각각의 Dotprompt 파일을 불러와서 Flow 정의
 export const chatbotFlow = ai.defineFlow(
-  "chatbotFlow",
-  async (input: {
-    history: { role: "user" | "model"; text: string }[];
-    message: string;
-    model?: string;
-  }) => {
+  {
+    name: "chatbotFlow",
+    inputSchema: z.object({
+      history: z.array(z.object({ role: z.enum(["user", "model"]), text: z.string() })),
+      message: z.string(),
+      model: z.string().optional(),
+    }),
+    outputSchema: ChatbotOutputSchema,
+  },
+  async (input) => {
     // 비용 폭탄 방지: 프론트엔드가 100개를 보내더라도, 무조건 최근 10개(대화 5번 왕복)만 잘라서 사용
     const MAX_HISTORY = 10;
     const recentHistory = (input.history || []).slice(-MAX_HISTORY);
@@ -34,7 +55,7 @@ export const chatbotFlow = ai.defineFlow(
     console.log(`[Chatbot][Flow] Model parameter details inputModel=${input.model} targetModel=${targetModel}`);
 
     const p = await ai.prompt("chatbot");
-    const {text} = await p(
+    const response = await p(
       {
         message: input.message,
         history: recentHistory,
@@ -44,7 +65,13 @@ export const chatbotFlow = ai.defineFlow(
         model: targetModel,
       }
     );
-    return text;
+    
+    // 만약 response.output이 존재하지 않는 경우를 대비한 대체값 제공
+    return response.output || {
+      reply: response.text || "",
+      actionType: "none",
+      actionData: null,
+    };
   }
 );
 
