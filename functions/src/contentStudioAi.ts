@@ -30,17 +30,13 @@ export const chatbotFlow = ai.defineFlow(
     const MAX_HISTORY = 10;
     const recentHistory = (input.history || []).slice(-MAX_HISTORY);
 
-    // 잘라낸 배열을 Genkit 규격으로 변환
-    const messages = recentHistory.map((msg) => ({
-      role: msg.role,
-      content: [{text: msg.text}],
-    }));
-
     const p = await ai.prompt("chatbot");
     const {text} = await p(
       {
-        input: {message: input.message},
-        messages: messages, // 과거 대화 내역을 AI 문맥에 자동 주입
+        input: {
+          message: input.message,
+          history: recentHistory,
+        },
       },
       {
         // 프론트엔드에서 모델 이름을 보냈다면 해당 모델로 덮어쓰기 (없으면 .prompt의 기본값 사용)
