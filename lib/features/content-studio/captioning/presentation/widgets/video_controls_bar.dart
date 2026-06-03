@@ -91,13 +91,12 @@ class _VideoControlsBarState extends State<VideoControlsBar> {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark
-        ? cs.surfaceContainerHigh
-        : cs.surface; // 화이트 모드에서는 기본 배경색 사용
+    final bgColor =
+        isDark ? cs.surfaceContainerHigh : cs.surface; // 화이트 모드에서는 기본 배경색 사용
 
     return Container(
       color: bgColor,
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -133,9 +132,11 @@ class _VideoControlsBarState extends State<VideoControlsBar> {
           // -n초
           _ControlButton(
             icon: Icons.replay_5_rounded,
-            label: '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초 전',
+            label:
+                '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초 전',
             onTap: _isInitialized
-                ? () => _seekRelative(Duration(milliseconds: (widget.skipSeconds * 1000).toInt() * -1))
+                ? () => _seekRelative(Duration(
+                    milliseconds: (widget.skipSeconds * 1000).toInt() * -1))
                 : null,
             cs: cs,
             size: 26,
@@ -159,15 +160,17 @@ class _VideoControlsBarState extends State<VideoControlsBar> {
           // +n초
           _ControlButton(
             icon: Icons.forward_5_rounded,
-            label: '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초 후',
+            label:
+                '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초 후',
             onTap: _isInitialized
-                ? () => _seekRelative(Duration(milliseconds: (widget.skipSeconds * 1000).toInt()))
+                ? () => _seekRelative(
+                    Duration(milliseconds: (widget.skipSeconds * 1000).toInt()))
                 : null,
             cs: cs,
             size: 26,
           ),
           const SizedBox(width: 12),
-          
+
           // 분리선 및 우측 버튼 영역 (처음으로, 설정)
           Container(
             height: 32,
@@ -309,15 +312,18 @@ class _BouncingButton extends StatefulWidget {
   State<_BouncingButton> createState() => _BouncingButtonState();
 }
 
-class _BouncingButtonState extends State<_BouncingButton> with SingleTickerProviderStateMixin {
+class _BouncingButtonState extends State<_BouncingButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
-    _scale = Tween<double>(begin: 1.0, end: 0.92).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 100));
+    _scale = Tween<double>(begin: 1.0, end: 0.92)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -341,4 +347,3 @@ class _BouncingButtonState extends State<_BouncingButton> with SingleTickerProvi
     );
   }
 }
-

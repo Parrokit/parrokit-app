@@ -134,7 +134,8 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Text('저장'),
                       ),

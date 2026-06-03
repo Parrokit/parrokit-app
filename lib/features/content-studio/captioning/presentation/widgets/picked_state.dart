@@ -121,7 +121,8 @@ class _PickedStateState extends State<PickedState> {
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (details) {
-                            if (details.primaryDelta! < -3 && !_isVideoCollapsed) {
+                            if (details.primaryDelta! < -3 &&
+                                !_isVideoCollapsed) {
                               setState(() => _isVideoCollapsed = true);
                             }
                           },
@@ -443,7 +444,8 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
       builder: (context) {
         final cs = Theme.of(context).colorScheme;
         return AlertDialog(
-          title: const Text('동영상 지우기', style: TextStyle(fontWeight: FontWeight.w700)),
+          title: const Text('동영상 지우기',
+              style: TextStyle(fontWeight: FontWeight.w700)),
           content: const Text('현재 선택된 동영상을 정말 지우시겠습니까?'),
           actions: [
             TextButton(
@@ -483,7 +485,6 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
           ),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -502,7 +503,10 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
               Container(
                 height: 32,
                 width: 1,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.1),
               ),
               const SizedBox(width: 8),
               _TabButton(
@@ -539,12 +543,12 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                   const SizedBox(height: 8),
                   Divider(
                       height: 1, color: cs.onSurface.withValues(alpha: 0.1)),
-                  const SizedBox(height: 16),
                 ],
                 if (_isExpanded[0]) ...[
                   // 1. 메타 데이터
+                  const SizedBox(height: 16),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -629,71 +633,74 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                 ],
                 if (_isExpanded[1]) ...[
                   // 2. A-B 리스트
-                  const SizedBox(height: 16),
                   if (widget.segmentsWidget != null) ...[
                     widget.segmentsWidget!,
-                    const SizedBox(height: 16),
                   ],
                 ],
                 if (_isExpanded[2]) ...[
                   // 3. 동영상 설정
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _OptionCard(
-                              icon: Icons.speed_rounded,
-                              title: '배속',
-                              value: '${currentSpeed.toStringAsFixed(2)}x',
-                              onTap: () => _showSpeedPickerBottomSheet(context),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _OptionCard(
+                                icon: Icons.speed_rounded,
+                                title: '배속',
+                                value: '${currentSpeed.toStringAsFixed(2)}x',
+                                onTap: () =>
+                                    _showSpeedPickerBottomSheet(context),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: _OptionCard(
-                              icon: Icons.skip_next_rounded,
-                              title: '스킵 간격',
-                              value:
-                                  '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초',
-                              onTap: () => _showSkipPickerBottomSheet(context),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: _OptionCard(
+                                icon: Icons.skip_next_rounded,
+                                title: '스킵 간격',
+                                value:
+                                    '${widget.skipSeconds.toStringAsFixed(widget.skipSeconds == widget.skipSeconds.truncateToDouble() ? 0 : 1)}초',
+                                onTap: () =>
+                                    _showSkipPickerBottomSheet(context),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _OptionCard(
-                              icon: Icons.swap_horiz_rounded,
-                              title: '다시 선택',
-                              onTap: () {
-                                widget.controller?.pause();
-                                showVideoPickerSheet(
-                                  context: context,
-                                  title: '동영상 다시 선택',
-                                  onPickFile: widget.onReplace,
-                                  onPickPhotos: widget.onPickFromPhotos,
-                                );
-                              },
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _OptionCard(
+                                icon: Icons.swap_horiz_rounded,
+                                title: '다시 선택',
+                                onTap: () {
+                                  widget.controller?.pause();
+                                  showVideoPickerSheet(
+                                    context: context,
+                                    title: '동영상 다시 선택',
+                                    onPickFile: widget.onReplace,
+                                    onPickPhotos: widget.onPickFromPhotos,
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
                               child: _OptionCard(
                                 icon: Icons.delete_outline_rounded,
                                 title: '지우기',
                                 accentColor: cs.error,
                                 onTap: () => _showDeleteConfirmDialog(context),
                               ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
                 ],
               ],
             ),
@@ -722,7 +729,9 @@ class _TabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final color = isGradient ? Colors.white : (isActive ? cs.primary : cs.onSurfaceVariant);
+    final color = isGradient
+        ? Colors.white
+        : (isActive ? cs.primary : cs.onSurfaceVariant);
 
     Widget child = Column(
       children: [
@@ -741,7 +750,8 @@ class _TabButton extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 11,
-            fontWeight: isActive || isGradient ? FontWeight.w800 : FontWeight.w600,
+            fontWeight:
+                isActive || isGradient ? FontWeight.w800 : FontWeight.w600,
             color: color,
           ),
         ),

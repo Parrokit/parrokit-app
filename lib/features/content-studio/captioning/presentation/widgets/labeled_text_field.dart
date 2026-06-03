@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/shared/theme/app_radius.dart';
+
 import 'package:flutter/services.dart';
 
 class LabeledTextField extends StatelessWidget {
@@ -33,12 +33,6 @@ class LabeledTextField extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    OutlineInputBorder borderStyle(Color c, [double w = 0.8]) =>
-        OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: c, width: w),
-        );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -54,14 +48,15 @@ class LabeledTextField extends StatelessWidget {
             hintText: hint,
             hintStyle: tt.bodyMedium
                 ?.copyWith(color: cs.onSurface.withValues(alpha: 0.35)),
-            filled: true,
-            fillColor: cs.surface,
+            filled: false,
             isDense: true,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            enabledBorder: borderStyle(cs.outlineVariant),
-            focusedBorder: borderStyle(cs.primary, 1.0),
-            border: borderStyle(cs.outlineVariant),
+            enabledBorder: InputBorder.none,
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: cs.primary, width: 1.5),
+            ),
+            border: InputBorder.none,
             prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 18),
             suffixIcon:
                 clearable && controller != null && (controller!.text.isNotEmpty)

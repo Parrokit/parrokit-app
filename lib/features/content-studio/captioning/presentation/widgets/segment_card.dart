@@ -5,7 +5,7 @@ import 'package:parrokit/core/shared/theme/app_spacing.dart';
 
 import '../../data/constants/editor_strings.dart';
 import 'time_triplet_field.dart';
-import 'card_container.dart';
+
 import 'labeled_text_field.dart';
 
 class SegmentCard extends StatelessWidget {
@@ -18,6 +18,7 @@ class SegmentCard extends StatelessWidget {
     required this.pronCtl,
     required this.koCtl,
     this.enabled = true,
+    this.onDelete,
   });
 
   final int index;
@@ -27,6 +28,7 @@ class SegmentCard extends StatelessWidget {
   final TextEditingController pronCtl;
   final TextEditingController koCtl;
   final bool enabled;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +42,8 @@ class SegmentCard extends StatelessWidget {
       ignoring: !enabled,
       child: Opacity(
         opacity: enabled ? 1.0 : 0.5,
-        child: CardContainer(
-          padding: const EdgeInsets.all(AppSpacing.md),
+        child: Container(
+          padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -81,6 +83,13 @@ class SegmentCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (onDelete != null)
+                    IconButton(
+                      icon: Icon(Icons.delete_outline_rounded,
+                          color: theme.colorScheme.error, size: 20),
+                      onPressed: onDelete,
+                      tooltip: EditorStrings.removeSegmentButtonLabel,
+                    ),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
