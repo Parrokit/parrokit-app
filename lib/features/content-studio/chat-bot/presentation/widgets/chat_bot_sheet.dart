@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
-import '../chat_bot_view_model.dart';
+import '../chat_bot_provider.dart';
+import '../../domain/entities/ai_chat_message.dart';
 
 Future<void> showChatBotSheet(BuildContext context) async {
   await showModalBottomSheet(
@@ -9,7 +10,7 @@ Future<void> showChatBotSheet(BuildContext context) async {
     isScrollControlled: true,
     builder: (context) {
       return ChangeNotifierProvider(
-        create: (_) => ChatBotViewModel(),
+        create: (_) => ChatBotProvider(),
         child: const _ChatBotSheet(),
       );
     },
@@ -35,7 +36,7 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
   void _handleSend() {
     final text = _textController.text;
     if (text.isEmpty) return;
-    context.read<ChatBotViewModel>().sendMessage(text);
+    context.read<ChatBotProvider>().sendMessage(text);
     _textController.clear();
   }
 
@@ -75,7 +76,7 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
 
             // Chat list
             Expanded(
-              child: Consumer<ChatBotViewModel>(
+              child: Consumer<ChatBotProvider>(
                 builder: (context, vm, _) {
                   final messages = vm.messages;
                   return ListView.builder(
@@ -150,7 +151,7 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
 class _ChatBubble extends StatelessWidget {
   const _ChatBubble({required this.message});
 
-  final ChatMessage message;
+  final AiChatMessage message;
 
   @override
   Widget build(BuildContext context) {
@@ -171,13 +172,44 @@ class _ChatBubble extends StatelessWidget {
             bottomLeft: !message.isUser ? const Radius.circular(0) : null,
           ),
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: message.isUser
-                ? Colors.white
-                : (isDark ? Colors.white : Colors.black87),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message.text,
+              style: TextStyle(
+                color: message.isUser
+                    ? Colors.white
+                    : (isDark ? Colors.white : Colors.black87),
+              ),
+            ),
+            if (message.actionType != null) ...[
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  // TODO: 실제 TTS 또는 Video 스튜디오로 이동하며 프롬프트 전달
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${message.actionType} 생성 화면으로 이동 (Mock)')),
+                  );
+                },
+                icon: Icon(
+                  message.actionType == 'video' ? Icons.videocam : Icons.audiotrack,
+                  size: 18,
+                ),
+                label: Text(
+                  message.actionType == 'video' ? '비디오 생성하기' : 'TTS 생성하기',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

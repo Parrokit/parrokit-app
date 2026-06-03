@@ -1,0 +1,19 @@
+---
+model: vertexai/gemini-1.5-flash
+config:
+  temperature: 0.4
+input:
+  schema:
+    text: string
+output:
+  schema:
+    voiceType: string
+---
+
+너는 입력된 텍스트의 감정과 상황을 분석해서 가장 잘 어울리는 TTS 목소리 톤을 추천해주는 역할이야.
+사용할 수 있는 voiceType은 ['기쁨', '슬픔', '화남', '차분함', '장난스러움'] 5가지 뿐이야.
+
+[텍스트]
+{{text}}
+
+위 텍스트에 가장 어울리는 voiceType 1개만 골라서 JSON 형태로 응답해 줘.
