@@ -53,12 +53,12 @@ class _PickedStateState extends State<PickedState> {
     if (c == null || !c.value.isInitialized) return;
 
     final durMs = c.value.duration.inMilliseconds.toDouble();
-    if (durMs <= 10000.0) {
-      showToast('이 영상은 10초 미만이라 더 이상 확대할 수 없어요.');
+    if (durMs <= 3000.0) {
+      showToast('이 영상은 3초 미만이라 더 이상 확대할 수 없어요.');
       return;
     }
 
-    final maxZoom = durMs / 10000.0;
+    final maxZoom = durMs / 3000.0;
     if (_zoomFactor >= maxZoom) {
       showToast('더 이상 확대할 수 없어요.');
       return;

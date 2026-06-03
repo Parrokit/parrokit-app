@@ -79,24 +79,21 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     if (c != null && c.value.isInitialized && mounted) {
       final posMs = c.value.position.inMilliseconds;
       final durMs = c.value.duration.inMilliseconds;
-      final minDur = math.min(10000.0, durMs.toDouble());
-    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
-      
-      // Auto-scroll logic: 재생 선이 화면 우측 80%를 넘거나 화면을 이탈하면 이동
-      if (posMs > _windowStartMs + windowDurMs * 0.8) {
-        _windowStartMs = posMs - (windowDurMs * 0.2).toInt();
-      } else if (posMs < _windowStartMs) {
-        _windowStartMs = posMs - (windowDurMs * 0.2).toInt();
-      }
+      final minDur = math.min(3000.0, durMs.toDouble());
+      final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
       
       final oldStart = _windowStartMs;
+      
+      // 실시간 부드러운 스크롤 (Center-locked):
+      // 재생 위치를 항상 화면 중앙에 두도록 윈도우를 지속적으로 이동
+      _windowStartMs = posMs - (windowDurMs ~/ 2);
       _windowStartMs = _windowStartMs.clamp(0, math.max(0, durMs - windowDurMs));
       
-      // 창 위치가 변했으면 파형을 다시 계산
-      if (oldStart != _windowStartMs) {
+      // 창 위치가 변했거나 재생 중이면 UI 업데이트
+      if (oldStart != _windowStartMs || c.value.isPlaying) {
         _bars = _computeBars();
+        setState(() {});
       }
-      setState(() {});
     }
   }
 
@@ -105,7 +102,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     if (c == null || !c.value.isInitialized) return;
     final posMs = c.value.position.inMilliseconds;
     final durMs = c.value.duration.inMilliseconds;
-    final minDur = math.min(10000.0, durMs.toDouble());
+    final minDur = math.min(3000.0, durMs.toDouble());
     final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
     
     // 현재 재생 위치를 화면 중앙에 맞추도록 윈도우 이동
@@ -211,7 +208,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     int actualWindowDurMs = 0;
     if (c != null && c.value.isInitialized) {
       final durMs = c.value.duration.inMilliseconds;
-      final minDur = math.min(10000.0, durMs.toDouble());
+      final minDur = math.min(3000.0, durMs.toDouble());
       final windowDurMs =
           (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
       actualWindowDurMs = math.min(windowDurMs, durMs);
