@@ -30,14 +30,17 @@ class ChatBotProvider extends ChangeNotifier {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
+    // 현재까지의 대화 목록 복사 (새 사용자 메시지 추가 전)
+    final history = List<AiChatMessage>.from(_messages);
+
     // 사용자 메시지 추가
     _messages.insert(0, AiChatMessage(text: text, isUser: true));
     _isTyping = true;
     notifyListeners();
 
     try {
-      // AI 응답 (프롬프트 추천 및 액션 버튼 포함 가능성)
-      final aiResponse = await _sendMessageUseCase.call(text);
+      // AI 응답 호출 (대화 히스토리 포함)
+      final aiResponse = await _sendMessageUseCase.call(text, history);
       _messages.insert(0, aiResponse);
     } catch (e) {
       _messages.insert(

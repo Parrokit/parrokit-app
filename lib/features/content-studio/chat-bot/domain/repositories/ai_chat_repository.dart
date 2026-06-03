@@ -1,5 +1,5 @@
 import '../entities/ai_chat_message.dart';
 
 abstract class AiChatRepository {
-  Future<AiChatMessage> sendMessage(String text);
+  Future<AiChatMessage> sendMessage(String text, List<AiChatMessage> history);
 }

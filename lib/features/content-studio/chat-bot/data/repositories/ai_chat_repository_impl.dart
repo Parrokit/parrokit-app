@@ -8,8 +8,8 @@ class AiChatRepositoryImpl implements AiChatRepository {
   const AiChatRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<AiChatMessage> sendMessage(String text) async {
-    final response = await remoteDataSource.sendMessage(text);
+  Future<AiChatMessage> sendMessage(String text, List<AiChatMessage> history) async {
+    final response = await remoteDataSource.sendMessage(text, history);
     return AiChatMessage(
       text: response['text'] as String,
       isUser: false,

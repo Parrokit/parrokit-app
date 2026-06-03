@@ -1,27 +1,45 @@
-import 'dart:async';
+import 'package:cloud_functions/cloud_functions.dart';
+import '../../domain/entities/ai_chat_message.dart';
 
 class AiChatRemoteDataSource {
-  Future<Map<String, dynamic>> sendMessage(String text) async {
-    await Future.delayed(const Duration(seconds: 2));
+  Future<Map<String, dynamic>> sendMessage(String text, List<AiChatMessage> history) async {
+    // 1. 대화 기록을 Genkit 및 Cloud Functions 요구 구조로 매핑 (시간순 정렬을 위해 reversed 적용)
+    final historyData = history.reversed.map((msg) {
+      return {
+        'role': msg.isUser ? 'user' : 'model',
+        'text': msg.text,
+      };
+    }).toList();
 
-    if (text.contains('영상') || text.contains('비디오')) {
-      return {
-        'text': '이 프롬프트를 추천해 드려요! 마음에 드시면 아래 버튼을 눌러 바로 영상을 생성할 수 있습니다.',
-        'recommendedPrompt': '푸른 하늘을 날아오르는 화려한 깃털의 앵무새, 시네마틱 4k',
-        'actionType': 'video',
-      };
-    } else if (text.contains('음성') || text.contains('tts') || text.contains('TTS') || text.contains('목소리')) {
-      return {
-        'text': '멋진 대사네요! 이 대사로 바로 음성을 생성할까요?',
-        'recommendedPrompt': text,
-        'actionType': 'tts',
-      };
-    } else {
-      return {
-        'text': 'TTS나 Video 생성에 대해 무엇이든 물어보세요! 제가 더 좋은 프롬프트로 다듬어드릴게요.',
-        'recommendedPrompt': null,
-        'actionType': null,
-      };
+    // 2. Firebase Cloud Functions 호출
+    final callable = FirebaseFunctions.instance.httpsCallable('generateChatbotResponse');
+
+    final response = await callable.call({
+      'message': text,
+      'history': historyData,
+    });
+
+    final String aiText = response.data as String;
+
+    // 3. AI 응답 텍스트로부터 액션 타입 및 프롬프트 추천 파싱 규칙 적용
+    String? actionType;
+    String? recommendedPrompt;
+
+    final promptMatch = RegExp(r'["“]([^"“]+)["”]').firstMatch(aiText);
+    final extracted = promptMatch?.group(1)?.trim();
+
+    if (aiText.contains('영상') || aiText.contains('비디오') || aiText.contains('장면')) {
+      actionType = 'video';
+      recommendedPrompt = extracted ?? '푸른 하늘을 날아오르는 화려한 깃털의 앵무새, 시네마틱 4k';
+    } else if (aiText.contains('음성') || aiText.contains('tts') || aiText.contains('TTS') || aiText.contains('목소리') || aiText.contains('대사')) {
+      actionType = 'tts';
+      recommendedPrompt = extracted ?? text;
     }
+
+    return {
+      'text': aiText,
+      'recommendedPrompt': recommendedPrompt,
+      'actionType': actionType,
+    };
   }
 }
