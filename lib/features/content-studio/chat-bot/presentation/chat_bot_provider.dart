@@ -72,6 +72,7 @@ class ChatBotProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('[Chatbot][Provider] Calling sendMessageUseCase text=$text chatbotMode=$_chatbotMode');
       // AI 응답 호출 (대화 히스토리, 모델 정보, 챗봇 모드 포함)
       final aiResponse = await _sendMessageUseCase.call(text, history, _selectedModel, _chatbotMode);
       
@@ -80,11 +81,14 @@ class ChatBotProvider extends ChangeNotifier {
         final targetMode = aiResponse.actionData!['targetMode'] as String?;
         if (targetMode != null) {
           _chatbotMode = targetMode;
+          debugPrint('[Chatbot][Provider] Mode changed dynamically targetMode=$_chatbotMode');
         }
       }
       
+      debugPrint('[Chatbot][Provider] Send message success replyLength=${aiResponse.text.length} actionType=${aiResponse.actionType}');
       _messages.insert(0, aiResponse);
     } catch (e) {
+      debugPrint('[Chatbot][Provider] Send message failed error=$e');
       _messages.insert(
         0,
         const AiChatMessage(text: '오류가 발생했습니다. 다시 시도해 주세요.', isUser: false),

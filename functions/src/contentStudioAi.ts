@@ -56,7 +56,8 @@ export const chatbotFlow = ai.defineFlow(
 
     const targetModel = input.model ? `vertexai/${input.model}` : undefined;
     console.log(
-      `[Chatbot][Flow] Mode parameter inputMode=${input.model} targetModel=${targetModel} chatbotMode=${input.chatbotMode}`
+      `[Chatbot][Flow] Mode parameter inputMode=${input.model} ` +
+        `targetModel=${targetModel} chatbotMode=${input.chatbotMode}`
     );
 
     // chatbotMode에 따라 프롬프트 파일 분기
