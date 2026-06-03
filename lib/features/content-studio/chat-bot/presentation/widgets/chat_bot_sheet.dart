@@ -28,6 +28,29 @@ Future<void> showChatBotSheet(
   );
 }
 
+LinearGradient _getGradientForMode(String mode) {
+  switch (mode) {
+    case 'tts':
+      return const LinearGradient(
+        colors: [Color(0xFFC084FC), Color(0xFFEC4899)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    case 'video':
+      return const LinearGradient(
+        colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    default: // 'general'
+      return const LinearGradient(
+        colors: [Color(0xFF8B5CF6), Color(0xFF3B82F6)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+  }
+}
+
 class _ChatBotSheet extends StatefulWidget {
   const _ChatBotSheet({this.onTriggerAction});
 
@@ -67,9 +90,10 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
 
   void _handleSend() {
     final text = _textController.text;
-    if (text.isEmpty) return;
+    if (text.trim().isEmpty) return;
     context.read<ChatBotProvider>().sendMessage(text);
     _textController.clear();
+    _focusNode.requestFocus();
   }
 
   @override
@@ -110,11 +134,7 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.secondary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      gradient: _getGradientForMode(provider.chatbotMode),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -129,7 +149,11 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'AI 스튜디오 어시스턴트',
+                          provider.chatbotMode == 'tts'
+                              ? 'AI TTS 어시스턴트'
+                              : provider.chatbotMode == 'video'
+                                  ? 'AI 비디오 어시스턴트'
+                                  : 'AI 스튜디오 어시스턴트',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -147,7 +171,11 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '도움 준비 완료',
+                              provider.chatbotMode == 'tts'
+                                  ? '음성 스튜디오 튜닝 중'
+                                  : provider.chatbotMode == 'video'
+                                      ? '비디오 씬 기획 중'
+                                      : '도움 준비 완료',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: isDark
                                     ? AppColors.textTertiaryDark
@@ -160,6 +188,22 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                       ],
                     ),
                   ),
+                  // "처음으로" 리셋 버튼
+                  if (provider.chatbotMode != 'general') ...[
+                    TextButton.icon(
+                      onPressed: () => provider.resetChatbot(),
+                      icon: const Icon(Icons.refresh_rounded, size: 14),
+                      label: const Text('처음으로'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: isDark ? AppColors.textPrimaryDark : AppColors.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        textStyle: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                   // 모델 선택 칩
                   InkWell(
                     onTap: () => _showModelSelectorBottomSheet(context, provider),
@@ -407,6 +451,9 @@ class _ChatBubble extends StatelessWidget {
         ),
       );
     } else {
+      final mode = context.watch<ChatBotProvider>().chatbotMode;
+      final currentGradient = _getGradientForMode(mode);
+
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
@@ -416,15 +463,11 @@ class _ChatBubble extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.secondary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: currentGradient,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.secondary.withValues(alpha: 0.2),
+                    color: currentGradient.colors.last.withValues(alpha: 0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -501,7 +544,10 @@ class _ChatBubble extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 onPressed: () {
-                                  context.read<ChatBotProvider>().sendMessage('음성(TTS) 생성을 진행하고 싶어');
+                                  final prov = context.read<ChatBotProvider>();
+                                  prov.updateChatbotMode('tts');
+                                  prov.sendMessage('음성(TTS) 생성을 진행하고 싶어');
+                                  FocusScope.of(context).unfocus();
                                 },
                               ),
                               ActionChip(
@@ -519,7 +565,10 @@ class _ChatBubble extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 onPressed: () {
-                                  context.read<ChatBotProvider>().sendMessage('비디오(영상) 생성을 진행하고 싶어');
+                                  final prov = context.read<ChatBotProvider>();
+                                  prov.updateChatbotMode('video');
+                                  prov.sendMessage('비디오(영상) 생성을 진행하고 싶어');
+                                  FocusScope.of(context).unfocus();
                                 },
                               ),
                             ],

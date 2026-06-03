@@ -37,6 +37,29 @@ class ChatBotProvider extends ChangeNotifier {
     }
   }
 
+  String _chatbotMode = 'general';
+  String get chatbotMode => _chatbotMode;
+
+  void updateChatbotMode(String mode) {
+    if (_chatbotMode != mode) {
+      _chatbotMode = mode;
+      notifyListeners();
+    }
+  }
+
+  void resetChatbot() {
+    _chatbotMode = 'general';
+    _messages.clear();
+    _messages.insert(
+      0,
+      const AiChatMessage(
+        text: '안녕하세요! TTS 생성 및 비디오 생성을 도와드릴 챗봇입니다.\n어떤 영상이나 음성을 만들고 싶으신가요?',
+        isUser: false,
+      ),
+    );
+    notifyListeners();
+  }
+
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
@@ -49,8 +72,17 @@ class ChatBotProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // AI 응답 호출 (대화 히스토리 및 모델 정보 포함)
-      final aiResponse = await _sendMessageUseCase.call(text, history, _selectedModel);
+      // AI 응답 호출 (대화 히스토리, 모델 정보, 챗봇 모드 포함)
+      final aiResponse = await _sendMessageUseCase.call(text, history, _selectedModel, _chatbotMode);
+      
+      // AI 응답의 actionType이 change_mode인 경우, 클라이언트의 챗봇 모드 전환 처리
+      if (aiResponse.actionType == 'change_mode' && aiResponse.actionData != null) {
+        final targetMode = aiResponse.actionData!['targetMode'] as String?;
+        if (targetMode != null) {
+          _chatbotMode = targetMode;
+        }
+      }
+      
       _messages.insert(0, aiResponse);
     } catch (e) {
       _messages.insert(

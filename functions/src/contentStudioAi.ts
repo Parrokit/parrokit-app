@@ -18,7 +18,7 @@ const ai = genkit({
   plugins: [vertexAI({location: "us-central1"})],
 });
 
-import { z } from "zod";
+import {z} from "zod";
 
 export const ChatbotOutputSchema = z.object({
   reply: z.string(),
@@ -40,9 +40,12 @@ export const chatbotFlow = ai.defineFlow(
   {
     name: "chatbotFlow",
     inputSchema: z.object({
-      history: z.array(z.object({ role: z.enum(["user", "model"]), text: z.string() })),
+      history: z.array(
+        z.object({role: z.enum(["user", "model"]), text: z.string()})
+      ),
       message: z.string(),
       model: z.string().optional(),
+      chatbotMode: z.enum(["general", "tts", "video"]).optional(),
     }),
     outputSchema: ChatbotOutputSchema,
   },
@@ -52,9 +55,19 @@ export const chatbotFlow = ai.defineFlow(
     const recentHistory = (input.history || []).slice(-MAX_HISTORY);
 
     const targetModel = input.model ? `vertexai/${input.model}` : undefined;
-    console.log(`[Chatbot][Flow] Model parameter details inputModel=${input.model} targetModel=${targetModel}`);
+    console.log(
+      `[Chatbot][Flow] Mode parameter inputMode=${input.model} targetModel=${targetModel} chatbotMode=${input.chatbotMode}`
+    );
 
-    const p = await ai.prompt("chatbot");
+    // chatbotMode에 따라 프롬프트 파일 분기
+    let promptName = "chatbots/general-agent";
+    if (input.chatbotMode === "tts") {
+      promptName = "chatbots/tts-specialist-agent";
+    } else if (input.chatbotMode === "video") {
+      promptName = "chatbots/video-specialist-agent";
+    }
+
+    const p = await ai.prompt(promptName);
     const response = await p(
       {
         message: input.message,
@@ -65,7 +78,7 @@ export const chatbotFlow = ai.defineFlow(
         model: targetModel,
       }
     );
-    
+
     // 만약 response.output이 존재하지 않는 경우를 대비한 대체값 제공
     return response.output || {
       reply: response.text || "",
