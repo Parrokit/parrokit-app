@@ -109,11 +109,11 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
             children: [
               Column(
                 children: [
+                  FileSection(vm: vm),
                   Expanded(
                     child: ListView(
                       padding: const EdgeInsets.only(bottom: 16),
                       children: [
-                        FileSection(vm: vm),
                         const SizedBox(height: 24),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -130,10 +130,6 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
                           child: TagsSection(vm: vm),
                         ),
                         const SizedBox(height: 24),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SegmentsSection(vm: vm),
-                        ),
                         const SizedBox(height: 16),
                       ],
                     ),

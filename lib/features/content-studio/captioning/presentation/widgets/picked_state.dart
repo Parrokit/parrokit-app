@@ -390,36 +390,33 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
           ),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), // Added bottom padding for a safer area feel
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 탭 버튼 영역
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(
-                child: _TabButton(
-                  icon: Icons.info_outline_rounded,
-                  label: '메타데이터',
-                  isActive: _isExpanded[0],
-                  onTap: () => setState(() => _isExpanded[0] = !_isExpanded[0]),
-                ),
+              _TabButton(
+                icon: Icons.info_outline_rounded,
+                label: '메타데이터',
+                isActive: _isExpanded[0],
+                onTap: () => setState(() => _isExpanded[0] = !_isExpanded[0]),
               ),
-              Expanded(
-                child: _TabButton(
-                  icon: Icons.auto_awesome_rounded,
-                  label: '자동자막 & A-B',
-                  isActive: _isExpanded[1],
-                  onTap: () => setState(() => _isExpanded[1] = !_isExpanded[1]),
-                ),
+              const SizedBox(width: 8),
+              _TabButton(
+                icon: Icons.auto_awesome_rounded,
+                label: '자동자막 & A-B',
+                isActive: _isExpanded[1],
+                onTap: () => setState(() => _isExpanded[1] = !_isExpanded[1]),
               ),
-              Expanded(
-                child: _TabButton(
-                  icon: Icons.settings_rounded,
-                  label: '동영상 설정',
-                  isActive: _isExpanded[2],
-                  onTap: () => setState(() => _isExpanded[2] = !_isExpanded[2]),
-                ),
+              const SizedBox(width: 8),
+              _TabButton(
+                icon: Icons.settings_rounded,
+                label: '동영상 설정',
+                isActive: _isExpanded[2],
+                onTap: () => setState(() => _isExpanded[2] = !_isExpanded[2]),
               ),
             ],
           ),
@@ -683,7 +680,7 @@ class _TabButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         child: Column(
           children: [
             AnimatedContainer(
