@@ -22,7 +22,13 @@ import {z} from "zod";
 
 export const ChatbotOutputSchema = z.object({
   reply: z.string(),
-  actionType: z.enum(["none", "ask_routing", "tts_trigger", "video_trigger"]),
+  actionType: z.enum([
+    "none",
+    "ask_routing",
+    "change_mode",
+    "tts_trigger",
+    "video_trigger",
+  ]),
   actionData: z.object({
     text: z.string().optional(),
     language: z.string().optional(),
@@ -32,6 +38,7 @@ export const ChatbotOutputSchema = z.object({
     ratio: z.string().optional(),
     duration: z.number().optional(),
     routingOptions: z.array(z.string()).optional(),
+    targetMode: z.string().optional(),
   }).nullable().optional(),
 });
 
