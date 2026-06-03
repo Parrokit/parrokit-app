@@ -11,6 +11,7 @@ class ChatBotProvider extends ChangeNotifier {
     const AiChatMessage(
       text: '안녕하세요! TTS 생성 및 비디오 생성을 도와드릴 챗봇입니다.\n어떤 영상이나 음성을 만들고 싶으신가요?',
       isUser: false,
+      chatbotMode: 'general',
     ),
   ];
 
@@ -66,6 +67,7 @@ class ChatBotProvider extends ChangeNotifier {
       const AiChatMessage(
         text: '안녕하세요! TTS 생성 및 비디오 생성을 도와드릴 챗봇입니다.\n어떤 영상이나 음성을 만들고 싶으신가요?',
         isUser: false,
+        chatbotMode: 'general',
       ),
     );
     notifyListeners();
@@ -78,7 +80,7 @@ class ChatBotProvider extends ChangeNotifier {
     final history = List<AiChatMessage>.from(_messages);
 
     // 사용자 메시지 추가
-    _messages.insert(0, AiChatMessage(text: text, isUser: true));
+    _messages.insert(0, AiChatMessage(text: text, isUser: true, chatbotMode: _chatbotMode));
     _isTyping = true;
     notifyListeners();
 
@@ -104,12 +106,16 @@ class ChatBotProvider extends ChangeNotifier {
       }
 
       debugPrint('[Chatbot][Provider] Send message success replyLength=${aiResponse.text.length} actionType=${aiResponse.actionType}');
-      _messages.insert(0, aiResponse);
+      _messages.insert(0, aiResponse.copyWith(chatbotMode: _chatbotMode));
     } catch (e) {
       debugPrint('[Chatbot][Provider] Send message failed error=$e');
       _messages.insert(
         0,
-        const AiChatMessage(text: '오류가 발생했습니다. 다시 시도해 주세요.', isUser: false),
+        AiChatMessage(
+          text: '오류가 발생했습니다. 다시 시도해 주세요.',
+          isUser: false,
+          chatbotMode: _chatbotMode,
+        ),
       );
     } finally {
       _isTyping = false;

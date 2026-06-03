@@ -664,7 +664,7 @@ class _ChatBubble extends StatelessWidget {
         ),
       );
     } else {
-      final mode = context.watch<ChatBotProvider>().chatbotMode;
+      final mode = message.chatbotMode ?? 'general';
       final currentGradient = _getGradientForMode(mode);
 
       return Padding(
