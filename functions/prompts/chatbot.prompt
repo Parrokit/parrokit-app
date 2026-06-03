@@ -21,8 +21,8 @@ input:
 4. 불필요한 설명은 줄이고, 바로 활용 가능한 형태로 답변한다.
 
 {{#each history}}
-{{role role}}
-{{text}}
+{{role this.role}}
+{{this.text}}
 {{/each}}
 
 {{role "user"}}
