@@ -526,7 +526,6 @@ class _OverlayRangeTile extends StatelessWidget {
     final borderColor = isSelected
         ? range.color.withValues(alpha: 0.75)
         : range.color.withValues(alpha: 0.38);
-    final handleWidth = isSelected ? _handleWidth : 0.0;
 
     return IgnorePointer(
       ignoring: !canInteract,
@@ -534,13 +533,12 @@ class _OverlayRangeTile extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            bottom: 22,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: onSelected,
               onTapDown: (_) => onSelected(),
               onPanStart: (_) => onSelected(),
-              onPanUpdate: canInteract
+              onPanUpdate: canInteract && !isSelected
                   ? (details) => _moveRange(details.delta.dx)
                   : null,
               child: Container(
@@ -550,10 +548,7 @@ class _OverlayRangeTile extends StatelessWidget {
                     color: borderColor,
                     width: isSelected ? 2 : 1,
                   ),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(8),
-                    bottom: Radius.circular(0),
-                  ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
@@ -562,8 +557,8 @@ class _OverlayRangeTile extends StatelessWidget {
             Positioned(
               left: 0,
               bottom: 0,
-              width: handleWidth,
               height: 22,
+              width: 24,
               child: _OverlayHandle(
                 color: cs.primary,
                 alignLeft: true,
@@ -576,8 +571,8 @@ class _OverlayRangeTile extends StatelessWidget {
             Positioned(
               right: 0,
               bottom: 0,
-              width: handleWidth,
               height: 22,
+              width: 24,
               child: _OverlayHandle(
                 color: cs.primary,
                 alignLeft: false,
@@ -589,19 +584,6 @@ class _OverlayRangeTile extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  double get _handleWidth {
-    final width = _rangeWidth;
-    if (width <= 0) return 4.0;
-    return math.min(8.0, math.max(4.0, width / 4));
-  }
-
-  double get _rangeWidth {
-    final visibleStart = math.max(range.startMs, windowStartMs);
-    final visibleEnd = math.min(range.endMs, windowEndMs);
-    if (visibleEnd <= visibleStart) return 0;
-    return ((visibleEnd - visibleStart) / actualWindowDurMs) * totalWidth;
   }
 
   void _moveRange(double deltaDx) {
@@ -695,47 +677,50 @@ class _OverlayHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onPanUpdate: onPanUpdate,
-      child: Align(
-        alignment: alignLeft ? Alignment.centerLeft : Alignment.centerRight,
-        child: SizedBox(
-          width: 18,
-          height: double.infinity,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
+    return SizedBox(
+      width: 24,
+      height: 22,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanUpdate: onPanUpdate,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: alignLeft ? Alignment.bottomLeft : Alignment.bottomRight,
+          children: [
+            Positioned(
+              bottom: 14,
+              left: alignLeft ? 10.5 : null,
+              right: alignLeft ? null : 10.5,
+              child: Container(
                 width: 3,
-                height: 18,
+                height: 8,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.72),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              const SizedBox(height: 3),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onPanUpdate: onPanUpdate,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.18),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: alignLeft ? 5 : null,
+              right: alignLeft ? null : 5,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.18),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
