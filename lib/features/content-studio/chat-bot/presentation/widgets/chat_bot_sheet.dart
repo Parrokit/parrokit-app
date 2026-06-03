@@ -157,6 +157,8 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Row(
@@ -170,17 +172,21 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              provider.chatbotMode == 'tts'
-                                  ? '음성 스튜디오 튜닝 중'
-                                  : provider.chatbotMode == 'video'
-                                      ? '비디오 씬 기획 중'
-                                      : '도움 준비 완료',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: isDark
-                                    ? AppColors.textTertiaryDark
-                                    : AppColors.textSecondary,
-                                fontSize: 11,
+                            Expanded(
+                              child: Text(
+                                provider.chatbotMode == 'tts'
+                                    ? '음성 스튜디오 튜닝 중'
+                                    : provider.chatbotMode == 'video'
+                                        ? '비디오 씬 기획 중'
+                                        : '도움 준비 완료',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: isDark
+                                      ? AppColors.textTertiaryDark
+                                      : AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
