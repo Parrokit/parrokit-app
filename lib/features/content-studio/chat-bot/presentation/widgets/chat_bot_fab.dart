@@ -8,7 +8,8 @@ class ChatBotFab extends StatefulWidget {
   State<ChatBotFab> createState() => _ChatBotFabState();
 }
 
-class _ChatBotFabState extends State<ChatBotFab> with SingleTickerProviderStateMixin {
+class _ChatBotFabState extends State<ChatBotFab>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _pulseAnimation;
 
@@ -33,8 +34,6 @@ class _ChatBotFabState extends State<ChatBotFab> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     // AI스러운 그라데이션 및 효과
     final gradientColors = [
       const Color(0xFF8B5CF6), // Purple
@@ -51,7 +50,8 @@ class _ChatBotFabState extends State<ChatBotFab> with SingleTickerProviderStateM
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: gradientColors[0].withValues(alpha: 0.3 * _controller.value),
+                  color: gradientColors[0]
+                      .withValues(alpha: 0.3 * _controller.value),
                   blurRadius: 16,
                   spreadRadius: 4 * _controller.value,
                   offset: const Offset(0, 4),
@@ -64,9 +64,9 @@ class _ChatBotFabState extends State<ChatBotFab> with SingleTickerProviderStateM
                 borderRadius: BorderRadius.circular(30),
                 onTap: () => showChatBotSheet(context),
                 child: Ink(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
+                    shape: BoxShape.circle,
                     gradient: LinearGradient(
                       colors: gradientColors,
                       begin: Alignment.topLeft,
@@ -77,24 +77,10 @@ class _ChatBotFabState extends State<ChatBotFab> with SingleTickerProviderStateM
                       width: 1,
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'AI 보조',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                  child: const Icon(
+                    Icons.smart_toy_rounded,
+                    color: Colors.white,
+                    size: 24,
                   ),
                 ),
               ),

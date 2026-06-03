@@ -138,15 +138,20 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                       selectedIndex: _selectedIndex,
                       onSelectedIndexChanged: _setPage,
                     ),
-                    if (_isChatBotVisible) ...[
-                      const SizedBox(width: 8),
-                      AnimatedScale(
-                        scale: _isChatBotVisible ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 50),
-                        curve: Curves.easeOutBack,
-                        child: const ChatBotFab(),
-                      ),
-                    ],
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      alignment: Alignment.centerLeft,
+                      child: _isChatBotVisible
+                          ? const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(width: 8),
+                                ChatBotFab(),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                     
                   ],
                 ),

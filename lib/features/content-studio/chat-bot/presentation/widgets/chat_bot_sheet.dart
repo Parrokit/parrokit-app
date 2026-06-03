@@ -7,7 +7,6 @@ Future<void> showChatBotSheet(BuildContext context) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (context) {
       return ChangeNotifierProvider(
         create: (_) => ChatBotViewModel(),
@@ -45,32 +44,14 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bg = isDark ? AppColors.surfaceDark : theme.colorScheme.surface;
-
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Container(
+      child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.6,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
         child: Column(
           children: [
-            // Handle bar
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            
             // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -99,13 +80,14 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                   final messages = vm.messages;
                   return ListView.builder(
                     reverse: true,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: messages.length + (vm.isTyping ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (vm.isTyping && index == 0) {
                         return const _TypingIndicator();
                       }
-                      
+
                       final msg = messages[vm.isTyping ? index - 1 : index];
                       return _ChatBubble(message: msg);
                     },
@@ -137,11 +119,9 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: isDark 
-                            ? Colors.grey[800] 
-                            : Colors.grey[200],
+                        fillColor: isDark ? Colors.grey[800] : Colors.grey[200],
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, 
+                          horizontal: 16,
                           vertical: 10,
                         ),
                       ),
@@ -152,7 +132,8 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                   CircleAvatar(
                     backgroundColor: theme.primaryColor,
                     child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                      icon:
+                          const Icon(Icons.send, color: Colors.white, size: 20),
                       onPressed: _handleSend,
                     ),
                   ),
@@ -175,15 +156,15 @@ class _ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: message.isUser 
-              ? theme.primaryColor 
+          color: message.isUser
+              ? theme.primaryColor
               : (isDark ? Colors.grey[800] : Colors.grey[200]),
           borderRadius: BorderRadius.circular(16).copyWith(
             bottomRight: message.isUser ? const Radius.circular(0) : null,
@@ -193,8 +174,8 @@ class _ChatBubble extends StatelessWidget {
         child: Text(
           message.text,
           style: TextStyle(
-            color: message.isUser 
-                ? Colors.white 
+            color: message.isUser
+                ? Colors.white
                 : (isDark ? Colors.white : Colors.black87),
           ),
         ),
@@ -210,7 +191,7 @@ class _TypingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
