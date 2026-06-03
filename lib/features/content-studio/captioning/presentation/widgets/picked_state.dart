@@ -6,7 +6,7 @@ import 'package:video_player/video_player.dart';
 import 'audio_waveform_bar.dart';
 import 'video_controls_bar.dart';
 
-class PickedState extends StatelessWidget {
+class PickedState extends StatefulWidget {
   const PickedState({
     super.key,
     required this.picked,
@@ -40,21 +40,40 @@ class PickedState extends StatelessWidget {
   final bool waveformLoading;
 
   @override
+  State<PickedState> createState() => _PickedStateState();
+}
+
+class _PickedStateState extends State<PickedState> {
+  // 줌 배율: 1.0(기본, 전체 표시) -> 배율이 커질수록 줌 인.
+  double _zoomFactor = 1.0;
+
+  void _zoomIn() {
+    setState(() {
+      _zoomFactor = (_zoomFactor * 1.25);
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _zoomFactor = (_zoomFactor / 1.25).clamp(1.0, double.infinity);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    // 확장자·크기 필드 (UI 미표시 — 향후 활용 가능)
     // ignore: unused_local_variable
-    final ext = (picked.extension ?? 'file').toLowerCase();
+    final ext = (widget.picked.extension ?? 'file').toLowerCase();
     // ignore: unused_local_variable
-    final sizeMB = (picked.size / (1024 * 1024));
+    final sizeMB = (widget.picked.size / (1024 * 1024));
 
-    final bool showPlayer = isPlayingInline &&
-        playerController != null &&
-        playerController!.value.isInitialized;
+    final bool showPlayer = widget.isPlayingInline &&
+        widget.playerController != null &&
+        widget.playerController!.value.isInitialized;
     final double aspect =
-        showPlayer ? playerController!.value.aspectRatio : 16 / 9;
+        showPlayer ? widget.playerController!.value.aspectRatio : 16 / 9;
 
     return Column(
       children: [
@@ -67,11 +86,11 @@ class PickedState extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.zero,
                   child: showPlayer
-                      ? VideoPlayer(playerController!)
+                      ? VideoPlayer(widget.playerController!)
                       : GestureDetector(
-                          onTap: onPlayInline,
+                          onTap: widget.onPlayInline,
                           behavior: HitTestBehavior.opaque,
-                          child: thumb == null
+                          child: widget.thumb == null
                               ? Container(
                                   color: cs.onSurface.withValues(alpha: 0.05),
                                   child: Center(
@@ -83,7 +102,7 @@ class PickedState extends StatelessWidget {
                                     ),
                                   ),
                                 )
-                              : Image.memory(thumb!, fit: BoxFit.cover),
+                              : Image.memory(widget.thumb!, fit: BoxFit.cover),
                         ),
                 ),
               ),
@@ -95,9 +114,10 @@ class PickedState extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: AudioWaveformBar(
-            videoController: playerController,
-            waveformData: waveformData,
-            isLoading: waveformLoading,
+            videoController: widget.playerController,
+            waveformData: widget.waveformData,
+            isLoading: widget.waveformLoading,
+            zoomFactor: _zoomFactor,
             height: 44,
           ),
         ),
@@ -105,10 +125,12 @@ class PickedState extends StatelessWidget {
         // ── 3. 컨트롤러 ───────────────────────────────────────────────────
         const SizedBox(height: 4),
         VideoControlsBar(
-          controller: playerController,
-          onPlayInline: onPlayInline,
-          onToggleInline: onToggleInline,
-          onStopInline: onStopInline,
+          controller: widget.playerController,
+          onPlayInline: widget.onPlayInline,
+          onToggleInline: widget.onToggleInline,
+          onStopInline: widget.onStopInline,
+          onZoomIn: _zoomIn,
+          onZoomOut: _zoomOut,
         ),
 
         // ── 4. 파일 이름 + 다시 선택 / 지우기 ─────────────────────────────
@@ -124,7 +146,7 @@ class PickedState extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      picked.name,
+                      widget.picked.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style:
@@ -139,8 +161,8 @@ class PickedState extends StatelessWidget {
                   Expanded(
                     child: PopupMenuButton<String>(
                       onSelected: (v) {
-                        if (v == 'file') onReplace();
-                        if (v == 'photos') onPickFromPhotos();
+                        if (v == 'file') widget.onReplace();
+                        if (v == 'photos') widget.onPickFromPhotos();
                       },
                       itemBuilder: (context) => const [
                         PopupMenuItem(
@@ -186,7 +208,7 @@ class PickedState extends StatelessWidget {
                           color: cs.primary,
                         ),
                       ),
-                      onPressed: onRemove,
+                      onPressed: widget.onRemove,
                     ),
                   ),
                 ],

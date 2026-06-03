@@ -10,12 +10,16 @@ class VideoControlsBar extends StatefulWidget {
     required this.onPlayInline,
     required this.onToggleInline,
     required this.onStopInline,
+    this.onZoomIn,
+    this.onZoomOut,
   });
 
   final VideoPlayerController? controller;
   final VoidCallback onPlayInline;
   final VoidCallback onToggleInline;
   final VoidCallback onStopInline;
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
 
   @override
   State<VideoControlsBar> createState() => _VideoControlsBarState();
@@ -87,10 +91,11 @@ class _VideoControlsBarState extends State<VideoControlsBar> {
 
     return Container(
       color: bgColor,
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(width: 48), // 줌 컨트롤 공간 보정용 좌측 여백
           // -3초
           _ControlButton(
             icon: Icons.replay_5_rounded,
@@ -133,6 +138,34 @@ class _VideoControlsBarState extends State<VideoControlsBar> {
                 : null,
             cs: cs,
             size: 26,
+          ),
+          const SizedBox(width: 12),
+          // 분리선 및 줌 버튼
+          Container(
+            height: 32,
+            width: 1,
+            color: cs.onSurface.withValues(alpha: 0.1),
+          ),
+          const SizedBox(width: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ControlButton(
+                icon: Icons.remove_rounded,
+                label: '축소',
+                onTap: widget.onZoomOut,
+                cs: cs,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              _ControlButton(
+                icon: Icons.add_rounded,
+                label: '확대',
+                onTap: widget.onZoomIn,
+                cs: cs,
+                size: 22,
+              ),
+            ],
           ),
         ],
       ),

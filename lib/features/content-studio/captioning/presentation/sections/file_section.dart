@@ -234,10 +234,10 @@ class _FileSectionState extends State<FileSection> {
         '-y',
         '-i', videoPath,
         '-vn',
-        '-ac', '1',       // mono
-        '-ar', '8000',    // 8 kHz
-        '-f', 's16le',    // signed 16-bit little-endian
-        '-t', '180',      // 최대 3분
+        '-ac', '1', // mono
+        '-ar', '8000', // 8 kHz
+        '-f', 's16le', // signed 16-bit little-endian
+        '-t', '180', // 최대 3분
         pcmOut,
       ]);
       final rc = await session.getReturnCode();
@@ -257,7 +257,7 @@ class _FileSectionState extends State<FileSection> {
 
       // Dart에서 PCM 바이트 → 파형 계산
       final bytes = await outFile.readAsBytes();
-      final data = _computeWaveformFromPcm(bytes, barCount: 200);
+      final data = _computeWaveformFromPcm(bytes);
 
       AppLogger.i(
         '[Captioning][Waveform] 파형 계산 완료 samples=${data.length}',
@@ -275,25 +275,24 @@ class _FileSectionState extends State<FileSection> {
     }
   }
 
-  /// s16le PCM 바이트 배열에서 [barCount]개의 정규화 파형 값을 계산한다.
+  /// s16le PCM 바이트 배열에서 초당 50개의 고해상도 정규화 파형 값을 계산한다.
   ///
   /// 각 구간의 RMS(Root Mean Square)를 구해 0.0 ~ 1.0으로 정규화한다.
-  static List<double> _computeWaveformFromPcm(
-    Uint8List bytes, {
-    int barCount = 200,
-  }) {
+  static List<double> _computeWaveformFromPcm(Uint8List bytes) {
     // s16le: 2바이트 = 1 샘플
     final sampleCount = bytes.length ~/ 2;
     if (sampleCount == 0) return [];
 
     final byteData = ByteData.sublistView(bytes);
-    final segmentSize = (sampleCount / barCount).ceil();
+    // 8000 Hz, 50 points per second = 160 samples per point
+    const int samplesPerPoint = 160;
+    final int pointCount = (sampleCount / samplesPerPoint).ceil();
     final result = <double>[];
 
-    for (int i = 0; i < barCount; i++) {
-      final start = i * segmentSize;
+    for (int i = 0; i < pointCount; i++) {
+      final start = i * samplesPerPoint;
       if (start >= sampleCount) break;
-      final end = (start + segmentSize).clamp(0, sampleCount);
+      final end = (start + samplesPerPoint).clamp(0, sampleCount);
 
       double sumSq = 0;
       for (int j = start; j < end; j++) {

@@ -6,27 +6,31 @@ import 'package:video_player/video_player.dart';
 /// 오디오 파형 그래프 위젯.
 ///
 /// [waveformData]가 null이면 로딩 상태를 표시한다.
-/// [waveformData]가 비어있으면 폴백 더미 파형을 사용한다.
-/// 재생 진행도에 따라 왼쪽 구간은 primary 색상, 나머지는 흐리게 표시한다.
-/// 탭·드래그로 비디오를 탐색(seek)할 수 있다.
+/// [waveformData]가 비어있으면 데이터 없음으로 취급하여 숨긴다.
+/// 줌 레벨([zoomFactor])에 따라 보여지는 파형 구간(window)이 달라지며,
+/// 비디오 재생 시 자동 스크롤을 지원한다.
 class AudioWaveformBar extends StatefulWidget {
   const AudioWaveformBar({
     super.key,
     required this.videoController,
     this.waveformData,
     this.isLoading = false,
-    this.barCount = 60,
+    this.zoomFactor = 1.0,
+    this.barCount = 100,
     this.height = 48,
   });
 
   /// 재생 위치 동기화에 사용하는 비디오 컨트롤러.
   final VideoPlayerController? videoController;
 
-  /// 실제 오디오 파형 데이터 (0.0 ~ 1.0).
-  /// null이면 로딩 상태, 빈 리스트면 더미 파형으로 폴백.
+  /// 실제 오디오 파형 데이터 (고해상도, 0.0 ~ 1.0 정규화 완료)
   final List<double>? waveformData;
 
   final bool isLoading;
+  
+  /// 줌 배율 (1.0 = 전체 표시, 값이 클수록 확대됨, 최소 표시 10초)
+  final double zoomFactor;
+  
   final int barCount;
   final double height;
 
@@ -36,6 +40,7 @@ class AudioWaveformBar extends StatefulWidget {
 
 class _AudioWaveformBarState extends State<AudioWaveformBar> {
   late List<double> _bars;
+  int _windowStartMs = 0;
 
   @override
   void initState() {
@@ -47,11 +52,18 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   @override
   void didUpdateWidget(AudioWaveformBar oldWidget) {
     super.didUpdateWidget(oldWidget);
+    
+    if (oldWidget.zoomFactor != widget.zoomFactor) {
+      _updateWindowForZoom();
+    }
+    
     if (oldWidget.videoController != widget.videoController) {
       oldWidget.videoController?.removeListener(_onVideoUpdate);
       widget.videoController?.addListener(_onVideoUpdate);
     }
-    if (oldWidget.waveformData != widget.waveformData) {
+    
+    if (oldWidget.waveformData != widget.waveformData ||
+        oldWidget.zoomFactor != widget.zoomFactor) {
       _bars = _computeBars();
     }
   }
@@ -63,30 +75,90 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   }
 
   void _onVideoUpdate() {
-    if (mounted) setState(() {});
+    final c = widget.videoController;
+    if (c != null && c.value.isInitialized && mounted) {
+      final posMs = c.value.position.inMilliseconds;
+      final durMs = c.value.duration.inMilliseconds;
+      final minDur = math.min(10000.0, durMs.toDouble());
+    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+      
+      // Auto-scroll logic: 재생 선이 화면 우측 80%를 넘거나 화면을 이탈하면 이동
+      if (posMs > _windowStartMs + windowDurMs * 0.8) {
+        _windowStartMs = posMs - (windowDurMs * 0.2).toInt();
+      } else if (posMs < _windowStartMs) {
+        _windowStartMs = posMs - (windowDurMs * 0.2).toInt();
+      }
+      
+      final oldStart = _windowStartMs;
+      _windowStartMs = _windowStartMs.clamp(0, math.max(0, durMs - windowDurMs));
+      
+      // 창 위치가 변했으면 파형을 다시 계산
+      if (oldStart != _windowStartMs) {
+        _bars = _computeBars();
+      }
+      setState(() {});
+    }
   }
 
-  /// waveformData를 barCount 개수로 다운샘플링.
-  /// 데이터가 없으면 빈 리스트를 반환 (더미 파형 없음).
+  void _updateWindowForZoom() {
+    final c = widget.videoController;
+    if (c == null || !c.value.isInitialized) return;
+    final posMs = c.value.position.inMilliseconds;
+    final durMs = c.value.duration.inMilliseconds;
+    final minDur = math.min(10000.0, durMs.toDouble());
+    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+    
+    // 현재 재생 위치를 화면 중앙에 맞추도록 윈도우 이동
+    _windowStartMs = posMs - (windowDurMs ~/ 2);
+    _windowStartMs = _windowStartMs.clamp(0, math.max(0, durMs - windowDurMs));
+  }
+
+  /// waveformData 중 현재 window 구간만 잘라서 barCount 개수로 다운샘플링.
   List<double> _computeBars() {
     final raw = widget.waveformData;
     if (raw == null || raw.isEmpty) return [];
 
-    // 다운샘플링: 균등 구간 최댓값
-    final count = widget.barCount;
+    final c = widget.videoController;
+    if (c == null || !c.value.isInitialized) {
+       // 비디오 정보가 없으면 전체 다운샘플링
+       return _downsample(raw, 0, raw.length, widget.barCount);
+    }
+
+    final durMs = c.value.duration.inMilliseconds;
+    if (durMs <= 0) return [];
+    
+    final minDur = math.min(10000.0, durMs.toDouble());
+    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+    final actualWindowDurMs = math.min(windowDurMs, durMs);
+    
+    final startRatio = _windowStartMs / durMs;
+    final endRatio = (_windowStartMs + actualWindowDurMs) / durMs;
+    
+    final rawStart = (startRatio * raw.length).floor().clamp(0, raw.length);
+    final rawEnd = (endRatio * raw.length).ceil().clamp(0, raw.length);
+    
+    return _downsample(raw, rawStart, rawEnd, widget.barCount);
+  }
+
+  List<double> _downsample(List<double> raw, int start, int end, int count) {
+    final length = end - start;
+    if (length <= 0) return List.filled(count, 0.0);
+    
     final result = <double>[];
-    final step = raw.length / count;
+    final step = length / count;
     for (int i = 0; i < count; i++) {
-      final start = (i * step).floor();
-      final end = ((i + 1) * step).ceil().clamp(0, raw.length);
+      final s = start + (i * step).floor();
+      final e = start + ((i + 1) * step).ceil();
+      final actualE = math.min(e, end);
+      
       double peak = 0;
-      for (int j = start; j < end; j++) {
-        final v = raw[j].abs();
-        if (v > peak) peak = v;
+      for (int j = s; j < actualE; j++) {
+        if (raw[j] > peak) peak = raw[j];
       }
       result.add(peak.clamp(0.04, 1.0));
     }
-    // 0~1 정규화
+    
+    // 현재 창 내에서 다시 정규화
     final maxVal = result.reduce(math.max);
     if (maxVal > 0) {
       for (int i = 0; i < result.length; i++) {
@@ -96,12 +168,18 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     return result;
   }
 
-  double get _progress {
+  double get _progressInWindow {
     final c = widget.videoController;
     if (c == null || !c.value.isInitialized) return 0.0;
-    final dur = c.value.duration.inMilliseconds;
-    if (dur == 0) return 0.0;
-    return (c.value.position.inMilliseconds / dur).clamp(0.0, 1.0);
+    final durMs = c.value.duration.inMilliseconds;
+    if (durMs <= 0) return 0.0;
+    
+    final minDur = math.min(10000.0, durMs.toDouble());
+    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+    final actualWindowDurMs = math.min(windowDurMs, durMs);
+    final posMs = c.value.position.inMilliseconds;
+    
+    return ((posMs - _windowStartMs) / actualWindowDurMs).clamp(0.0, 1.0);
   }
 
   @override
@@ -119,7 +197,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       return _LoadingSkeleton(height: widget.height, cs: cs);
     }
 
-    final progress = _progress;
+    final progress = _progressInWindow;
 
     return SizedBox(
       height: widget.height,
@@ -131,8 +209,8 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final totalWidth = constraints.maxWidth;
-            final barWidth = (totalWidth / _bars.length) * 0.55;
-            final gap = (totalWidth / _bars.length) * 0.45;
+            final barWidth = (totalWidth / _bars.length) * 0.65;
+            final gap = (totalWidth / _bars.length) * 0.35;
             final progressIndex = (progress * _bars.length).floor();
 
             return Row(
@@ -140,8 +218,8 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
               children: List.generate(_bars.length, (i) {
                 final isPlayed = i < progressIndex;
                 final isCurrent = i == progressIndex;
-                final barH = (_bars[i] * widget.height * 0.85)
-                    .clamp(3.0, widget.height);
+                final barH =
+                    (_bars[i] * widget.height * 0.85).clamp(3.0, widget.height);
 
                 Color barColor;
                 if (isPlayed) {
@@ -179,8 +257,15 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     if (c == null || !c.value.isInitialized) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
+    
+    final durMs = c.value.duration.inMilliseconds;
+    final minDur = math.min(10000.0, durMs.toDouble());
+    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+    final actualWindowDurMs = math.min(windowDurMs, durMs);
+    
     final ratio = (localX / box.size.width).clamp(0.0, 1.0);
-    c.seekTo(c.value.duration * ratio);
+    final targetMs = _windowStartMs + (ratio * actualWindowDurMs);
+    c.seekTo(Duration(milliseconds: targetMs.toInt()));
   }
 }
 
@@ -232,8 +317,7 @@ class _LoadingSkeletonState extends State<_LoadingSkeleton>
                   child: Container(
                     height: h,
                     decoration: BoxDecoration(
-                      color:
-                          widget.cs.onSurface.withValues(alpha: alpha),
+                      color: widget.cs.onSurface.withValues(alpha: alpha),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
