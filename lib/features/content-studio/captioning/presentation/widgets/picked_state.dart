@@ -10,6 +10,8 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import '../../../../../core/shared/utils/show_toast.dart';
+import '../../data/services/time_code_service.dart';
+import '../../domain/editor_state.dart';
 import 'video_picker_sheet.dart';
 import 'stt_confirm_dialog.dart';
 
@@ -29,6 +31,7 @@ class PickedState extends StatefulWidget {
     this.waveformData,
     this.waveformLoading = false,
     this.segmentsWidget,
+    this.segmentForms = const [],
   });
 
   final PlatformFile picked;
@@ -47,6 +50,7 @@ class PickedState extends StatefulWidget {
   final List<double>? waveformData;
   final bool waveformLoading;
   final Widget? segmentsWidget;
+  final List<SegmentFormData> segmentForms;
 
   @override
   State<PickedState> createState() => _PickedStateState();
@@ -98,6 +102,7 @@ class _PickedStateState extends State<PickedState> {
     final ext = (widget.picked.extension ?? 'file').toLowerCase();
     // ignore: unused_local_variable
     final sizeMB = (widget.picked.size / (1024 * 1024));
+    final overlayRanges = _buildOverlayRanges(cs);
 
     final bool showPlayer = widget.isPlayingInline &&
         widget.playerController != null &&
@@ -187,13 +192,14 @@ class _PickedStateState extends State<PickedState> {
             // ── 2. 음성 파형 그래프 ────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: AudioWaveformBar(
-                videoController: widget.playerController,
-                waveformData: widget.waveformData,
-                isLoading: widget.waveformLoading,
-                zoomFactor: _zoomFactor,
-                height: 44,
-              ),
+                child: AudioWaveformBar(
+                  videoController: widget.playerController,
+                  waveformData: widget.waveformData,
+                  overlayRanges: overlayRanges,
+                  isLoading: widget.waveformLoading,
+                  zoomFactor: _zoomFactor,
+                  height: 44,
+                ),
             ),
 
             // ── 3. 컨트롤러 ───────────────────────────────────────────────────
@@ -238,6 +244,36 @@ class _PickedStateState extends State<PickedState> {
         ),
       ],
     );
+  }
+
+  List<WaveformOverlayRange> _buildOverlayRanges(ColorScheme cs) {
+    final ranges = <WaveformOverlayRange>[];
+    for (final form in widget.segmentForms) {
+      final startMs = _parseMs(form.startCtl.text);
+      final endMs = _parseMs(form.endCtl.text);
+      if (startMs == null || endMs == null) continue;
+      if (endMs <= startMs) continue;
+      if (endMs <= 0) continue;
+
+      ranges.add(
+        WaveformOverlayRange(
+          startMs: startMs,
+          endMs: endMs,
+          color: cs.primary,
+        ),
+      );
+    }
+    return ranges;
+  }
+
+  int? _parseMs(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    try {
+      return TimecodeService().parseToMs(text);
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -500,6 +536,13 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                 onTap: () => showSttConfirmDialog(context),
               ),
               const SizedBox(width: 8),
+              _TabButton(
+                icon: Icons.list_alt_rounded,
+                label: 'A-B 리스트',
+                isActive: _isExpanded[1],
+                onTap: () => setState(() => _isExpanded[1] = !_isExpanded[1]),
+              ),
+              const SizedBox(width: 8),
               Container(
                 height: 32,
                 width: 1,
@@ -514,13 +557,6 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                 label: '메타데이터',
                 isActive: _isExpanded[0],
                 onTap: () => setState(() => _isExpanded[0] = !_isExpanded[0]),
-              ),
-              const SizedBox(width: 8),
-              _TabButton(
-                icon: Icons.list_alt_rounded,
-                label: 'A-B 리스트',
-                isActive: _isExpanded[1],
-                onTap: () => setState(() => _isExpanded[1] = !_isExpanded[1]),
               ),
               const SizedBox(width: 8),
               _TabButton(
@@ -544,8 +580,14 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                   Divider(
                       height: 1, color: cs.onSurface.withValues(alpha: 0.1)),
                 ],
+                if (_isExpanded[1]) ...[
+                  // 1. A-B 리스트
+                  if (widget.segmentsWidget != null) ...[
+                    widget.segmentsWidget!,
+                  ],
+                ],
                 if (_isExpanded[0]) ...[
-                  // 1. 메타 데이터
+                  // 2. 메타 데이터
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -629,13 +671,6 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
-                if (_isExpanded[1]) ...[
-                  // 2. A-B 리스트
-                  if (widget.segmentsWidget != null) ...[
-                    widget.segmentsWidget!,
-                  ],
                 ],
                 if (_isExpanded[2]) ...[
                   // 3. 동영상 설정

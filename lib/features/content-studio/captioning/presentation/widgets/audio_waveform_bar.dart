@@ -14,6 +14,7 @@ class AudioWaveformBar extends StatefulWidget {
     super.key,
     required this.videoController,
     this.waveformData,
+    this.overlayRanges = const [],
     this.isLoading = false,
     this.zoomFactor = 1.0,
     this.barCount = 100,
@@ -25,6 +26,7 @@ class AudioWaveformBar extends StatefulWidget {
 
   /// 실제 오디오 파형 데이터 (고해상도, 0.0 ~ 1.0 정규화 완료)
   final List<double>? waveformData;
+  final List<WaveformOverlayRange> overlayRanges;
 
   final bool isLoading;
   
@@ -239,51 +241,65 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                   final itemWidth = totalWidth / widget.barCount;
                   final barWidth = itemWidth * 0.35;
                   final gap = itemWidth * 0.65;
+                  final visibleOverlays = _buildVisibleOverlays(
+                    totalWidth: totalWidth,
+                    actualWindowDurMs: actualWindowDurMs,
+                    endMs: endMs,
+                  );
 
-                  return OverflowBox(
-                    maxWidth: double.infinity,
-                    alignment: Alignment.centerLeft,
-                    child: Transform.translate(
-                      offset: Offset(-fraction * itemWidth, 0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: List.generate(widget.barCount + 2, (i) {
-                          final idx = startIndex + i;
-                          final barHeightRatio = (idx >= 0 && idx < _bars.length)
-                              ? _bars[idx]
-                              : 0.04;
-                          final barH = (barHeightRatio * widget.height * 0.85)
-                              .clamp(3.0, widget.height);
-  
-                          final playheadIdx = (exactIndex + widget.barCount / 2).floor();
-                          final isPlayed = idx < playheadIdx;
-                          final isCurrent = idx == playheadIdx;
-  
-                          Color barColor;
-                          if (isPlayed) {
-                            barColor = cs.primary;
-                          } else if (isCurrent) {
-                            barColor = cs.primary.withValues(alpha: 0.7);
-                          } else {
-                            barColor = isDark
-                                ? cs.onSurface.withValues(alpha: 0.18)
-                                : cs.onSurface.withValues(alpha: 0.13);
-                          }
-  
-                          return Padding(
-                            padding: EdgeInsets.only(right: gap),
-                            child: Container(
-                              width: barWidth,
-                              height: barH,
-                              decoration: BoxDecoration(
-                                color: barColor,
-                                borderRadius: BorderRadius.circular(barWidth / 2),
-                              ),
-                            ),
-                          );
-                        }),
+                  return Stack(
+                    children: [
+                      if (visibleOverlays.isNotEmpty)
+                        Positioned.fill(
+                          child: IgnorePointer(child: Stack(children: visibleOverlays)),
+                        ),
+                      OverflowBox(
+                        maxWidth: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        child: Transform.translate(
+                          offset: Offset(-fraction * itemWidth, 0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: List.generate(widget.barCount + 2, (i) {
+                              final idx = startIndex + i;
+                              final barHeightRatio = (idx >= 0 && idx < _bars.length)
+                                  ? _bars[idx]
+                                  : 0.04;
+                              final barH = (barHeightRatio * widget.height * 0.85)
+                                  .clamp(3.0, widget.height);
+
+                              final playheadIdx =
+                                  (exactIndex + widget.barCount / 2).floor();
+                              final isPlayed = idx < playheadIdx;
+                              final isCurrent = idx == playheadIdx;
+
+                              Color barColor;
+                              if (isPlayed) {
+                                barColor = cs.primary;
+                              } else if (isCurrent) {
+                                barColor = cs.primary.withValues(alpha: 0.7);
+                              } else {
+                                barColor = isDark
+                                    ? cs.onSurface.withValues(alpha: 0.18)
+                                    : cs.onSurface.withValues(alpha: 0.13);
+                              }
+
+                              return Padding(
+                                padding: EdgeInsets.only(right: gap),
+                                child: Container(
+                                  width: barWidth,
+                                  height: barH,
+                                  decoration: BoxDecoration(
+                                    color: barColor,
+                                    borderRadius: BorderRadius.circular(barWidth / 2),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   );
                 },
               ),
@@ -351,6 +367,59 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     
     c.seekTo(Duration(milliseconds: targetMs));
   }
+
+  List<Widget> _buildVisibleOverlays({
+    required double totalWidth,
+    required int actualWindowDurMs,
+    required int endMs,
+  }) {
+    if (actualWindowDurMs <= 0 || widget.overlayRanges.isEmpty) {
+      return const [];
+    }
+
+    final overlays = <Widget>[];
+    for (final range in widget.overlayRanges) {
+      final visibleStart = math.max(range.startMs, _windowStartMs);
+      final visibleEnd = math.min(range.endMs, endMs);
+      if (visibleEnd <= visibleStart) continue;
+
+      final left =
+          ((visibleStart - _windowStartMs) / actualWindowDurMs) * totalWidth;
+      final width = ((visibleEnd - visibleStart) / actualWindowDurMs) * totalWidth;
+
+      overlays.add(
+        Positioned(
+          left: left.clamp(0.0, totalWidth),
+          top: 0,
+          bottom: 0,
+          width: width.clamp(0.0, totalWidth),
+          child: Container(
+            decoration: BoxDecoration(
+              color: range.color.withValues(alpha: 0.16),
+              border: Border.all(
+                color: range.color.withValues(alpha: 0.38),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+        ),
+      );
+    }
+    return overlays;
+  }
+}
+
+class WaveformOverlayRange {
+  const WaveformOverlayRange({
+    required this.startMs,
+    required this.endMs,
+    required this.color,
+  });
+
+  final int startMs;
+  final int endMs;
+  final Color color;
 }
 
 /// 로딩 중 표시할 스켈레톤 파형.

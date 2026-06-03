@@ -140,7 +140,11 @@ class _FileSectionState extends State<FileSection> {
           waveformData: vm.waveformData,
           waveformLoading: vm.waveformLoading,
           isVideoLoading: vm.isVideoLoading,
-          segmentsWidget: SegmentsSection(vm: vm),
+          segmentsWidget: SegmentsSection(
+            vm: vm,
+            playerController: _vp,
+          ),
+          segmentForms: vm.segmentForms,
         ),
       ],
     );

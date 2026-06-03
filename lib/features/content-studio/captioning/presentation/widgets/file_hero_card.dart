@@ -5,6 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../domain/editor_state.dart';
+
 class FileHeroCard extends StatelessWidget {
   const FileHeroCard({
     super.key,
@@ -27,6 +29,7 @@ class FileHeroCard extends StatelessWidget {
     this.waveformLoading = false,
     this.isVideoLoading = false,
     this.segmentsWidget,
+    this.segmentForms = const [],
   });
 
   final PlatformFile? picked;
@@ -50,6 +53,7 @@ class FileHeroCard extends StatelessWidget {
   final bool waveformLoading;
   final bool isVideoLoading;
   final Widget? segmentsWidget;
+  final List<SegmentFormData> segmentForms;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +86,7 @@ class FileHeroCard extends StatelessWidget {
               waveformData: waveformData,
               waveformLoading: waveformLoading,
               segmentsWidget: segmentsWidget,
+              segmentForms: segmentForms,
             ),
     );
   }

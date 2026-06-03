@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
+import 'package:video_player/video_player.dart';
 
 import '../widgets/segment_card.dart';
 import '../captioning_view_model.dart';
 
 /// 자막 세그먼트 섹션.
 class SegmentsSection extends StatefulWidget {
-  const SegmentsSection({super.key, required this.vm});
+  const SegmentsSection({super.key, required this.vm, this.playerController});
 
   final CaptioningViewModel vm;
+  final VideoPlayerController? playerController;
 
   @override
   State<SegmentsSection> createState() => _SegmentsSectionState();
@@ -112,7 +114,7 @@ class _SegmentsSectionState extends State<SegmentsSection> {
           ),
           if (_currentPage < total)
             SegmentCard(
-              index: _currentPage + 1,
+              playerController: widget.playerController,
               startCtl: vm.segmentForms[_currentPage].startCtl,
               endCtl: vm.segmentForms[_currentPage].endCtl,
               originalCtl: vm.segmentForms[_currentPage].originalCtl,
