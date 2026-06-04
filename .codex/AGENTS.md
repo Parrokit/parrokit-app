@@ -1,1 +1,1 @@
-../AGENTS.md
+../docs/agents/AGENTS.md
