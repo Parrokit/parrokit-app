@@ -22,6 +22,7 @@ class FileHeroCard extends StatelessWidget {
     required this.onPlayInline,
     required this.onToggleInline,
     required this.onStopInline,
+    this.onSttRequest,
     required this.onReopenLast,
     required this.onReopenFile,
     required this.onReopenPhotos,
@@ -46,6 +47,7 @@ class FileHeroCard extends StatelessWidget {
   final VoidCallback onPlayInline;
   final VoidCallback onToggleInline;
   final VoidCallback onStopInline;
+  final VoidCallback? onSttRequest;
   final Uint8List? thumb;
 
   final VoidCallback onReopenLast;
@@ -90,6 +92,7 @@ class FileHeroCard extends StatelessWidget {
               onPlayInline: onPlayInline,
               onToggleInline: onToggleInline,
               onStopInline: onStopInline,
+              onSttRequest: onSttRequest,
               waveformData: waveformData,
               waveformLoading: waveformLoading,
               segmentsWidget: segmentsWidget,

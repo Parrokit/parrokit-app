@@ -216,6 +216,7 @@ class _LinearInputFieldState extends State<_LinearInputField> {
             child: TextField(
               controller: widget.controller,
               focusNode: _focusNode,
+              onTapOutside: (_) => _focusNode.unfocus(),
               onSubmitted: widget.onSubmitted,
               style: theme.textTheme.bodyMedium,
               decoration: InputDecoration(

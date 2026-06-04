@@ -15,7 +15,6 @@ import '../../../../../core/shared/utils/show_toast.dart';
 import '../../data/services/time_code_service.dart';
 import '../../domain/editor_state.dart';
 import 'video_picker_sheet.dart';
-import 'stt_confirm_dialog.dart';
 
 class PickedState extends StatefulWidget {
   const PickedState({
@@ -30,6 +29,7 @@ class PickedState extends StatefulWidget {
     required this.onPlayInline,
     required this.onToggleInline,
     required this.onStopInline,
+    this.onSttRequest,
     this.waveformData,
     this.waveformLoading = false,
     this.segmentsWidget,
@@ -50,6 +50,7 @@ class PickedState extends StatefulWidget {
   final VoidCallback onPlayInline;
   final VoidCallback onToggleInline;
   final VoidCallback onStopInline;
+  final VoidCallback? onSttRequest;
 
   /// 실제 오디오 파형 데이터 (null이면 로딩 or 미추출)
   final List<double>? waveformData;
@@ -253,6 +254,7 @@ class _PickedStateState extends State<PickedState> {
               curve: Curves.easeOutCubic,
               child: _isSettingsExpanded
                   ? _VideoSettingsBar(
+                      onSttRequest: widget.onSttRequest,
                       controller: widget.playerController,
                       picked: widget.picked,
                       onReplace: widget.onReplace,
@@ -476,6 +478,8 @@ class _PickedStateState extends State<PickedState> {
 
 class _VideoSettingsBar extends StatefulWidget {
   const _VideoSettingsBar({
+    super.key,
+    this.onSttRequest,
     required this.controller,
     required this.picked,
     required this.onReplace,
@@ -494,6 +498,7 @@ class _VideoSettingsBar extends StatefulWidget {
   final Widget? segmentsWidget;
   final double skipSeconds;
   final ValueChanged<double>? onSkipSecondsChanged;
+  final VoidCallback? onSttRequest;
 
   @override
   State<_VideoSettingsBar> createState() => _VideoSettingsBarState();
@@ -730,7 +735,7 @@ class _VideoSettingsBarState extends State<_VideoSettingsBar> {
                 label: '자동자막',
                 isActive: false,
                 isGradient: true,
-                onTap: () => showSttConfirmDialog(context),
+                onTap: widget.onSttRequest ?? () {},
               ),
               const SizedBox(width: 8),
               _TabButton(

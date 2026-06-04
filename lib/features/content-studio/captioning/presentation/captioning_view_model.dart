@@ -12,7 +12,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'widgets/stt_confirm_dialog.dart';
 
 import 'package:parrokit/core/state/provider/media_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
@@ -200,13 +199,7 @@ class CaptioningViewModel extends ChangeNotifier
   // ─────────────────────────────────────────────────────────────────
 
   /// 선택된 비디오 파일에 대해 STT를 수행하고 초안을 생성합니다.
-  Future<void> onSttAndDraft(BuildContext context) async {
-    if (!context.mounted) return;
-    final engine = await showSttConfirmDialog(context);
-    if (engine == null) {
-      _setSttState(SttProcessState.idle);
-      return;
-    }
+  Future<void> startStt(AsrEngine engine) async {
     final generateDraft = _generateDraftByEngine[engine]!;
     if (picked == null || (picked!.path ?? '').isEmpty) {
       showToast('먼저 영상 파일을 선택해 주세요.');
@@ -260,9 +253,13 @@ class CaptioningViewModel extends ChangeNotifier
         // 코인 차감 (STT 성공 후에만)
         if (coinsToUse > 0) {
           userProvider.addCoins(-coinsToUse);
-          showToast('자막 생성 완료! ($coinsToUse코인 사용)');
+          Future.delayed(const Duration(milliseconds: 400), () {
+            showToast('자막 생성 완료! ($coinsToUse패롯 소모)');
+          });
         } else {
-          showToast('자막 생성 완료!');
+          Future.delayed(const Duration(milliseconds: 400), () {
+            showToast('자막 생성 완료!');
+          });
         }
       }
 
@@ -274,7 +271,9 @@ class CaptioningViewModel extends ChangeNotifier
         }
       });
     } catch (e) {
-      showToast('STT/번역 실패: $e');
+      Future.delayed(const Duration(milliseconds: 400), () {
+        showToast('STT/번역 실패: $e');
+      });
       _setSttState(SttProcessState.error);
       Future.delayed(const Duration(seconds: 2), () {
         if (_sttState == SttProcessState.error) {

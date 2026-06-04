@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:video_player/video_player.dart';

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter/services.dart';
 
-class LabeledTextField extends StatelessWidget {
+class LabeledTextField extends StatefulWidget {
   const LabeledTextField({
     super.key,
     required this.label,
@@ -31,17 +30,56 @@ class LabeledTextField extends StatelessWidget {
   final bool horizontal;
 
   @override
+  State<LabeledTextField> createState() => _LabeledTextFieldState();
+}
+
+class _LabeledTextFieldState extends State<LabeledTextField> {
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasText = widget.controller?.text.isNotEmpty ?? false;
+    widget.controller?.addListener(_onTextChanged);
+  }
+
+  @override
+  void didUpdateWidget(LabeledTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      oldWidget.controller?.removeListener(_onTextChanged);
+      _hasText = widget.controller?.text.isNotEmpty ?? false;
+      widget.controller?.addListener(_onTextChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller?.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    final hasText = widget.controller?.text.isNotEmpty ?? false;
+    if (hasText != _hasText) {
+      setState(() {
+        _hasText = hasText;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     Widget textField = TextField(
-      focusNode: focusNode,
-      controller: controller,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
+      focusNode: widget.focusNode,
+      controller: widget.controller,
+      keyboardType: widget.keyboardType,
+      inputFormatters: widget.inputFormatters,
       decoration: InputDecoration(
-        hintText: hint,
+        hintText: widget.hint,
         hintStyle: tt.bodyMedium
             ?.copyWith(color: cs.onSurface.withValues(alpha: 0.35)),
         filled: false,
@@ -53,29 +91,28 @@ class LabeledTextField extends StatelessWidget {
           borderSide: BorderSide(color: cs.primary, width: 1.5),
         ),
         border: InputBorder.none,
-        prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 18),
+        prefixIcon: widget.prefixIcon == null ? null : Icon(widget.prefixIcon, size: 18),
         suffixIcon:
-            clearable && controller != null && (controller!.text.isNotEmpty)
+            widget.clearable && widget.controller != null && _hasText
                 ? IconButton(
                     tooltip: '지우기',
                     icon: const Icon(Icons.close_rounded, size: 18),
                     onPressed: () {
-                      controller!.clear();
-                      (context as Element).markNeedsBuild();
+                      widget.controller!.clear();
                     },
                   )
                 : null,
-        suffixText: suffixText,
+        suffixText: widget.suffixText,
       ),
     );
 
-    if (horizontal) {
+    if (widget.horizontal) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 48,
-            child: Text(label,
+            child: Text(widget.label,
                 style: tt.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: cs.onSurface.withValues(alpha: 0.6))),
@@ -89,13 +126,13 @@ class LabeledTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
+        Text(widget.label,
             style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         textField,
-        if (helper != null) ...[
+        if (widget.helper != null) ...[
           const SizedBox(height: 6),
-          Text(helper!,
+          Text(widget.helper!,
               style: tt.bodySmall
                   ?.copyWith(color: cs.onSurface.withValues(alpha: 0.6))),
         ],

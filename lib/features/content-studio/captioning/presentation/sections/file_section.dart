@@ -20,6 +20,7 @@ import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:video_player/video_player.dart';
 
 import '../widgets/file_hero_card.dart';
+import '../widgets/stt_confirm_dialog.dart';
 import '../captioning_view_model.dart';
 import 'segments_section.dart';
 
@@ -137,6 +138,7 @@ class _FileSectionState extends State<FileSection> {
           onReopenLast: () {},
           onReopenFile: vm.pickFromSandbox,
           onReopenPhotos: vm.pickFromPhotos,
+          onSttRequest: () => showSttConfirmDialog(context, vm: vm),
           lastSourceLabel: '파일',
           waveformData: vm.waveformData,
           waveformLoading: vm.waveformLoading,

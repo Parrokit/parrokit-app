@@ -4,6 +4,7 @@ import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:video_player/video_player.dart';
 
 import '../widgets/segment_card.dart';
+
 import '../captioning_view_model.dart';
 
 /// 자막 세그먼트 섹션.
@@ -102,6 +103,7 @@ class _SegmentsSectionState extends State<SegmentsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+
         if (total > 0) ...[
           _SegmentSwitchBar(
             total: total,

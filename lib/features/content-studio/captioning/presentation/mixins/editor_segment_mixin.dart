@@ -20,12 +20,24 @@ import '../../domain/editor_state.dart';
 /// 세그먼트 관리 mixin.
 mixin EditorSegmentMixin on ChangeNotifier {
   // 의존성 (추상 getter)
+  TextEditingController get durationCtl;
 
   // ─────────────────────────────────────────────────────────────────
   // 상태
   // ─────────────────────────────────────────────────────────────────
   final List<SegmentFormData> segmentForms = [];
   final List<_SegmentRangeSnapshot> _segmentSnapshots = [];
+
+  int get _maxDurationMs {
+    final text = durationCtl.text.trim();
+    if (text.isNotEmpty) {
+      final ms = int.tryParse(text);
+      if (ms != null && ms > 0) {
+        return ms;
+      }
+    }
+    return 2147483647;
+  }
 
   // ─────────────────────────────────────────────────────────────────
   // 세그먼트 관리
@@ -178,7 +190,7 @@ mixin EditorSegmentMixin on ChangeNotifier {
 
     var newEndMs = endMs + deltaMs;
     const gapMs = 50;
-    var upperBound = 2147483647;
+    var upperBound = _maxDurationMs;
 
     if (index < segmentForms.length - 1) {
       final nextStartMs = _parseMs(segmentForms[index + 1].startCtl.text);
@@ -217,7 +229,7 @@ mixin EditorSegmentMixin on ChangeNotifier {
     var adjustedStart = startMs;
     var adjustedEnd = endMs;
     var lowerBound = 0;
-    var upperBound = 2147483647;
+    var upperBound = _maxDurationMs;
 
     if (index > 0) {
       final prevEndMs = _parseMs(segmentForms[index - 1].endCtl.text);

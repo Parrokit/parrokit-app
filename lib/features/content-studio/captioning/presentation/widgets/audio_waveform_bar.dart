@@ -260,29 +260,29 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     }
     final int endMs = _windowStartMs + actualWindowDurMs;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          height: widget.height,
-          child: GestureDetector(
-            onHorizontalDragStart: _selectedOverlaySegmentIndex == null
-                ? (details) => _handleDragStart(context, details)
-                : null,
-            onHorizontalDragUpdate: _selectedOverlaySegmentIndex == null
-                ? (details) => _handleDrag(context, details)
-                : null,
-            onHorizontalDragEnd: _selectedOverlaySegmentIndex == null
-                ? (details) => _handleDragEnd(context, details)
-                : null,
-            onHorizontalDragCancel: _selectedOverlaySegmentIndex == null
-                ? () => _handleDragEnd(context)
-                : null,
-            onTapDown: _selectedOverlaySegmentIndex == null
-                ? (details) => _handleTap(context, details)
-                : null,
-            behavior: HitTestBehavior.opaque,
+    return GestureDetector(
+      onHorizontalDragStart: _selectedOverlaySegmentIndex == null
+          ? (details) => _handleDragStart(context, details)
+          : null,
+      onHorizontalDragUpdate: _selectedOverlaySegmentIndex == null
+          ? (details) => _handleDrag(context, details)
+          : null,
+      onHorizontalDragEnd: _selectedOverlaySegmentIndex == null
+          ? (details) => _handleDragEnd(context, details)
+          : null,
+      onHorizontalDragCancel: _selectedOverlaySegmentIndex == null
+          ? () => _handleDragEnd(context)
+          : null,
+      onTapDown: _selectedOverlaySegmentIndex == null
+          ? (details) => _handleTap(context, details)
+          : null,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: widget.height,
             child: ClipRect(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -400,7 +400,6 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
               ),
             ),
           ),
-        ),
         if (actualWindowDurMs > 0) ...[
           const SizedBox(height: 2),
           Stack(
@@ -439,8 +438,9 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
           ),
         ],
       ],
-    );
-  }
+    ),
+  );
+}
 
   void _handleDragStart(BuildContext context, DragStartDetails details) {
     final c = widget.videoController;
