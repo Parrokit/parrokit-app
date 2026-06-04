@@ -15,6 +15,7 @@ class LabeledTextField extends StatelessWidget {
     this.prefixIcon,
     this.suffixText,
     this.clearable = false,
+    this.horizontal = false,
   });
 
   final String label;
@@ -27,11 +28,63 @@ class LabeledTextField extends StatelessWidget {
   final IconData? prefixIcon;
   final String? suffixText;
   final bool clearable;
+  final bool horizontal;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+
+    Widget textField = TextField(
+      focusNode: focusNode,
+      controller: controller,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: tt.bodyMedium
+            ?.copyWith(color: cs.onSurface.withValues(alpha: 0.35)),
+        filled: false,
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        enabledBorder: InputBorder.none,
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ),
+        border: InputBorder.none,
+        prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 18),
+        suffixIcon:
+            clearable && controller != null && (controller!.text.isNotEmpty)
+                ? IconButton(
+                    tooltip: '지우기',
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    onPressed: () {
+                      controller!.clear();
+                      (context as Element).markNeedsBuild();
+                    },
+                  )
+                : null,
+        suffixText: suffixText,
+      ),
+    );
+
+    if (horizontal) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 48,
+            child: Text(label,
+                style: tt.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.6))),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: textField),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,39 +92,7 @@ class LabeledTextField extends StatelessWidget {
         Text(label,
             style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
-        TextField(
-          focusNode: focusNode,
-          controller: controller,
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: tt.bodyMedium
-                ?.copyWith(color: cs.onSurface.withValues(alpha: 0.35)),
-            filled: false,
-            isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            enabledBorder: InputBorder.none,
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: cs.primary, width: 1.5),
-            ),
-            border: InputBorder.none,
-            prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 18),
-            suffixIcon:
-                clearable && controller != null && (controller!.text.isNotEmpty)
-                    ? IconButton(
-                        tooltip: '지우기',
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                        onPressed: () {
-                          controller!.clear();
-                          (context as Element).markNeedsBuild();
-                        },
-                      )
-                    : null,
-            suffixText: suffixText,
-          ),
-        ),
+        textField,
         if (helper != null) ...[
           const SizedBox(height: 6),
           Text(helper!,

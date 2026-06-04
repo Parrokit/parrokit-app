@@ -48,97 +48,112 @@ class SegmentCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: [
-                      _SegmentTimeButton(
-                        label: 'A 등록',
-                        onPressed: _registerA,
-                        color: theme.colorScheme.primary,
-                        isDark: isDark,
-                      ),
-                      _SegmentTimeButton(
-                        label: 'B 등록',
-                        onPressed: _registerB,
-                        color: theme.colorScheme.primary,
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                ),
-                if (onDelete != null)
-                  Material(
-                    color: theme.colorScheme.errorContainer.withValues(alpha: 0.4),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      onTap: onDelete,
-                      customBorder: const CircleBorder(),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          color: theme.colorScheme.error,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.surfaceContainerDark
-                    : AppColors.surfaceContainer,
+                color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TimeTripletField(
-                    label: '시작',
-                    target: startCtl,
-                    showGuide: false,
-                    onCommitted: onStartCommitted,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _SegmentTimeButton(
+                          label: 'A',
+                          onPressed: _registerA,
+                          color: theme.colorScheme.primary,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: 4),
+                        TimeTripletField(
+                          label: '시작',
+                          target: startCtl,
+                          showGuide: false,
+                          compact: true,
+                          onCommitted: onStartCommitted,
+                        ),
+                        const SizedBox(width: 8),
+                        _SegmentTimeButton(
+                          label: 'B',
+                          onPressed: _registerB,
+                          color: theme.colorScheme.primary,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: 4),
+                        TimeTripletField(
+                          label: '끝',
+                          target: endCtl,
+                          showGuide: false,
+                          compact: true,
+                          onCommitted: onEndCommitted,
+                        ),
+                        const SizedBox(width: 8),
+                        if (onDelete != null)
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Material(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              clipBehavior: Clip.antiAlias,
+                              child: InkWell(
+                                onTap: onDelete,
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '삭제',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  TimeTripletField(
-                    label: '끝',
-                    target: endCtl,
-                    onCommitted: onEndCommitted,
+                  LabeledTextField(
+                    label: '원문',
+                    hint: '원문 입력',
+                    controller: originalCtl,
+                    clearable: true,
+                    horizontal: true,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  LabeledTextField(
+                    label: '해석',
+                    hint: '해석 입력',
+                    controller: koCtl,
+                    clearable: true,
+                    horizontal: true,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  LabeledTextField(
+                    label: '발음',
+                    hint: '발음 입력',
+                    controller: pronCtl,
+                    clearable: true,
+                    horizontal: true,
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            LabeledTextField(
-              label: '원문',
-              hint: '원문을 입력하세요',
-              controller: originalCtl,
-              prefixIcon: Icons.translate,
-              clearable: true,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            LabeledTextField(
-              label: '한국어',
-              hint: '한국어를 입력하세요',
-              controller: koCtl,
-              prefixIcon: Icons.subtitles_outlined,
-              clearable: true,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            LabeledTextField(
-              label: '발음',
-              hint: '발음을 입력하세요',
-              controller: pronCtl,
-              prefixIcon: Icons.record_voice_over_outlined,
-              clearable: true,
             ),
           ],
         ),
@@ -207,57 +222,42 @@ class _SegmentTimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bg = theme.colorScheme.surfaceContainerHighest; // 연한 회색 (이전에 커스텀함)
-    
     final symbol = label.isNotEmpty ? label.substring(0, 1) : '';
-    final text = label.length > 1 ? label.substring(1).trim() : '';
 
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed,
+            child: Container(
+              width: 32,
+              height: 32,
               alignment: Alignment.center,
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
               child: Text(
                 symbol,
                 style: TextStyle(
-                  color: theme.colorScheme.onPrimary,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11,
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 2),
+        Text(
+          '추가',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -8,13 +8,17 @@ class TimeTripletField extends StatefulWidget {
     required this.label,
     required this.target,
     this.showGuide = true,
+    this.compact = false,
     this.onCommitted,
+    this.action,
   });
 
   final String label;
   final TextEditingController target;
   final bool showGuide;
+  final bool compact;
   final VoidCallback? onCommitted;
+  final Widget? action;
 
   @override
   State<TimeTripletField> createState() => _TimeTripletFieldState();
@@ -120,13 +124,19 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
     }
   }
 
-  InputDecoration _dec(String label, String hint) => InputDecoration(
+  InputDecoration _dec(String label, String hint, ColorScheme cs) => InputDecoration(
         isDense: true,
-        labelText: label,
-        hintText: hint,
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        labelText: widget.compact ? null : label,
+        hintText: widget.compact ? label : hint,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ),
+        filled: false,
+        contentPadding: EdgeInsets.symmetric(
+            horizontal: widget.compact ? 6 : 10,
+            vertical: widget.compact ? 6 : 8),
       );
 
   Widget _numField(
@@ -137,8 +147,9 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
     required int maxLen,
     double width = 72,
   }) {
+    ColorScheme cs = Theme.of(context).colorScheme;
     return SizedBox(
-      width: width,
+      width: widget.compact ? width * 0.7 : width,
       child: TextField(
         controller: ctl,
         focusNode: fn,
@@ -155,8 +166,13 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
         // 제출(엔터)
         onTapOutside: (_) => _syncToTarget(),
         // 필드 밖 탭
-        decoration: _dec(label, hint),
+        decoration: _dec(label, hint, cs),
         textInputAction: TextInputAction.next,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
       ),
     );
   }
@@ -166,27 +182,38 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(widget.label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w800, color: cs.onSurface)),
-        const SizedBox(height: 6),
+        if (!widget.compact) ...[
+          Text(widget.label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w800, color: cs.onSurface)),
+          const SizedBox(height: 6),
+        ],
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            _numField(_mCtl,
-                fn: _mFn, label: '분', hint: '00', maxLen: 2, width: 64),
-            const SizedBox(width: 8),
-            const Text(':'),
-            const SizedBox(width: 8),
-            _numField(_sCtl,
-                fn: _sFn, label: '초', hint: '00', maxLen: 2, width: 64),
-            const SizedBox(width: 8),
-            const Text('.'),
-            const SizedBox(width: 8),
-            _numField(_msCtl,
-                fn: _msFn, label: '밀리초', hint: '000', maxLen: 3, width: 84),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _numField(_mCtl,
+                    fn: _mFn, label: '분', hint: '00', maxLen: 2, width: 64),
+                SizedBox(width: widget.compact ? 2 : 8),
+                const Text(':'),
+                SizedBox(width: widget.compact ? 2 : 8),
+                _numField(_sCtl,
+                    fn: _sFn, label: '초', hint: '00', maxLen: 2, width: 64),
+                SizedBox(width: widget.compact ? 2 : 8),
+                const Text('.'),
+                SizedBox(width: widget.compact ? 2 : 8),
+                _numField(_msCtl,
+                    fn: _msFn, label: '밀리초', hint: '000', maxLen: 3, width: 84),
+              ],
+            ),
+            if (widget.action != null) widget.action!,
           ],
         ),
         if (widget.showGuide) const SizedBox(height: 6),
