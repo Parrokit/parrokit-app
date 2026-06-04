@@ -71,10 +71,21 @@ class SegmentCard extends StatelessWidget {
                   ),
                 ),
                 if (onDelete != null)
-                  IconButton(
-                    icon: Icon(Icons.delete_outline_rounded,
-                        color: theme.colorScheme.error, size: 20),
-                    onPressed: onDelete,
+                  Material(
+                    color: theme.colorScheme.errorContainer.withValues(alpha: 0.4),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: onDelete,
+                      customBorder: const CircleBorder(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          color: theme.colorScheme.error,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -196,17 +207,57 @@ class _SegmentTimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isDark ? AppColors.primarySubtleDark : AppColors.primarySubtle;
-    return FilledButton.tonal(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: bg,
-        foregroundColor: color,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        textStyle: const TextStyle(fontWeight: FontWeight.w800),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    final theme = Theme.of(context);
+    final bg = theme.colorScheme.surfaceContainerHighest; // 연한 회색 (이전에 커스텀함)
+    
+    final symbol = label.isNotEmpty ? label.substring(0, 1) : '';
+    final text = label.length > 1 ? label.substring(1).trim() : '';
+
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              alignment: Alignment.center,
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                symbol,
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Text(label),
     );
   }
 }
