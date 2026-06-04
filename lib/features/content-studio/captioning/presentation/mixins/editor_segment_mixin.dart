@@ -205,7 +205,10 @@ mixin EditorSegmentMixin on ChangeNotifier {
     final form = segmentForms[index];
     final startMs = _parseMs(form.startCtl.text);
     final endMs = _parseMs(form.endCtl.text);
-    if (startMs == null || endMs == null || startMs <= 0 || endMs <= 0) {
+    if (startMs == null || endMs == null) {
+      return true;
+    }
+    if (startMs < 0 || endMs < 0) {
       showToast('구간 시간 형식을 다시 확인해 주세요.');
       return false;
     }
