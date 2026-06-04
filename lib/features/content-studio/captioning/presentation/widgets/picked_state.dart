@@ -307,7 +307,7 @@ class _PickedStateState extends State<PickedState> {
       final startMs = _parseMs(form.startCtl.text);
       final endMs = _parseMs(form.endCtl.text);
       if (startMs == null || endMs == null) continue;
-      if (startMs <= 0 || endMs <= 0) continue;
+      if (startMs < 0 || endMs <= 0) continue;
       if (endMs <= startMs) continue;
 
       ranges.add(
@@ -339,7 +339,7 @@ class _PickedStateState extends State<PickedState> {
     final form = widget.segmentForms[index];
     final startMs = _parseMs(form.startCtl.text);
     final endMs = _parseMs(form.endCtl.text);
-    if (startMs == null || endMs == null || startMs <= 0 || endMs <= 0) {
+    if (startMs == null || endMs == null || startMs < 0 || endMs <= 0) {
       return const SizedBox.shrink();
     }
 
@@ -361,7 +361,7 @@ class _PickedStateState extends State<PickedState> {
 
     return Container(
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -402,7 +402,7 @@ class _PickedStateState extends State<PickedState> {
                     height: 36,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: cs.surface,
+                      color: cs.surfaceContainerHighest,
                       borderRadius: const BorderRadius.horizontal(
                         left: Radius.circular(12),
                       ),
@@ -427,7 +427,7 @@ class _PickedStateState extends State<PickedState> {
                     height: 36,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: cs.surface,
+                      color: cs.surfaceContainerHighest,
                       borderRadius: const BorderRadius.horizontal(
                         right: Radius.circular(12),
                       ),

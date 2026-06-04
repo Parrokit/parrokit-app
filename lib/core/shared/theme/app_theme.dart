@@ -50,6 +50,7 @@ class AppTheme {
       surface: isDark ? AppColors.surfaceDark : AppColors.surface,
       onSurface: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
       surfaceTint: Colors.transparent,
+      surfaceContainerHighest: isDark ? AppColors.surfaceContainerDark : AppColors.surfaceContainer,
     );
 
     return ThemeData(
