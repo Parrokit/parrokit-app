@@ -59,6 +59,8 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   late List<double> _bars;
   int _windowStartMs = 0;
   int _lastPosMs = 0;
+  bool _isDragging = false;
+  int? _localTargetMs;
   int? _selectedOverlaySegmentIndex;
 
   List<double>? _cachedFullBars;
@@ -114,6 +116,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   void _onVideoUpdate() {
     final c = widget.videoController;
     if (c != null && c.value.isInitialized && mounted) {
+      if (_isDragging) return;
       final posMs = c.value.position.inMilliseconds;
       final durMs = c.value.duration.inMilliseconds;
       final minDur = math.min(3000.0, durMs.toDouble());
@@ -264,8 +267,17 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
         SizedBox(
           height: widget.height,
           child: GestureDetector(
+            onHorizontalDragStart: _selectedOverlaySegmentIndex == null
+                ? (details) => _handleDragStart(context, details)
+                : null,
             onHorizontalDragUpdate: _selectedOverlaySegmentIndex == null
                 ? (details) => _handleDrag(context, details)
+                : null,
+            onHorizontalDragEnd: _selectedOverlaySegmentIndex == null
+                ? (details) => _handleDragEnd(context, details)
+                : null,
+            onHorizontalDragCancel: _selectedOverlaySegmentIndex == null
+                ? () => _handleDragEnd(context)
                 : null,
             onTapDown: _selectedOverlaySegmentIndex == null
                 ? (details) => _handleTap(context, details)
@@ -430,6 +442,19 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     );
   }
 
+  void _handleDragStart(BuildContext context, DragStartDetails details) {
+    final c = widget.videoController;
+    if (c == null || !c.value.isInitialized) return;
+    _isDragging = true;
+    _localTargetMs = c.value.position.inMilliseconds;
+  }
+
+  void _handleDragEnd(BuildContext context, [dynamic details]) {
+    _isDragging = false;
+    _localTargetMs = null;
+    _onVideoUpdate();
+  }
+
   void _handleDrag(BuildContext context, DragUpdateDetails details) {
     final c = widget.videoController;
     if (c == null || !c.value.isInitialized) return;
@@ -445,10 +470,15 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     // 왼쪽으로 드래그(음수 delta)하면 시간이 미래로 가야 하므로 -를 붙임
     final deltaMs = -details.delta.dx * msPerPixel;
     
-    final currentMs = c.value.position.inMilliseconds;
-    final targetMs = (currentMs + deltaMs).clamp(0, durMs.toDouble()).toInt();
+    final currentMs = _localTargetMs ?? c.value.position.inMilliseconds;
+    _localTargetMs = (currentMs + deltaMs).clamp(0, durMs.toDouble()).toInt();
     
-    c.seekTo(Duration(milliseconds: targetMs));
+    // UI 로컬 즉시 갱신 (비디오 응답 대기 안 함)
+    _windowStartMs = _localTargetMs! - (windowDurMs * widget.playheadRatio).toInt();
+    _bars = _computeBars();
+    setState(() {});
+    
+    c.seekTo(Duration(milliseconds: _localTargetMs!));
   }
 
   void _handleTap(BuildContext context, TapDownDetails details) {
