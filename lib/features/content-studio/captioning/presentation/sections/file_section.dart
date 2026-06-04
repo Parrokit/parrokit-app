@@ -84,6 +84,7 @@ class _FileSectionState extends State<FileSection> {
       await _vp?.dispose();
       final c = VideoPlayerController.file(File(path));
       await c.initialize();
+      await c.seekTo(Duration.zero);
       widget.vm.durationCtl.text = c.value.duration.inMilliseconds.toString();
       
       c.addListener(() {

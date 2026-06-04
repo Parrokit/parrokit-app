@@ -24,6 +24,7 @@ class AudioWaveformBar extends StatefulWidget {
     this.zoomFactor = 1.0,
     this.barCount = 100,
     this.height = 48,
+    this.playheadRatio = 0.5, // 0.0 ~ 1.0 (0.5 means center)
   });
 
   /// 재생 위치 동기화에 사용하는 비디오 컨트롤러.
@@ -45,6 +46,10 @@ class AudioWaveformBar extends StatefulWidget {
   
   final int barCount;
   final double height;
+  
+  /// 화면 내 재생선(플레이헤드)의 위치 비율 (0.0 ~ 1.0)
+  /// 기본값 0.5는 정중앙에 항상 플레이헤드가 위치함을 의미합니다.
+  final double playheadRatio;
 
   @override
   State<AudioWaveformBar> createState() => _AudioWaveformBarState();
@@ -53,6 +58,7 @@ class AudioWaveformBar extends StatefulWidget {
 class _AudioWaveformBarState extends State<AudioWaveformBar> {
   late List<double> _bars;
   int _windowStartMs = 0;
+  int _lastPosMs = 0;
   int? _selectedOverlaySegmentIndex;
 
   List<double>? _cachedFullBars;
@@ -115,12 +121,15 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       
       final oldStart = _windowStartMs;
       
-      // 실시간 부드러운 스크롤 (Center-locked):
-      // 재생 위치를 항상 화면 중앙에 두도록 윈도우를 지속적으로 이동
-      _windowStartMs = posMs - (windowDurMs ~/ 2);
+      // 실시간 스크롤:
+      // 재생 위치를 화면의 playheadRatio 위치에 지속적으로 고정
+      _windowStartMs = posMs - (windowDurMs * widget.playheadRatio).toInt();
+      
+      final bool posChanged = _lastPosMs != posMs;
+      _lastPosMs = posMs;
       
       // 창 위치가 변했거나 재생 중이면 UI 업데이트
-      if (oldStart != _windowStartMs || c.value.isPlaying) {
+      if (oldStart != _windowStartMs || c.value.isPlaying || posChanged) {
         _bars = _computeBars();
         setState(() {});
       }
@@ -135,8 +144,8 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     final minDur = math.min(3000.0, durMs.toDouble());
     final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
     
-    // 현재 재생 위치를 화면 중앙에 맞추도록 윈도우 이동
-    _windowStartMs = posMs - (windowDurMs ~/ 2);
+    // 현재 재생 위치를 화면의 playheadRatio 위치에 고정하도록 윈도우 이동
+    _windowStartMs = posMs - (windowDurMs * widget.playheadRatio).toInt();
   }
 
   void _updateCacheIfNeeded() {
@@ -258,6 +267,9 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
             onHorizontalDragUpdate: _selectedOverlaySegmentIndex == null
                 ? (details) => _handleDrag(context, details)
                 : null,
+            onTapDown: _selectedOverlaySegmentIndex == null
+                ? (details) => _handleTap(context, details)
+                : null,
             behavior: HitTestBehavior.opaque,
             child: ClipRect(
               child: LayoutBuilder(
@@ -299,7 +311,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                                     .clamp(3.0, widget.height);
 
                                 final playheadIdx =
-                                    (exactIndex + widget.barCount / 2).floor();
+                                    (exactIndex + widget.barCount * widget.playheadRatio).floor();
                                 final isPlayed = idx < playheadIdx;
                                 final isCurrent = idx == playheadIdx;
 
@@ -437,6 +449,23 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     final targetMs = (currentMs + deltaMs).clamp(0, durMs.toDouble()).toInt();
     
     c.seekTo(Duration(milliseconds: targetMs));
+  }
+
+  void _handleTap(BuildContext context, TapDownDetails details) {
+    final c = widget.videoController;
+    if (c == null || !c.value.isInitialized) return;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    
+    final durMs = c.value.duration.inMilliseconds;
+    final minDur = math.min(3000.0, durMs.toDouble());
+    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+    final actualWindowDurMs = math.min(windowDurMs, durMs);
+    
+    final msPerPixel = actualWindowDurMs / box.size.width;
+    final targetMs = _windowStartMs + (details.localPosition.dx * msPerPixel).toInt();
+    
+    c.seekTo(Duration(milliseconds: targetMs.clamp(0, durMs)));
   }
 
   List<_VisibleOverlayLayout> _buildVisibleOverlayLayouts({
