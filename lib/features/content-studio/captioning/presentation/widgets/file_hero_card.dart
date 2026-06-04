@@ -32,6 +32,8 @@ class FileHeroCard extends StatelessWidget {
     this.segmentsWidget,
     this.segmentForms = const [],
     this.onOverlayRangeChanged,
+    this.onOverlayStartAdjusted,
+    this.onOverlayEndAdjusted,
   });
 
   final PlatformFile? picked;
@@ -57,6 +59,8 @@ class FileHeroCard extends StatelessWidget {
   final Widget? segmentsWidget;
   final List<SegmentFormData> segmentForms;
   final ValueChanged<WaveformOverlayRange>? onOverlayRangeChanged;
+  final void Function(int index, int deltaMs)? onOverlayStartAdjusted;
+  final void Function(int index, int deltaMs)? onOverlayEndAdjusted;
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +95,8 @@ class FileHeroCard extends StatelessWidget {
               segmentsWidget: segmentsWidget,
               segmentForms: segmentForms,
               onOverlayRangeChanged: onOverlayRangeChanged,
+              onOverlayStartAdjusted: onOverlayStartAdjusted,
+              onOverlayEndAdjusted: onOverlayEndAdjusted,
             ),
     );
   }

@@ -16,6 +16,10 @@ class AudioWaveformBar extends StatefulWidget {
     this.waveformData,
     this.overlayRanges = const [],
     this.onOverlayRangeChanged,
+    this.onOverlaySelected,
+    this.onOverlaySelectionChanged,
+    this.showOverlayHandles = true,
+    this.initialSelectedOverlaySegmentIndex,
     this.isLoading = false,
     this.zoomFactor = 1.0,
     this.barCount = 100,
@@ -29,6 +33,10 @@ class AudioWaveformBar extends StatefulWidget {
   final List<double>? waveformData;
   final List<WaveformOverlayRange> overlayRanges;
   final ValueChanged<WaveformOverlayRange>? onOverlayRangeChanged;
+  final ValueChanged<int>? onOverlaySelected;
+  final ValueChanged<int?>? onOverlaySelectionChanged;
+  final bool showOverlayHandles;
+  final int? initialSelectedOverlaySegmentIndex;
 
   final bool isLoading;
   
@@ -54,6 +62,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   void initState() {
     super.initState();
     _bars = _computeBars();
+    _selectedOverlaySegmentIndex = widget.initialSelectedOverlaySegmentIndex;
     widget.videoController?.addListener(_onVideoUpdate);
   }
 
@@ -68,6 +77,11 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     if (oldWidget.videoController != widget.videoController) {
       oldWidget.videoController?.removeListener(_onVideoUpdate);
       widget.videoController?.addListener(_onVideoUpdate);
+    }
+
+    if (oldWidget.initialSelectedOverlaySegmentIndex !=
+        widget.initialSelectedOverlaySegmentIndex) {
+      _selectedOverlaySegmentIndex = widget.initialSelectedOverlaySegmentIndex;
     }
     
     if (oldWidget.waveformData != widget.waveformData) {
@@ -336,9 +350,13 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                                         windowEndMs: endMs,
                                         videoDurationMs: c?.value.duration.inMilliseconds ?? 0,
                                         onChanged: widget.onOverlayRangeChanged,
+                                        showHandles: widget.showOverlayHandles,
                                         onSelected: () {
-                                          if (_selectedOverlaySegmentIndex !=
-                                              layout.range.segmentIndex) {
+                                          widget.onOverlaySelected
+                                              ?.call(layout.range.segmentIndex);
+                                          if (widget.onOverlayRangeChanged != null &&
+                                              _selectedOverlaySegmentIndex !=
+                                                  layout.range.segmentIndex) {
                                             setState(() {
                                               _selectedOverlaySegmentIndex =
                                                   layout.range.segmentIndex;
@@ -472,12 +490,14 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       if (_selectedOverlaySegmentIndex != next) {
         setState(() => _selectedOverlaySegmentIndex = next);
       }
+      widget.onOverlaySelectionChanged?.call(next);
       return;
     }
 
     if (_selectedOverlaySegmentIndex != null) {
       setState(() => _selectedOverlaySegmentIndex = null);
     }
+    widget.onOverlaySelectionChanged?.call(null);
   }
 }
 
@@ -504,6 +524,7 @@ class _OverlayRangeTile extends StatelessWidget {
     required this.onChanged,
     required this.isSelected,
     required this.onSelected,
+    required this.showHandles,
   });
 
   final WaveformOverlayRange range;
@@ -514,11 +535,12 @@ class _OverlayRangeTile extends StatelessWidget {
   final int videoDurationMs;
   final ValueChanged<WaveformOverlayRange>? onChanged;
   final bool isSelected;
-  final VoidCallback onSelected;
+  final VoidCallback? onSelected;
+  final bool showHandles;
 
   @override
   Widget build(BuildContext context) {
-    final canInteract = onChanged != null;
+    final canInteract = onChanged != null || onSelected != null;
     final cs = Theme.of(context).colorScheme;
     final bodyColor = isSelected
         ? range.color.withValues(alpha: 0.24)
@@ -536,8 +558,8 @@ class _OverlayRangeTile extends StatelessWidget {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: onSelected,
-              onTapDown: (_) => onSelected(),
-              onPanStart: (_) => onSelected(),
+              onTapDown: (_) => onSelected?.call(),
+              onPanStart: (_) => onSelected?.call(),
               onPanUpdate: canInteract && !isSelected
                   ? (details) => _moveRange(details.delta.dx)
                   : null,
@@ -553,11 +575,11 @@ class _OverlayRangeTile extends StatelessWidget {
               ),
             ),
           ),
-          if (isSelected)
+          if (isSelected && showHandles)
             Positioned(
               left: 0,
-              bottom: 0,
-              height: 22,
+              bottom: -2,
+              height: 28,
               width: 24,
               child: _OverlayHandle(
                 color: cs.primary,
@@ -567,11 +589,11 @@ class _OverlayRangeTile extends StatelessWidget {
                     : null,
               ),
             ),
-          if (isSelected)
+          if (isSelected && showHandles)
             Positioned(
               right: 0,
-              bottom: 0,
-              height: 22,
+              bottom: -2,
+              height: 28,
               width: 24,
               child: _OverlayHandle(
                 color: cs.primary,
@@ -679,7 +701,7 @@ class _OverlayHandle extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 24,
-      height: 22,
+      height: 28,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onPanUpdate: onPanUpdate,
@@ -688,12 +710,12 @@ class _OverlayHandle extends StatelessWidget {
           alignment: alignLeft ? Alignment.bottomLeft : Alignment.bottomRight,
           children: [
             Positioned(
-              bottom: 14,
+              bottom: 18,
               left: alignLeft ? 10.5 : null,
               right: alignLeft ? null : 10.5,
               child: Container(
                 width: 3,
-                height: 8,
+                height: 7,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.72),
                   borderRadius: BorderRadius.circular(3),
@@ -701,9 +723,9 @@ class _OverlayHandle extends StatelessWidget {
               ),
             ),
             Positioned(
-              bottom: 0,
-              left: alignLeft ? 5 : null,
-              right: alignLeft ? null : 5,
+              bottom: -1,
+              left: alignLeft ? 4.5 : null,
+              right: alignLeft ? null : 4.5,
               child: Container(
                 width: 14,
                 height: 14,

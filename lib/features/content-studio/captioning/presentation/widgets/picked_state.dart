@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -33,6 +35,8 @@ class PickedState extends StatefulWidget {
     this.segmentsWidget,
     this.segmentForms = const [],
     this.onOverlayRangeChanged,
+    this.onOverlayStartAdjusted,
+    this.onOverlayEndAdjusted,
   });
 
   final PlatformFile picked;
@@ -53,6 +57,8 @@ class PickedState extends StatefulWidget {
   final Widget? segmentsWidget;
   final List<SegmentFormData> segmentForms;
   final ValueChanged<WaveformOverlayRange>? onOverlayRangeChanged;
+  final void Function(int index, int deltaMs)? onOverlayStartAdjusted;
+  final void Function(int index, int deltaMs)? onOverlayEndAdjusted;
 
   @override
   State<PickedState> createState() => _PickedStateState();
@@ -64,6 +70,14 @@ class _PickedStateState extends State<PickedState> {
   bool _isSettingsExpanded = false;
   double _skipSeconds = 3.0;
   bool _isVideoCollapsed = false;
+  int? _selectedOverlaySegmentIndex;
+  final ChangeNotifier _overlayFallbackListenable = ChangeNotifier();
+
+  @override
+  void dispose() {
+    _overlayFallbackListenable.dispose();
+    super.dispose();
+  }
 
   void _zoomIn() {
     final c = widget.playerController;
@@ -110,6 +124,8 @@ class _PickedStateState extends State<PickedState> {
     final double aspect =
         showPlayer ? widget.playerController!.value.aspectRatio : 16 / 9;
     final overlayRebuildListenable = _overlayRebuildListenable();
+    final waveformListenable =
+        overlayRebuildListenable ?? _overlayFallbackListenable;
 
     return Column(
       children: [
@@ -193,11 +209,24 @@ class _PickedStateState extends State<PickedState> {
             // ── 2. 음성 파형 그래프 ────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: overlayRebuildListenable == null
-                  ? _buildWaveform(context)
-                  : AnimatedBuilder(
-                      animation: overlayRebuildListenable,
-                      builder: (context, _) => _buildWaveform(context),
+              child: AnimatedBuilder(
+                animation: waveformListenable,
+                builder: (context, _) => _buildWaveform(context),
+              ),
+            ),
+
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: _selectedOverlaySegmentIndex == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                      child: AnimatedBuilder(
+                        animation: waveformListenable,
+                        builder: (context, _) =>
+                            _buildOverlayAdjustmentBar(context),
+                      ),
                     ),
             ),
 
@@ -253,7 +282,8 @@ class _PickedStateState extends State<PickedState> {
       videoController: widget.playerController,
       waveformData: widget.waveformData,
       overlayRanges: overlayRanges,
-      onOverlayRangeChanged: widget.onOverlayRangeChanged ?? _updateOverlayRange,
+      onOverlaySelectionChanged: _handleOverlaySelectionChanged,
+      showOverlayHandles: false,
       isLoading: widget.waveformLoading,
       zoomFactor: _zoomFactor,
       height: 44,
@@ -292,26 +322,145 @@ class _PickedStateState extends State<PickedState> {
     return ranges;
   }
 
-  void _updateOverlayRange(WaveformOverlayRange range) {
-    if (range.segmentIndex < 0 || range.segmentIndex >= widget.segmentForms.length) {
-      return;
+  void _handleOverlaySelectionChanged(int? segmentIndex) {
+    if (_selectedOverlaySegmentIndex == segmentIndex) return;
+    setState(() {
+      _selectedOverlaySegmentIndex = segmentIndex;
+    });
+  }
+
+  Widget _buildOverlayAdjustmentBar(BuildContext context) {
+    final index = _selectedOverlaySegmentIndex;
+    if (index == null || index < 0 || index >= widget.segmentForms.length) {
+      return const SizedBox.shrink();
     }
 
-    final form = widget.segmentForms[range.segmentIndex];
-    final tc = TimecodeService();
-    final startText = tc.msToMMSSmmm(range.startMs);
-    final endText = tc.msToMMSSmmm(range.endMs);
-    form.startCtl.value = TextEditingValue(
-      text: startText,
-      selection: TextSelection.collapsed(offset: startText.length),
-    );
-    form.endCtl.value = TextEditingValue(
-      text: endText,
-      selection: TextSelection.collapsed(offset: endText.length),
-    );
-    if (mounted) {
-      setState(() {});
+    final cs = Theme.of(context).colorScheme;
+    final form = widget.segmentForms[index];
+    final startMs = _parseMs(form.startCtl.text);
+    final endMs = _parseMs(form.endCtl.text);
+    if (startMs == null || endMs == null || startMs <= 0 || endMs <= 0) {
+      return const SizedBox.shrink();
     }
+
+    final msPerPixel = _msPerPixel(context);
+    final startText = TimecodeService().msToMMSSmmm(startMs);
+    final endText = TimecodeService().msToMMSSmmm(endMs);
+
+    void adjustStart(double dx) {
+      final deltaMs = (dx * msPerPixel).round();
+      if (deltaMs == 0) return;
+      widget.onOverlayStartAdjusted?.call(index, deltaMs);
+    }
+
+    void adjustEnd(double dx) {
+      final deltaMs = (dx * msPerPixel).round();
+      if (deltaMs == 0) return;
+      widget.onOverlayEndAdjusted?.call(index, deltaMs);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '구간 #${index + 1}',
+                  style: TextStyle(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              Text(
+                '$startText  -  $endText',
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragUpdate: (details) =>
+                      adjustStart(details.delta.dx),
+                  child: Container(
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'A',
+                      style: TextStyle(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 1),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragUpdate: (details) =>
+                      adjustEnd(details.delta.dx),
+                  child: Container(
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'B',
+                      style: TextStyle(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _msPerPixel(BuildContext context) {
+    final c = widget.playerController;
+    if (c == null || !c.value.isInitialized) return 1.0;
+    final durationMs = c.value.duration.inMilliseconds;
+    if (durationMs <= 0) return 1.0;
+    final minDur = math.min(3000.0, durationMs.toDouble());
+    final windowDurMs =
+        (durationMs / _zoomFactor).clamp(minDur, durationMs.toDouble()).toInt();
+    final actualWindowDurMs = math.min(windowDurMs, durationMs);
+    final width = MediaQuery.sizeOf(context).width - 32;
+    if (width <= 0) return 1.0;
+    return actualWindowDurMs / width;
   }
 
   int? _parseMs(String value) {

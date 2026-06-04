@@ -130,6 +130,74 @@ mixin EditorSegmentMixin on ChangeNotifier {
     notifyListeners();
   }
 
+  /// 시작 경계를 드래그할 때, 현재 구간만 이동하며 이전 구간을 침범하지 않도록 제한한다.
+  void adjustSegmentStartConstrained(
+    int index,
+    int deltaMs,
+  ) {
+    if (index < 0 || index >= segmentForms.length || deltaMs == 0) return;
+
+    final form = segmentForms[index];
+    final startMs = _parseMs(form.startCtl.text);
+    final endMs = _parseMs(form.endCtl.text);
+    if (startMs == null || endMs == null) return;
+
+    var newStartMs = startMs + deltaMs;
+    const gapMs = 50;
+    var lowerBound = 0;
+
+    if (index > 0) {
+      final prevEndMs = _parseMs(segmentForms[index - 1].endCtl.text);
+      if (prevEndMs != null) {
+        lowerBound = prevEndMs + gapMs;
+      }
+    }
+
+    if (newStartMs < lowerBound) {
+      newStartMs = lowerBound;
+    }
+    if (newStartMs > endMs - gapMs) {
+      newStartMs = endMs - gapMs;
+    }
+
+    _writeSegmentRange(index, newStartMs, endMs);
+    notifyListeners();
+  }
+
+  /// 끝 경계를 드래그할 때, 현재 구간만 이동하며 이후 구간을 침범하지 않도록 제한한다.
+  void adjustSegmentEndConstrained(
+    int index,
+    int deltaMs,
+  ) {
+    if (index < 0 || index >= segmentForms.length || deltaMs == 0) return;
+
+    final form = segmentForms[index];
+    final startMs = _parseMs(form.startCtl.text);
+    final endMs = _parseMs(form.endCtl.text);
+    if (startMs == null || endMs == null) return;
+
+    var newEndMs = endMs + deltaMs;
+    const gapMs = 50;
+    var upperBound = 2147483647;
+
+    if (index < segmentForms.length - 1) {
+      final nextStartMs = _parseMs(segmentForms[index + 1].startCtl.text);
+      if (nextStartMs != null) {
+        upperBound = nextStartMs - gapMs;
+      }
+    }
+
+    if (newEndMs > upperBound) {
+      newEndMs = upperBound;
+    }
+    if (newEndMs < startMs + gapMs) {
+      newEndMs = startMs + gapMs;
+    }
+
+    _writeSegmentRange(index, startMs, newEndMs);
+    notifyListeners();
+  }
+
   /// 편집 중인 특정 세그먼트를 검증하고, 겹치면 자동 보정합니다.
   bool validateSegmentAt(int index) {
     if (index < 0 || index >= segmentForms.length) return true;
@@ -142,7 +210,7 @@ mixin EditorSegmentMixin on ChangeNotifier {
       return false;
     }
 
-    const gapMs = 10;
+    const gapMs = 50;
     var adjustedStart = startMs;
     var adjustedEnd = endMs;
     var lowerBound = 0;
@@ -224,6 +292,25 @@ mixin EditorSegmentMixin on ChangeNotifier {
     } else {
       _segmentSnapshots.add(snapshot);
     }
+  }
+
+
+
+  void _writeSegmentRange(int index, int startMs, int endMs) {
+    if (index < 0 || index >= segmentForms.length) return;
+    final tc = TimecodeService();
+    final startText = tc.msToMMSSmmm(math.max(0, startMs));
+    final endText = tc.msToMMSSmmm(math.max(0, endMs));
+    final form = segmentForms[index];
+    form.startCtl.value = TextEditingValue(
+      text: startText,
+      selection: TextSelection.collapsed(offset: startText.length),
+    );
+    form.endCtl.value = TextEditingValue(
+      text: endText,
+      selection: TextSelection.collapsed(offset: endText.length),
+    );
+    _syncSnapshotAt(index);
   }
 
   int? _parseMs(String value) {

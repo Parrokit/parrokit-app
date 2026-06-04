@@ -153,6 +153,8 @@ class _FileSectionState extends State<FileSection> {
             );
             vm.validateSegmentAt(range.segmentIndex);
           },
+          onOverlayStartAdjusted: vm.adjustSegmentStartConstrained,
+          onOverlayEndAdjusted: vm.adjustSegmentEndConstrained,
         ),
       ],
     );
