@@ -33,6 +33,7 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
   late int _selectedIndex;
   bool _isAppBarExpanded = false;
   bool _isChatBotVisible = true;
+  bool _isSwipeEnabled = true;
 
   @override
   void initState() {
@@ -121,6 +122,9 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                       padding: const EdgeInsets.only(bottom: 108),
                       child: PageView(
                         controller: _pageController,
+                        physics: _isSwipeEnabled
+                            ? const BouncingScrollPhysics()
+                            : const NeverScrollableScrollPhysics(),
                         onPageChanged: (index) {
                           if (_selectedIndex == index) return;
                           setState(() => _selectedIndex = index);
@@ -266,7 +270,9 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                                 icon: Icons.settings,
                                 label: '스튜디오 설정',
                                 iconColor: theme.colorScheme.onSurface,
-                                onTap: () {},
+                                onTap: () {
+                                  _showSettingsSheet(context);
+                                },
                               ),
                             ),
                           ],
@@ -283,6 +289,52 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
           );
         },
       ),
+    );
+  }
+
+  void _showSettingsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '스튜디오 설정',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 24),
+                    SwitchListTile(
+                      title: const Text('화면 슬라이딩 이동 켜기'),
+                      subtitle: const Text('스와이프하여 탭을 이동할 수 있습니다.'),
+                      value: _isSwipeEnabled,
+                      onChanged: (val) {
+                        setSheetState(() {
+                          _isSwipeEnabled = val;
+                        });
+                        setState(() {
+                          _isSwipeEnabled = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
