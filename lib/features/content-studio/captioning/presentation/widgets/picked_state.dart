@@ -68,7 +68,7 @@ class PickedState extends StatefulWidget {
 class _PickedStateState extends State<PickedState> {
   // 줌 배율: 1.0(기본, 전체 표시) -> 배율이 커질수록 줌 인.
   double _zoomFactor = 1.0;
-  bool _isSettingsExpanded = false;
+  bool _isSettingsExpanded = true;
   double _skipSeconds = 3.0;
   bool _isVideoCollapsed = false;
   int? _selectedOverlaySegmentIndex;
@@ -505,7 +505,7 @@ class _VideoSettingsBar extends StatefulWidget {
 }
 
 class _VideoSettingsBarState extends State<_VideoSettingsBar> {
-  final List<bool> _isExpanded = [false, false, false]; // 탭 닫아두기
+  final List<bool> _isExpanded = [false, true, false]; // A-B 리스트 탭 열어두기
 
   String _formatDuration(Duration? d) {
     if (d == null) return '알 수 없음';
