@@ -109,14 +109,14 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
       });
     }
 
-    if (provider.pendingScriptRecommendation != null) {
-      final scriptText = provider.pendingScriptRecommendation!;
-      debugPrint('[Chatbot][UI] Detected pendingScriptRecommendation in build');
+    if (provider.pendingScriptRecommendations != null) {
+      final scripts = provider.pendingScriptRecommendations!;
+      debugPrint('[Chatbot][UI] Detected pendingScriptRecommendations in build');
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && provider.pendingScriptRecommendation != null) {
+        if (mounted && provider.pendingScriptRecommendations != null) {
           debugPrint('[Chatbot][UI] Triggering showScriptRecommendationSheet...');
           provider.consumeScriptRecommendation();
-          showScriptRecommendationSheet(context, scriptText, widget.onTriggerAction);
+          showScriptRecommendationSheet(context, scripts, widget.onTriggerAction);
         }
       });
     }
