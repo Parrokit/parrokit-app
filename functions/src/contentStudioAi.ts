@@ -43,6 +43,7 @@ export const ChatbotOutputSchema = z.object({
     duration: z.number().optional(),
     routingOptions: z.array(z.string()).optional(),
     targetMode: z.string().optional(),
+    scripts: z.array(z.string()).optional(),
   }).nullable().optional(),
 });
 
