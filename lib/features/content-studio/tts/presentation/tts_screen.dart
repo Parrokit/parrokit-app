@@ -178,8 +178,10 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                     ),
                   );
                 },
-                child: provider.providerType == TtsProviderType.google
-                    ? Column(
+                child: () {
+                  switch (provider.providerType) {
+                    case TtsProviderType.google:
+                      return Column(
                         key: const ValueKey('google_options'),
                         children: [
                           _OptionRow(
@@ -220,8 +222,9 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                             onChanged: provider.updatePitch,
                           ),
                         ],
-                      )
-                    : Column(
+                      );
+                    case TtsProviderType.elevenlabs:
+                      return Column(
                         key: const ValueKey('elevenlabs_options'),
                         children: [
                           _OptionRow(
@@ -253,7 +256,36 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                             activeColor: AppColors.secondary,
                           ),
                         ],
-                      ),
+                      );
+                    case TtsProviderType.gemini:
+                      return Column(
+                        key: const ValueKey('gemini_options'),
+                        children: [
+                          _OptionRow(
+                            icon: Icons.record_voice_over_rounded,
+                            title: '보이스 에이전트',
+                            value: 'Aoede',
+                            accentColor: const Color(0xFF9B72CB),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          _OptionRow(
+                            icon: Icons.language_rounded,
+                            title: '언어',
+                            value: getLanguageByTtsCode(provider.language).displayName,
+                            accentColor: const Color(0xFF9B72CB),
+                            onTap: () => _showLanguageSelectionSheet(context, provider),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          _SliderPreview(
+                            label: '감정 표현 강도',
+                            valueText: '풍부하게',
+                            value: 0.8,
+                            activeColor: const Color(0xFF9B72CB),
+                          ),
+                        ],
+                      );
+                  }
+                }(),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -337,16 +369,21 @@ class _ProviderSelector extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final width = constraints.maxWidth / 2;
-          final isGoogleSelected = selectedType == TtsProviderType.google;
+          final width = constraints.maxWidth / 3;
+          int selectedIndex = 0;
+          if (selectedType == TtsProviderType.elevenlabs) {
+            selectedIndex = 1;
+          } else if (selectedType == TtsProviderType.gemini) {
+            selectedIndex = 2;
+          }
 
           return Stack(
             children: [
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOutCubic,
-                left: isGoogleSelected ? 0 : width,
-                right: isGoogleSelected ? width : 0,
+                left: selectedIndex * width,
+                width: width,
                 top: 0,
                 bottom: 0,
                 child: Container(
@@ -374,13 +411,13 @@ class _ProviderSelector extends StatelessWidget {
                           duration: const Duration(milliseconds: 200),
                           style: theme.textTheme.bodyMedium!.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: isGoogleSelected
+                            color: selectedType == TtsProviderType.google
                                 ? theme.colorScheme.primary
                                 : (isDark
                                     ? AppColors.textSecondaryDark
                                     : AppColors.textSecondary),
                           ),
-                          child: const Text('Google Cloud TTS'),
+                          child: const Text('Google Cloud'),
                         ),
                       ),
                     ),
@@ -394,7 +431,7 @@ class _ProviderSelector extends StatelessWidget {
                           duration: const Duration(milliseconds: 200),
                           style: theme.textTheme.bodyMedium!.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: !isGoogleSelected
+                            color: selectedType == TtsProviderType.elevenlabs
                                 ? AppColors.secondary
                                 : (isDark
                                     ? AppColors.textSecondaryDark
@@ -402,6 +439,43 @@ class _ProviderSelector extends StatelessWidget {
                           ),
                           child: const Text('ElevenLabs'),
                         ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onTypeChanged(TtsProviderType.gemini),
+                      child: Center(
+                        child: selectedType == TtsProviderType.gemini
+                            ? ShaderMask(
+                                shaderCallback: (bounds) => const LinearGradient(
+                                  colors: [
+                                    Color(0xFF4285F4),
+                                    Color(0xFF9B72CB),
+                                    Color(0xFFD96570),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ).createShader(bounds),
+                                child: Text(
+                                  'Gemini',
+                                  style: theme.textTheme.bodyMedium!.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white, // Required for ShaderMask
+                                  ),
+                                ),
+                              )
+                            : AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                style: theme.textTheme.bodyMedium!.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark
+                                      ? AppColors.textSecondaryDark
+                                      : AppColors.textSecondary,
+                                ),
+                                child: const Text('Gemini'),
+                              ),
                       ),
                     ),
                   ),

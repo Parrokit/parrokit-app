@@ -1,6 +1,7 @@
 enum TtsProviderType {
   google,
   elevenlabs,
+  gemini,
 }
 
 class ElevenLabsVoiceSettings {
