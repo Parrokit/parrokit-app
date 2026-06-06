@@ -449,15 +449,8 @@ class _ProviderSelector extends StatelessWidget {
                       child: Center(
                         child: selectedType == TtsProviderType.gemini
                             ? ShaderMask(
-                                shaderCallback: (bounds) => const LinearGradient(
-                                  colors: [
-                                    Color(0xFF4285F4),
-                                    Color(0xFF9B72CB),
-                                    Color(0xFFD96570),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ).createShader(bounds),
+                                shaderCallback: (bounds) => AppColors.geminiGradient.createShader(bounds),
+                                blendMode: BlendMode.srcIn,
                                 child: Text(
                                   'Gemini',
                                   style: theme.textTheme.bodyMedium!.copyWith(
@@ -873,7 +866,7 @@ class _TtsAudioPlayerWidgetState extends State<_TtsAudioPlayerWidget> {
                   Text(
                     widget.provider.isGenerating
                         ? '잠시만 기다려주세요.'
-                        : '스크립트를 입력하면 이곳에서 결과를 확인합니다.',
+                        : '스크립트를 입력하면 결과를 확인합니다.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: mutedText,
                     ),

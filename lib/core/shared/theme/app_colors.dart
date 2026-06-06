@@ -307,4 +307,19 @@ abstract final class AppColors {
   /// 커뮤니티 투표 게시판 액센트 (앰버)
   static const Color communityVoteAccent = Color(0xFFFFC107);
   static const Color communityVoteAccentSoft = Color(0xFFFFF8E1);
+
+  // ─────────────────────────────────────────────────────────────────
+  // AI & Brand Specific Accents
+  // ─────────────────────────────────────────────────────────────────
+
+  /// Gemini 모델 그라데이션 (파랑-보라-빨강)
+  static const LinearGradient geminiGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF4285F4),
+      Color(0xFF9B72CB),
+      Color(0xFFD96570),
+    ],
+  );
 }
