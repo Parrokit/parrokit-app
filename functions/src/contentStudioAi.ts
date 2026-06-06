@@ -174,7 +174,7 @@ export const generateTtsFlow = ai.defineFlow(
         const client = new GoogleGenAI({
           vertexai: true,
           project: process.env.GCLOUD_PROJECT,
-          location: "us-central1"
+          location: "us-central1",
         });
 
         const targetModel = input.modelId || "gemini-2.5-flash";
@@ -188,11 +188,11 @@ export const generateTtsFlow = ai.defineFlow(
             speechConfig: {
               voiceConfig: {
                 prebuiltVoiceConfig: {
-                  voiceName: targetVoice
-                }
-              }
-            }
-          }
+                  voiceName: targetVoice,
+                },
+              },
+            },
+          },
         });
 
         const part = response.candidates?.[0]?.content?.parts?.[0];

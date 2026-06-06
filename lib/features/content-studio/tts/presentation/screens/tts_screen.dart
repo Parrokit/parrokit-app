@@ -314,6 +314,15 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                           ),
                           const SizedBox(height: AppSpacing.md),
                           TtsOptionRow(
+                            icon: Icons.language_rounded,
+                            title: '언어',
+                            value: getLanguageByTtsCode(provider.language).displayName,
+                            accentColor: const Color(0xFF9B72CB),
+                            isGemini: true,
+                            onTap: () => _showLanguageSelectionSheet(context, provider),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          TtsOptionRow(
                             icon: Icons.record_voice_over_rounded,
                             title: '보이스 에이전트',
                             value: geminiVoices.firstWhere(
