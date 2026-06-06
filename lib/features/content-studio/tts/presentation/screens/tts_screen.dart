@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'dart:io';
+import 'package:file_saver/file_saver.dart';
 import 'package:google_mlkit_language_id/google_mlkit_language_id.dart';
+
+import 'package:parrokit/features/content-studio/hub/presentation/studio_hub_provider.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
@@ -362,6 +367,62 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                 ],
               ),
             ),
+            if (provider.generatedFilePath != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              TtsPanel(
+                title: '생성 결과 관리',
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          final hubProvider = context.read<StudioHubProvider>();
+                          hubProvider.sendAudioToCaptioning(provider.generatedFilePath!);
+                        },
+                        icon: const Icon(Icons.subtitles),
+                        label: const Text('자막 생성'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          try {
+                            final bytes = await File(provider.generatedFilePath!).readAsBytes();
+                            await FileSaver.instance.saveFile(
+                              name: 'Parrokit_TTS_\${DateTime.now().millisecondsSinceEpoch}',
+                              bytes: bytes,
+                              ext: 'mp3',
+                              mimeType: MimeType.mp3,
+                            );
+                            if (context.mounted) {
+                              showToast('음성 파일이 저장되었습니다.');
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              showToast('저장 중 오류가 발생했습니다.');
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.save_alt_rounded),
+                        label: const Text('저장'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => provider.clearGeneratedAudio(),
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('지우기'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
