@@ -267,19 +267,19 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                       return Column(
                         key: const ValueKey('elevenlabs_options'),
                         children: [
-                          const TtsOptionRow(
-                            icon: Icons.record_voice_over_rounded,
-                            title: '보이스',
-                            value: 'Rachel (Bella)',
-                            accentColor: AppColors.secondary,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
                           TtsOptionRow(
                             icon: Icons.language_rounded,
                             title: '언어',
                             value: getLanguageByTtsCode(provider.language).displayName,
                             accentColor: AppColors.secondary,
                             onTap: () => _showLanguageSelectionSheet(context, provider),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          const TtsOptionRow(
+                            icon: Icons.record_voice_over_rounded,
+                            title: '보이스',
+                            value: 'Rachel (Bella)',
+                            accentColor: AppColors.secondary,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           const TtsSliderPreview(
@@ -302,24 +302,24 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                         key: const ValueKey('gemini_options'),
                         children: [
                           TtsOptionRow(
-                            icon: Icons.auto_awesome_rounded,
-                            title: '모델',
-                            value: geminiModels.firstWhere(
-                              (m) => m.id == (provider.modelId ?? 'gemini-2.5-flash'),
-                              orElse: () => geminiModels.first,
-                            ).name,
-                            accentColor: const Color(0xFF9B72CB),
-                            isGemini: true,
-                            onTap: () => _showGeminiModelSelectionSheet(context, provider),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          TtsOptionRow(
                             icon: Icons.language_rounded,
                             title: '언어',
                             value: getLanguageByTtsCode(provider.language).displayName,
                             accentColor: const Color(0xFF9B72CB),
                             isGemini: true,
                             onTap: () => _showLanguageSelectionSheet(context, provider),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          TtsOptionRow(
+                            icon: Icons.auto_awesome_rounded,
+                            title: '모델',
+                            value: geminiModels.firstWhere(
+                              (m) => m.id == (provider.modelId ?? 'gemini-2.5-flash-preview-tts'),
+                              orElse: () => geminiModels.first,
+                            ).name,
+                            accentColor: const Color(0xFF9B72CB),
+                            isGemini: true,
+                            onTap: () => _showGeminiModelSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           TtsOptionRow(

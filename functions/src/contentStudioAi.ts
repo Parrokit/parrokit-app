@@ -1,4 +1,4 @@
-import {onCall} from "firebase-functions/v2/https";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import {genkit} from "genkit";
 import {vertexAI} from "@genkit-ai/google-genai";
@@ -6,10 +6,12 @@ import {enableFirebaseTelemetry} from "@genkit-ai/firebase";
 import {ElevenLabsClient} from "@elevenlabs/elevenlabs-js";
 import textToSpeech from "@google-cloud/text-to-speech";
 import {GoogleGenAI} from "@google/genai";
+import {WaveFile} from "wavefile";
 import * as Buffer from "buffer";
 
 // 파이어베이스 시크릿 매니저에서 API 키를 안전하게 불러옵니다.
 const elevenLabsApiKey = defineSecret("ELEVENLABS_API_KEY");
+const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 // 1. 파이어베이스 콘솔(Genkit 탭)로 로그 전송 활성화 (콜드스타트 타임아웃 방지)
 enableFirebaseTelemetry({
@@ -172,12 +174,10 @@ export const generateTtsFlow = ai.defineFlow(
     } else if (provider === "gemini") {
       try {
         const client = new GoogleGenAI({
-          vertexai: true,
-          project: process.env.GCLOUD_PROJECT,
-          location: "us-central1",
+          apiKey: geminiApiKey.value(),
         });
 
-        const targetModel = input.modelId || "gemini-2.5-flash";
+        const targetModel = input.modelId || "gemini-2.5-flash-preview-tts";
         const targetVoice = input.voiceId || "Aoede";
 
         const response = await client.models.generateContent({
@@ -200,8 +200,23 @@ export const generateTtsFlow = ai.defineFlow(
           throw new Error("No audio data returned from Gemini TTS.");
         }
 
+        // Gemini returns raw PCM data (audio/L16;codec=pcm;rate=24000).
+        // We need a WAV header so the Flutter audio player can play it.
+        const pcmBuffer = Buffer.Buffer.from(part.inlineData.data, "base64");
+
+        const wav = new WaveFile();
+
+        // Convert the raw byte buffer to an array of 16-bit LE samples
+        const int16Array = new Int16Array(pcmBuffer.length / 2);
+        for (let i = 0; i < int16Array.length; i++) {
+          int16Array[i] = pcmBuffer.readInt16LE(i * 2);
+        }
+
+        wav.fromScratch(1, 24000, "16", int16Array);
+        const wavBuffer = wav.toBuffer();
+
         return {
-          audioBase64: part.inlineData.data,
+          audioBase64: Buffer.Buffer.from(wavBuffer).toString("base64"),
         };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
@@ -265,13 +280,29 @@ export const generateTtsFlow = ai.defineFlow(
 
 // 4. 앱(Flutter)에서 호출할 수 있도록 Firebase Functions로 내보내기
 export const generateChatbotResponse = onCall(async (request) => {
-  return await chatbotFlow(request.data);
+  try {
+    return await chatbotFlow(request.data);
+  } catch (error: any) {
+    console.error("Chatbot Wrapper Error:", error);
+    throw new HttpsError(
+      "aborted",
+      error.message || "Failed to generate response"
+    );
+  }
 });
 
 export const generateTts = onCall(
-  {secrets: [elevenLabsApiKey]},
+  {secrets: [elevenLabsApiKey, geminiApiKey]},
   async (request) => {
-    return await generateTtsFlow(request.data);
+    try {
+      return await generateTtsFlow(request.data);
+    } catch (error: any) {
+      console.error("TTS Wrapper Error:", error);
+      throw new HttpsError(
+        "aborted",
+        error.message || "Failed to generate TTS"
+      );
+    }
   }
 );
 

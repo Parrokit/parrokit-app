@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import '../../domain/usecases/generate_tts_usecase.dart';
 import '../../data/data_sources/tts_remote_data_source.dart';
 import '../../data/repositories/tts_generation_repository_impl.dart';
@@ -29,20 +30,20 @@ class TtsProvider extends ChangeNotifier {
   String? _modelId;
   String? get modelId => _modelId;
 
-  bool _isGenerating = false;
-  bool get isGenerating => _isGenerating;
-
-  String? _generatedFilePath;
-  String? get generatedFilePath => _generatedFilePath;
-
-  String? _errorMessage;
-  String? get errorMessage => _errorMessage;
-
   double _speakingRate = 1.0;
   double get speakingRate => _speakingRate;
 
   double _pitch = 0.0;
   double get pitch => _pitch;
+
+  bool _isGenerating = false;
+  bool get isGenerating => _isGenerating;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
+  String? _generatedFilePath;
+  String? get generatedFilePath => _generatedFilePath;
 
   List<Map<String, dynamic>> _availableVoices = [];
   List<Map<String, dynamic>> get availableVoices => _availableVoices;
@@ -105,7 +106,7 @@ class TtsProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('Failed to load voices: $e');
+      AppLogger.e('[TTS][Provider] Failed to load voices', error: e);
       _availableVoices = [];
     } finally {
       _isLoadingVoices = false;
@@ -116,6 +117,7 @@ class TtsProvider extends ChangeNotifier {
   Future<void> generateTts() async {
     if (_text.trim().isEmpty) return;
 
+    AppLogger.i('[TTS][Provider] Starting generateTts provider=${_providerType.name} text_length=${_text.length}');
     _isGenerating = true;
     _errorMessage = null;
     _generatedFilePath = null;
@@ -131,8 +133,10 @@ class TtsProvider extends ChangeNotifier {
         speakingRate: _speakingRate,
         pitch: _pitch,
       );
+      AppLogger.i('[TTS][Provider] generateTts success path_length=${path.length}');
       _generatedFilePath = path;
     } catch (e) {
+      AppLogger.e('[TTS][Provider] generateTts failed provider=${_providerType.name}', error: e);
       _errorMessage = e.toString();
     } finally {
       _isGenerating = false;

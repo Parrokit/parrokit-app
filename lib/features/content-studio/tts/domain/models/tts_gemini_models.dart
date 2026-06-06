@@ -24,23 +24,18 @@ class TtsGeminiVoice {
 
 const List<TtsGeminiModel> geminiModels = [
   TtsGeminiModel(
-    id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
+    id: 'gemini-2.5-flash-preview-tts',
+    name: 'Gemini 2.5 Flash TTS',
     description: '빠르고 범용적인 음성 합성에 적합',
   ),
   TtsGeminiModel(
-    id: 'gemini-2.5-flash-lite-preview',
-    name: 'Gemini 2.5 Flash-Lite 프리뷰',
-    description: '더 빠르고 가벼운 음성 합성',
-  ),
-  TtsGeminiModel(
-    id: 'gemini-3.1-flash',
-    name: 'Gemini 3.1 Flash 프리뷰',
+    id: 'gemini-3.1-flash-tts-preview',
+    name: 'Gemini 3.1 Flash TTS (프리뷰)',
     description: '최신 프리뷰 모델',
   ),
   TtsGeminiModel(
-    id: 'gemini-2.5-pro',
-    name: 'Gemini 2.5 Pro',
+    id: 'gemini-2.5-pro-preview-tts',
+    name: 'Gemini 2.5 Pro TTS',
     description: '최상의 품질과 복잡한 추론',
   ),
 ];
