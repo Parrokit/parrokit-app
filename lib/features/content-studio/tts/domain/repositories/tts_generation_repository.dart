@@ -32,6 +32,11 @@ abstract class TtsGenerationRepository {
     TtsProviderType provider = TtsProviderType.google,
     String? voiceId,
     String? modelId,
+    double? speakingRate,
+    double? pitch,
     ElevenLabsVoiceSettings? elevenLabsSettings,
   });
+
+  /// 지정된 언어 코드(예: ko-KR)에 해당하는 TTS 보이스 목록을 반환합니다.
+  Future<List<Map<String, dynamic>>> listVoices(String languageCode);
 }

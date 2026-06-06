@@ -38,6 +38,18 @@ class TtsProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  double _speakingRate = 1.0;
+  double get speakingRate => _speakingRate;
+
+  double _pitch = 0.0;
+  double get pitch => _pitch;
+
+  List<Map<String, dynamic>> _availableVoices = [];
+  List<Map<String, dynamic>> get availableVoices => _availableVoices;
+
+  bool _isLoadingVoices = false;
+  bool get isLoadingVoices => _isLoadingVoices;
+
   void updateText(String newText) {
     if (newText.length <= 240) {
       _text = newText;
@@ -65,6 +77,42 @@ class TtsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateSpeakingRate(double rate) {
+    _speakingRate = rate;
+    notifyListeners();
+  }
+
+  void updatePitch(double newPitch) {
+    _pitch = newPitch;
+    notifyListeners();
+  }
+
+  Future<void> fetchAvailableVoices() async {
+    if (_providerType != TtsProviderType.google) return;
+    
+    _isLoadingVoices = true;
+    notifyListeners();
+
+    try {
+      final voices = await _useCase.repository.listVoices(_language);
+      _availableVoices = voices;
+      
+      // 언어가 바뀌었는데 현재 선택된 voiceId가 새 언어 목록에 없다면 초기화
+      if (_voiceId.isNotEmpty) {
+        final exists = voices.any((v) => v['name'] == _voiceId);
+        if (!exists) {
+          _voiceId = '';
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load voices: $e');
+      _availableVoices = [];
+    } finally {
+      _isLoadingVoices = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> generateTts() async {
     if (_text.trim().isEmpty) return;
 
@@ -80,6 +128,8 @@ class TtsProvider extends ChangeNotifier {
         provider: _providerType,
         voiceId: _voiceId.isEmpty ? null : _voiceId,
         modelId: _modelId,
+        speakingRate: _speakingRate,
+        pitch: _pitch,
       );
       _generatedFilePath = path;
     } catch (e) {

@@ -12,10 +12,12 @@ class TtsRemoteDataSource {
     TtsProviderType provider = TtsProviderType.google,
     String? voiceId,
     String? modelId,
+    double? speakingRate,
+    double? pitch,
     ElevenLabsVoiceSettings? elevenLabsSettings,
   }) async {
     // 1. 캐시키 생성 (파라미터 조합)
-    final cacheKeyData = '${text}_${language}_${provider.name}_${voiceId}_${modelId}_${elevenLabsSettings?.toJson()}';
+    final cacheKeyData = '${text}_${language}_${provider.name}_${voiceId}_${modelId}_${speakingRate}_${pitch}_${elevenLabsSettings?.toJson()}';
     // 간단하게 해시코드를 파일명으로 사용 (음수 부호 제거)
     final cacheKey = cacheKeyData.hashCode.toString().replaceAll('-', 'M');
     
@@ -36,6 +38,8 @@ class TtsRemoteDataSource {
       'provider': provider.name,
       if (voiceId != null) 'voiceId': voiceId,
       if (modelId != null) 'modelId': modelId,
+      if (speakingRate != null) 'speakingRate': speakingRate,
+      if (pitch != null) 'pitch': pitch,
       if (elevenLabsSettings != null) 'elevenLabsSettings': elevenLabsSettings.toJson(),
     });
 
@@ -46,5 +50,13 @@ class TtsRemoteDataSource {
     await file.writeAsBytes(bytes);
 
     return file.path;
+  }
+
+  Future<List<Map<String, dynamic>>> listVoices(String languageCode) async {
+    final callable = FirebaseFunctions.instance.httpsCallable('listTtsVoices');
+    final response = await callable.call({'languageCode': languageCode});
+    
+    final List<dynamic> voices = response.data['voices'];
+    return voices.map((e) => Map<String, dynamic>.from(e)).toList();
   }
 }

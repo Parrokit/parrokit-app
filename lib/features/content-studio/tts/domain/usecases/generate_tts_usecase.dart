@@ -12,6 +12,8 @@ class GenerateTtsUseCase {
     TtsProviderType provider = TtsProviderType.google,
     String? voiceId,
     String? modelId,
+    double? speakingRate,
+    double? pitch,
     ElevenLabsVoiceSettings? elevenLabsSettings,
   }) async {
     TtsValidator.validateText(text);
@@ -22,6 +24,8 @@ class GenerateTtsUseCase {
       provider: provider,
       voiceId: voiceId,
       modelId: modelId,
+      speakingRate: speakingRate,
+      pitch: pitch,
       elevenLabsSettings: elevenLabsSettings,
     );
   }

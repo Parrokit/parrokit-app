@@ -38,6 +38,11 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
   void initState() {
     super.initState();
     _textController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<TtsProvider>().fetchAvailableVoices();
+      }
+    });
   }
 
   @override
@@ -65,7 +70,10 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
             
             if (ttsLang != null && mounted) {
               AppLogger.d('[TTS][LanguageDetection] update provider prevLanguage=${provider.language} newLanguage=${ttsLang.ttsCode}');
-              provider.updateLanguage(ttsLang.ttsCode);
+              if (provider.language != ttsLang.ttsCode) {
+                provider.updateLanguage(ttsLang.ttsCode);
+                provider.fetchAvailableVoices();
+              }
             }
           }
         } catch (e) {
@@ -81,6 +89,18 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _LanguageSelectionSheet(provider: provider),
+    );
+  }
+
+  void _showVoiceSelectionSheet(BuildContext context, TtsProvider provider) {
+    if (provider.availableVoices.isEmpty) {
+      provider.fetchAvailableVoices();
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _VoiceSelectionSheet(provider: provider),
     );
   }
 
@@ -163,13 +183,6 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                         key: const ValueKey('google_options'),
                         children: [
                           _OptionRow(
-                            icon: Icons.record_voice_over_rounded,
-                            title: '보이스',
-                            value: '밝은 내레이션',
-                            accentColor: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          _OptionRow(
                             icon: Icons.language_rounded,
                             title: '언어',
                             value: getLanguageByTtsCode(provider.language).displayName,
@@ -177,18 +190,34 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                             onTap: () => _showLanguageSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          _SliderPreview(
-                            label: '속도',
-                            valueText: '보통',
-                            value: 0.48,
-                            activeColor: theme.colorScheme.primary,
+                          _OptionRow(
+                            icon: Icons.record_voice_over_rounded,
+                            title: '보이스',
+                            value: provider.isLoadingVoices 
+                                ? '목록 불러오는 중...' 
+                                : (provider.voiceId.isEmpty ? '선택 (기본값)' : provider.voiceId),
+                            accentColor: theme.colorScheme.primary,
+                            onTap: () => _showVoiceSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           _SliderPreview(
-                            label: '톤',
-                            valueText: '중간',
-                            value: 0.54,
+                            label: '속도 (0.25배 ~ 4.0배)',
+                            valueText: '${provider.speakingRate.toStringAsFixed(2)}x',
+                            value: provider.speakingRate,
+                            min: 0.25,
+                            max: 4.0,
                             activeColor: theme.colorScheme.primary,
+                            onChanged: provider.updateSpeakingRate,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          _SliderPreview(
+                            label: '톤 (-20 ~ 20)',
+                            valueText: provider.pitch > 0 ? '+${provider.pitch.toStringAsFixed(1)}' : provider.pitch.toStringAsFixed(1),
+                            value: provider.pitch,
+                            min: -20.0,
+                            max: 20.0,
+                            activeColor: theme.colorScheme.primary,
+                            onChanged: provider.updatePitch,
                           ),
                         ],
                       )
@@ -566,13 +595,19 @@ class _SliderPreview extends StatelessWidget {
     required this.label,
     required this.valueText,
     required this.value,
+    this.min = 0.0,
+    this.max = 1.0,
     this.activeColor,
+    this.onChanged,
   });
 
   final String label;
   final String valueText;
   final double value;
+  final double min;
+  final double max;
   final Color? activeColor;
+  final ValueChanged<double>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -601,7 +636,9 @@ class _SliderPreview extends StatelessWidget {
         ),
         Slider(
           value: value,
-          onChanged: null,
+          min: min,
+          max: max,
+          onChanged: onChanged,
           activeColor: activeColor,
         ),
       ],
@@ -887,12 +924,162 @@ class _LanguageSelectionSheetState extends State<_LanguageSelectionSheet> {
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   onTap: () {
-                    widget.provider.updateLanguage(lang.ttsCode);
+                    if (widget.provider.language != lang.ttsCode) {
+                      widget.provider.updateLanguage(lang.ttsCode);
+                      widget.provider.fetchAvailableVoices();
+                    }
                     Navigator.pop(context);
                   },
                 );
               },
             ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
+    );
+  }
+}
+
+class _VoiceSelectionSheet extends StatefulWidget {
+  const _VoiceSelectionSheet({required this.provider});
+
+  final TtsProvider provider;
+
+  @override
+  State<_VoiceSelectionSheet> createState() => _VoiceSelectionSheetState();
+}
+
+class _VoiceSelectionSheetState extends State<_VoiceSelectionSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _filteredVoices = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredVoices = widget.provider.availableVoices;
+  }
+
+  @override
+  void didUpdateWidget(covariant _VoiceSelectionSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.provider.availableVoices != oldWidget.provider.availableVoices) {
+      _filterVoices(_searchController.text);
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterVoices(String query) {
+    if (query.isEmpty) {
+      setState(() => _filteredVoices = widget.provider.availableVoices);
+      return;
+    }
+    final lowerQuery = query.toLowerCase();
+    setState(() {
+      _filteredVoices = widget.provider.availableVoices.where((v) {
+        final name = (v['name'] ?? '').toString().toLowerCase();
+        return name.contains(lowerQuery);
+      }).toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            '보이스 모델 선택',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterVoices,
+              decoration: InputDecoration(
+                hintText: '모델명 검색...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
+                fillColor: isDark ? AppColors.surfaceContainerHighDark : AppColors.surfaceContainerHigh,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: AppSpacing.md),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: widget.provider.isLoadingVoices
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredVoices.isEmpty
+                    ? Center(
+                        child: Text(
+                          '선택할 수 있는 보이스가 없습니다.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                        itemCount: _filteredVoices.length,
+                        itemBuilder: (context, index) {
+                          final voice = _filteredVoices[index];
+                          final name = voice['name'] ?? 'Unknown';
+                          final isSelected = widget.provider.voiceId == name;
+                          
+                          return ListTile(
+                            title: Text(
+                              name,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? theme.colorScheme.primary : null,
+                              ),
+                            ),
+                            trailing: isSelected 
+                              ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary) 
+                              : null,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                            ),
+                            onTap: () {
+                              widget.provider.updateVoiceId(name);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
           ),
           const SizedBox(height: AppSpacing.xl),
         ],

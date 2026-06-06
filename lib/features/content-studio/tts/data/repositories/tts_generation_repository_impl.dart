@@ -13,6 +13,8 @@ class TtsGenerationRepositoryImpl implements TtsGenerationRepository {
     TtsProviderType provider = TtsProviderType.google,
     String? voiceId,
     String? modelId,
+    double? speakingRate,
+    double? pitch,
     ElevenLabsVoiceSettings? elevenLabsSettings,
   }) async {
     return remoteDataSource.generateTts(
@@ -21,7 +23,14 @@ class TtsGenerationRepositoryImpl implements TtsGenerationRepository {
       provider: provider,
       voiceId: voiceId,
       modelId: modelId,
+      speakingRate: speakingRate,
+      pitch: pitch,
       elevenLabsSettings: elevenLabsSettings,
     );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> listVoices(String languageCode) async {
+    return remoteDataSource.listVoices(languageCode);
   }
 }
