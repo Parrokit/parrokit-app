@@ -23,6 +23,9 @@ import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_sl
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_audio_player_widget.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_language_selection_sheet.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_voice_selection_sheet.dart';
+import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_gemini_voice_selection_sheet.dart';
+import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_gemini_model_selection_sheet.dart';
+import 'package:parrokit/features/content-studio/tts/domain/models/tts_gemini_models.dart';
 
 class TtsScreen extends StatelessWidget {
   const TtsScreen({super.key});
@@ -112,6 +115,24 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => TtsVoiceSelectionSheet(provider: provider),
+    );
+  }
+
+  void _showGeminiVoiceSelectionSheet(BuildContext context, TtsProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TtsGeminiVoiceSelectionSheet(provider: provider),
+    );
+  }
+
+  void _showGeminiModelSelectionSheet(BuildContext context, TtsProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TtsGeminiModelSelectionSheet(provider: provider),
     );
   }
 
@@ -280,28 +301,28 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                       return Column(
                         key: const ValueKey('gemini_options'),
                         children: [
-                          const TtsOptionRow(
-                            icon: Icons.record_voice_over_rounded,
-                            title: '보이스 에이전트',
-                            value: 'Aoede',
-                            accentColor: Color(0xFF9B72CB),
+                          TtsOptionRow(
+                            icon: Icons.auto_awesome_rounded,
+                            title: '모델',
+                            value: geminiModels.firstWhere(
+                              (m) => m.id == (provider.modelId ?? 'gemini-2.5-flash'),
+                              orElse: () => geminiModels.first,
+                            ).name,
+                            accentColor: const Color(0xFF9B72CB),
                             isGemini: true,
+                            onTap: () => _showGeminiModelSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           TtsOptionRow(
-                            icon: Icons.language_rounded,
-                            title: '언어',
-                            value: getLanguageByTtsCode(provider.language).displayName,
+                            icon: Icons.record_voice_over_rounded,
+                            title: '보이스 에이전트',
+                            value: geminiVoices.firstWhere(
+                              (v) => v.id == (provider.voiceId.isEmpty ? 'Aoede' : provider.voiceId),
+                              orElse: () => geminiVoices.first,
+                            ).name,
                             accentColor: const Color(0xFF9B72CB),
                             isGemini: true,
-                            onTap: () => _showLanguageSelectionSheet(context, provider),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          const TtsSliderPreview(
-                            label: '감정 표현 강도',
-                            valueText: '풍부하게',
-                            value: 0.8,
-                            activeColor: Color(0xFF9B72CB),
+                            onTap: () => _showGeminiVoiceSelectionSheet(context, provider),
                           ),
                         ],
                       );

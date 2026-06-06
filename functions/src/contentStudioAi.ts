@@ -5,6 +5,7 @@ import {vertexAI} from "@genkit-ai/google-genai";
 import {enableFirebaseTelemetry} from "@genkit-ai/firebase";
 import {ElevenLabsClient} from "@elevenlabs/elevenlabs-js";
 import textToSpeech from "@google-cloud/text-to-speech";
+import {GoogleGenAI} from "@google/genai";
 import * as Buffer from "buffer";
 
 // 파이어베이스 시크릿 매니저에서 API 키를 안전하게 불러옵니다.
@@ -113,7 +114,7 @@ export const generateTtsFlow = ai.defineFlow(
   async (input: {
     text: string;
     language: string;
-    provider?: "google" | "elevenlabs";
+    provider?: "google" | "elevenlabs" | "gemini";
     voiceId?: string;
     modelId?: string;
     speakingRate?: number;
@@ -167,6 +168,45 @@ export const generateTtsFlow = ai.defineFlow(
       } catch (error: any) {
         console.error("ElevenLabs TTS Error:", error);
         throw new Error(error.message || "Failed to generate ElevenLabs TTS");
+      }
+    } else if (provider === "gemini") {
+      try {
+        const client = new GoogleGenAI({
+          vertexai: true,
+          project: process.env.GCLOUD_PROJECT,
+          location: "us-central1"
+        });
+
+        const targetModel = input.modelId || "gemini-2.5-flash";
+        const targetVoice = input.voiceId || "Aoede";
+
+        const response = await client.models.generateContent({
+          model: targetModel,
+          contents: input.text,
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: targetVoice
+                }
+              }
+            }
+          }
+        });
+
+        const part = response.candidates?.[0]?.content?.parts?.[0];
+        if (!part || !part.inlineData || !part.inlineData.data) {
+          throw new Error("No audio data returned from Gemini TTS.");
+        }
+
+        return {
+          audioBase64: part.inlineData.data,
+        };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        console.error("Gemini TTS Error:", error);
+        throw new Error(error.message || "Failed to generate Gemini TTS");
       }
     } else {
       // Default to Google TTS

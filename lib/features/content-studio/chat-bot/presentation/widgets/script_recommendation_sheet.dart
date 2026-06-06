@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 Future<void> showScriptRecommendationSheet(
