@@ -266,6 +266,7 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                             title: '보이스 에이전트',
                             value: 'Aoede',
                             accentColor: const Color(0xFF9B72CB),
+                            isGemini: true,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           _OptionRow(
@@ -273,6 +274,7 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                             title: '언어',
                             value: getLanguageByTtsCode(provider.language).displayName,
                             accentColor: const Color(0xFF9B72CB),
+                            isGemini: true,
                             onTap: () => _showLanguageSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -308,16 +310,35 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.lg),
-                  SizedBox(
+                  Container(
                     width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: provider.providerType == TtsProviderType.gemini &&
+                              !(provider.isGenerating || provider.text.trim().isEmpty)
+                          ? AppColors.geminiGradient
+                          : null,
+                    ),
                     child: FilledButton.icon(
                       onPressed: provider.isGenerating || provider.text.trim().isEmpty
                           ? null
                           : () => provider.generateTts(),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: provider.providerType == TtsProviderType.google
-                            ? theme.colorScheme.primary
-                            : AppColors.secondary,
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.disabled)) {
+                            return theme.disabledColor.withValues(alpha: 0.1);
+                          }
+                          if (provider.providerType == TtsProviderType.gemini) {
+                            return Colors.transparent;
+                          }
+                          return provider.providerType == TtsProviderType.google
+                              ? theme.colorScheme.primary
+                              : AppColors.secondary;
+                        }),
+                        shadowColor: provider.providerType == TtsProviderType.gemini
+                            ? const WidgetStatePropertyAll(Colors.transparent)
+                            : null,
                       ),
                       icon: provider.isGenerating
                           ? const SizedBox(
@@ -600,6 +621,7 @@ class _OptionRow extends StatelessWidget {
     required this.title,
     required this.value,
     this.accentColor,
+    this.isGemini = false,
     this.onTap,
   });
 
@@ -607,6 +629,7 @@ class _OptionRow extends StatelessWidget {
   final String title;
   final String value;
   final Color? accentColor;
+  final bool isGemini;
   final VoidCallback? onTap;
 
   @override
@@ -629,7 +652,14 @@ class _OptionRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: primaryColor),
+            if (isGemini)
+              ShaderMask(
+                shaderCallback: (bounds) => AppColors.geminiGradient.createShader(bounds),
+                blendMode: BlendMode.srcIn,
+                child: Icon(icon, size: 20, color: Colors.white),
+              )
+            else
+              Icon(icon, size: 20, color: primaryColor),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
@@ -797,16 +827,24 @@ class _TtsAudioPlayerWidgetState extends State<_TtsAudioPlayerWidget> {
           const SizedBox(width: AppSpacing.lg),
           GestureDetector(
             onTap: widget.provider.isGenerating || widget.provider.generatedFilePath == null ? null : _togglePlay,
-            child: CircleAvatar(
-              radius: 22,
-              backgroundColor: widget.provider.isGenerating
-                  ? Colors.grey
-                  : (widget.provider.generatedFilePath != null
-                      ? (widget.provider.providerType == TtsProviderType.google
-                          ? theme.colorScheme.primary
-                          : AppColors.secondary)
-                      : Colors.grey.shade400),
-              child: widget.provider.isGenerating
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: widget.provider.generatedFilePath != null && widget.provider.providerType == TtsProviderType.gemini && !widget.provider.isGenerating
+                    ? AppColors.geminiGradient
+                    : null,
+                color: widget.provider.isGenerating
+                    ? Colors.grey
+                    : (widget.provider.generatedFilePath != null
+                        ? (widget.provider.providerType == TtsProviderType.google
+                            ? theme.colorScheme.primary
+                            : (widget.provider.providerType == TtsProviderType.elevenlabs ? AppColors.secondary : null))
+                        : Colors.grey.shade400),
+              ),
+              child: Center(
+                child: widget.provider.isGenerating
                   ? const SizedBox(
                       width: 20,
                       height: 20,
@@ -819,6 +857,7 @@ class _TtsAudioPlayerWidgetState extends State<_TtsAudioPlayerWidget> {
                       _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                       color: Colors.white,
                     ),
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -854,9 +893,14 @@ class _TtsAudioPlayerWidgetState extends State<_TtsAudioPlayerWidget> {
                               ? _position.inMilliseconds / _duration.inMilliseconds
                               : 0.0,
                           backgroundColor: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
-                          color: widget.provider.providerType == TtsProviderType.google
-                              ? theme.colorScheme.primary
-                              : AppColors.secondary,
+                          valueColor: widget.provider.providerType == TtsProviderType.gemini
+                              ? const AlwaysStoppedAnimation<Color>(Color(0xFF9B72CB))
+                              : null,
+                          color: widget.provider.providerType == TtsProviderType.gemini 
+                              ? null 
+                              : (widget.provider.providerType == TtsProviderType.google
+                                  ? theme.colorScheme.primary
+                                  : AppColors.secondary),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.lg),
