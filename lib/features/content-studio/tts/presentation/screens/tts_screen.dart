@@ -124,10 +124,18 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
     final provider = context.watch<TtsProvider>();
 
     if (_textController.text != provider.text) {
+      final newText = provider.text;
       _textController.value = _textController.value.copyWith(
-        text: provider.text,
-        selection: TextSelection.collapsed(offset: provider.text.length),
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
       );
+      
+      // 외부(챗봇 등)에서 텍스트가 주입된 경우 언어 감지 트리거
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _onTextChanged(newText, context.read<TtsProvider>());
+        }
+      });
     }
 
     return Scaffold(
