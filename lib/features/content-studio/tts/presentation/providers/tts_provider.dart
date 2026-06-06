@@ -139,4 +139,8 @@ class TtsProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  void clearGeneratedAudio() {
+    _generatedFilePath = null;
+    notifyListeners();
+  }
 }

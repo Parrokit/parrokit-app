@@ -10,6 +10,7 @@ import 'package:parrokit/features/content-studio/tts/domain/repositories/tts_gen
 import 'package:parrokit/features/content-studio/video/presentation/video_screen.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 import 'package:parrokit/features/content-studio/chat-bot/presentation/chat_bot_provider.dart';
+import 'studio_hub_provider.dart';
 import 'package:parrokit/features/home/dashboard/presentation/widgets/dashboard_studio_switch_fab.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/features/content-studio/chat-bot/presentation/widgets/chat_bot_fab.dart';
@@ -88,12 +89,24 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
 
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => StudioHubProvider()),
         ChangeNotifierProvider(create: (_) => TtsProvider()),
         ChangeNotifierProvider(create: (_) => VideoProvider()),
         ChangeNotifierProvider(create: (_) => ChatBotProvider()),
       ],
       child: Builder(
         builder: (context) {
+          final hubProvider = context.watch<StudioHubProvider>();
+          if (hubProvider.requestedTabIndex != null) {
+            final idx = hubProvider.requestedTabIndex!;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                hubProvider.clearRequestedTabIndex();
+                _setPage(idx);
+              }
+            });
+          }
+
           return Scaffold(
             backgroundColor: bg,
             appBar: ContentStudioAppBar(

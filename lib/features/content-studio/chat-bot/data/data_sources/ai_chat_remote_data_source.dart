@@ -42,6 +42,8 @@ class AiChatRemoteDataSource {
       recommendedPrompt = actionData['prompt'] as String?;
     } else if (actionType == 'tts_trigger' && actionData != null) {
       recommendedPrompt = actionData['text'] as String?;
+    } else if (actionType == 'script_recommendation' && actionData != null) {
+      recommendedPrompt = actionData['text'] as String?;
     }
 
     return {

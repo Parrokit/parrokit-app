@@ -20,6 +20,7 @@ import 'package:parrokit/data/local/app_database.dart' as db;
 import 'captioning_view_model.dart';
 import 'widgets/exit_confirm_sheet.dart';
 import '../../hub/presentation/content_studio_app_bar.dart';
+import '../../hub/presentation/studio_hub_provider.dart';
 import 'sections/sections.dart';
 
 /// 클립 에디터 화면.
@@ -77,12 +78,24 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
     final userProvider = context.watch<UserProvider>();
     final showAppBar = widget.showAppBar;
 
+    final hubProvider = context.watch<StudioHubProvider>();
+
     // 저장 후 닫기 - 한 번만 처리
     if (vm.shouldClose && !_hasHandledClose) {
       _hasHandledClose = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
           _close(context, vm.closeResult);
+        }
+      });
+    }
+
+    if (hubProvider.pendingCaptionFilePath != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          hubProvider.consumePendingCaptionFile((path) {
+            vm.setExistingFile(path);
+          });
         }
       });
     }

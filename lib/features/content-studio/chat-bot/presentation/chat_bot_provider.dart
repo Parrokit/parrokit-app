@@ -58,6 +58,16 @@ class ChatBotProvider extends ChangeNotifier {
     }
   }
 
+  String? _pendingScriptRecommendation;
+  String? get pendingScriptRecommendation => _pendingScriptRecommendation;
+
+  void consumeScriptRecommendation() {
+    if (_pendingScriptRecommendation != null) {
+      _pendingScriptRecommendation = null;
+      notifyListeners();
+    }
+  }
+
   void resetChatbot() {
     _chatbotMode = 'general';
     _hasPendingRouting = false;
@@ -103,6 +113,9 @@ class ChatBotProvider extends ChangeNotifier {
       if (aiResponse.actionType == 'ask_routing') {
         _hasPendingRouting = true;
         debugPrint('[Chatbot][Provider] Routing action pending flag set to true');
+      } else if (aiResponse.actionType == 'script_recommendation' && aiResponse.actionData != null) {
+        _pendingScriptRecommendation = aiResponse.actionData!['text'] as String?;
+        debugPrint('[Chatbot][Provider] Script recommendation pending: $_pendingScriptRecommendation');
       }
 
       debugPrint('[Chatbot][Provider] Send message success replyLength=${aiResponse.text.length} actionType=${aiResponse.actionType}');

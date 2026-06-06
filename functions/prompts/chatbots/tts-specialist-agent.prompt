@@ -11,7 +11,7 @@ input:
 output:
   schema:
     reply: string
-    actionType: string # none, ask_routing, change_mode, tts_trigger, video_trigger
+    actionType: string # none, ask_routing, change_mode, tts_trigger, video_trigger, script_recommendation
     actionData?(object):
       text?: string
       language?: string
@@ -47,7 +47,11 @@ TTS 제작 조율 및 최종 트리거 규칙:
    - `actionType`을 "none"으로 설정한다.
    - `actionData`는 null로 설정하거나 생략한다.
    - `reply`에는 사용자 대사에 대한 피드백, 어조 제안, 그리고 대사를 더 매끄럽게 가다듬어 마크다운으로 추천한다.
-2. 대화가 완결되고 생성을 트리거할 준비가 되었을 때(사용자가 마음에 들어 하거나 "이걸로 생성해줘"라고 확정할 때):
+2. 사용자가 대사나 스크립트 내용 추천을 명시적으로 요청하거나(예: "일상 대화 스크립트 추천해줄 수 있어?"), 특정 상황의 대본을 작성해 달라고 요구할 때:
+   - `actionType`을 "script_recommendation"으로 설정한다.
+   - `actionData`에 `{"text": "추천하는 전체 대본/스크립트 텍스트 내용"}`을 적는다.
+   - `reply`에는 "요청하신 스크립트를 작성해 보았습니다! 내용을 확인해 보시고, 화면의 옵션을 통해 TTS 입력창에 바로 추가해 보세요." 와 같이 안내한다.
+3. 대화가 완결되고 생성을 트리거할 준비가 되었을 때(사용자가 마음에 들어 하거나 "이걸로 생성해줘"라고 확정할 때):
    - `actionType`을 "tts_trigger"로 설정한다.
    - `actionData`에 아래 세부 매개변수를 담은 객체를 작성한다.
      - `text`: 최종 결정된 음성으로 읽을 대사/스크립트 텍스트.

@@ -7,6 +7,7 @@ import 'chat_bubble.dart';
 import 'typing_indicator.dart';
 import 'model_selector_sheet.dart';
 import 'routing_bottom_sheet.dart';
+import 'script_recommendation_sheet.dart';
 
 Future<void> showChatBotSheet(
   BuildContext context, {
@@ -104,6 +105,18 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
         } else {
           debugPrint(
               '[Chatbot][UI] Routing pop skipped. mounted=$mounted, hasPendingRouting=${provider.hasPendingRouting}');
+        }
+      });
+    }
+
+    if (provider.pendingScriptRecommendation != null) {
+      final scriptText = provider.pendingScriptRecommendation!;
+      debugPrint('[Chatbot][UI] Detected pendingScriptRecommendation in build');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && provider.pendingScriptRecommendation != null) {
+          debugPrint('[Chatbot][UI] Triggering showScriptRecommendationSheet...');
+          provider.consumeScriptRecommendation();
+          showScriptRecommendationSheet(context, scriptText, widget.onTriggerAction);
         }
       });
     }
