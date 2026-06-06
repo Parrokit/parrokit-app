@@ -10,8 +10,11 @@ import * as Buffer from "buffer";
 // 파이어베이스 시크릿 매니저에서 API 키를 안전하게 불러옵니다.
 const elevenLabsApiKey = defineSecret("ELEVENLABS_API_KEY");
 
-// 1. 파이어베이스 콘솔(Genkit 탭)로 로그 전송 활성화
-enableFirebaseTelemetry();
+// 1. 파이어베이스 콘솔(Genkit 탭)로 로그 전송 활성화 (콜드스타트 타임아웃 방지)
+enableFirebaseTelemetry({
+  metricExportTimeoutMillis: 180000,
+  metricExportIntervalMillis: 180000,
+});
 
 // 2. 통합 AI 플러그인 초기화 (Vertex AI 백엔드 사용)
 const ai = genkit({
@@ -111,6 +114,8 @@ export const generateTtsFlow = ai.defineFlow(
     provider?: "google" | "elevenlabs";
     voiceId?: string;
     modelId?: string;
+    speakingRate?: number;
+    pitch?: number;
     elevenLabsSettings?: ElevenLabsSettings;
   }) => {
     if (!input.text) {
@@ -182,8 +187,18 @@ export const generateTtsFlow = ai.defineFlow(
         const request = {
           input: {text: input.text},
           voice: {languageCode, name},
-          audioConfig: {audioEncoding: "MP3" as const},
+          audioConfig: {
+            audioEncoding: "MP3" as const,
+            speakingRate: input.speakingRate || 1.0,
+            pitch: input.pitch || 0.0,
+          },
         };
+
+        // 사용자 확인용 로그 추가: 구글로 어떤 모델이 넘어가는지 파이어베이스 콘솔에 출력합니다.
+        console.log(
+          `[Google TTS Request] Language: ${languageCode}, Voice: ${name}, ` +
+          `Speed: ${input.speakingRate}, Pitch: ${input.pitch}`
+        );
 
         const [response] = await client.synthesizeSpeech(request);
 
@@ -217,3 +232,17 @@ export const generateTts = onCall(
     return await generateTtsFlow(request.data);
   }
 );
+
+// 5. 구글 Cloud TTS 보이스 목록 불러오기 (프론트엔드 동적 렌더링용)
+export const listTtsVoices = onCall(async (request) => {
+  try {
+    const client = new textToSpeech.TextToSpeechClient();
+    const languageCode = request.data?.languageCode; // 선택적 파라미터
+
+    const [result] = await client.listVoices({languageCode});
+    return {voices: result.voices};
+  } catch (error: any) {
+    console.error("Google Cloud TTS listVoices Error:", error);
+    throw new Error(error.message || "Failed to list Google TTS voices");
+  }
+});
