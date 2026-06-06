@@ -888,20 +888,37 @@ class _TtsAudioPlayerWidgetState extends State<_TtsAudioPlayerWidget> {
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: LinearProgressIndicator(
-                          value: _duration.inMilliseconds > 0
-                              ? _position.inMilliseconds / _duration.inMilliseconds
-                              : 0.0,
-                          backgroundColor: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
-                          valueColor: widget.provider.providerType == TtsProviderType.gemini
-                              ? const AlwaysStoppedAnimation<Color>(Color(0xFF9B72CB))
-                              : null,
-                          color: widget.provider.providerType == TtsProviderType.gemini 
-                              ? null 
-                              : (widget.provider.providerType == TtsProviderType.google
-                                  ? theme.colorScheme.primary
-                                  : AppColors.secondary),
-                        ),
+                        child: widget.provider.providerType == TtsProviderType.gemini
+                            ? Container(
+                                height: 4,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: FractionallySizedBox(
+                                  widthFactor: (_duration.inMilliseconds > 0
+                                          ? _position.inMilliseconds / _duration.inMilliseconds
+                                          : 0.0)
+                                      .clamp(0.0, 1.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.geminiGradient,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : LinearProgressIndicator(
+                                value: _duration.inMilliseconds > 0
+                                    ? _position.inMilliseconds / _duration.inMilliseconds
+                                    : 0.0,
+                                backgroundColor: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+                                color: widget.provider.providerType == TtsProviderType.google
+                                    ? theme.colorScheme.primary
+                                    : AppColors.secondary,
+                              ),
                       ),
                       const SizedBox(width: AppSpacing.lg),
                     ],
