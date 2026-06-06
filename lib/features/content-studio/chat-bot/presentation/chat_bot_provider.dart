@@ -58,12 +58,12 @@ class ChatBotProvider extends ChangeNotifier {
     }
   }
 
-  String? _pendingScriptRecommendation;
-  String? get pendingScriptRecommendation => _pendingScriptRecommendation;
+  List<String>? _pendingScriptRecommendations;
+  List<String>? get pendingScriptRecommendations => _pendingScriptRecommendations;
 
   void consumeScriptRecommendation() {
-    if (_pendingScriptRecommendation != null) {
-      _pendingScriptRecommendation = null;
+    if (_pendingScriptRecommendations != null) {
+      _pendingScriptRecommendations = null;
       notifyListeners();
     }
   }
@@ -114,8 +114,14 @@ class ChatBotProvider extends ChangeNotifier {
         _hasPendingRouting = true;
         debugPrint('[Chatbot][Provider] Routing action pending flag set to true');
       } else if (aiResponse.actionType == 'script_recommendation' && aiResponse.actionData != null) {
-        _pendingScriptRecommendation = aiResponse.actionData!['text'] as String?;
-        debugPrint('[Chatbot][Provider] Script recommendation pending: $_pendingScriptRecommendation');
+        if (aiResponse.actionData!['scripts'] != null) {
+          final rawScripts = aiResponse.actionData!['scripts'] as List<dynamic>;
+          _pendingScriptRecommendations = rawScripts.map((e) => e.toString()).toList();
+        } else if (aiResponse.actionData!['text'] != null) {
+          // 호환성을 위해 text가 있으면 단일 항목 리스트로 만듦
+          _pendingScriptRecommendations = [aiResponse.actionData!['text'].toString()];
+        }
+        debugPrint('[Chatbot][Provider] Script recommendation pending: $_pendingScriptRecommendations');
       }
 
       debugPrint('[Chatbot][Provider] Send message success replyLength=${aiResponse.text.length} actionType=${aiResponse.actionType}');
