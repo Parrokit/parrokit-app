@@ -18,8 +18,11 @@ class TtsAudioPlayerWidget extends StatefulWidget {
 class _TtsAudioPlayerWidgetState extends State<TtsAudioPlayerWidget> {
   late AudioPlayer _player;
   bool _isPlaying = false;
+  bool _isDragging = false;
+  bool _wasPlayingBeforeDrag = false;
   String? _currentFilePath;
   Duration _position = Duration.zero;
+  Duration _dragPosition = Duration.zero;
   Duration _duration = Duration.zero;
 
   @override
@@ -34,7 +37,9 @@ class _TtsAudioPlayerWidgetState extends State<TtsAudioPlayerWidget> {
       }
     });
     _player.positionStream.listen((position) {
-      if (mounted) setState(() => _position = position);
+      if (mounted && !_isDragging) {
+        setState(() => _position = position);
+      }
     });
     _player.durationStream.listen((duration) {
       if (mounted) setState(() => _duration = duration ?? Duration.zero);
@@ -52,6 +57,12 @@ class _TtsAudioPlayerWidgetState extends State<TtsAudioPlayerWidget> {
       _currentFilePath = widget.provider.generatedFilePath;
       _player.setFilePath(_currentFilePath!);
     }
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   @override
@@ -142,46 +153,152 @@ class _TtsAudioPlayerWidgetState extends State<TtsAudioPlayerWidget> {
                 const SizedBox(height: AppSpacing.xs),
                 if (widget.provider.generatedFilePath != null && !widget.provider.isGenerating)
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        '${_position.inSeconds} / ${_duration.inSeconds}s',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: mutedText,
+                      SizedBox(
+                        width: 36,
+                        child: Text(
+                          _formatDuration(_isDragging ? _dragPosition : _position),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: mutedText,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
+                      const SizedBox(width: AppSpacing.xs),
                       Expanded(
-                        child: widget.provider.providerType == TtsProviderType.gemini
-                            ? Container(
-                                height: 4,
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                                alignment: Alignment.centerLeft,
-                                child: FractionallySizedBox(
-                                  widthFactor: (_duration.inMilliseconds > 0
-                                          ? _position.inMilliseconds / _duration.inMilliseconds
-                                          : 0.0)
-                                      .clamp(0.0, 1.0),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: AppColors.geminiGradient,
-                                      borderRadius: BorderRadius.circular(2),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                return GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onHorizontalDragStart: (details) {
+                                    if (_duration > Duration.zero) {
+                                      _wasPlayingBeforeDrag = _isPlaying;
+                                      if (_wasPlayingBeforeDrag) {
+                                        _player.pause();
+                                      }
+                                      setState(() {
+                                        _isDragging = true;
+                                        final percent = (details.localPosition.dx / constraints.maxWidth).clamp(0.0, 1.0);
+                                        _dragPosition = Duration(milliseconds: (_duration.inMilliseconds * percent).toInt());
+                                      });
+                                    }
+                                  },
+                                  onHorizontalDragUpdate: (details) {
+                                    if (_duration > Duration.zero && _isDragging) {
+                                      setState(() {
+                                        final percent = (details.localPosition.dx / constraints.maxWidth).clamp(0.0, 1.0);
+                                        _dragPosition = Duration(milliseconds: (_duration.inMilliseconds * percent).toInt());
+                                      });
+                                    }
+                                  },
+                                  onHorizontalDragEnd: (details) {
+                                    if (_isDragging) {
+                                      _player.seek(_dragPosition).then((_) {
+                                        setState(() => _isDragging = false);
+                                        if (_wasPlayingBeforeDrag) {
+                                          _player.play();
+                                        }
+                                      });
+                                    }
+                                  },
+                                  onTapDown: (details) {
+                                    if (_duration > Duration.zero) {
+                                      final percent = (details.localPosition.dx / constraints.maxWidth).clamp(0.0, 1.0);
+                                      final newPos = Duration(milliseconds: (_duration.inMilliseconds * percent).toInt());
+                                      _player.seek(newPos);
+                                    }
+                                  },
+                                  child: Builder(
+                                    builder: (context) {
+                                      final percent = (_duration.inMilliseconds > 0
+                                              ? (_isDragging ? _dragPosition : _position).inMilliseconds / _duration.inMilliseconds
+                                              : 0.0)
+                                          .clamp(0.0, 1.0);
+                                      return Container(
+                                        height: 24, // 터치 영역 확보
+                                        alignment: Alignment.center,
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          alignment: Alignment.centerLeft,
+                                          children: [
+                                            Container(
+                                              height: 4,
+                                              width: double.infinity,
+                                              decoration: BoxDecoration(
+                                                color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+                                                borderRadius: BorderRadius.circular(2),
+                                              ),
+                                            ),
+                                            FractionallySizedBox(
+                                              widthFactor: percent,
+                                              child: Container(
+                                                height: 4,
+                                                decoration: BoxDecoration(
+                                                  gradient: widget.provider.providerType == TtsProviderType.gemini
+                                                      ? AppColors.geminiGradient
+                                                      : null,
+                                                  color: widget.provider.providerType != TtsProviderType.gemini
+                                                      ? (widget.provider.providerType == TtsProviderType.google
+                                                          ? theme.colorScheme.primary
+                                                          : AppColors.secondary)
+                                                      : null,
+                                                  borderRadius: BorderRadius.circular(2),
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              left: (constraints.maxWidth * percent) - 6,
+                                              child: Container(
+                                                width: 12,
+                                                height: 12,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withValues(alpha: 0.15),
+                                                      blurRadius: 3,
+                                                      offset: const Offset(0, 1),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '0:00',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      fontSize: 10,
+                                      color: mutedText.withValues(alpha: 0.7),
                                     ),
                                   ),
-                                ),
-                              )
-                            : LinearProgressIndicator(
-                                value: _duration.inMilliseconds > 0
-                                    ? _position.inMilliseconds / _duration.inMilliseconds
-                                    : 0.0,
-                                backgroundColor: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
-                                color: widget.provider.providerType == TtsProviderType.google
-                                    ? theme.colorScheme.primary
-                                    : AppColors.secondary,
+                                  Text(
+                                    _formatDuration(_duration),
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      fontSize: 10,
+                                      color: mutedText.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.lg),
                     ],
