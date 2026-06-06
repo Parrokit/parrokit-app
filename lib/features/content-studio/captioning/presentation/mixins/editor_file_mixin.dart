@@ -132,7 +132,7 @@ mixin EditorFileMixin on ChangeNotifier {
     notifyListeners();
 
     final docsDir = await getApplicationDocumentsDirectory();
-    final absPath = '${docsDir.path}/$relPath';
+    final absPath = relPath.startsWith('/') ? relPath : '${docsDir.path}/$relPath';
 
     final file = File(absPath);
     if (!await file.exists()) {
