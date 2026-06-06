@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../domain/usecases/generate_tts_usecase.dart';
-import '../data/data_sources/tts_remote_data_source.dart';
-import '../data/repositories/tts_generation_repository_impl.dart';
-import '../domain/repositories/tts_generation_repository.dart';
+import '../../domain/usecases/generate_tts_usecase.dart';
+import '../../data/data_sources/tts_remote_data_source.dart';
+import '../../data/repositories/tts_generation_repository_impl.dart';
+import '../../domain/repositories/tts_generation_repository.dart';
 
 class TtsProvider extends ChangeNotifier {
   late final GenerateTtsUseCase _useCase;
