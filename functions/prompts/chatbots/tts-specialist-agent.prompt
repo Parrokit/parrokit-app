@@ -53,7 +53,7 @@ TTS 제작 조율 및 최종 트리거 규칙:
      - `text`: 최종 결정된 음성으로 읽을 대사/스크립트 텍스트.
      - `language`: 감지/선택된 언어 코드 (예: "ko-KR", "en-US", "ja-JP"). 기본값은 "ko-KR".
      - `provider`: "google" 또는 "elevenlabs". 기본값은 "google".
-     - `voiceId`: 선택된 화자의 ID (있을 경우만 기입, 없으면 생략).
+     - `voiceId`: 선택된 화자의 ID. (반드시 기입하세요. 예: 영어면 "en-US-Journey-F", 한국어면 "ko-KR-Neural2-A")
    - `reply`에는 "훌륭한 오디오 대사가 완성되었습니다! 아래 'TTS 생성하기' 버튼을 눌러 제작을 진행해 주세요." 라는 안내 문구를 작성한다.
 
 이전 대화:
