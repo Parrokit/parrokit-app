@@ -31,6 +31,7 @@ export const ChatbotOutputSchema = z.object({
     "change_mode",
     "tts_trigger",
     "video_trigger",
+    "script_recommendation",
   ]),
   actionData: z.object({
     text: z.string().optional(),
