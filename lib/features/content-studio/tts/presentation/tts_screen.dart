@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:just_audio/just_audio.dart';
+import 'dart:async';
+import 'package:google_mlkit_language_id/google_mlkit_language_id.dart';
+
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/features/content-studio/tts/domain/repositories/tts_generation_repository.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/tts_provider.dart';
+import 'package:parrokit/features/content-studio/tts/domain/models/tts_language.dart';
 
 class TtsScreen extends StatelessWidget {
   const TtsScreen({super.key});
@@ -25,6 +31,8 @@ class _TtsScreenContent extends StatefulWidget {
 
 class _TtsScreenContentState extends State<_TtsScreenContent> {
   late final TextEditingController _textController;
+  Timer? _debounce;
+  final _languageIdentifier = LanguageIdentifier(confidenceThreshold: 0.5);
 
   @override
   void initState() {
@@ -34,8 +42,46 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _languageIdentifier.close();
     _textController.dispose();
     super.dispose();
+  }
+
+  void _onTextChanged(String text, TtsProvider provider) {
+    provider.updateText(text);
+
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (text.trim().isNotEmpty) {
+        try {
+          AppLogger.d('[TTS][LanguageDetection] attempt text="$text"');
+          final languageCode = await _languageIdentifier.identifyLanguage(text);
+          AppLogger.d('[TTS][LanguageDetection] identified code=$languageCode');
+          
+          if (languageCode != 'und') {
+            final ttsLang = getLanguageByMlKitCode(languageCode);
+            AppLogger.d('[TTS][LanguageDetection] mapped ttsLang=${ttsLang?.ttsCode} displayName=${ttsLang?.displayName}');
+            
+            if (ttsLang != null && mounted) {
+              AppLogger.d('[TTS][LanguageDetection] update provider prevLanguage=${provider.language} newLanguage=${ttsLang.ttsCode}');
+              provider.updateLanguage(ttsLang.ttsCode);
+            }
+          }
+        } catch (e) {
+          AppLogger.e('[TTS][LanguageDetection] failed', error: e);
+        }
+      }
+    });
+  }
+
+  void _showLanguageSelectionSheet(BuildContext context, TtsProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _LanguageSelectionSheet(provider: provider),
+    );
   }
 
   @override
@@ -84,7 +130,7 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                 minLines: 7,
                 maxLines: 10,
                 maxLength: 240,
-                onChanged: provider.updateText,
+                onChanged: (val) => _onTextChanged(val, provider),
                 decoration: const InputDecoration(
                   hintText: '예: 오늘 배울 표현은 “Could you give me a hand?” 입니다.',
                   alignLabelWithHint: true,
@@ -126,8 +172,9 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                           _OptionRow(
                             icon: Icons.language_rounded,
                             title: '언어',
-                            value: '한국어 (ko-KR)',
+                            value: getLanguageByTtsCode(provider.language).displayName,
                             accentColor: theme.colorScheme.primary,
+                            onTap: () => _showLanguageSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           _SliderPreview(
@@ -158,8 +205,9 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                           _OptionRow(
                             icon: Icons.language_rounded,
                             title: '언어',
-                            value: '영어 (en-US)',
+                            value: getLanguageByTtsCode(provider.language).displayName,
                             accentColor: AppColors.secondary,
+                            onTap: () => _showLanguageSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           _SliderPreview(
@@ -185,76 +233,7 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 76,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.surfaceContainerHighDark
-                          : AppColors.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: AppSpacing.lg),
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: provider.isGenerating
-                              ? Colors.grey
-                              : (provider.generatedFilePath != null
-                                  ? (provider.providerType == TtsProviderType.google
-                                      ? theme.colorScheme.primary
-                                      : AppColors.secondary)
-                                  : Colors.grey.shade400),
-                          child: provider.isGenerating
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                provider.isGenerating
-                                    ? '음성을 생성하는 중...'
-                                    : (provider.generatedFilePath != null
-                                        ? '음성 생성 완료'
-                                        : '아직 생성된 음성이 없습니다'),
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                provider.isGenerating
-                                    ? '잠시만 기다려주세요.'
-                                    : (provider.generatedFilePath != null
-                                        ? '성공적으로 생성되었습니다: ${provider.generatedFilePath!.split('/').last}'
-                                        : '스크립트를 입력하면 이곳에서 결과를 확인합니다.'),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: mutedText,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.lg),
-                      ],
-                    ),
-                  ),
+                  _TtsAudioPlayerWidget(provider: provider),
                   if (provider.errorMessage != null) ...[
                     const SizedBox(height: AppSpacing.sm),
                     Padding(
@@ -525,12 +504,14 @@ class _OptionRow extends StatelessWidget {
     required this.title,
     required this.value,
     this.accentColor,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String value;
   final Color? accentColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -538,34 +519,43 @@ class _OptionRow extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final primaryColor = accentColor ?? theme.colorScheme.primary;
 
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surfaceContainerHighDark
-            : AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: primaryColor),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isDark
+              ? AppColors.surfaceContainerHighDark
+              : AppColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: primaryColor),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-        ],
+            Text(
+              value,
+              style: theme.textTheme.bodyMedium,
+            ),
+            if (onTap != null) ...[
+              const SizedBox(width: AppSpacing.xs),
+              const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+            ] else if (title == '보이스') ...[
+              const SizedBox(width: AppSpacing.xs),
+              const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -615,6 +605,298 @@ class _SliderPreview extends StatelessWidget {
           activeColor: activeColor,
         ),
       ],
+    );
+  }
+}
+
+class _TtsAudioPlayerWidget extends StatefulWidget {
+  const _TtsAudioPlayerWidget({required this.provider});
+
+  final TtsProvider provider;
+
+  @override
+  State<_TtsAudioPlayerWidget> createState() => _TtsAudioPlayerWidgetState();
+}
+
+class _TtsAudioPlayerWidgetState extends State<_TtsAudioPlayerWidget> {
+  late AudioPlayer _player;
+  bool _isPlaying = false;
+  String? _currentFilePath;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _player.playerStateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state.playing && state.processingState != ProcessingState.completed;
+        });
+      }
+    });
+    _player.positionStream.listen((position) {
+      if (mounted) setState(() => _position = position);
+    });
+    _player.durationStream.listen((duration) {
+      if (mounted) setState(() => _duration = duration ?? Duration.zero);
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _TtsAudioPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.provider.isGenerating) {
+      _player.stop();
+      _currentFilePath = null;
+    } else if (widget.provider.generatedFilePath != null &&
+        widget.provider.generatedFilePath != _currentFilePath) {
+      _currentFilePath = widget.provider.generatedFilePath;
+      _player.setFilePath(_currentFilePath!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  void _togglePlay() async {
+    if (_currentFilePath == null) return;
+
+    if (_isPlaying) {
+      await _player.pause();
+    } else {
+      if (_player.processingState == ProcessingState.completed) {
+        await _player.seek(Duration.zero);
+      }
+      await _player.play();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final mutedText = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+    return Container(
+      height: 76,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceContainerHighDark : AppColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: AppSpacing.lg),
+          GestureDetector(
+            onTap: widget.provider.isGenerating || widget.provider.generatedFilePath == null ? null : _togglePlay,
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: widget.provider.isGenerating
+                  ? Colors.grey
+                  : (widget.provider.generatedFilePath != null
+                      ? (widget.provider.providerType == TtsProviderType.google
+                          ? theme.colorScheme.primary
+                          : AppColors.secondary)
+                      : Colors.grey.shade400),
+              child: widget.provider.isGenerating
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                    ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.provider.isGenerating
+                      ? '음성을 생성하는 중...'
+                      : (widget.provider.generatedFilePath != null
+                          ? '음성 생성 완료'
+                          : '아직 생성된 음성이 없습니다'),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                if (widget.provider.generatedFilePath != null && !widget.provider.isGenerating)
+                  Row(
+                    children: [
+                      Text(
+                        '${_position.inSeconds} / ${_duration.inSeconds}s',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: mutedText,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: _duration.inMilliseconds > 0
+                              ? _position.inMilliseconds / _duration.inMilliseconds
+                              : 0.0,
+                          backgroundColor: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+                          color: widget.provider.providerType == TtsProviderType.google
+                              ? theme.colorScheme.primary
+                              : AppColors.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.lg),
+                    ],
+                  )
+                else
+                  Text(
+                    widget.provider.isGenerating
+                        ? '잠시만 기다려주세요.'
+                        : '스크립트를 입력하면 이곳에서 결과를 확인합니다.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: mutedText,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          if (widget.provider.generatedFilePath == null || widget.provider.isGenerating)
+            const SizedBox(width: AppSpacing.lg),
+        ],
+      ),
+    );
+  }
+}
+
+class _LanguageSelectionSheet extends StatefulWidget {
+  const _LanguageSelectionSheet({required this.provider});
+
+  final TtsProvider provider;
+
+  @override
+  State<_LanguageSelectionSheet> createState() => _LanguageSelectionSheetState();
+}
+
+class _LanguageSelectionSheetState extends State<_LanguageSelectionSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  List<TtsLanguage> _filteredLanguages = supportedTtsLanguages;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterLanguages(String query) {
+    if (query.isEmpty) {
+      setState(() => _filteredLanguages = supportedTtsLanguages);
+      return;
+    }
+    final lowerQuery = query.toLowerCase();
+    setState(() {
+      _filteredLanguages = supportedTtsLanguages.where((lang) {
+        return lang.displayName.toLowerCase().contains(lowerQuery) ||
+               lang.ttsCode.toLowerCase().contains(lowerQuery);
+      }).toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            '언어 선택',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterLanguages,
+              decoration: InputDecoration(
+                hintText: '언어 검색...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
+                fillColor: isDark ? AppColors.surfaceContainerHighDark : AppColors.surfaceContainerHigh,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: AppSpacing.md),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              itemCount: _filteredLanguages.length,
+              itemBuilder: (context, index) {
+                final lang = _filteredLanguages[index];
+                final isSelected = widget.provider.language == lang.ttsCode;
+                
+                return ListTile(
+                  title: Text(
+                    lang.displayName,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? theme.colorScheme.primary : null,
+                    ),
+                  ),
+                  trailing: isSelected 
+                    ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary) 
+                    : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  onTap: () {
+                    widget.provider.updateLanguage(lang.ttsCode);
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
     );
   }
 }
