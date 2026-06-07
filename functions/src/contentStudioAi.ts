@@ -66,10 +66,12 @@ export const chatbotFlow = ai.defineFlow(
   },
   async (input) => {
     // 비용 폭탄 방지: 프론트엔드가 100개를 보내더라도, 무조건 최근 10개(대화 5번 왕복)만 잘라서 사용
-    const MAX_HISTORY = 10;
+    const MAX_HISTORY = 6;
     const recentHistory = (input.history || []).slice(-MAX_HISTORY);
 
-    const targetModel = input.model ? `vertexai/${input.model}` : undefined;
+    const targetModel = input.model ?
+      `vertexai/${input.model}` :
+      "vertexai/gemini-2.5-flash";
     console.log(
       `[Chatbot][Flow] Mode parameter inputMode=${input.model} ` +
         `targetModel=${targetModel} chatbotMode=${input.chatbotMode}`
@@ -337,6 +339,128 @@ export const listElevenLabsVoices = onCall(
       throw new HttpsError(
         "internal",
         error.message || "Failed to list ElevenLabs voices"
+      );
+    }
+  }
+);
+
+// 6. 비디오 생성 (Veo 3.1)
+export const generateVideo = onCall(
+  {secrets: [geminiApiKey]},
+  async (request) => {
+    try {
+      const {prompt, aspectRatio, duration, modelId, debug} = request.data;
+
+      // 디버그 모드인 경우: 실제 과금 발생 없이 더미 Operation 반환
+      if (debug === true || modelId === "debug") {
+        console.log("[Video] Debug mode activated. Returning dummy operation.");
+        return {operationName: "operations/dummy-debug-video-operation"};
+      }
+
+      // Vertex AI가 아닌 일반 제미나이 API 클라이언트
+      const client = new GoogleGenAI({
+        apiKey: geminiApiKey.value(),
+      });
+
+      console.log(`[Video] Requesting video generation. Prompt: ${prompt}`);
+
+      // Veo 3.1 Lite (또는 Preview)
+      const targetModel = modelId || "veo-2.0-generate-001";
+
+      const operation = await client.models.generateVideos({
+        model: targetModel,
+        prompt: prompt,
+        config: {
+          aspectRatio: aspectRatio || "16:9",
+          durationSeconds: duration || 5,
+        },
+      });
+
+      return {operationName: operation.name};
+    } catch (error: any) {
+      console.error("Video Generation Error:", error);
+      throw new HttpsError(
+        "internal",
+        error.message || "Failed to start video generation"
+      );
+    }
+  }
+);
+
+// 7. 비디오 생성 상태 확인 (폴링용)
+export const getVideoOperationStatus = onCall(
+  {secrets: [geminiApiKey]},
+  async (request) => {
+    try {
+      const {operationName} = request.data;
+
+      if (!operationName) {
+        throw new HttpsError("invalid-argument", "operationName is required");
+      }
+
+      // 디버그 모드 더미 오퍼레이션 처리
+      if (operationName === "operations/dummy-debug-video-operation") {
+        console.log("[Video] Polling dummy operation. Returning success.");
+        return {
+          done: true,
+          videoUri: "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+        };
+      }
+
+      // SDK를 활용한 Operation 상태 조회
+      // (현재 버전에 따라 client.operations.get 또는 apiClient 직접 호출 필요할 수 있음)
+      // 최신 SDK는 아직 getOperation 메서드를 명시적으로 노출하지 않는 경우가 있어,
+      // 우회하거나 직접 REST 호출할 수도 있습니다.
+      // 일단 get()을 시도하되, 없으면 직접 fetch합니다.
+
+      let done = false;
+      let videoUri = null;
+      let error = null;
+
+      // GenAI SDK의 apiClient로 직접 요청
+      const apiKey = geminiApiKey.value();
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/${operationName}` +
+        `?key=${apiKey}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch operation: ${response.statusText}`);
+      }
+
+      const opData = await response.json();
+      done = opData.done === true;
+
+      if (done) {
+        if (opData.error) {
+          error = opData.error.message;
+        } else if (
+          opData.response &&
+          opData.response.generatedVideos &&
+          opData.response.generatedVideos.length > 0
+        ) {
+          const video = opData.response.generatedVideos[0].video;
+          if (video.uri) {
+            videoUri = video.uri;
+          } else if (video.videoBytes) {
+            // base64로 온 경우
+            videoUri =
+              `data:${video.mimeType || "video/mp4"};base64,` +
+              `${video.videoBytes}`;
+          }
+        }
+      }
+
+      return {
+        done,
+        videoUri,
+        error,
+      };
+    } catch (error: any) {
+      console.error("Video Operation Status Error:", error);
+      throw new HttpsError(
+        "internal",
+        error.message || "Failed to get video status"
       );
     }
   }

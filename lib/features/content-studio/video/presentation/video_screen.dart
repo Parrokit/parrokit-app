@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
@@ -131,9 +132,20 @@ class _VideoScreenState extends State<VideoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: null,
-                      icon: const Icon(Icons.movie_creation_rounded),
-                      label: const Text('영상 생성'),
+                      onPressed: provider.isGenerating || provider.scenePrompt.trim().isEmpty
+                          ? null
+                          : provider.generateVideo,
+                      icon: provider.isGenerating
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.movie_creation_rounded),
+                      label: Text(provider.isGenerating ? '영상 생성 중...' : '영상 생성'),
                     ),
                   ),
                 ],
@@ -146,79 +158,185 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 }
 
-class _VideoPreview extends StatelessWidget {
+class _VideoPreview extends StatefulWidget {
   const _VideoPreview({required this.isDark});
 
   final bool isDark;
 
   @override
+  State<_VideoPreview> createState() => _VideoPreviewState();
+}
+
+class _VideoPreviewState extends State<_VideoPreview> {
+  VideoPlayerController? _controller;
+  String? _lastUrl;
+  String? _playerError;
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _initPlayer(String url) async {
+    if (_lastUrl == url) return;
+    _lastUrl = url;
+    _playerError = null;
+    
+    final oldController = _controller;
+    final newController = VideoPlayerController.networkUrl(Uri.parse(url));
+    _controller = newController;
+    
+    try {
+      await newController.initialize();
+      newController.setLooping(true);
+      newController.play();
+    } catch (e) {
+      debugPrint("Video initialization error: $e");
+      if (mounted) {
+        setState(() {
+          _playerError = "영상을 불러올 수 없습니다. 네트워크 연결이나 권한을 확인하세요.";
+        });
+      }
+    }
+    
+    oldController?.dispose();
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mutedText =
-        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+        widget.isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final provider = context.watch<VideoProvider>();
+    final videoUrl = provider.generatedFilePath;
+
+    if (videoUrl != null && videoUrl.isNotEmpty) {
+      _initPlayer(videoUrl);
+    } else {
+      if (_controller != null) {
+        _controller?.dispose();
+        _controller = null;
+        _lastUrl = null;
+      }
+    }
 
     return AspectRatio(
-      aspectRatio: 16 / 10,
+      aspectRatio: 16 / 9,
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: videoUrl != null ? EdgeInsets.zero : const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: isDark
+          color: widget.isDark
               ? AppColors.surfaceContainerDark
               : AppColors.surfaceContainer,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color:
-                isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+            color: widget.isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
           ),
         ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.surfaceContainerHighDark
-                      : AppColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-              ),
-            ),
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Stack(
+            children: [
+              if (videoUrl == null) ...[
+                Positioned.fill(
+                  child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: const Icon(
-                      Icons.smart_display_rounded,
-                      color: Colors.white,
-                      size: 30,
+                      color: widget.isDark
+                          ? AppColors.surfaceContainerHighDark
+                          : AppColors.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    '영상 미리보기',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
+                ),
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: const Icon(
+                          Icons.smart_display_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        '영상 미리보기',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '생성 결과가 이 영역에 표시됩니다.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: mutedText,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (_controller != null && _controller!.value.isInitialized) ...[
+                Positioned.fill(
+                  child: VideoPlayer(_controller!),
+                ),
+                // Simple play/pause overlay
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (_controller!.value.isPlaying) {
+                          _controller!.pause();
+                        } else {
+                          _controller!.play();
+                        }
+                      });
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      child: _controller!.value.isPlaying
+                          ? const SizedBox.shrink()
+                          : Container(
+                              color: Colors.black26,
+                              child: const Center(
+                                child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 48),
+                              ),
+                            ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '생성 결과가 이 영역에 표시됩니다.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: mutedText,
+                ),
+              ] else if (_playerError != null) ...[
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline_rounded, color: Colors.red, size: 32),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          _playerError!,
+                          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ] else ...[
+                const Center(child: CircularProgressIndicator()),
+              ],
+            ],
+          ),
         ),
       ),
     );
