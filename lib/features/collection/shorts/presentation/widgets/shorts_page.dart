@@ -16,9 +16,9 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/data/local/app_database.dart'; // Segment 타입 사용
-import 'package:parrokit/features/content/shorts/presentation/widgets/video_layer_placeholder.dart';
-import 'package:parrokit/features/content/shorts/presentation/sections/shorts_page_subtitle_section.dart';
-import 'package:parrokit/features/content/shorts/presentation/sections/shorts_page_control_section.dart';
+import 'package:parrokit/features/collection/shorts/presentation/widgets/video_layer_placeholder.dart';
+import 'package:parrokit/features/collection/shorts/presentation/sections/shorts_page_subtitle_section.dart';
+import 'package:parrokit/features/collection/shorts/presentation/sections/shorts_page_control_section.dart';
 
 enum FitMode { cover, contain }
 

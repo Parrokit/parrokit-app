@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/foundation.dart';
-import 'package:parrokit/features/content/shorts/data/shorts_repository.dart';
+import 'package:parrokit/features/collection/shorts/data/shorts_repository.dart';
 import 'package:parrokit/data/models/clip_item.dart';
 
 /// [역할]

@@ -23,9 +23,9 @@ import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/app/config/app_config.dart';
 import 'package:parrokit/core/app/router/app_router.dart';
-import 'package:parrokit/features/content/shorts/presentation/providers/ad_provider.dart';
+import 'package:parrokit/features/collection/shorts/presentation/providers/ad_provider.dart';
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
-import 'package:parrokit/features/content/shorts/presentation/providers/shorts_provider.dart';
+import 'package:parrokit/features/collection/shorts/presentation/providers/shorts_provider.dart';
 import 'package:parrokit/core/infrastructure/services/ad_service.dart';
 
 import 'widgets/shorts_page.dart';

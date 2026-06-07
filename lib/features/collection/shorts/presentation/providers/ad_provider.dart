@@ -11,7 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/foundation.dart';
-import 'package:parrokit/features/content/shorts/data/shorts_ad_repository.dart';
+import 'package:parrokit/features/collection/shorts/data/shorts_ad_repository.dart';
 
 /// [역할]
 /// 쇼츠 스와이프 시 광고 노출 로직 관리.

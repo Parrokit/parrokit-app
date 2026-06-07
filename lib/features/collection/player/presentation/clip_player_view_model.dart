@@ -26,7 +26,7 @@ import 'package:parrokit/core/app/config/app_config.dart';
 import 'package:parrokit/core/state/provider/media_provider.dart';
 import 'package:parrokit/core/shared/utils/audio_bg.dart';
 import 'package:parrokit/data/local/app_database.dart';
-import 'package:parrokit/features/content/player/domain/player_state.dart';
+import 'package:parrokit/features/collection/player/domain/player_state.dart';
 
 import 'view_model/playback_control_mixin.dart';
 import 'view_model/audio_mode_mixin.dart';
