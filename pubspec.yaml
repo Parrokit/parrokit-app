@@ -3,7 +3,7 @@ description: "Parrokit: 애니메이션 클립으로 즐기는 언어 학습 앱
 # Private Project - Do not publish to pub.dev
 publish_to: 'none'
 
-version: 1.0.5+83
+version: 1.0.5+88
 
 environment:
   sdk: ^3.6.1
@@ -48,6 +48,7 @@ dependencies:
   video_player: ^2.10.0       # 비디오 재생
   video_thumbnail: ^0.5.6     # 비디오 썸네일 추출
   just_audio: ^0.10.5         # 오디오 재생 (BGM, 효과음)
+  audio_waveforms: ^2.0.2     # 실제 오디오 파형 추출·시각화
   audio_service: ^0.18.18     # 백그라운드 오디오 제어
   audio_session: ^0.2.2       # 오디오 세션 관리
   image_picker: ^1.2.0        # 갤러리/카메라 이미지 선택
@@ -109,8 +110,11 @@ dependencies:
   sign_in_with_apple: ^7.0.1
   firebase_storage: ^13.4.1
   flutter_markdown: ^0.7.7+1
+  markdown: ^7.2.2
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0
+  google_mlkit_language_id: ^0.13.1
+  google_mlkit_commons: ^0.11.1
 
 # -----------------------------------------------------------
 # Dependency Overrides

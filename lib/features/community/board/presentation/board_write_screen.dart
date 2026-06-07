@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/provider/user_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:parrokit/features/community/shell/domain/data/community_filters.dart';
 
 import 'package:parrokit/data/models/post.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 class BoardWriteScreen extends StatefulWidget {
   final Post? editPost;

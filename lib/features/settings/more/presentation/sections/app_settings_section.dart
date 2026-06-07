@@ -9,7 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:parrokit/core/provider/theme_provider.dart';
+import 'package:parrokit/core/state/provider/theme_provider.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
 import '../widgets/theme_tile.dart';

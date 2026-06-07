@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/user.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 class BoardPostAuthorRow extends StatelessWidget {
   const BoardPostAuthorRow({

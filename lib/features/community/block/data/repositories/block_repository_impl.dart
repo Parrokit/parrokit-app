@@ -1,4 +1,4 @@
-import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
+import 'package:parrokit/core/infrastructure/services/firebase/firebase_user_service.dart';
 import 'package:parrokit/features/community/block/domain/entities/blocked_user.dart';
 import 'package:parrokit/features/community/block/domain/repositories/block_repository.dart';
 

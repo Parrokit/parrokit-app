@@ -19,7 +19,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'sections/account_section.dart';
 import 'sections/ad_reward_section.dart';
 import 'sections/exchange_section.dart';

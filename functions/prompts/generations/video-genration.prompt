@@ -1,0 +1,23 @@
+---
+model: vertexai/gemini-1.5-flash
+config:
+  temperature: 0.8
+input:
+  schema:
+    dialogue: string
+    scene: string
+output:
+  schema:
+    promptEn: string
+---
+
+You are an expert AI video generation prompt engineer.
+Translate and enhance the user's dialogue and scene description into a highly detailed, descriptive video generation prompt in English.
+
+[User Dialogue]
+{{dialogue}}
+
+[User Scene]
+{{scene}}
+
+Create a vivid and detailed English prompt focusing on visual elements, lighting, camera angles, and action for a parrot character. Return ONLY a JSON object.

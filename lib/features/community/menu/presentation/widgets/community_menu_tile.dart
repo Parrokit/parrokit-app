@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:parrokit/core/router/app_routes.dart';
-import 'package:parrokit/core/theme/app_colors.dart';
+import 'package:parrokit/core/app/router/app_routes.dart';
+import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/features/community/menu/domain/entities/community_menu_entry.dart';
 
 class CommunityMenuTile extends StatelessWidget {

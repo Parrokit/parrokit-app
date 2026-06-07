@@ -43,10 +43,11 @@ export const createNaverCustomToken = functions.https.onCall(
       // 3. Firebase Auth에 유저가 있는지 확인하고, 없으면 새로 생성 (이메일, 이름 등 저장)
       try {
         await admin.auth().getUser(uid);
-      // 이미 가입된 유저라면 정보 업데이트 (선택 사항)
+        // 이미 가입된 유저라면 정보 업데이트 (선택 사항)
       } catch (error: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((error as any).code === "auth/user-not-found") {
-        // 첫 가입 유저 생성
+          // 첫 가입 유저 생성
           await admin.auth().createUser({
             uid: uid,
             email: naverUser.email,

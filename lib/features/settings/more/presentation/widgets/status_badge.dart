@@ -10,7 +10,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:parrokit/core/theme/app_radius.dart';
+import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 /// 상태 표시 뱃지 위젯.
 class StatusBadge extends StatelessWidget {

@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import 'package:parrokit/core/provider/user_provider.dart';
-import 'package:parrokit/core/theme/app_spacing.dart';
-import 'package:parrokit/core/utils/show_toast.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
+import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:parrokit/features/settings/more/data/coin_package.dart';
 import 'package:parrokit/features/settings/more/presentation/widgets/coin_package_card.dart';
 

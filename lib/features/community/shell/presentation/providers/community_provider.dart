@@ -3,7 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:parrokit/core/services/firebase/firebase_user_service.dart';
+import 'package:parrokit/core/infrastructure/services/firebase/firebase_user_service.dart';
 import 'package:parrokit/data/models/post.dart';
 import 'package:parrokit/data/models/comment.dart';
 import 'package:parrokit/data/models/user.dart';
