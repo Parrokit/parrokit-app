@@ -23,6 +23,7 @@ import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_sl
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_audio_player_widget.dart';
 import 'package:parrokit/features/content-studio/tts/data/repositories/tts_voice_cache.dart';
 import 'package:parrokit/features/content-studio/tts/domain/models/tts_elevenlabs_models.dart';
+import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_elevenlabs_model_selection_sheet.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_elevenlabs_voice_selection_sheet.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_language_selection_sheet.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_voice_selection_sheet.dart';
@@ -285,6 +286,22 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                             value: getLanguageByTtsCode(provider.language).displayName,
                             accentColor: AppColors.secondary,
                             onTap: () => _showLanguageSelectionSheet(context, provider),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          TtsOptionRow(
+                            icon: Icons.auto_awesome_rounded,
+                            title: '모델',
+                            value: elevenLabsModels.firstWhere(
+                              (m) => m.id == (provider.modelId ?? 'eleven_multilingual_v2'),
+                              orElse: () => elevenLabsModels.first,
+                            ).name,
+                            accentColor: AppColors.secondary,
+                            onTap: () => showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => TtsElevenLabsModelSelectionSheet(provider: provider),
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           TtsOptionRow(
