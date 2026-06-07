@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 
 class VideoScreen extends StatefulWidget {
@@ -191,8 +192,8 @@ class _VideoPreviewState extends State<_VideoPreview> {
       await newController.initialize();
       newController.setLooping(true);
       newController.play();
-    } catch (e) {
-      debugPrint("Video initialization error: $e");
+    } catch (e, stack) {
+      AppLogger.e("[VideoScreen][_VideoPreviewState] Video initialization error: $e", error: e, stackTrace: stack);
       if (mounted) {
         setState(() {
           _playerError = "영상을 불러올 수 없습니다. 네트워크 연결이나 권한을 확인하세요.";

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import '../../domain/repositories/video_generation_repository.dart';
 import '../data_sources/video_remote_data_source.dart';
 
@@ -15,7 +15,7 @@ class VideoGenerationRepositoryImpl implements VideoGenerationRepository {
     int duration = 5,
     bool debug = false,
   }) async {
-    debugPrint('[VideoRepository][Generate] start ratio=$ratio duration=$duration debug=$debug');
+    AppLogger.i('[VideoRepository][Generate] start ratio=$ratio duration=$duration debug=$debug');
     try {
       final result = await remoteDataSource.generateVideo(
         dialogue: dialogue,
@@ -24,23 +24,23 @@ class VideoGenerationRepositoryImpl implements VideoGenerationRepository {
         duration: duration,
         debug: debug,
       );
-      debugPrint('[VideoRepository][Generate] success');
+      AppLogger.i('[VideoRepository][Generate] success');
       return result;
-    } catch (e) {
-      debugPrint('[VideoRepository][Generate] error reason=$e');
+    } catch (e, stack) {
+      AppLogger.e('[VideoRepository][Generate] error reason=$e', error: e, stackTrace: stack);
       rethrow;
     }
   }
 
   @override
   Future<Map<String, dynamic>> checkVideoOperation(String operationName) async {
-    debugPrint('[VideoRepository][CheckOperation] start operationName=$operationName');
+    AppLogger.i('[VideoRepository][CheckOperation] start operationName=$operationName');
     try {
       final result = await remoteDataSource.checkVideoOperation(operationName);
-      debugPrint('[VideoRepository][CheckOperation] success');
+      AppLogger.i('[VideoRepository][CheckOperation] success');
       return result;
-    } catch (e) {
-      debugPrint('[VideoRepository][CheckOperation] error reason=$e');
+    } catch (e, stack) {
+      AppLogger.e('[VideoRepository][CheckOperation] error reason=$e', error: e, stackTrace: stack);
       rethrow;
     }
   }
