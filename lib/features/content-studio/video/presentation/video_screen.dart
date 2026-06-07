@@ -7,6 +7,7 @@ import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
+import 'package:parrokit/features/content-studio/video/presentation/widgets/video_model_selection_sheet.dart';
 
 class VideoScreen extends StatefulWidget {
   const VideoScreen({super.key});
@@ -84,16 +85,32 @@ class _VideoScreenState extends State<VideoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _StyleRow(
+                    icon: Icons.auto_awesome_rounded,
+                    title: '영상 모델',
+                    value: provider.model == 'veo3.1-lite' ? 'Veo 3.1 Lite' : 'Veo 3.1 Full',
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        isScrollControlled: true,
+                        builder: (context) => VideoModelSelectionSheet(provider: provider),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   _OptionGroup(
                     label: '화면비',
                     options: const ['9:16', '1:1', '16:9'],
-                    selectedIndex: 0,
+                    selectedIndex: ['9:16', '1:1', '16:9'].indexOf(provider.ratio),
+                    onChanged: (index) => provider.updateRatio(['9:16', '1:1', '16:9'][index]),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _OptionGroup(
                     label: '길이',
                     options: const ['5초', '10초', '15초'],
-                    selectedIndex: 1,
+                    selectedIndex: ![5, 10, 15].contains(provider.duration) ? 0 : [5, 10, 15].indexOf(provider.duration),
+                    onChanged: (index) => provider.updateDuration([5, 10, 15][index]),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _StyleRow(
@@ -398,11 +415,13 @@ class _OptionGroup extends StatelessWidget {
     required this.label,
     required this.options,
     required this.selectedIndex,
+    this.onChanged,
   });
 
   final String label;
   final List<String> options;
   final int selectedIndex;
+  final ValueChanged<int>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -422,9 +441,12 @@ class _OptionGroup extends StatelessWidget {
           children: [
             for (var i = 0; i < options.length; i++) ...[
               Expanded(
-                child: _ChoiceTile(
-                  label: options[i],
-                  selected: i == selectedIndex,
+                child: GestureDetector(
+                  onTap: onChanged != null ? () => onChanged!(i) : null,
+                  child: _ChoiceTile(
+                    label: options[i],
+                    selected: i == selectedIndex,
+                  ),
                 ),
               ),
               if (i != options.length - 1) const SizedBox(width: AppSpacing.sm),
@@ -477,18 +499,23 @@ class _StyleRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.value,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String value;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
@@ -514,7 +541,7 @@ class _StyleRow extends StatelessWidget {
           const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
         ],
       ),
-    );
+    ));
   }
 }
 

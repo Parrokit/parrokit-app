@@ -11,6 +11,7 @@ class GenerateVideoUseCase {
     required String scenePrompt,
     required String ratio,
     int duration = 5,
+    String model = 'veo3.1-lite',
     bool debug = false,
   }) async {
     VideoValidator.validatePrompts(dialogue: dialogue, scenePrompt: scenePrompt);
@@ -20,6 +21,7 @@ class GenerateVideoUseCase {
       scenePrompt: scenePrompt,
       ratio: ratio,
       duration: duration,
+      model: model,
       debug: debug,
     );
   }

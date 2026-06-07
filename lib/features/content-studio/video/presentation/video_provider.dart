@@ -31,6 +31,9 @@ class VideoProvider extends ChangeNotifier {
   int _duration = 5;
   int get duration => _duration;
 
+  String _model = 'veo3.1-lite';
+  String get model => _model;
+
   bool _isGenerating = false;
   bool get isGenerating => _isGenerating;
 
@@ -68,6 +71,11 @@ class VideoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateModel(String newModel) {
+    _model = newModel;
+    notifyListeners();
+  }
+
   Future<void> generateVideo() async {
     if (_dialogue.trim().isEmpty && _scenePrompt.trim().isEmpty) return;
 
@@ -76,7 +84,7 @@ class VideoProvider extends ChangeNotifier {
     _generatedFilePath = null;
     notifyListeners();
 
-    AppLogger.i('[VideoProvider][Generate] start ratio=$_ratio duration=$_duration');
+    AppLogger.i('[VideoProvider][Generate] start ratio=$_ratio duration=$_duration model=$_model');
 
     try {
       final operationName = await _generateUseCase.call(
@@ -84,6 +92,7 @@ class VideoProvider extends ChangeNotifier {
         scenePrompt: _scenePrompt,
         ratio: _ratio,
         duration: _duration,
+        model: _model,
         debug: true, // 디버그 모드 기본 켜짐
       );
       

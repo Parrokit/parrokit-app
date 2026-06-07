@@ -10,15 +10,17 @@ class VideoRemoteDataSource {
     required String scenePrompt,
     required String ratio,
     int duration = 5,
+    String model = 'veo3.1-lite',
     bool debug = false,
   }) async {
-    AppLogger.i('[VideoDataSource][Generate] start ratio=$ratio duration=$duration debug=$debug');
+    AppLogger.i('[VideoDataSource][Generate] start ratio=$ratio duration=$duration model=$model debug=$debug');
     try {
       final callable = _functions.httpsCallable('generateVideo');
       final result = await callable.call<Map<String, dynamic>>({
         'prompt': 'Dialogue: $dialogue\nScene: $scenePrompt',
         'aspectRatio': ratio,
         'duration': duration,
+        'model': model,
         'debug': debug,
       });
 
