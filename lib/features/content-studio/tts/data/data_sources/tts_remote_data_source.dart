@@ -23,10 +23,11 @@ class TtsRemoteDataSource {
     final cacheKey = cacheKeyData.hashCode.toString().replaceAll('-', 'M');
     
     final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/tts_$cacheKey.mp3');
+    final ext = provider == TtsProviderType.google ? 'mp3' : 'wav';
+    final file = File('${tempDir.path}/tts_$cacheKey.$ext');
 
     // 2. 캐시 히트 검사
-    if (await file.exists()) {
+    if (await file.exists() && await file.length() > 0) {
       AppLogger.d('[TTS][Repository] Cache hit cacheKey=$cacheKey');
       return file.path;
     }
@@ -53,6 +54,8 @@ class TtsRemoteDataSource {
       final bytes = base64Decode(base64Audio);
       
       await file.writeAsBytes(bytes);
+      final size = await file.length();
+      AppLogger.i('[TTS][Repository] File saved to ${file.path} (size: $size bytes)');
 
       return file.path;
     } catch (e) {
@@ -64,6 +67,14 @@ class TtsRemoteDataSource {
   Future<List<Map<String, dynamic>>> listVoices(String languageCode) async {
     final callable = FirebaseFunctions.instance.httpsCallable('listTtsVoices');
     final response = await callable.call({'languageCode': languageCode});
+    
+    final List<dynamic> voices = response.data['voices'];
+    return voices.map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> listElevenLabsVoices() async {
+    final callable = FirebaseFunctions.instance.httpsCallable('listElevenLabsVoices');
+    final response = await callable.call();
     
     final List<dynamic> voices = response.data['voices'];
     return voices.map((e) => Map<String, dynamic>.from(e)).toList();

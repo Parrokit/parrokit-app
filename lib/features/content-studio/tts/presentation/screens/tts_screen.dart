@@ -21,6 +21,9 @@ import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_pa
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_option_row.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_slider_preview.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_audio_player_widget.dart';
+import 'package:parrokit/features/content-studio/tts/data/repositories/tts_voice_cache.dart';
+import 'package:parrokit/features/content-studio/tts/domain/models/tts_elevenlabs_models.dart';
+import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_elevenlabs_voice_selection_sheet.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_language_selection_sheet.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_voice_selection_sheet.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/widgets/tts_gemini_voice_selection_sheet.dart';
@@ -133,6 +136,15 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => TtsGeminiModelSelectionSheet(provider: provider),
+    );
+  }
+
+  void _showElevenLabsVoiceSelectionSheet(BuildContext context, TtsProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TtsElevenLabsVoiceSelectionSheet(provider: provider),
     );
   }
 
@@ -275,11 +287,17 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                             onTap: () => _showLanguageSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          const TtsOptionRow(
+                          TtsOptionRow(
                             icon: Icons.record_voice_over_rounded,
                             title: '보이스',
-                            value: 'Rachel (Bella)',
+                            value: provider.voiceId.isEmpty 
+                                ? '선택 (기본값)' 
+                                : (TtsVoiceCache().elevenLabsVoices?.firstWhere(
+                                      (v) => v.id == provider.voiceId,
+                                      orElse: () => TtsElevenLabsVoice(id: provider.voiceId, name: provider.voiceId, category: '', language: ''),
+                                    ).name ?? provider.voiceId),
                             accentColor: AppColors.secondary,
+                            onTap: () => _showElevenLabsVoiceSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
                           const TtsSliderPreview(

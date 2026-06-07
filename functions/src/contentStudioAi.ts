@@ -144,7 +144,7 @@ export const generateTtsFlow = ai.defineFlow(
         const audioStream = await client.textToSpeech.convert(targetVoice, {
           text: input.text,
           modelId: targetModel,
-          outputFormat: "mp3_44100_128",
+          outputFormat: "pcm_24000",
           voiceSettings: input.elevenLabsSettings ? {
             stability: input.elevenLabsSettings.stability,
             similarityBoost: input.elevenLabsSettings.similarity_boost,
@@ -153,18 +153,23 @@ export const generateTtsFlow = ai.defineFlow(
           } : undefined,
         });
 
-        const reader = audioStream.getReader();
         const chunks: Uint8Array[] = [];
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const {done, value} = await reader.read();
-          if (done) break;
-          if (value) chunks.push(value);
+        for await (const chunk of audioStream) {
+          chunks.push(chunk);
         }
-        const buffer = Buffer.Buffer.concat(chunks);
+        const pcmBuffer = Buffer.Buffer.concat(chunks);
+
+        const wav = new WaveFile();
+        const int16Array = new Int16Array(pcmBuffer.length / 2);
+        for (let i = 0; i < int16Array.length; i++) {
+          int16Array[i] = pcmBuffer.readInt16LE(i * 2);
+        }
+
+        wav.fromScratch(1, 24000, "16", int16Array);
+        const wavBuffer = wav.toBuffer();
 
         return {
-          audioBase64: buffer.toString("base64"),
+          audioBase64: Buffer.Buffer.from(wavBuffer).toString("base64"),
         };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
@@ -319,3 +324,20 @@ export const listTtsVoices = onCall(async (request) => {
     throw new Error(error.message || "Failed to list Google TTS voices");
   }
 });
+
+export const listElevenLabsVoices = onCall(
+  {secrets: [elevenLabsApiKey]},
+  async () => {
+    try {
+      const client = new ElevenLabsClient({apiKey: elevenLabsApiKey.value()});
+      const response = await client.voices.getAll();
+      return {voices: response.voices};
+    } catch (error: any) {
+      console.error("ElevenLabs listVoices Error:", error);
+      throw new HttpsError(
+        "internal",
+        error.message || "Failed to list ElevenLabs voices"
+      );
+    }
+  }
+);
