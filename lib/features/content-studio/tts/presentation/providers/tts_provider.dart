@@ -39,6 +39,18 @@ class TtsProvider extends ChangeNotifier {
   bool _isGenerating = false;
   bool get isGenerating => _isGenerating;
 
+  double _elevenLabsStability = 0.50;
+  double get elevenLabsStability => _elevenLabsStability;
+
+  double _elevenLabsSimilarityBoost = 0.75;
+  double get elevenLabsSimilarityBoost => _elevenLabsSimilarityBoost;
+
+  double _elevenLabsStyle = 0.0;
+  double get elevenLabsStyle => _elevenLabsStyle;
+
+  bool _elevenLabsUseSpeakerBoost = true;
+  bool get elevenLabsUseSpeakerBoost => _elevenLabsUseSpeakerBoost;
+
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
@@ -88,6 +100,26 @@ class TtsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateElevenLabsStability(double value) {
+    _elevenLabsStability = value;
+    notifyListeners();
+  }
+
+  void updateElevenLabsSimilarityBoost(double value) {
+    _elevenLabsSimilarityBoost = value;
+    notifyListeners();
+  }
+
+  void updateElevenLabsStyle(double value) {
+    _elevenLabsStyle = value;
+    notifyListeners();
+  }
+
+  void updateElevenLabsUseSpeakerBoost(bool value) {
+    _elevenLabsUseSpeakerBoost = value;
+    notifyListeners();
+  }
+
   Future<void> fetchAvailableVoices() async {
     if (_providerType != TtsProviderType.google) return;
     
@@ -132,6 +164,14 @@ class TtsProvider extends ChangeNotifier {
         modelId: _modelId,
         speakingRate: _speakingRate,
         pitch: _pitch,
+        elevenLabsSettings: _providerType == TtsProviderType.elevenlabs 
+            ? ElevenLabsVoiceSettings(
+                stability: _elevenLabsStability,
+                similarityBoost: _elevenLabsSimilarityBoost,
+                style: _elevenLabsStyle,
+                useSpeakerBoost: _elevenLabsUseSpeakerBoost,
+              )
+            : null,
       );
       AppLogger.i('[TTS][Provider] generateTts success path_length=${path.length}');
       _generatedFilePath = path;

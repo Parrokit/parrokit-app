@@ -300,18 +300,46 @@ class _TtsScreenContentState extends State<_TtsScreenContent> {
                             onTap: () => _showElevenLabsVoiceSelectionSheet(context, provider),
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          const TtsSliderPreview(
+                          TtsSliderPreview(
                             label: '안정성 (Stability)',
-                            valueText: '보통 (50%)',
-                            value: 0.50,
+                            valueText: '${(provider.elevenLabsStability * 100).toInt()}%',
+                            value: provider.elevenLabsStability,
                             activeColor: AppColors.secondary,
+                            onChanged: provider.updateElevenLabsStability,
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          const TtsSliderPreview(
+                          TtsSliderPreview(
                             label: '유사도 (Clarity)',
-                            valueText: '높음 (75%)',
-                            value: 0.75,
+                            valueText: '${(provider.elevenLabsSimilarityBoost * 100).toInt()}%',
+                            value: provider.elevenLabsSimilarityBoost,
                             activeColor: AppColors.secondary,
+                            onChanged: provider.updateElevenLabsSimilarityBoost,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          TtsSliderPreview(
+                            label: '스타일 과장 (Style)',
+                            valueText: '${(provider.elevenLabsStyle * 100).toInt()}%',
+                            value: provider.elevenLabsStyle,
+                            activeColor: AppColors.secondary,
+                            onChanged: provider.updateElevenLabsStyle,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '스피커 부스트 (Speaker Boost)',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Switch(
+                                value: provider.elevenLabsUseSpeakerBoost,
+                                activeTrackColor: AppColors.secondary.withValues(alpha: 0.5),
+                                activeThumbColor: AppColors.secondary,
+                                onChanged: provider.updateElevenLabsUseSpeakerBoost,
+                              ),
+                            ],
                           ),
                         ],
                       );
