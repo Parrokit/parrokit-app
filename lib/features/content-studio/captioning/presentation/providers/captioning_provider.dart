@@ -40,22 +40,18 @@ import '../../data/usecases/save_clip_usecase.dart';
 import '../../data/usecases/transcribe_usecase.dart';
 
 import '../../domain/models/clip_form_data.dart';
-import '../../domain/models/editor_mode.dart';
+import '../../domain/models/edit_mode.dart';
 import '../../domain/validators/clip_validator.dart';
-import '../models/editor_state.dart';
+import '../models/edit_state.dart';
 
-import 'mixins/editor_file_mixin.dart';
-import 'mixins/editor_segment_mixin.dart';
-import 'mixins/editor_tag_mixin.dart';
-import 'mixins/editor_autocomplete_mixin.dart';
+import 'mixins/edit_file_mixin.dart';
+import 'mixins/edit_segment_mixin.dart';
+import 'mixins/edit_tag_mixin.dart';
+import 'mixins/edit_autocomplete_mixin.dart';
 
 /// 캡션링 provider.
 class CaptioningProvider extends ChangeNotifier
-    with
-        EditorFileMixin,
-        EditorSegmentMixin,
-        EditorTagMixin,
-        EditorAutocompleteMixin {
+    with EditFileMixin, EditSegmentMixin, EditTagMixin, EditAutocompleteMixin {
   CaptioningProvider({
     required this.clipProvider,
     required this.userProvider,
@@ -98,9 +94,9 @@ class CaptioningProvider extends ChangeNotifier
   // ─────────────────────────────────────────────────────────────────
 
   // 저장 상태
-  EditorSaveState _saveState = EditorSaveState.idle;
-  EditorSaveState get saveState => _saveState;
-  bool get isSaving => _saveState == EditorSaveState.saving;
+  EditSaveState _saveState = EditSaveState.idle;
+  EditSaveState get saveState => _saveState;
+  bool get isSaving => _saveState == EditSaveState.saving;
 
   // STT 처리 진행 상태
   SttProcessState _sttState = SttProcessState.idle;
@@ -118,8 +114,8 @@ class CaptioningProvider extends ChangeNotifier
   String get sttProgressText => _sttTotal > 0 ? '$_sttProgress/$_sttTotal' : '';
 
   // 에디터 모드
-  EditorMode _mode = const CreateMode();
-  EditorMode get mode => _mode;
+  EditModeBase _mode = const CreateMode();
+  EditModeBase get mode => _mode;
   bool get isEdit => _mode is EditMode;
 
   // TextEditingControllers (View에서 직접 사용)
@@ -342,13 +338,13 @@ class CaptioningProvider extends ChangeNotifier
         stagedFilePath: normalizedPath,
       );
       showToast(isEdit ? '업데이트 완료!' : '저장 완료!');
-      _saveState = EditorSaveState.success;
+      _saveState = EditSaveState.success;
       _shouldClose = true;
       _closeResult = true;
       notifyListeners();
     } catch (e) {
       showToast('저장 실패: $e');
-      _saveState = EditorSaveState.error;
+      _saveState = EditSaveState.error;
       notifyListeners();
     } finally {
       _setSaving(false);
@@ -433,7 +429,7 @@ class CaptioningProvider extends ChangeNotifier
   // 유틸리티
   // ─────────────────────────────────────────────────────────────────
   void _setSaving(bool saving) {
-    _saveState = saving ? EditorSaveState.saving : EditorSaveState.idle;
+    _saveState = saving ? EditSaveState.saving : EditSaveState.idle;
     notifyListeners();
   }
 

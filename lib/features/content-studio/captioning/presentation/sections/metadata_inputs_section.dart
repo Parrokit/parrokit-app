@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../data/constants/editor_strings.dart';
+import '../../data/constants/edit_strings.dart';
 import '../providers/captioning_provider.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 
@@ -39,8 +39,8 @@ class MetadataInputsSection extends StatelessWidget {
                 vm.collectionNameCtl.text = controller.text;
               });
               return _LinearInputField(
-                label: EditorStrings.collectionLabel,
-                hint: EditorStrings.collectionHint,
+                label: EditStrings.collectionLabel,
+                hint: EditStrings.collectionHint,
                 controller: controller,
                 focusNode: focusNode,
               );
@@ -86,8 +86,8 @@ class MetadataInputsSection extends StatelessWidget {
 
           // 2. 클립 제목
           _LinearInputField(
-            label: EditorStrings.clipTitleLabel,
-            hint: EditorStrings.clipTitleHint,
+            label: EditStrings.clipTitleLabel,
+            hint: EditStrings.clipTitleHint,
             controller: vm.titleCtl,
           ),
 
@@ -99,8 +99,8 @@ class MetadataInputsSection extends StatelessWidget {
 
           // 3. 태그
           _LinearInputField(
-            label: EditorStrings.tagsLabel,
-            hint: EditorStrings.tagsHint,
+            label: EditStrings.tagsLabel,
+            hint: EditStrings.tagsHint,
             controller: vm.tagsCtl,
             trailing: TextButton(
               onPressed: () {

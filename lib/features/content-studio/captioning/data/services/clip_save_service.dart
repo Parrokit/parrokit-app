@@ -13,7 +13,7 @@ import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
 import '../../domain/models/clip_form_data.dart';
-import '../../domain/models/editor_mode.dart';
+import '../../domain/models/edit_mode.dart';
 import '../../domain/utils/timecode_service.dart';
 import 'file_staging_service.dart';
 
@@ -25,10 +25,10 @@ class ClipSaveService {
 
   ClipSaveService({required this.repo, required this.staging});
 
-  /// ClipFormData와 EditorMode를 사용하여 클립을 저장합니다.
+  /// ClipFormData와 EditModeBase를 사용하여 클립을 저장합니다.
   Future<void> save({
     required ClipFormData formData,
-    required EditorMode mode,
+    required EditModeBase mode,
     required String stagedFilePath,
   }) async {
     // 파일 경로 결정

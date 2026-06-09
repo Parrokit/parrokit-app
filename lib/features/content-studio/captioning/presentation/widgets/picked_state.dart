@@ -13,7 +13,7 @@ import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import '../../../../../core/shared/utils/show_toast.dart';
 import '../../domain/utils/timecode_service.dart';
-import '../models/editor_state.dart';
+import '../models/edit_state.dart';
 import 'video_picker_sheet.dart';
 
 class PickedState extends StatefulWidget {

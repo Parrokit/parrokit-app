@@ -1,18 +1,18 @@
 // ============================================================================
-// lib/features/_content/clip_editor/data/editor_strings.dart
+// lib/features/content-studio/captioning/data/constants/edit_strings.dart
 // ============================================================================
 //
 // [역할]
-// Clip Editor에서 사용하는 UI 문자열 상수 모음.
+// Clip Edit에서 사용하는 UI 문자열 상수 모음.
 // 라벨, 힌트, 헬퍼 텍스트 등을 한 곳에서 관리.
 //
 // [레이어]
 // Data Layer > Constants
 // ============================================================================
 
-/// Clip Editor UI 문자열 상수.
-class EditorStrings {
-  EditorStrings._();
+/// Clip Edit UI 문자열 상수.
+class EditStrings {
+  EditStrings._();
 
   // 컬렉션 섹션
   static const collectionLabel = '컬렉션 *';

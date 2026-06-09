@@ -1,41 +1,45 @@
 // ============================================================================
-// lib/features/content-studio/captioning/presentation/providers/mixins/editor_autocomplete_mixin.dart
+// lib/features/content-studio/captioning/presentation/providers/mixins/edit_tag_mixin.dart
 // ============================================================================
 //
 // [역할]
-// 자동완성 데이터 로드 mixin.
-// 컬렉션 이름 목록 로드.
+// 태그 관리 mixin.
 //
 // [레이어]
 // Presentation Layer > Provider > Mixin
 // ============================================================================
 
-import 'package:flutter/material.dart';
-import 'package:parrokit/core/shared/utils/show_toast.dart';
-import 'package:parrokit/data/local/dao/collections_dao.dart';
+import 'package:flutter/foundation.dart';
 
-/// 자동완성 데이터 로드 mixin.
-mixin EditorAutocompleteMixin on ChangeNotifier {
-  // 의존성 (추상 getter)
-  CollectionsDao get collectionsDao;
-
+/// 태그 관리 mixin.
+mixin EditTagMixin on ChangeNotifier {
   // ─────────────────────────────────────────────────────────────────
   // 상태
   // ─────────────────────────────────────────────────────────────────
-  List<String> allCollectionNames = [];
+  final List<String> tags = [];
 
   // ─────────────────────────────────────────────────────────────────
-  // 데이터 로드
+  // 태그 관리
   // ─────────────────────────────────────────────────────────────────
 
-  /// DB에 저장된 모든 컬렉션 이름 목록을 로드합니다. (자동완성용)
-  Future<void> loadCollectionNames() async {
-    try {
-      final names = await collectionsDao.fetchAllNames();
-      allCollectionNames = names;
+  /// 태그 하나를 추가합니다 (중복 방지).
+  void addTag(String tag) {
+    final trimmed = tag.trim();
+    if (trimmed.isNotEmpty && !tags.contains(trimmed)) {
+      tags.add(trimmed);
       notifyListeners();
-    } catch (e) {
-      showToast('컬렉션 목록 로드 오류: $e');
     }
+  }
+
+  /// 태그 하나를 제거합니다.
+  void removeTag(String tag) {
+    tags.remove(tag);
+    notifyListeners();
+  }
+
+  /// 모든 태그를 제거합니다.
+  void clearTags() {
+    tags.clear();
+    notifyListeners();
   }
 }

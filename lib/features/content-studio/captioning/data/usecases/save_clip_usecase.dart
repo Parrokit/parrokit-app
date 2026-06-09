@@ -11,7 +11,7 @@
 // ============================================================================
 
 import '../../domain/models/clip_form_data.dart';
-import '../../domain/models/editor_mode.dart';
+import '../../domain/models/edit_mode.dart';
 import '../services/clip_save_service.dart';
 
 /// 클립 저장 UseCase.
@@ -20,10 +20,10 @@ class SaveClipUseCase {
 
   SaveClipUseCase({required ClipSaveService service}) : _service = service;
 
-  /// ClipFormData와 EditorMode를 사용하여 클립을 저장합니다.
+  /// ClipFormData와 EditModeBase를 사용하여 클립을 저장합니다.
   Future<void> call({
     required ClipFormData formData,
-    required EditorMode mode,
+    required EditModeBase mode,
     required String stagedFilePath,
   }) =>
       _service.save(

@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/content-studio/captioning/domain/models/editor_mode.dart
+// lib/features/content-studio/captioning/domain/models/edit_mode.dart
 // ============================================================================
 //
 // [역할]
@@ -9,15 +9,15 @@
 // Domain Layer
 // ============================================================================
 
-sealed class EditorMode {
-  const EditorMode();
+sealed class EditModeBase {
+  const EditModeBase();
 }
 
-class CreateMode extends EditorMode {
+class CreateMode extends EditModeBase {
   const CreateMode();
 }
 
-class EditMode extends EditorMode {
+class EditMode extends EditModeBase {
   final int clipId;
   final String? existingFilePath;
 

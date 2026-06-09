@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/content-studio/captioning/presentation/providers/mixins/editor_segment_mixin.dart
+// lib/features/content-studio/captioning/presentation/providers/mixins/edit_segment_mixin.dart
 // ============================================================================
 //
 // [역할]
@@ -15,10 +15,10 @@ import 'package:flutter/material.dart';
 
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 import '../../../domain/utils/timecode_service.dart';
-import '../../models/editor_state.dart';
+import '../../models/edit_state.dart';
 
 /// 세그먼트 관리 mixin.
-mixin EditorSegmentMixin on ChangeNotifier {
+mixin EditSegmentMixin on ChangeNotifier {
   // 의존성 (추상 getter)
   TextEditingController get durationCtl;
 

@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/content-studio/captioning/presentation/models/editor_state.dart
+// lib/features/content-studio/captioning/presentation/models/edit_state.dart
 // ============================================================================
 //
 // [역할]
@@ -12,7 +12,7 @@
 import 'package:flutter/material.dart';
 
 /// 저장 상태.
-enum EditorSaveState {
+enum EditSaveState {
   idle,
   saving,
   success,
@@ -30,7 +30,7 @@ enum SttProcessState {
 }
 
 /// 에디터 스텝.
-enum EditorStep {
+enum EditStep {
   file,
   collection,
   titles,

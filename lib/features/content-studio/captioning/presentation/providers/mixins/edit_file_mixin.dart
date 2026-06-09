@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/content-studio/captioning/presentation/providers/mixins/editor_file_mixin.dart
+// lib/features/content-studio/captioning/presentation/providers/mixins/edit_file_mixin.dart
 // ============================================================================
 //
 // [역할]
@@ -32,7 +32,7 @@ import '../../../data/usecases/extract_thumbnail_usecase.dart';
 import '../../../data/usecases/pick_video_usecase.dart';
 
 /// 파일 선택/제거 mixin.
-mixin EditorFileMixin on ChangeNotifier {
+mixin EditFileMixin on ChangeNotifier {
   // 의존성 (추상 getter - 메인 ViewModel에서 구현)
   FileStagingService get staging;
   AudioToVideoService get audioToVideo;
