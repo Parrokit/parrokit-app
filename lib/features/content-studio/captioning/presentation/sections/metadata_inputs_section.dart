@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../data/constants/editor_strings.dart';
-import '../captioning_view_model.dart';
+import '../captioning_provider.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 class MetadataInputsSection extends StatelessWidget {
   const MetadataInputsSection({super.key, required this.vm});
 
-  final CaptioningViewModel vm;
+  final CaptioningProvider vm;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +30,8 @@ class MetadataInputsSection extends StatelessWidget {
             onSelected: (selection) {
               vm.collectionNameCtl.text = selection;
             },
-            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            fieldViewBuilder:
+                (context, controller, focusNode, onFieldSubmitted) {
               if (controller.text != vm.collectionNameCtl.text) {
                 controller.text = vm.collectionNameCtl.text;
               }
@@ -51,7 +52,8 @@ class MetadataInputsSection extends StatelessWidget {
                   elevation: 4,
                   borderRadius: BorderRadius.circular(10),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 280, minWidth: 240),
+                    constraints:
+                        const BoxConstraints(maxHeight: 280, minWidth: 240),
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       shrinkWrap: true,
@@ -75,9 +77,13 @@ class MetadataInputsSection extends StatelessWidget {
               );
             },
           ),
-          
-          Divider(height: 1, color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle),
-          
+
+          Divider(
+              height: 1,
+              color: isDark
+                  ? AppColors.dividerSubtleDark
+                  : AppColors.dividerSubtle),
+
           // 2. 클립 제목
           _LinearInputField(
             label: EditorStrings.clipTitleLabel,
@@ -85,7 +91,11 @@ class MetadataInputsSection extends StatelessWidget {
             controller: vm.titleCtl,
           ),
 
-          Divider(height: 1, color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle),
+          Divider(
+              height: 1,
+              color: isDark
+                  ? AppColors.dividerSubtleDark
+                  : AppColors.dividerSubtle),
 
           // 3. 태그
           _LinearInputField(
@@ -110,7 +120,7 @@ class MetadataInputsSection extends StatelessWidget {
               }
             },
           ),
-          
+
           if (vm.tags.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(
@@ -122,9 +132,12 @@ class MetadataInputsSection extends StatelessWidget {
                         deleteIcon: const Icon(Icons.close_rounded, size: 16),
                         padding: const EdgeInsets.all(0),
                         onDeleted: () => vm.removeTag(tag),
-                        backgroundColor: isDark ? AppColors.surfaceContainerHighDark : AppColors.surfaceContainerHigh,
+                        backgroundColor: isDark
+                            ? AppColors.surfaceContainerHighDark
+                            : AppColors.surfaceContainerHigh,
                         side: BorderSide.none,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ))
                   .toList(),
             ),
@@ -225,7 +238,8 @@ class _LinearInputFieldState extends State<_LinearInputField> {
                   color: cs.onSurface.withValues(alpha: 0.35),
                 ),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                 filled: false,
                 // 포커싱이 안될 땐 투명하게 안보이게 (InputBorder.none)
                 // 포커싱 될 때만 primary color 밑줄 적용

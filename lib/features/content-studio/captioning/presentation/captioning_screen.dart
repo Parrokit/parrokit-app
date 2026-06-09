@@ -17,7 +17,7 @@ import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
-import 'captioning_view_model.dart';
+import 'captioning_provider.dart';
 import 'widgets/exit_confirm_sheet.dart';
 import '../../hub/presentation/content_studio_app_bar.dart';
 import '../../hub/presentation/studio_hub_provider.dart';
@@ -41,7 +41,7 @@ class CaptioningScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => CaptioningViewModel(
+      create: (context) => CaptioningProvider(
         clipProvider: context.read<ClipProvider>(),
         userProvider: context.read<UserProvider>(),
         collectionsDao: context.read<db.AppDatabase>().collectionsDao,
@@ -74,7 +74,7 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<CaptioningViewModel>();
+    final vm = context.watch<CaptioningProvider>();
     final userProvider = context.watch<UserProvider>();
     final showAppBar = widget.showAppBar;
 
@@ -171,7 +171,7 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
   }
 
   Future<void> _showExitConfirmation(
-      BuildContext context, CaptioningViewModel vm) async {
+      BuildContext context, CaptioningProvider vm) async {
     if (vm.isSttProcessing) return;
     final result = await showExitConfirmSheet(context);
     if (result == true && context.mounted) {

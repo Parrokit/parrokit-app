@@ -1,13 +1,13 @@
 // ============================================================================
-// lib/features/_content/clip_editor/presentation/clip_editor_view_model.dart
+// lib/features/content-studio/captioning/presentation/captioning_provider.dart
 // ============================================================================
 //
 // [역할]
-// 클립 에디터 ViewModel. UI 상태 관리에 집중.
+// 캡션링 provider. UI 상태 관리에 집중.
 // 비즈니스 로직은 Domain/UseCase 레이어에 위임.
 //
 // [레이어]
-// Presentation Layer - ViewModel
+// Presentation Layer - Provider
 // ============================================================================
 
 import 'package:flutter/material.dart';
@@ -49,14 +49,14 @@ import 'mixins/editor_segment_mixin.dart';
 import 'mixins/editor_tag_mixin.dart';
 import 'mixins/editor_autocomplete_mixin.dart';
 
-/// 클립 에디터 ViewModel.
-class CaptioningViewModel extends ChangeNotifier
+/// 캡션링 provider.
+class CaptioningProvider extends ChangeNotifier
     with
         EditorFileMixin,
         EditorSegmentMixin,
         EditorTagMixin,
         EditorAutocompleteMixin {
-  CaptioningViewModel({
+  CaptioningProvider({
     required this.clipProvider,
     required this.userProvider,
     required this.collectionsDao,

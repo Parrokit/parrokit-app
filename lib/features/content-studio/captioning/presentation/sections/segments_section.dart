@@ -5,13 +5,13 @@ import 'package:video_player/video_player.dart';
 
 import '../widgets/segment_card.dart';
 
-import '../captioning_view_model.dart';
+import '../captioning_provider.dart';
 
 /// 자막 세그먼트 섹션.
 class SegmentsSection extends StatefulWidget {
   const SegmentsSection({super.key, required this.vm, this.playerController});
 
-  final CaptioningViewModel vm;
+  final CaptioningProvider vm;
   final VideoPlayerController? playerController;
 
   @override
@@ -103,7 +103,6 @@ class _SegmentsSectionState extends State<SegmentsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         if (total > 0) ...[
           _SegmentSwitchBar(
             total: total,
@@ -164,8 +163,8 @@ class _SegmentSwitchBar extends StatelessWidget {
         : AppColors.surfaceContainerHigh;
     final baseBg =
         isDark ? AppColors.surfaceContainerHighDark : AppColors.surface;
-    final contentWidth =
-        (total * _SegmentSwitchBarLayout.segmentWidth) + _SegmentSwitchBarLayout.addWidth;
+    final contentWidth = (total * _SegmentSwitchBarLayout.segmentWidth) +
+        _SegmentSwitchBarLayout.addWidth;
 
     return SingleChildScrollView(
       controller: scrollController,

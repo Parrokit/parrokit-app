@@ -13,13 +13,13 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 import '../../data/adapters/asr_engine.dart';
-import '../captioning_view_model.dart';
+import '../captioning_provider.dart';
 import 'stt_progress_card.dart';
 
 /// STT 시작 전 안내 다이얼로그를 표시하고 진행 상황 위젯을 바텀시트 내에서 보여줍니다.
 Future<void> showSttConfirmDialog(
   BuildContext context, {
-  required CaptioningViewModel vm,
+  required CaptioningProvider vm,
   AsrEngine initial = AsrEngine.diarize,
 }) async {
   final theme = Theme.of(context);
@@ -53,106 +53,109 @@ Future<void> showSttConfirmDialog(
               ),
             ),
             child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: vm.isSttProcessing
-                    ? Column(
-                        key: const ValueKey('progress'),
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            '자동 자막 생성 중',
-                            style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w900,
+              duration: const Duration(milliseconds: 300),
+              child: vm.isSttProcessing
+                  ? Column(
+                      key: const ValueKey('progress'),
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          '자동 자막 생성 중',
+                          style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
+                        const SizedBox(height: 16),
+                        SttProgressCard(
+                          sttState: vm.sttState,
+                          sttProgress: vm.sttProgress,
+                          sttTotal: vm.sttTotal,
+                        ),
+                      ],
+                    )
+                  : StatefulBuilder(
+                      key: const ValueKey('confirm'),
+                      builder: (ctx, setState) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '자막 자동 생성',
+                              style:
+                                  Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '영상의 음성을 분석해 자막 초안을 자동 생성합니다.',
+                              style:
+                                  Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                                        color: isDark
+                                            ? AppColors.textTertiaryDark
+                                            : AppColors.textSecondary,
+                                      ),
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: cs.primaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '30초당 1패롯 소모',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onPrimaryContainer,
                                 ),
-                          ),
-                          const SizedBox(height: 16),
-                          SttProgressCard(
-                            sttState: vm.sttState,
-                            sttProgress: vm.sttProgress,
-                            sttTotal: vm.sttTotal,
-                          ),
-                        ],
-                      )
-                    : StatefulBuilder(
-                        key: const ValueKey('confirm'),
-                        builder: (ctx, setState) {
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '자막 자동 생성',
-                                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                    ),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '영상의 음성을 분석해 자막 초안을 자동 생성합니다.',
-                                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                                      color: isDark
-                                          ? AppColors.textTertiaryDark
-                                          : AppColors.textSecondary,
-                                    ),
-                              ),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: cs.primaryContainer,
-                                  borderRadius: BorderRadius.circular(8),
+                            ),
+                            const SizedBox(height: 24),
+                            ...AsrEngine.values.map((e) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: _ModelOptionCard(
+                                  title: e.label,
+                                  description: e.description,
+                                  isSelected: selected == e,
+                                  accentColor: cs.primary,
+                                  onTap: () => setState(() => selected = e),
                                 ),
-                                child: Text(
-                                  '30초당 1패롯 소모',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: cs.onPrimaryContainer,
-                                  ),
+                              );
+                            }),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('취소'),
                                 ),
-                              ),
-                              const SizedBox(height: 24),
-                              ...AsrEngine.values.map((e) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12.0),
-                                  child: _ModelOptionCard(
-                                    title: e.label,
-                                    description: e.description,
-                                    isSelected: selected == e,
-                                    accentColor: cs.primary,
-                                    onTap: () => setState(() => selected = e),
-                                  ),
-                                );
-                              }),
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx),
-                                    child: const Text('취소'),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  FilledButton(
-                                    onPressed: () async {
-                                      await vm.startStt(selected);
-                                      if (context.mounted) {
-                                        Navigator.pop(context);
-                                      }
-                                    },
-                                    style: FilledButton.styleFrom(
-                                        backgroundColor: cs.primary),
-                                    child: const Text('시작'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-              ), // Ends AnimatedSwitcher
-            ); // Ends Container
+                                const SizedBox(width: 8),
+                                FilledButton(
+                                  onPressed: () async {
+                                    await vm.startStt(selected);
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                  style: FilledButton.styleFrom(
+                                      backgroundColor: cs.primary),
+                                  child: const Text('시작'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+            ), // Ends AnimatedSwitcher
+          ); // Ends Container
         },
       );
     },
