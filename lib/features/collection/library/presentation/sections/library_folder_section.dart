@@ -139,7 +139,18 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
           decoration: const InputDecoration(hintText: '그룹 이름'),
           onSubmitted: (_) async {
             final name = ctl.text.trim();
-            if (name.isNotEmpty) await media.createGroup(name);
+            if (name.isNotEmpty) {
+              final exists = await media.isNameExists(name);
+              if (exists) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                  );
+                }
+                return;
+              }
+              await media.createGroup(name);
+            }
             if (ctx.mounted) Navigator.pop(ctx);
           },
         ),
@@ -148,7 +159,18 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
           TextButton(
             onPressed: () async {
               final name = ctl.text.trim();
-              if (name.isNotEmpty) await media.createGroup(name);
+              if (name.isNotEmpty) {
+                final exists = await media.isNameExists(name);
+                if (exists) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                    );
+                  }
+                  return;
+                }
+                await media.createGroup(name);
+              }
               if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('추가'),
@@ -209,7 +231,18 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
           decoration: const InputDecoration(hintText: '컬렉션 이름'),
           onSubmitted: (_) async {
             final name = ctl.text.trim();
-            if (name.isNotEmpty) await media.createCollection(name);
+            if (name.isNotEmpty) {
+              final exists = await media.isNameExists(name);
+              if (exists) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                  );
+                }
+                return;
+              }
+              await media.createCollection(name);
+            }
             if (ctx.mounted) Navigator.pop(ctx);
           },
         ),
@@ -218,7 +251,18 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
           TextButton(
             onPressed: () async {
               final name = ctl.text.trim();
-              if (name.isNotEmpty) await media.createCollection(name);
+              if (name.isNotEmpty) {
+                final exists = await media.isNameExists(name);
+                if (exists) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                    );
+                  }
+                  return;
+                }
+                await media.createCollection(name);
+              }
               if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('추가'),

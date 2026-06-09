@@ -168,6 +168,19 @@ class MediaProvider extends ChangeNotifier
     return rows.length;
   }
 
+  /// 이름 중복 검사 (그룹 및 콜렉션 전체)
+  Future<bool> isNameExists(String name) async {
+    final groupMatch = await (db.select(db.groups)
+          ..where((g) => g.name.equals(name)))
+        .getSingleOrNull();
+    if (groupMatch != null) return true;
+
+    final collectionMatch = await (db.select(db.collections)
+          ..where((c) => c.name.equals(name)))
+        .getSingleOrNull();
+    return collectionMatch != null;
+  }
+
   /// 새 컬렉션 생성 후 목록 갱신.
   Future<void> createCollection(String name) async {
     final collectionId = await db.into(db.collections).insert(
