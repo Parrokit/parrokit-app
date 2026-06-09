@@ -33,6 +33,7 @@ import 'package:parrokit/features/community/notification/presentation/community_
 import 'package:parrokit/features/community/activity/presentation/activity_screen.dart';
 import 'package:parrokit/features/collection/clip/shorts/presentation/shorts_screen.dart';
 import 'package:parrokit/features/collection/library/presentation/library_screen.dart';
+import 'package:parrokit/features/collection/shell/presentation/collection_shell_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/profile_edit_screen.dart';
 import 'package:parrokit/features/home/recent/presentation/recent_screen.dart';
@@ -300,18 +301,25 @@ ShellRoute get _shellRoute => ShellRoute(
           ),
         ),
 
-        // Library
+        // Collection Shell
         GoRoute(
-          path: AppRoutes.libraryPath,
-          name: AppRoutes.library,
-          pageBuilder: (context, state) => NoTransitionPage(
-            name: AppRoutes.library,
-            child: LibraryScreen(
-              initialCollectionId:
-                  int.tryParse(state.uri.queryParameters['collectionId'] ?? ''),
-              initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? ''),
-            ),
+          path: AppRoutes.collectionPath,
+          name: AppRoutes.collection,
+          pageBuilder: (context, state) => const NoTransitionPage(
+            name: AppRoutes.collection,
+            child: CollectionShellScreen(),
           ),
+          routes: [
+            GoRoute(
+              path: AppRoutes.collectionClipPath,
+              name: AppRoutes.collectionClip,
+              builder: (context, state) => LibraryScreen(
+                initialCollectionId:
+                    int.tryParse(state.uri.queryParameters['collectionId'] ?? ''),
+                initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? ''),
+              ),
+            ),
+          ],
         ),
 
         // More

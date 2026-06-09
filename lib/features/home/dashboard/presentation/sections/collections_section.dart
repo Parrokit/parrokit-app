@@ -100,7 +100,7 @@ class CollectionsSection extends StatelessWidget {
                 textPrimary: textPrimary,
                 textSecondary: textSecondary,
                 onTap: () => context.replaceNamed(
-                  AppRoutes.library,
+                  AppRoutes.collectionClip,
                   queryParameters: {'collectionId': id.toString()},
                 ),
               );

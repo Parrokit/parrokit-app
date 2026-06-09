@@ -158,7 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     queryParameters: {'clipId': clipId.toString()},
                   ),
                   onTapMore: () => context.push(AppRoutes.recentsPath),
-                  onTapLibrary: () => context.go('/library'),
+                  onTapLibrary: () => context.goNamed(AppRoutes.collection),
                 ),
               ),
 
@@ -195,7 +195,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         queryParameters: {'clipId': clipId.toString()},
       );
     } else {
-      context.go(AppRoutes.libraryPath);
+      context.go(AppRoutes.collectionPath);
     }
   }
 }

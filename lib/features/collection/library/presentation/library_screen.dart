@@ -101,17 +101,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(
-        title: const Text('라이브러리'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () {
-              // TODO: 우측 메뉴/설정 구현
-            },
-          ),
-        ],
-      ),
       body: SafeArea(
         child: Column(
           children: [

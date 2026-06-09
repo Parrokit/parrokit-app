@@ -90,6 +90,10 @@ class MediaProvider extends ChangeNotifier
             ..where((c) => c.groupId.isNull())
             ..orderBy([(c) => OrderingTerm.asc(c.name)]))
           .get();
+    } else if (id == -1) {
+      collections = await (db.select(db.collections)
+            ..orderBy([(c) => OrderingTerm.asc(c.name)]))
+          .get();
     } else {
       collections = await (db.select(db.collections)
             ..where((c) => c.groupId.equals(id))

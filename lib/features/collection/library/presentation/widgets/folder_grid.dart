@@ -45,11 +45,14 @@ class FolderGrid extends StatelessWidget {
               childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate(
-              (ctx, i) => FolderCard(
-                name: items[i],
-                onTap: () => onTap(i),
-                deleteMode: deleteMode,
-              ),
+              (ctx, i) {
+                final isVirtualFolder = sectionTitle == '그룹' && i == 0;
+                return FolderCard(
+                  name: items[i],
+                  onTap: () => onTap(i),
+                  deleteMode: deleteMode && !isVirtualFolder,
+                );
+              },
               childCount: items.length,
             ),
           ),

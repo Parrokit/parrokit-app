@@ -19,7 +19,8 @@ abstract class AppRoutes {
   static const dashboard = 'dashboard';
   static const community = 'community';
   static const explore = 'explore';
-  static const library = 'library';
+  static const collection = 'collection';
+  static const collectionClip = 'collection_clip';
   static const more = 'more';
   static const profileEdit = 'profile_edit';
   static const clips = 'clips';
@@ -71,7 +72,8 @@ abstract class AppRoutes {
   static const communityActivityPath = '/community/activity';
   static const communityBlockedUsersPath = '/community/blocked-users';
   static const explorePath = '/explore';
-  static const libraryPath = '/library';
+  static const collectionPath = '/collection';
+  static const collectionClipPath = 'clip';
   static const morePath = '/more';
   static const profileEditPath = 'profile_edit';
   static const clipsPath = '/clips';

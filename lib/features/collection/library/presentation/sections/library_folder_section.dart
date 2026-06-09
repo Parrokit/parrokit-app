@@ -210,24 +210,29 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     final cs = Theme.of(context).colorScheme;
 
     // Breadcrumbs 생성
-    final crumbs = <String>['라이브러리'];
+    final crumbs = <String>['미디어 보관함'];
     String? selectedGroupName;
     String? selectedCollectionName;
 
     if (media.selectedGroupId != null) {
-      final grp = media.groups.cast<dynamic>().firstWhere(
-            (g) => (g.id as int) == media.selectedGroupId,
-            orElse: () => null,
-          );
-      if (grp != null) {
-        selectedGroupName = grp.name as String;
+      if (media.selectedGroupId == -1) {
+        selectedGroupName = '모든 콜렉션';
         crumbs.add(selectedGroupName);
       } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            context.read<MediaProvider>().backToGroups();
-          }
-        });
+        final grp = media.groups.cast<dynamic>().firstWhere(
+              (g) => (g.id as int) == media.selectedGroupId,
+              orElse: () => null,
+            );
+        if (grp != null) {
+          selectedGroupName = grp.name as String;
+          crumbs.add(selectedGroupName);
+        } else {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              context.read<MediaProvider>().backToGroups();
+            }
+          });
+        }
       }
     }
 
@@ -305,16 +310,24 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
             Expanded(
               child: Builder(
                 builder: (_) {
-                  // 1) Groups
                   if (isAtGroupRoot) {
+                    final gridItems = [
+                      '모든 콜렉션',
+                      ...media.groups.map((g) => (g as dynamic).name as String)
+                    ];
                     return FolderGrid(
                       sectionTitle: '그룹',
-                      items: media.groups
-                          .map((g) => (g as dynamic).name as String)
-                          .toList(),
+                      items: gridItems,
                       deleteMode: _deleteMode,
                       onTap: (idx) {
-                        final grp = media.groups[idx];
+                        if (idx == 0) {
+                          if (!_deleteMode) {
+                            media.selectGroup(-1);
+                          }
+                          return;
+                        }
+                        
+                        final grp = media.groups[idx - 1];
                         if (_deleteMode) {
                           _showDeleteGroupDialog(context, grp.id, grp.name);
                         } else {
