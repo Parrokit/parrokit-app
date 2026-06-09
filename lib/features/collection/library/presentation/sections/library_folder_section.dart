@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/app/router/app_router.dart';
@@ -35,6 +36,7 @@ class LibraryFolderSection extends StatefulWidget {
 class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   bool _deleteMode = false;
   bool _isGridView = true;
+  bool _isFabExtended = true;
 
   void _toggleDeleteMode() => setState(() => _deleteMode = !_deleteMode);
   void _toggleViewMode() => setState(() => _isGridView = !_isGridView);
@@ -310,8 +312,17 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
             const SizedBox(height: 10),
 
             Expanded(
-              child: Builder(
-                builder: (_) {
+              child: NotificationListener<UserScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.direction == ScrollDirection.reverse) {
+                    if (_isFabExtended) setState(() => _isFabExtended = false);
+                  } else if (notification.direction == ScrollDirection.forward) {
+                    if (!_isFabExtended) setState(() => _isFabExtended = true);
+                  }
+                  return false;
+                },
+                child: Builder(
+                  builder: (_) {
                   if (isAtGroupRoot) {
                     final gridItems = [
                       '모든 콜렉션',
@@ -370,12 +381,13 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                     items: media.clipItems,
                     onOpen: (ci) {
                       context.push(
-                        '${AppRoutes.clipsPath}/${AppRoutes.clipsPlayPath}?clipId=${ci.clip.id}',
+                        '${AppRoutes.clipsPath}/${ci.clip.id}',
                       );
                     },
                   );
                 },
               ),
+            ),
             ),
           ],
         ),
@@ -385,9 +397,11 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
           right: 16,
           bottom: 16,
           child: Builder(
-            builder: (fabCtx) => FloatingActionButton(
-              heroTag: 'library_fab',
-              onPressed: isAtClipList
+            builder: (fabCtx) => _CollectionAnimatedFab(
+              isExtended: _isFabExtended,
+              icon: isAtClipList ? Icons.add : Icons.more_horiz_rounded,
+              label: isAtClipList ? '클립 추가' : '메뉴',
+              onTap: isAtClipList
                   ? () {
                       final colName =
                           Uri.encodeComponent(selectedCollectionName ?? '');
@@ -396,13 +410,99 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                       );
                     }
                   : () => _showFabMenu(fabCtx, isAtGroupRoot),
-              child: Icon(isAtClipList
-                  ? Icons.add
-                  : Icons.more_horiz_rounded),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CollectionAnimatedFab extends StatelessWidget {
+  const _CollectionAnimatedFab({
+    required this.isExtended,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool isExtended;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final accent = colorScheme.primary;
+    final border = colorScheme.outlineVariant.withValues(alpha: 0.5);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      height: 56,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.14),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: isExtended ? 20.0 : 16.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Icon(
+                    icon,
+                    color: accent,
+                    size: 22,
+                  ),
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  child: ClipRect(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: isExtended ? 1 : 0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(width: 8),
+                          Text(
+                            label,
+                            style: TextStyle(
+                              color: accent,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.clip,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
