@@ -1,12 +1,12 @@
 // ============================================================================
-// lib/features/editor/domain/editor_state.dart
+// lib/features/content-studio/captioning/presentation/models/editor_state.dart
 // ============================================================================
 //
 // [역할]
-// 클립 에디터 상태 정의 (enum, 상태 클래스).
+// 캡션링 화면 상태 및 폼 모델.
 //
 // [레이어]
-// Domain Layer
+// Presentation Layer > Models
 // ============================================================================
 
 import 'package:flutter/material.dart';
@@ -21,54 +21,21 @@ enum EditorSaveState {
 
 /// STT 처리 진행 상태.
 enum SttProcessState {
-  idle, // 대기
-  extracting, // 오디오 추출 중
-  transcribing, // 음성 인식 중 (STT)
-  translating, // 번역 중
-  done, // 완료
-  error, // 오류
+  idle,
+  extracting,
+  transcribing,
+  translating,
+  done,
+  error,
 }
 
 /// 에디터 스텝.
 enum EditorStep {
-  file, // 0: 파일 선택
-  collection, // 1: 컬렉션 (선택)
-  titles, // 2: 클립 제목
-  tags, // 3: 태그
-  segments, // 4: 세그먼트
-}
-
-/// 세그먼트 입력 데이터.
-class SegmentData {
-  String start;
-  String end;
-  String original;
-  String pron;
-  String ko;
-
-  SegmentData({
-    this.start = '',
-    this.end = '',
-    this.original = '',
-    this.pron = '',
-    this.ko = '',
-  });
-
-  SegmentData copyWith({
-    String? start,
-    String? end,
-    String? original,
-    String? pron,
-    String? ko,
-  }) {
-    return SegmentData(
-      start: start ?? this.start,
-      end: end ?? this.end,
-      original: original ?? this.original,
-      pron: pron ?? this.pron,
-      ko: ko ?? this.ko,
-    );
-  }
+  file,
+  collection,
+  titles,
+  tags,
+  segments,
 }
 
 /// 세그먼트 폼 데이터 (TextEditingController 포함).

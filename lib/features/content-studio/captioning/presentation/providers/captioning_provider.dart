@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/content-studio/captioning/presentation/captioning_provider.dart
+// lib/features/content-studio/captioning/presentation/providers/captioning_provider.dart
 // ============================================================================
 //
 // [역할]
@@ -18,31 +18,31 @@ import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/dao/collections_dao.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart' as utils;
 
-import '../data/adapters/asr_engine.dart';
-import '../data/adapters/openai_llm_adapter.dart';
-import '../data/adapters/openai_diarize_asr_adapter.dart';
-import '../data/adapters/openai_whisper_asr_adapter.dart';
-import '../data/ports/asr_port.dart';
-import '../data/adapters/video_picker_files.dart';
-import '../data/adapters/video_picker_gallery.dart';
-import '../data/services/audio_to_video.dart';
-import '../data/services/clip_load_service.dart';
-import '../data/services/clip_save_service.dart';
-import '../data/services/draft_generation_service.dart';
-import '../data/services/file_staging_service.dart';
-import '../data/services/video_meta_service.dart';
-import '../data/usecases/extract_duration_usecase.dart';
-import '../data/usecases/extract_thumbnail_usecase.dart';
-import '../data/usecases/generate_draft_usecase.dart';
-import '../data/usecases/load_clip_for_edit_usecase.dart';
-import '../data/usecases/pick_video_usecase.dart';
-import '../data/usecases/save_clip_usecase.dart';
-import '../data/usecases/transcribe_usecase.dart';
+import '../../data/adapters/asr_engine.dart';
+import '../../data/adapters/openai_llm_adapter.dart';
+import '../../data/adapters/openai_diarize_asr_adapter.dart';
+import '../../data/adapters/openai_whisper_asr_adapter.dart';
+import '../../data/ports/asr_port.dart';
+import '../../data/adapters/video_picker_files.dart';
+import '../../data/adapters/video_picker_gallery.dart';
+import '../../data/services/audio_to_video.dart';
+import '../../data/services/clip_load_service.dart';
+import '../../data/services/clip_save_service.dart';
+import '../../data/services/draft_generation_service.dart';
+import '../../data/services/file_staging_service.dart';
+import '../../data/services/video_meta_service.dart';
+import '../../data/usecases/extract_duration_usecase.dart';
+import '../../data/usecases/extract_thumbnail_usecase.dart';
+import '../../data/usecases/generate_draft_usecase.dart';
+import '../../data/usecases/load_clip_for_edit_usecase.dart';
+import '../../data/usecases/pick_video_usecase.dart';
+import '../../data/usecases/save_clip_usecase.dart';
+import '../../data/usecases/transcribe_usecase.dart';
 
-import '../domain/clip_form_data.dart';
-import '../domain/clip_validator.dart';
-import '../domain/editor_mode.dart';
-import '../domain/editor_state.dart';
+import '../../domain/models/clip_form_data.dart';
+import '../../domain/models/editor_mode.dart';
+import '../../domain/validators/clip_validator.dart';
+import '../models/editor_state.dart';
 
 import 'mixins/editor_file_mixin.dart';
 import 'mixins/editor_segment_mixin.dart';

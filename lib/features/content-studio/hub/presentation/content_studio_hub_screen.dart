@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/app/router/app_routes.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
-import 'package:parrokit/features/content-studio/captioning/presentation/captioning_screen.dart';
+import 'package:parrokit/features/content-studio/captioning/presentation/screens/captioning_screen.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/screens/tts_screen.dart';
 import 'package:parrokit/features/content-studio/tts/presentation/providers/tts_provider.dart';
 import 'package:parrokit/features/content-studio/tts/domain/repositories/tts_generation_repository.dart';
@@ -177,37 +177,60 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                                     children: [
                                       const SizedBox(width: 8),
                                       ChatBotFab(
-                                        onTriggerAction: (tabIndex, actionData) {
+                                        onTriggerAction:
+                                            (tabIndex, actionData) {
                                           if (tabIndex == 1) {
-                                            final ttsProv = context.read<TtsProvider>();
+                                            final ttsProv =
+                                                context.read<TtsProvider>();
                                             if (actionData != null) {
                                               if (actionData['text'] != null) {
-                                                ttsProv.updateText(actionData['text'] as String);
+                                                ttsProv.updateText(
+                                                    actionData['text']
+                                                        as String);
                                               }
-                                              if (actionData['language'] != null) {
-                                                ttsProv.updateLanguage(actionData['language'] as String);
+                                              if (actionData['language'] !=
+                                                  null) {
+                                                ttsProv.updateLanguage(
+                                                    actionData['language']
+                                                        as String);
                                               }
-                                              if (actionData['provider'] != null) {
-                                                final pType = actionData['provider'] == 'elevenlabs'
+                                              if (actionData['provider'] !=
+                                                  null) {
+                                                final pType = actionData[
+                                                            'provider'] ==
+                                                        'elevenlabs'
                                                     ? TtsProviderType.elevenlabs
                                                     : TtsProviderType.google;
-                                                ttsProv.updateProviderType(pType);
+                                                ttsProv
+                                                    .updateProviderType(pType);
                                               }
-                                              if (actionData['voiceId'] != null) {
-                                                ttsProv.updateVoiceId(actionData['voiceId'] as String);
+                                              if (actionData['voiceId'] !=
+                                                  null) {
+                                                ttsProv.updateVoiceId(
+                                                    actionData['voiceId']
+                                                        as String);
                                               }
                                             }
                                           } else if (tabIndex == 2) {
-                                            final videoProv = context.read<VideoProvider>();
+                                            final videoProv =
+                                                context.read<VideoProvider>();
                                             if (actionData != null) {
-                                              if (actionData['prompt'] != null) {
-                                                videoProv.updateScenePrompt(actionData['prompt'] as String);
+                                              if (actionData['prompt'] !=
+                                                  null) {
+                                                videoProv.updateScenePrompt(
+                                                    actionData['prompt']
+                                                        as String);
                                               }
                                               if (actionData['ratio'] != null) {
-                                                videoProv.updateRatio(actionData['ratio'] as String);
+                                                videoProv.updateRatio(
+                                                    actionData['ratio']
+                                                        as String);
                                               }
-                                              if (actionData['dialogue'] != null) {
-                                                videoProv.updateDialogue(actionData['dialogue'] as String);
+                                              if (actionData['dialogue'] !=
+                                                  null) {
+                                                videoProv.updateDialogue(
+                                                    actionData['dialogue']
+                                                        as String);
                                               }
                                             }
                                           }
@@ -218,87 +241,90 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                                   )
                                 : const SizedBox.shrink(),
                           ),
-                          
                         ],
                       ),
                     ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: ClipRect(
-                  child: AnimatedAlign(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOutCubic,
-                    alignment: Alignment.bottomCenter,
-                    heightFactor: _isAppBarExpanded ? 1.0 : 0.0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: bg,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black
-                                .withValues(alpha: isDark ? 0.3 : 0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: ClipRect(
+                        child: AnimatedAlign(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOutCubic,
+                          alignment: Alignment.bottomCenter,
+                          heightFactor: _isAppBarExpanded ? 1.0 : 0.0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: bg,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black
+                                      .withValues(alpha: isDark ? 0.3 : 0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Wrap(
+                                alignment: WrapAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width / 3,
+                                    child: _AppBarOptionItem(
+                                      icon: _isChatBotVisible
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      label: _isChatBotVisible
+                                          ? 'AI 챗봇 숨기기'
+                                          : 'AI 챗봇 켜기',
+                                      iconColor: _isChatBotVisible
+                                          ? theme.colorScheme.onSurfaceVariant
+                                          : theme.colorScheme.primary,
+                                      onTap: () {
+                                        setState(() {
+                                          _isChatBotVisible =
+                                              !_isChatBotVisible;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width / 3,
+                                    child: _AppBarOptionItem(
+                                      icon: Icons.storefront_rounded,
+                                      label: '패롯 충전',
+                                      iconColor: Colors.amber,
+                                      onTap: () {},
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width / 3,
+                                    child: _AppBarOptionItem(
+                                      icon: Icons.settings,
+                                      label: '스튜디오 설정',
+                                      iconColor: theme.colorScheme.onSurface,
+                                      onTap: () {
+                                        _showSettingsSheet(context);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Wrap(
-                          alignment: WrapAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: MediaQuery.of(context).size.width / 3,
-                              child: _AppBarOptionItem(
-                                icon: _isChatBotVisible
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                label: _isChatBotVisible
-                                    ? 'AI 챗봇 숨기기'
-                                    : 'AI 챗봇 켜기',
-                                iconColor: _isChatBotVisible
-                                    ? theme.colorScheme.onSurfaceVariant
-                                    : theme.colorScheme.primary,
-                                onTap: () {
-                                  setState(() {
-                                    _isChatBotVisible = !_isChatBotVisible;
-                                  });
-                                },
-                              ),
-                            ),
-                            SizedBox(
-                              width: MediaQuery.of(context).size.width / 3,
-                              child: _AppBarOptionItem(
-                                icon: Icons.storefront_rounded,
-                                label: '패롯 충전',
-                                iconColor: Colors.amber,
-                                onTap: () {},
-                              ),
-                            ),
-                            SizedBox(
-                              width: MediaQuery.of(context).size.width / 3,
-                              child: _AppBarOptionItem(
-                                icon: Icons.settings,
-                                label: '스튜디오 설정',
-                                iconColor: theme.colorScheme.onSurface,
-                                onTap: () {
-                                  _showSettingsSheet(context);
-                                },
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
           );
         },
       ),
@@ -318,13 +344,15 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
           builder: (context, setSheetState) {
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
                       '스튜디오 설정',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 24),
                     SwitchListTile(

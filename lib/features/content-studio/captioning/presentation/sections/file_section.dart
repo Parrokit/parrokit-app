@@ -21,7 +21,7 @@ import 'package:video_player/video_player.dart';
 
 import '../widgets/file_hero_card.dart';
 import '../widgets/stt_confirm_dialog.dart';
-import '../captioning_provider.dart';
+import '../providers/captioning_provider.dart';
 import 'segments_section.dart';
 
 /// 파일 선택 섹션.

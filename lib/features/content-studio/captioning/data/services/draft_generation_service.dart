@@ -11,10 +11,10 @@
 
 import 'dart:convert';
 
-import '../../domain/clip_form_data.dart';
+import '../../domain/models/clip_form_data.dart';
+import '../../domain/utils/timecode_service.dart';
 import '../ports/llm_port.dart';
 import '../prompts/prompt_loader.dart';
-import 'time_code_service.dart';
 import '../usecases/transcribe_usecase.dart';
 
 /// 초안 생성 결과.
@@ -136,7 +136,8 @@ class DraftGenerationService {
     return ((seconds + 29) ~/ 30);
   }
 
-  List<SegmentInput> _normalizeSegments(List<SegmentInput> segments, int durationMs) {
+  List<SegmentInput> _normalizeSegments(
+      List<SegmentInput> segments, int durationMs) {
     final indexed = <({int startMs, int endMs, SegmentInput segment})>[];
 
     for (final segment in segments) {

@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/_content/editor/presentation/view_model/editor_autocomplete_mixin.dart
+// lib/features/content-studio/captioning/presentation/providers/mixins/editor_autocomplete_mixin.dart
 // ============================================================================
 //
 // [역할]
@@ -7,7 +7,7 @@
 // 컬렉션 이름 목록 로드.
 //
 // [레이어]
-// Presentation Layer > ViewModel > Mixin
+// Presentation Layer > Provider > Mixin
 // ============================================================================
 
 import 'package:flutter/material.dart';

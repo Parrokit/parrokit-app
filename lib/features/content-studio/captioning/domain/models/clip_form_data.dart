@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/_content/clip_editor/domain/clip_form_data.dart
+// lib/features/content-studio/captioning/domain/models/clip_form_data.dart
 // ============================================================================
 //
 // [역할]
@@ -58,7 +58,7 @@ class SegmentInput {
 
 /// 클립 에디터 폼 전체 데이터.
 class ClipFormData {
-  final String? collectionName; // optional collection (nullable)
+  final String? collectionName;
   final String clipTitle;
   final int? durationMs;
   final List<SegmentInput> segments;
@@ -95,5 +95,4 @@ class ClipFormData {
   }
 }
 
-// Sentinel for nullable copyWith
 const _sentinel = Object();

@@ -11,7 +11,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../../domain/editor_state.dart';
+import '../models/editor_state.dart';
 
 /// STT 진행 상황 표시 카드.
 class SttProgressCard extends StatelessWidget {

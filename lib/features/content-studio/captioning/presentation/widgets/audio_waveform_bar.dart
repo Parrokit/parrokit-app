@@ -40,13 +40,13 @@ class AudioWaveformBar extends StatefulWidget {
   final int? initialSelectedOverlaySegmentIndex;
 
   final bool isLoading;
-  
+
   /// 줌 배율 (1.0 = 전체 표시, 값이 클수록 확대됨, 최소 표시 10초)
   final double zoomFactor;
-  
+
   final int barCount;
   final double height;
-  
+
   /// 화면 내 재생선(플레이헤드)의 위치 비율 (0.0 ~ 1.0)
   /// 기본값 0.5는 정중앙에 항상 플레이헤드가 위치함을 의미합니다.
   final double playheadRatio;
@@ -77,11 +77,11 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   @override
   void didUpdateWidget(AudioWaveformBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     if (oldWidget.zoomFactor != widget.zoomFactor) {
       _updateWindowForZoom();
     }
-    
+
     if (oldWidget.videoController != widget.videoController) {
       oldWidget.videoController?.removeListener(_onVideoUpdate);
       widget.videoController?.addListener(_onVideoUpdate);
@@ -91,7 +91,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
         widget.initialSelectedOverlaySegmentIndex) {
       _selectedOverlaySegmentIndex = widget.initialSelectedOverlaySegmentIndex;
     }
-    
+
     if (oldWidget.waveformData != widget.waveformData) {
       _cachedFullBars = null; // reset cache
       _bars = _computeBars();
@@ -120,17 +120,18 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       final posMs = c.value.position.inMilliseconds;
       final durMs = c.value.duration.inMilliseconds;
       final minDur = math.min(3000.0, durMs.toDouble());
-      final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
-      
+      final windowDurMs =
+          (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+
       final oldStart = _windowStartMs;
-      
+
       // 실시간 스크롤:
       // 재생 위치를 화면의 playheadRatio 위치에 지속적으로 고정
       _windowStartMs = posMs - (windowDurMs * widget.playheadRatio).toInt();
-      
+
       final bool posChanged = _lastPosMs != posMs;
       _lastPosMs = posMs;
-      
+
       // 창 위치가 변했거나 재생 중이면 UI 업데이트
       if (oldStart != _windowStartMs || c.value.isPlaying || posChanged) {
         _bars = _computeBars();
@@ -145,8 +146,9 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     final posMs = c.value.position.inMilliseconds;
     final durMs = c.value.duration.inMilliseconds;
     final minDur = math.min(3000.0, durMs.toDouble());
-    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
-    
+    final windowDurMs =
+        (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+
     // 현재 재생 위치를 화면의 playheadRatio 위치에 고정하도록 윈도우 이동
     _windowStartMs = posMs - (windowDurMs * widget.playheadRatio).toInt();
   }
@@ -178,7 +180,8 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     }
 
     final minDur = math.min(3000.0, durMs.toDouble());
-    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+    final windowDurMs =
+        (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
     final actualWindowDurMs = math.min(windowDurMs, durMs);
 
     final totalBars = ((durMs / actualWindowDurMs) * widget.barCount).ceil();
@@ -189,14 +192,14 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
   List<double> _downsampleFull(List<double> raw, int count) {
     if (count <= 0) return [];
     if (raw.isEmpty) return List.filled(count, 0.0);
-    
+
     final result = <double>[];
     final step = raw.length / count;
     for (int i = 0; i < count; i++) {
       final s = (i * step).floor();
       final e = ((i + 1) * step).ceil();
       final actualE = math.min(e, raw.length);
-      
+
       double peak = 0;
       for (int j = s; j < actualE; j++) {
         if (j >= 0 && j < raw.length) {
@@ -205,7 +208,7 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
       }
       result.add(peak.clamp(0.04, 1.0));
     }
-    
+
     // 전체 범위에서 이미 정규화되어 있으므로, 구간별 재정규화 생략
     return result;
   }
@@ -316,14 +319,17 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: List.generate(widget.barCount + 2, (i) {
                                 final idx = startIndex + i;
-                                final barHeightRatio = (idx >= 0 && idx < _bars.length)
-                                    ? _bars[idx]
-                                    : 0.04;
-                                final barH = (barHeightRatio * widget.height * 0.85)
-                                    .clamp(3.0, widget.height);
+                                final barHeightRatio =
+                                    (idx >= 0 && idx < _bars.length)
+                                        ? _bars[idx]
+                                        : 0.04;
+                                final barH =
+                                    (barHeightRatio * widget.height * 0.85)
+                                        .clamp(3.0, widget.height);
 
-                                final playheadIdx =
-                                    (exactIndex + widget.barCount * widget.playheadRatio).floor();
+                                final playheadIdx = (exactIndex +
+                                        widget.barCount * widget.playheadRatio)
+                                    .floor();
                                 final isPlayed = idx < playheadIdx;
                                 final isCurrent = idx == playheadIdx;
 
@@ -345,7 +351,8 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                                     height: barH,
                                     decoration: BoxDecoration(
                                       color: barColor,
-                                      borderRadius: BorderRadius.circular(barWidth / 2),
+                                      borderRadius:
+                                          BorderRadius.circular(barWidth / 2),
                                     ),
                                   ),
                                 );
@@ -362,7 +369,8 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                                       left: layout.left.clamp(0.0, totalWidth),
                                       top: 0,
                                       bottom: 0,
-                                      width: layout.width.clamp(0.0, totalWidth),
+                                      width:
+                                          layout.width.clamp(0.0, totalWidth),
                                       child: _OverlayRangeTile(
                                         range: layout.range,
                                         isSelected:
@@ -372,13 +380,16 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
                                         windowStartMs: _windowStartMs,
                                         actualWindowDurMs: actualWindowDurMs,
                                         windowEndMs: endMs,
-                                        videoDurationMs: c?.value.duration.inMilliseconds ?? 0,
+                                        videoDurationMs:
+                                            c?.value.duration.inMilliseconds ??
+                                                0,
                                         onChanged: widget.onOverlayRangeChanged,
                                         showHandles: widget.showOverlayHandles,
                                         onSelected: () {
                                           widget.onOverlaySelected
                                               ?.call(layout.range.segmentIndex);
-                                          if (widget.onOverlayRangeChanged != null &&
+                                          if (widget.onOverlayRangeChanged !=
+                                                  null &&
                                               _selectedOverlaySegmentIndex !=
                                                   layout.range.segmentIndex) {
                                             setState(() {
@@ -400,47 +411,48 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
               ),
             ),
           ),
-        if (actualWindowDurMs > 0) ...[
-          const SizedBox(height: 2),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDuration(math.max(0, _windowStartMs)),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: cs.onSurface.withValues(alpha: 0.4),
-                      fontWeight: FontWeight.w600,
+          if (actualWindowDurMs > 0) ...[
+            const SizedBox(height: 2),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatDuration(math.max(0, _windowStartMs)),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: cs.onSurface.withValues(alpha: 0.4),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  Text(
-                    _formatDuration(math.min(c?.value.duration.inMilliseconds ?? endMs, endMs)),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: cs.onSurface.withValues(alpha: 0.4),
-                      fontWeight: FontWeight.w600,
+                    Text(
+                      _formatDuration(math.min(
+                          c?.value.duration.inMilliseconds ?? endMs, endMs)),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: cs.onSurface.withValues(alpha: 0.4),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              Text(
-                _formatDuration(c?.value.position.inMilliseconds ?? 0),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: cs.primary,
-                  fontWeight: FontWeight.bold,
+                  ],
                 ),
-              ),
-            ],
-          ),
+                Text(
+                  _formatDuration(c?.value.position.inMilliseconds ?? 0),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: cs.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   void _handleDragStart(BuildContext context, DragStartDetails details) {
     final c = widget.videoController;
@@ -460,24 +472,26 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     if (c == null || !c.value.isInitialized) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
-    
+
     final durMs = c.value.duration.inMilliseconds;
     final minDur = math.min(3000.0, durMs.toDouble());
-    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+    final windowDurMs =
+        (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
     final actualWindowDurMs = math.min(windowDurMs, durMs);
-    
+
     final msPerPixel = actualWindowDurMs / box.size.width;
     // 왼쪽으로 드래그(음수 delta)하면 시간이 미래로 가야 하므로 -를 붙임
     final deltaMs = -details.delta.dx * msPerPixel;
-    
+
     final currentMs = _localTargetMs ?? c.value.position.inMilliseconds;
     _localTargetMs = (currentMs + deltaMs).clamp(0, durMs.toDouble()).toInt();
-    
+
     // UI 로컬 즉시 갱신 (비디오 응답 대기 안 함)
-    _windowStartMs = _localTargetMs! - (windowDurMs * widget.playheadRatio).toInt();
+    _windowStartMs =
+        _localTargetMs! - (windowDurMs * widget.playheadRatio).toInt();
     _bars = _computeBars();
     setState(() {});
-    
+
     c.seekTo(Duration(milliseconds: _localTargetMs!));
   }
 
@@ -486,15 +500,17 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
     if (c == null || !c.value.isInitialized) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
-    
+
     final durMs = c.value.duration.inMilliseconds;
     final minDur = math.min(3000.0, durMs.toDouble());
-    final windowDurMs = (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
+    final windowDurMs =
+        (durMs / widget.zoomFactor).clamp(minDur, durMs.toDouble()).toInt();
     final actualWindowDurMs = math.min(windowDurMs, durMs);
-    
+
     final msPerPixel = actualWindowDurMs / box.size.width;
-    final targetMs = _windowStartMs + (details.localPosition.dx * msPerPixel).toInt();
-    
+    final targetMs =
+        _windowStartMs + (details.localPosition.dx * msPerPixel).toInt();
+
     c.seekTo(Duration(milliseconds: targetMs.clamp(0, durMs)));
   }
 
@@ -516,7 +532,8 @@ class _AudioWaveformBarState extends State<AudioWaveformBar> {
 
       final left =
           ((visibleStart - _windowStartMs) / actualWindowDurMs) * totalWidth;
-      final width = ((visibleEnd - visibleStart) / actualWindowDurMs) * totalWidth;
+      final width =
+          ((visibleEnd - visibleStart) / actualWindowDurMs) * totalWidth;
 
       overlays.add(
         _VisibleOverlayLayout(
@@ -658,7 +675,8 @@ class _OverlayRangeTile extends StatelessWidget {
                 color: cs.primary,
                 alignLeft: false,
                 onPanUpdate: canInteract
-                    ? (details) => _resizeRange(details.delta.dx, isStart: false)
+                    ? (details) =>
+                        _resizeRange(details.delta.dx, isStart: false)
                     : null,
               ),
             ),

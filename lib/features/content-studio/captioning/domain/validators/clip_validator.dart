@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/_content/clip_editor/domain/clip_validator.dart
+// lib/features/content-studio/captioning/domain/validators/clip_validator.dart
 // ============================================================================
 //
 // [역할]
@@ -9,9 +9,8 @@
 // Domain Layer
 // ============================================================================
 
-import 'clip_form_data.dart';
+import '../models/clip_form_data.dart';
 
-/// 검증 결과.
 class ValidationResult {
   final bool isValid;
   final String? errorMessage;
@@ -23,31 +22,23 @@ class ValidationResult {
   const ValidationResult.invalid(this.errorMessage) : isValid = false;
 }
 
-/// 클립 폼 유효성 검증기.
 class ClipValidator {
-  static const int maxDurationMs = 5 * 60 * 1000; // 5분
-
-  /// MM:SS.mmm 형식 정규식.
+  static const int maxDurationMs = 5 * 60 * 1000;
   static final RegExp timecodePattern = RegExp(r'^\d{2}:\d{2}\.\d{3}$');
 
-  /// 폼 전체 유효성 검증.
   ValidationResult validateForm(ClipFormData form) {
-    // 파일 검증
     if (form.filePath == null || form.filePath!.isEmpty) {
       return const ValidationResult.invalid('영상 파일을 먼저 선택해 주세요.');
     }
 
-    // 컬렉션 이름 (필수)
     if (form.collectionName == null || form.collectionName!.trim().isEmpty) {
       return const ValidationResult.invalid('컬렉션은 필수입니다.');
     }
 
-    // 클립 제목
     if (form.clipTitle.trim().isEmpty) {
       return const ValidationResult.invalid('클립 제목은 필수입니다.');
     }
 
-    // 영상 길이
     if (form.durationMs == null || form.durationMs! <= 0) {
       return const ValidationResult.invalid('영상 길이(duration)는 필수입니다.');
     }
@@ -55,7 +46,6 @@ class ClipValidator {
       return const ValidationResult.invalid('영상 길이는 최대 5분까지만 허용됩니다.');
     }
 
-    // 세그먼트 검증
     final segmentResult = validateSegments(form.segments, form.durationMs!);
     if (!segmentResult.isValid) {
       return segmentResult;
@@ -64,7 +54,6 @@ class ClipValidator {
     return const ValidationResult.valid();
   }
 
-  /// 세그먼트 목록 유효성 검증.
   ValidationResult validateSegments(
       List<SegmentInput> segments, int durationMs) {
     if (segments.isEmpty) {
@@ -75,12 +64,10 @@ class ClipValidator {
       final seg = segments[i];
       final idx = i + 1;
 
-      // 필수 필드 검증
       if (!seg.isComplete) {
         return ValidationResult.invalid('세그먼트 $idx: 모든 필드는 필수입니다.');
       }
 
-      // 시간 형식 검증
       if (!timecodePattern.hasMatch(seg.start)) {
         return ValidationResult.invalid('세그먼트 $idx: 시작 시각 형식 오류.');
       }
@@ -88,7 +75,6 @@ class ClipValidator {
         return ValidationResult.invalid('세그먼트 $idx: 종료 시각 형식 오류.');
       }
 
-      // 시간 값 검증
       final startMs = _parseTimecode(seg.start);
       final endMs = _parseTimecode(seg.end);
 
@@ -100,7 +86,6 @@ class ClipValidator {
       }
     }
 
-    // 세그먼트 겹침 검증
     final sorted = List<SegmentInput>.from(segments)
       ..sort(
           (a, b) => _parseTimecode(a.start).compareTo(_parseTimecode(b.start)));
@@ -116,7 +101,6 @@ class ClipValidator {
     return const ValidationResult.valid();
   }
 
-  /// MM:SS.mmm 형식을 밀리초로 변환.
   int _parseTimecode(String tc) {
     final parts = tc.split(':');
     if (parts.length != 2) return 0;

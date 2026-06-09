@@ -91,17 +91,18 @@ class _LabeledTextFieldState extends State<LabeledTextField> {
           borderSide: BorderSide(color: cs.primary, width: 1.5),
         ),
         border: InputBorder.none,
-        prefixIcon: widget.prefixIcon == null ? null : Icon(widget.prefixIcon, size: 18),
-        suffixIcon:
-            widget.clearable && widget.controller != null && _hasText
-                ? IconButton(
-                    tooltip: '지우기',
-                    icon: const Icon(Icons.close_rounded, size: 18),
-                    onPressed: () {
-                      widget.controller!.clear();
-                    },
-                  )
-                : null,
+        prefixIcon: widget.prefixIcon == null
+            ? null
+            : Icon(widget.prefixIcon, size: 18),
+        suffixIcon: widget.clearable && widget.controller != null && _hasText
+            ? IconButton(
+                tooltip: '지우기',
+                icon: const Icon(Icons.close_rounded, size: 18),
+                onPressed: () {
+                  widget.controller!.clear();
+                },
+              )
+            : null,
         suffixText: widget.suffixText,
       ),
     );

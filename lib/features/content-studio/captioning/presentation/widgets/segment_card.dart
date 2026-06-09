@@ -3,7 +3,7 @@ import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../data/services/time_code_service.dart';
+import '../../domain/utils/timecode_service.dart';
 import 'labeled_text_field.dart';
 import 'time_triplet_field.dart';
 
@@ -92,38 +92,41 @@ class SegmentCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         if (onDelete != null)
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Material(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              clipBehavior: Clip.antiAlias,
-                              child: InkWell(
-                                onTap: onDelete,
-                                child: Container(
-                                  width: 32,
-                                  height: 32,
-                                  alignment: Alignment.center,
-                                  child: Icon(
-                                    Icons.delete_outline_rounded,
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                                    size: 16,
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Material(
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: onDelete,
+                                  child: Container(
+                                    width: 32,
+                                    height: 32,
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.8),
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '삭제',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                              const SizedBox(height: 2),
+                              Text(
+                                '삭제',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.5),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
                       ],
                     ),
                   ),
@@ -253,7 +256,8 @@ class _SegmentTimeButton extends StatelessWidget {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
           ),
         ),
       ],

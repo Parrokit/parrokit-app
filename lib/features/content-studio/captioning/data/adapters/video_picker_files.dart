@@ -23,9 +23,11 @@ class VideoPickerFiles implements VideoPickerPort {
       type: FileType.custom,
       allowedExtensions: [
         // Video formats
-        'mp4', 'mov', 'mkv', 'avi', 'webm', 'wmv', 'flv', '3gp', 'm4v', 'mpeg', 'mpg', 'ts', 'vob',
+        'mp4', 'mov', 'mkv', 'avi', 'webm', 'wmv', 'flv', '3gp', 'm4v', 'mpeg',
+        'mpg', 'ts', 'vob',
         // Audio formats
-        'mp3', 'm4a', 'wav', 'aac', 'flac', 'ogg', 'caf', 'wma', 'alac', 'aiff', 'amr', 'opus', 'mid', 'midi',
+        'mp3', 'm4a', 'wav', 'aac', 'flac', 'ogg', 'caf', 'wma', 'alac', 'aiff',
+        'amr', 'opus', 'mid', 'midi',
       ],
       allowMultiple: false,
     );

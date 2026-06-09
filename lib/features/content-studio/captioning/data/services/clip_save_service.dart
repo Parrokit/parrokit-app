@@ -12,10 +12,10 @@
 import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
-import '../../domain/clip_form_data.dart';
-import '../../domain/editor_mode.dart';
+import '../../domain/models/clip_form_data.dart';
+import '../../domain/models/editor_mode.dart';
+import '../../domain/utils/timecode_service.dart';
 import 'file_staging_service.dart';
-import 'time_code_service.dart';
 
 /// 클립 저장 서비스.
 class ClipSaveService {

@@ -1,12 +1,12 @@
 // ============================================================================
-// lib/features/_content/editor/presentation/view_model/editor_segment_mixin.dart
+// lib/features/content-studio/captioning/presentation/providers/mixins/editor_segment_mixin.dart
 // ============================================================================
 //
 // [역할]
 // 세그먼트 관리 mixin.
 //
 // [레이어]
-// Presentation Layer > ViewModel > Mixin
+// Presentation Layer > Provider > Mixin
 // ============================================================================
 
 import 'dart:math' as math;
@@ -14,8 +14,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:parrokit/core/shared/utils/show_toast.dart';
-import '../../data/services/time_code_service.dart';
-import '../../domain/editor_state.dart';
+import '../../../domain/utils/timecode_service.dart';
+import '../../models/editor_state.dart';
 
 /// 세그먼트 관리 mixin.
 mixin EditorSegmentMixin on ChangeNotifier {
@@ -308,8 +308,6 @@ mixin EditorSegmentMixin on ChangeNotifier {
       _segmentSnapshots.add(snapshot);
     }
   }
-
-
 
   void _writeSegmentRange(int index, int startMs, int endMs) {
     if (index < 0 || index >= segmentForms.length) return;

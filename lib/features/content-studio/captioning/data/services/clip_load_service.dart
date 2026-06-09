@@ -11,9 +11,9 @@
 
 import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
-import 'package:parrokit/features/content-studio/captioning/data/services/time_code_service.dart';
-import 'package:parrokit/features/content-studio/captioning/domain/clip_form_data.dart';
-import 'package:parrokit/features/content-studio/captioning/domain/editor_mode.dart';
+import 'package:parrokit/features/content-studio/captioning/domain/models/clip_form_data.dart';
+import 'package:parrokit/features/content-studio/captioning/domain/models/editor_mode.dart';
+import 'package:parrokit/features/content-studio/captioning/domain/utils/timecode_service.dart';
 
 /// 편집용 클립 로드 결과.
 class LoadClipResult {

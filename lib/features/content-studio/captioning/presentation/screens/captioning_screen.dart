@@ -1,9 +1,9 @@
 // ============================================================================
-// lib/features/_content/editor/presentation/clip_editor_screen.dart
+// lib/features/content-studio/captioning/presentation/screens/captioning_screen.dart
 // ============================================================================
 //
 // [역할]
-// 클립 에디터 화면. ViewModel에서 상태와 로직을 가져옴.
+// 캡션링 화면. Provider에서 상태와 로직을 가져옴.
 // 모든 섹션을 단일 스크롤 페이지에 표시.
 //
 // [레이어]
@@ -17,11 +17,11 @@ import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
-import 'captioning_provider.dart';
-import 'widgets/exit_confirm_sheet.dart';
-import '../../hub/presentation/content_studio_app_bar.dart';
-import '../../hub/presentation/studio_hub_provider.dart';
-import 'sections/sections.dart';
+import '../providers/captioning_provider.dart';
+import '../widgets/exit_confirm_sheet.dart';
+import '../../../hub/presentation/content_studio_app_bar.dart';
+import '../../../hub/presentation/studio_hub_provider.dart';
+import '../sections/sections.dart';
 
 /// 클립 에디터 화면.
 class CaptioningScreen extends StatelessWidget {

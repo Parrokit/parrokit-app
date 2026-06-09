@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/_content/clip_editor/domain/native_title_result.dart
+// lib/features/content-studio/captioning/domain/models/native_title_result.dart
 // ============================================================================
 //
 // [역할]
@@ -9,9 +9,7 @@
 // Domain Layer > Models
 // ============================================================================
 
-/// 원어 작품명 조회 결과.
 class NativeTitleResult {
-  /// 원어 제목 (예: SPY×FAMILY, 君の名は。)
   final String nativeTitle;
 
   NativeTitleResult({required this.nativeTitle});

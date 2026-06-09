@@ -1,12 +1,12 @@
 // ============================================================================
-// lib/features/_content/editor/presentation/view_model/editor_file_mixin.dart
+// lib/features/content-studio/captioning/presentation/providers/mixins/editor_file_mixin.dart
 // ============================================================================
 //
 // [역할]
 // 파일 선택/제거 로직 mixin.
 //
 // [레이어]
-// Presentation Layer > ViewModel > Mixin
+// Presentation Layer > Provider > Mixin
 // ============================================================================
 
 import 'dart:io';
@@ -21,15 +21,15 @@ import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 
-import '../../data/adapters/video_picker_files.dart';
-import '../../data/adapters/video_picker_gallery.dart';
-import '../../data/ports/video_picker_port.dart';
-import '../../data/services/audio_to_video.dart';
-import '../../data/services/file_staging_service.dart';
-import '../../data/services/video_meta_service.dart';
-import '../../data/usecases/extract_duration_usecase.dart';
-import '../../data/usecases/extract_thumbnail_usecase.dart';
-import '../../data/usecases/pick_video_usecase.dart';
+import '../../../data/adapters/video_picker_files.dart';
+import '../../../data/adapters/video_picker_gallery.dart';
+import '../../../data/ports/video_picker_port.dart';
+import '../../../data/services/audio_to_video.dart';
+import '../../../data/services/file_staging_service.dart';
+import '../../../data/services/video_meta_service.dart';
+import '../../../data/usecases/extract_duration_usecase.dart';
+import '../../../data/usecases/extract_thumbnail_usecase.dart';
+import '../../../data/usecases/pick_video_usecase.dart';
 
 /// 파일 선택/제거 mixin.
 mixin EditorFileMixin on ChangeNotifier {
@@ -122,7 +122,7 @@ mixin EditorFileMixin on ChangeNotifier {
     }
     _isVideoLoading = false;
     notifyListeners();
-    
+
     // 비디오 로딩 후 파형 추출 (1회 수행)
     _extractWaveform(effectivePath);
   }
@@ -132,7 +132,8 @@ mixin EditorFileMixin on ChangeNotifier {
     notifyListeners();
 
     final docsDir = await getApplicationDocumentsDirectory();
-    final absPath = relPath.startsWith('/') ? relPath : '${docsDir.path}/$relPath';
+    final absPath =
+        relPath.startsWith('/') ? relPath : '${docsDir.path}/$relPath';
 
     final file = File(absPath);
     if (!await file.exists()) {
@@ -164,7 +165,7 @@ mixin EditorFileMixin on ChangeNotifier {
     _waveformData = null;
     _waveformLoading = false;
     _cleanupTempPcm();
-    
+
     if (p != null && staging.isInStaging(p)) {
       staging.discard(p);
     }
@@ -202,12 +203,17 @@ mixin EditorFileMixin on ChangeNotifier {
 
       final session = await FFmpegKit.executeWithArguments([
         '-y',
-        '-i', videoPath,
+        '-i',
+        videoPath,
         '-vn',
-        '-ac', '1',
-        '-ar', '8000',
-        '-f', 's16le',
-        '-t', '180',
+        '-ac',
+        '1',
+        '-ar',
+        '8000',
+        '-f',
+        's16le',
+        '-t',
+        '180',
         pcmOut,
       ]);
       final rc = await session.getReturnCode();

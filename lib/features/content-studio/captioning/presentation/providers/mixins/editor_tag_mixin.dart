@@ -1,12 +1,12 @@
 // ============================================================================
-// lib/features/_content/editor/presentation/view_model/editor_tag_mixin.dart
+// lib/features/content-studio/captioning/presentation/providers/mixins/editor_tag_mixin.dart
 // ============================================================================
 //
 // [역할]
 // 태그 관리 mixin.
 //
 // [레이어]
-// Presentation Layer > ViewModel > Mixin
+// Presentation Layer > Provider > Mixin
 // ============================================================================
 
 import 'package:flutter/foundation.dart';

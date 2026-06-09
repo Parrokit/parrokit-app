@@ -10,8 +10,8 @@
 // Data Layer > UseCases
 // ============================================================================
 
-import '../../domain/clip_form_data.dart';
-import '../../domain/editor_mode.dart';
+import '../../domain/models/clip_form_data.dart';
+import '../../domain/models/editor_mode.dart';
 import '../services/clip_save_service.dart';
 
 /// 클립 저장 UseCase.

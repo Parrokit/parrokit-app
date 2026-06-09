@@ -1,13 +1,13 @@
 // ============================================================================
-// lib/features/_content/editor/data/services/time_code_service.dart
+// lib/features/content-studio/captioning/domain/utils/timecode_service.dart
 // ============================================================================
 //
 // [역할]
-// 타임코드 변환 서비스.
+// 타임코드 변환 유틸.
 // 밀리초 ↔ MM:SS.mmm 형식 변환.
 //
 // [레이어]
-// Data Layer > Services
+// Domain Layer
 // ============================================================================
 
 class TimecodeService {

@@ -5,7 +5,7 @@ import 'package:video_player/video_player.dart';
 
 import '../widgets/segment_card.dart';
 
-import '../captioning_provider.dart';
+import '../providers/captioning_provider.dart';
 
 /// 자막 세그먼트 섹션.
 class SegmentsSection extends StatefulWidget {

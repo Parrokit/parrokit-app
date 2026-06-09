@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 import '../../data/adapters/asr_engine.dart';
-import '../captioning_provider.dart';
+import '../providers/captioning_provider.dart';
 import 'stt_progress_card.dart';
 
 /// STT 시작 전 안내 다이얼로그를 표시하고 진행 상황 위젯을 바텀시트 내에서 보여줍니다.

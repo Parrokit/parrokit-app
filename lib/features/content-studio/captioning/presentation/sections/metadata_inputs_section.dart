@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/constants/editor_strings.dart';
-import '../captioning_provider.dart';
+import '../providers/captioning_provider.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 
 class MetadataInputsSection extends StatelessWidget {
