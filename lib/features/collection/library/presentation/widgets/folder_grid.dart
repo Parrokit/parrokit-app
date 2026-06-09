@@ -98,12 +98,13 @@ class FolderGrid extends StatelessWidget {
       );
     }
     
-    final isVirtualFolder = sectionTitle == '그룹' && i == 0;
+    final isSpecial = sectionTitle == '그룹' && i == 0;
     return FolderCard(
       name: items[i],
       onTap: () => onTap(i),
-      deleteMode: deleteMode && !isVirtualFolder,
+      deleteMode: deleteMode && !isSpecial,
       isGridView: isGridView,
+      isSpecial: isSpecial,
     );
   }
 }

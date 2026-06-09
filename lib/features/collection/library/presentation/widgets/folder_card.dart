@@ -11,6 +11,7 @@ class FolderCard extends StatelessWidget {
     this.deleteMode = false,
     this.isGridView = true,
     this.isAddCard = false,
+    this.isSpecial = false,
   });
 
   final String name;
@@ -18,6 +19,7 @@ class FolderCard extends StatelessWidget {
   final bool deleteMode;
   final bool isGridView;
   final bool isAddCard;
+  final bool isSpecial;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,24 @@ class FolderCard extends StatelessWidget {
         : (isAddCard ? cs.primaryContainer.withValues(alpha: 0.1) : cs.surface);
     final IconData iconData = isAddCard
         ? Icons.add_rounded
-        : (deleteMode ? Icons.delete_outline_rounded : Icons.folder_rounded);
+        : (deleteMode ? Icons.delete_outline_rounded : (isSpecial ? Icons.auto_awesome_mosaic_rounded : Icons.folder_rounded));
+
+    Widget iconWidget = Icon(
+      iconData,
+      size: 28,
+      color: (isSpecial && !deleteMode) ? Colors.white : iconColor,
+    );
+
+    if (isSpecial && !deleteMode) {
+      iconWidget = ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          colors: [Colors.deepPurpleAccent, Colors.blueAccent],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(bounds),
+        child: iconWidget,
+      );
+    }
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
@@ -58,11 +77,7 @@ class FolderCard extends StatelessWidget {
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    iconData,
-                    size: 28,
-                    color: iconColor,
-                  ),
+                  iconWidget,
                   const SizedBox(height: 8),
                   Text(
                     name,
@@ -78,11 +93,7 @@ class FolderCard extends StatelessWidget {
             : Row(
                 children: [
                   const SizedBox(width: 8),
-                  Icon(
-                    iconData,
-                    size: 28,
-                    color: iconColor,
-                  ),
+                  iconWidget,
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
