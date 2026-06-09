@@ -323,6 +323,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                       deleteMode: _deleteMode,
                       isGridView: _isGridView,
                       onToggleView: _toggleViewMode,
+                      onAdd: () => _showCreateGroupDialog(context),
                       onTap: (idx) {
                         if (idx == 0) {
                           if (!_deleteMode) {
@@ -351,6 +352,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                       deleteMode: _deleteMode,
                       isGridView: _isGridView,
                       onToggleView: _toggleViewMode,
+                      onAdd: () => _showCreateCollectionDialog(context),
                       onTap: (idx) {
                         final col = media.collections[idx];
                         if (_deleteMode) {

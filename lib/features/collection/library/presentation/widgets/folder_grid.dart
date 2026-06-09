@@ -11,6 +11,7 @@ class FolderGrid extends StatelessWidget {
     this.deleteMode = false,
     this.isGridView = true,
     this.onToggleView,
+    this.onAdd,
   });
 
   final String sectionTitle;
@@ -19,9 +20,13 @@ class FolderGrid extends StatelessWidget {
   final bool deleteMode;
   final bool isGridView;
   final VoidCallback? onToggleView;
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
+    final int extraCount = (onAdd != null && !deleteMode) ? 1 : 0;
+    final int totalCount = items.length + extraCount;
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -45,7 +50,7 @@ class FolderGrid extends StatelessWidget {
             ),
           ),
         ),
-        if (items.isEmpty)
+        if (totalCount == 0)
           const SliverFillRemaining(
             child: Center(child: Text('아직 등록된 항목이 없어요.')),
           )
@@ -62,7 +67,7 @@ class FolderGrid extends StatelessWidget {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) => _buildCard(i),
-                      childCount: items.length,
+                      childCount: totalCount,
                     ),
                   )
                 : SliverList(
@@ -74,7 +79,7 @@ class FolderGrid extends StatelessWidget {
                           child: _buildCard(i),
                         ),
                       ),
-                      childCount: items.length,
+                      childCount: totalCount,
                     ),
                   ),
           ),
@@ -84,6 +89,15 @@ class FolderGrid extends StatelessWidget {
   }
 
   Widget _buildCard(int i) {
+    if (i == items.length) {
+      return FolderCard(
+        name: '추가하기',
+        onTap: onAdd!,
+        isGridView: isGridView,
+        isAddCard: true,
+      );
+    }
+    
     final isVirtualFolder = sectionTitle == '그룹' && i == 0;
     return FolderCard(
       name: items[i],

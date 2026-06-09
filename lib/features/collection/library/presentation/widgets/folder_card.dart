@@ -10,28 +10,47 @@ class FolderCard extends StatelessWidget {
     required this.onTap,
     this.deleteMode = false,
     this.isGridView = true,
+    this.isAddCard = false,
   });
 
   final String name;
   final VoidCallback onTap;
   final bool deleteMode;
   final bool isGridView;
+  final bool isAddCard;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    
+    // 상태별 색상
+    final Color? iconColor = isAddCard 
+        ? cs.primary 
+        : (deleteMode ? cs.error : null);
+    final Color? textColor = isAddCard 
+        ? cs.primary 
+        : (deleteMode ? cs.error : null);
+    final Color borderColor = isAddCard
+        ? cs.primary.withValues(alpha: 0.5)
+        : (deleteMode ? cs.error : cs.outlineVariant);
+    final double borderWidth = (deleteMode || isAddCard) ? 1.2 : 0.8;
+    final Color bgColor = deleteMode
+        ? cs.errorContainer.withValues(alpha: 0.3)
+        : (isAddCard ? cs.primaryContainer.withValues(alpha: 0.1) : cs.surface);
+    final IconData iconData = isAddCard
+        ? Icons.add_rounded
+        : (deleteMode ? Icons.delete_outline_rounded : Icons.folder_rounded);
+
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: deleteMode
-              ? cs.errorContainer.withValues(alpha: 0.3)
-              : cs.surface,
+          color: bgColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: deleteMode ? cs.error : cs.outlineVariant,
-            width: deleteMode ? 1.2 : 0.8,
+            color: borderColor,
+            width: borderWidth,
           ),
         ),
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -40,9 +59,9 @@ class FolderCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    deleteMode ? Icons.delete_outline_rounded : Icons.folder_rounded,
+                    iconData,
                     size: 28,
-                    color: deleteMode ? cs.error : null,
+                    color: iconColor,
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -51,7 +70,7 @@ class FolderCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: deleteMode ? cs.error : null,
+                          color: textColor,
                         ),
                   ),
                 ],
@@ -60,9 +79,9 @@ class FolderCard extends StatelessWidget {
                 children: [
                   const SizedBox(width: 8),
                   Icon(
-                    deleteMode ? Icons.delete_outline_rounded : Icons.folder_rounded,
+                    iconData,
                     size: 28,
-                    color: deleteMode ? cs.error : null,
+                    color: iconColor,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -72,7 +91,7 @@ class FolderCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: deleteMode ? cs.error : null,
+                            color: textColor,
                           ),
                     ),
                   ),
