@@ -106,7 +106,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('그룹 삭제'),
-        content: Text("'$name' 그룹과 하위의 모든 콜렉션, 클립이 삭제됩니다.\n\n이 작업은 되돌릴 수 없습니다."),
+        content: Text("'$name' 그룹을 삭제할까요?\n(그룹 내 콜렉션과 클립은 삭제되지 않습니다)"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
