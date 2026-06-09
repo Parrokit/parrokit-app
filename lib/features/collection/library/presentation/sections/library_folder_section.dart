@@ -15,7 +15,7 @@ import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/app/router/app_router.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/folder_grid.dart';
 import '../widgets/group_collection_manager_modal.dart';
@@ -82,12 +82,14 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
       } else if (value == 'delete') {
         setState(() => _deleteMode = true);
       } else if (value == 'manage') {
-        final mp = context.read<MediaProvider>();
+        final clipProvider = context.read<ClipProvider>();
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           builder: (_) => GroupCollectionManagerModal(
-            initialGroupId: mp.selectedGroupId == -1 ? null : mp.selectedGroupId,
+            initialGroupId: clipProvider.selectedGroupId == -1
+                ? null
+                : clipProvider.selectedGroupId,
           ),
         );
       }
@@ -101,7 +103,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   ) async {
     if (!context.mounted) return;
     final cs = Theme.of(context).colorScheme;
-    
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -122,13 +124,13 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     );
 
     if (ok == true && context.mounted) {
-      await context.read<MediaProvider>().deleteGroupById(groupId);
+      await context.read<ClipProvider>().deleteGroupById(groupId);
     }
   }
 
   Future<void> _showCreateGroupDialog(BuildContext context) async {
     final ctl = TextEditingController();
-    final media = context.read<MediaProvider>();
+    final clipProvider = context.read<ClipProvider>();
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -140,7 +142,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
           onSubmitted: (_) async {
             final name = ctl.text.trim();
             if (name.isNotEmpty) {
-              final exists = await media.isNameExists(name);
+              final exists = await clipProvider.isNameExists(name);
               if (exists) {
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
@@ -149,27 +151,29 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                 }
                 return;
               }
-              await media.createGroup(name);
+              await clipProvider.createGroup(name);
             }
             if (ctx.mounted) Navigator.pop(ctx);
           },
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
           TextButton(
             onPressed: () async {
               final name = ctl.text.trim();
               if (name.isNotEmpty) {
-                final exists = await media.isNameExists(name);
+                final exists = await clipProvider.isNameExists(name);
                 if (exists) {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                      const SnackBar(
+                          content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
                     );
                   }
                   return;
                 }
-                await media.createGroup(name);
+                await clipProvider.createGroup(name);
               }
               if (ctx.mounted) Navigator.pop(ctx);
             },
@@ -185,8 +189,8 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     int collectionId,
     String name,
   ) async {
-    final media = context.read<MediaProvider>();
-    final clipCount = await media.countClipsInCollection(collectionId);
+    final clipProvider = context.read<ClipProvider>();
+    final clipCount = await clipProvider.countClipsInCollection(collectionId);
     if (!context.mounted) return;
 
     final cs = Theme.of(context).colorScheme;
@@ -214,13 +218,13 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     );
 
     if (ok == true && context.mounted) {
-      await context.read<MediaProvider>().deleteCollectionById(collectionId);
+      await context.read<ClipProvider>().deleteCollectionById(collectionId);
     }
   }
 
   Future<void> _showCreateCollectionDialog(BuildContext context) async {
     final ctl = TextEditingController();
-    final media = context.read<MediaProvider>();
+    final clipProvider = context.read<ClipProvider>();
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -232,7 +236,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
           onSubmitted: (_) async {
             final name = ctl.text.trim();
             if (name.isNotEmpty) {
-              final exists = await media.isNameExists(name);
+              final exists = await clipProvider.isNameExists(name);
               if (exists) {
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
@@ -241,27 +245,29 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                 }
                 return;
               }
-              await media.createCollection(name);
+              await clipProvider.createCollection(name);
             }
             if (ctx.mounted) Navigator.pop(ctx);
           },
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
           TextButton(
             onPressed: () async {
               final name = ctl.text.trim();
               if (name.isNotEmpty) {
-                final exists = await media.isNameExists(name);
+                final exists = await clipProvider.isNameExists(name);
                 if (exists) {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                      const SnackBar(
+                          content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
                     );
                   }
                   return;
                 }
-                await media.createCollection(name);
+                await clipProvider.createCollection(name);
               }
               if (ctx.mounted) Navigator.pop(ctx);
             },
@@ -274,7 +280,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
 
   @override
   Widget build(BuildContext context) {
-    final media = context.watch<MediaProvider>();
+    final clipProvider = context.watch<ClipProvider>();
     final cs = Theme.of(context).colorScheme;
 
     // Breadcrumbs 생성
@@ -282,13 +288,13 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     String? selectedGroupName;
     String? selectedCollectionName;
 
-    if (media.selectedGroupId != null) {
-      if (media.selectedGroupId == -1) {
+    if (clipProvider.selectedGroupId != null) {
+      if (clipProvider.selectedGroupId == -1) {
         selectedGroupName = '모든 콜렉션';
         crumbs.add(selectedGroupName);
       } else {
-        final grp = media.groups.cast<dynamic>().firstWhere(
-              (g) => (g.id as int) == media.selectedGroupId,
+        final grp = clipProvider.groups.cast<dynamic>().firstWhere(
+              (g) => (g.id as int) == clipProvider.selectedGroupId,
               orElse: () => null,
             );
         if (grp != null) {
@@ -297,16 +303,16 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              context.read<MediaProvider>().backToGroups();
+              context.read<ClipProvider>().backToGroups();
             }
           });
         }
       }
     }
 
-    if (media.selectedCollectionId != null) {
-      final col = media.collections.cast<dynamic>().firstWhere(
-            (c) => (c.id as int) == media.selectedCollectionId,
+    if (clipProvider.selectedCollectionId != null) {
+      final col = clipProvider.collections.cast<dynamic>().firstWhere(
+            (c) => (c.id as int) == clipProvider.selectedCollectionId,
             orElse: () => null,
           );
       if (col != null) {
@@ -315,15 +321,16 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
       } else {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (context.mounted) {
-            context.read<MediaProvider>().backToCollections();
+            context.read<ClipProvider>().backToCollections();
           }
         });
       }
     }
 
-    final isAtClipList = media.selectedCollectionId != null;
-    final isAtCollectionList = media.selectedGroupId != null && media.selectedCollectionId == null;
-    final isAtGroupRoot = media.selectedGroupId == null;
+    final isAtClipList = clipProvider.selectedCollectionId != null;
+    final isAtCollectionList = clipProvider.selectedGroupId != null &&
+        clipProvider.selectedCollectionId == null;
+    final isAtGroupRoot = clipProvider.selectedGroupId == null;
 
     // 클립 목록으로 들어오면 삭제 모드 자동 해제
     if (isAtClipList && _deleteMode) {
@@ -340,10 +347,10 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
               onTapCrumb: (i) {
                 if (i == 0) {
                   setState(() => _deleteMode = false);
-                  media.backToGroups();
+                  clipProvider.backToGroups();
                 } else if (i == 1 && crumbs.length > 2) {
                   setState(() => _deleteMode = false);
-                  media.backToCollections();
+                  clipProvider.backToCollections();
                 }
               },
             ),
@@ -380,78 +387,80 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                 onNotification: (notification) {
                   if (notification.direction == ScrollDirection.reverse) {
                     if (_isFabExtended) setState(() => _isFabExtended = false);
-                  } else if (notification.direction == ScrollDirection.forward) {
+                  } else if (notification.direction ==
+                      ScrollDirection.forward) {
                     if (!_isFabExtended) setState(() => _isFabExtended = true);
                   }
                   return false;
                 },
                 child: Builder(
                   builder: (_) {
-                  if (isAtGroupRoot) {
-                    final gridItems = [
-                      '모든 콜렉션',
-                      ...media.groups.map((g) => (g as dynamic).name as String)
-                    ];
-                    return FolderGrid(
-                      sectionTitle: '그룹',
-                      items: gridItems,
-                      deleteMode: _deleteMode,
-                      isGridView: _isGridView,
-                      onToggleView: _toggleViewMode,
-                      onAdd: () => _showCreateGroupDialog(context),
-                      onTap: (idx) {
-                        if (idx == 0) {
-                          if (!_deleteMode) {
-                            media.selectGroup(-1);
+                    if (isAtGroupRoot) {
+                      final gridItems = [
+                        '모든 콜렉션',
+                        ...clipProvider.groups
+                            .map((g) => (g as dynamic).name as String)
+                      ];
+                      return FolderGrid(
+                        sectionTitle: '그룹',
+                        items: gridItems,
+                        deleteMode: _deleteMode,
+                        isGridView: _isGridView,
+                        onToggleView: _toggleViewMode,
+                        onAdd: () => _showCreateGroupDialog(context),
+                        onTap: (idx) {
+                          if (idx == 0) {
+                            if (!_deleteMode) {
+                              clipProvider.selectGroup(-1);
+                            }
+                            return;
                           }
-                          return;
-                        }
-                        
-                        final grp = media.groups[idx - 1];
-                        if (_deleteMode) {
-                          _showDeleteGroupDialog(context, grp.id, grp.name);
-                        } else {
-                          media.selectGroup(grp.id);
-                        }
-                      },
-                    );
-                  }
 
-                  // 2) Collections
-                  if (isAtCollectionList) {
-                    return FolderGrid(
-                      sectionTitle: '컬렉션',
-                      items: media.collections
-                          .map((c) => (c as dynamic).name as String)
-                          .toList(),
-                      deleteMode: _deleteMode,
-                      isGridView: _isGridView,
-                      onToggleView: _toggleViewMode,
-                      onAdd: () => _showCreateCollectionDialog(context),
-                      onTap: (idx) {
-                        final col = media.collections[idx];
-                        if (_deleteMode) {
-                          _showDeleteCollectionDialog(
-                              context, col.id, col.name);
-                        } else {
-                          media.selectCollection(col.id);
-                        }
-                      },
-                    );
-                  }
-
-                  // 3) Clips
-                  return ClipListView(
-                    items: media.clipItems,
-                    onOpen: (ci) {
-                      context.push(
-                        '${AppRoutes.clipsPath}/${ci.clip.id}',
+                          final grp = clipProvider.groups[idx - 1];
+                          if (_deleteMode) {
+                            _showDeleteGroupDialog(context, grp.id, grp.name);
+                          } else {
+                            clipProvider.selectGroup(grp.id);
+                          }
+                        },
                       );
-                    },
-                  );
-                },
+                    }
+
+                    // 2) Collections
+                    if (isAtCollectionList) {
+                      return FolderGrid(
+                        sectionTitle: '컬렉션',
+                        items: clipProvider.collections
+                            .map((c) => (c as dynamic).name as String)
+                            .toList(),
+                        deleteMode: _deleteMode,
+                        isGridView: _isGridView,
+                        onToggleView: _toggleViewMode,
+                        onAdd: () => _showCreateCollectionDialog(context),
+                        onTap: (idx) {
+                          final col = clipProvider.collections[idx];
+                          if (_deleteMode) {
+                            _showDeleteCollectionDialog(
+                                context, col.id, col.name);
+                          } else {
+                            clipProvider.selectCollection(col.id);
+                          }
+                        },
+                      );
+                    }
+
+                    // 3) Clips
+                    return ClipListView(
+                      items: clipProvider.clipItems,
+                      onOpen: (ci) {
+                        context.push(
+                          '${AppRoutes.clipsPath}/${AppRoutes.clipsPlayPath}?clipId=${ci.clip.id}',
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
             ),
           ],
         ),

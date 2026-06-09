@@ -1,12 +1,12 @@
 // ============================================================================
-// lib/core/provider/mixins/media_tag_mixin.dart
+// lib/core/state/provider/mixins/clip_tag_mixin.dart
 // ============================================================================
 //
 // [역할]
-// 미디어 태그 스트리밍 및 캐싱 로직 분리 (Mixin)
+// 클립 태그 스트리밍 및 캐싱 로직 분리 (Mixin)
 //
 // [레이어]
-// Core > Provider > Mixins
+// Core > State > Provider > Mixins
 // ============================================================================
 
 import 'dart:async';
@@ -14,7 +14,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../../data/local/app_database.dart';
 
-mixin MediaTagMixin on ChangeNotifier {
+mixin ClipTagMixin on ChangeNotifier {
   AppDatabase get db;
 
   /// 전체 태그.

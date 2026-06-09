@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/data/local/app_database.dart';
 
 class GroupCollectionManagerModal extends StatefulWidget {
@@ -41,9 +41,9 @@ class _GroupCollectionManagerModalState
   }
 
   Future<void> _loadData() async {
-    final mediaProvider = context.read<MediaProvider>();
-    _allGroups = mediaProvider.groups;
-    _allCollections = await mediaProvider.fetchAllCollections();
+    final clipProvider = context.read<ClipProvider>();
+    _allGroups = clipProvider.groups;
+    _allCollections = await clipProvider.fetchAllCollections();
 
     if (_allGroups.isNotEmpty && _selectedGroupIdForTabA == null) {
       _selectedGroupIdForTabA = _allGroups.first.id;
@@ -67,16 +67,16 @@ class _GroupCollectionManagerModalState
   }
 
   Future<void> _loadTabASelections(int groupId) async {
-    final mediaProvider = context.read<MediaProvider>();
-    final collectionIds = await mediaProvider.getCollectionIdsForGroup(groupId);
+    final clipProvider = context.read<ClipProvider>();
+    final collectionIds = await clipProvider.getCollectionIdsForGroup(groupId);
     setState(() {
       _checkedCollectionIdsForTabA = collectionIds.toSet();
     });
   }
 
   Future<void> _loadTabBSelections(int collectionId) async {
-    final mediaProvider = context.read<MediaProvider>();
-    final groupIds = await mediaProvider.getGroupIdsForCollection(collectionId);
+    final clipProvider = context.read<ClipProvider>();
+    final groupIds = await clipProvider.getGroupIdsForCollection(collectionId);
     setState(() {
       _checkedGroupIdsForTabB = groupIds.toSet();
     });
@@ -84,8 +84,8 @@ class _GroupCollectionManagerModalState
 
   Future<void> _saveTabA() async {
     if (_selectedGroupIdForTabA == null) return;
-    final mediaProvider = context.read<MediaProvider>();
-    await mediaProvider.updateCollectionsForGroup(
+    final clipProvider = context.read<ClipProvider>();
+    await clipProvider.updateCollectionsForGroup(
         _selectedGroupIdForTabA!, _checkedCollectionIdsForTabA.toList());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,8 +96,8 @@ class _GroupCollectionManagerModalState
 
   Future<void> _saveTabB() async {
     if (_selectedCollectionIdForTabB == null) return;
-    final mediaProvider = context.read<MediaProvider>();
-    await mediaProvider.updateGroupsForCollection(
+    final clipProvider = context.read<ClipProvider>();
+    await clipProvider.updateGroupsForCollection(
         _selectedCollectionIdForTabB!, _checkedGroupIdsForTabB.toList());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

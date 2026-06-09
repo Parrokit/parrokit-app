@@ -1,12 +1,12 @@
 // ============================================================================
-// lib/core/provider/media_provider.dart
+// lib/core/state/provider/clip_provider.dart
 // ============================================================================
 //
 // [역할]
-// 미디어 데이터 조회 및 선택 상태 관리 (Collection -> Clip)
+// 클립 데이터 조회 및 선택 상태 관리 (Collection -> Clip)
 //
 // [레이어]
-// Core > Provider
+// Core > State > Provider
 // ============================================================================
 
 import 'dart:async';
@@ -20,11 +20,10 @@ import '../../../data/models/clip_view.dart';
 import '../../../../data/models/clip_item.dart';
 
 import 'package:parrokit/core/infrastructure/services/media_service.dart';
-import 'mixins/media_tag_mixin.dart';
-import 'mixins/media_action_mixin.dart';
+import 'mixins/clip_tag_mixin.dart';
+import 'mixins/clip_action_mixin.dart';
 
-class MediaProvider extends ChangeNotifier
-    with MediaTagMixin, MediaActionMixin {
+class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   @override
   final AppDatabase db;
   late final MediaService _service;
@@ -32,7 +31,7 @@ class MediaProvider extends ChangeNotifier
   @override
   MediaService get service => _service;
 
-  MediaProvider(this.db) {
+  ClipProvider(this.db) {
     _service = MediaService(db);
   }
 
@@ -64,7 +63,7 @@ class MediaProvider extends ChangeNotifier
   @override
   Future<void> loadGroups() async {
     groups = await _service.getAllGroups();
-    
+
     // 초기화
     selectedGroupId = null;
     selectedCollectionId = null;
@@ -88,9 +87,11 @@ class MediaProvider extends ChangeNotifier
     if (id == null) {
       // 그룹이 없는 콜렉션
       final query = db.select(db.collections).join([
-        leftOuterJoin(db.groupCollections, db.groupCollections.collectionId.equalsExp(db.collections.id))
-      ])..where(db.groupCollections.groupId.isNull());
-      
+        leftOuterJoin(db.groupCollections,
+            db.groupCollections.collectionId.equalsExp(db.collections.id))
+      ])
+        ..where(db.groupCollections.groupId.isNull());
+
       final rows = await query.get();
       collections = rows.map((r) => r.readTable(db.collections)).toList();
     } else if (id == -1) {
@@ -101,13 +102,15 @@ class MediaProvider extends ChangeNotifier
     } else {
       // 특정 그룹의 콜렉션
       final query = db.select(db.collections).join([
-        innerJoin(db.groupCollections, db.groupCollections.collectionId.equalsExp(db.collections.id))
-      ])..where(db.groupCollections.groupId.equals(id));
+        innerJoin(db.groupCollections,
+            db.groupCollections.collectionId.equalsExp(db.collections.id))
+      ])
+        ..where(db.groupCollections.groupId.equals(id));
 
       final rows = await query.get();
       collections = rows.map((r) => r.readTable(db.collections)).toList();
     }
-    
+
     collections.sort((a, b) => a.name.compareTo(b.name));
     notifyListeners();
   }
@@ -184,16 +187,16 @@ class MediaProvider extends ChangeNotifier
   /// 새 컬렉션 생성 후 목록 갱신.
   Future<void> createCollection(String name) async {
     final collectionId = await db.into(db.collections).insert(
-      CollectionsCompanion.insert(name: name),
-    );
-    
+          CollectionsCompanion.insert(name: name),
+        );
+
     if (selectedGroupId != null && selectedGroupId != -1) {
       await db.into(db.groupCollections).insert(
-        GroupCollectionsCompanion.insert(
-            groupId: selectedGroupId!, collectionId: collectionId),
-      );
+            GroupCollectionsCompanion.insert(
+                groupId: selectedGroupId!, collectionId: collectionId),
+          );
     }
-    
+
     await selectGroup(selectedGroupId); // 현재 그룹의 콜렉션 다시 불러오기
   }
 
@@ -273,9 +276,12 @@ class MediaProvider extends ChangeNotifier
       );
     }
   }
+
   /// 모든 콜렉션 조회 (관리 모달용)
   Future<List<Collection>> fetchAllCollections() async {
-    return await (db.select(db.collections)..orderBy([(c) => OrderingTerm.asc(c.name)])).get();
+    return await (db.select(db.collections)
+          ..orderBy([(c) => OrderingTerm.asc(c.name)]))
+        .get();
   }
 
   /// 콜렉션의 매핑된 그룹 ID 목록 조회
@@ -295,15 +301,17 @@ class MediaProvider extends ChangeNotifier
   }
 
   /// 특정 콜렉션의 그룹 매핑 업데이트
-  Future<void> updateGroupsForCollection(int collectionId, List<int> groupIds) async {
+  Future<void> updateGroupsForCollection(
+      int collectionId, List<int> groupIds) async {
     await db.transaction(() async {
       await (db.delete(db.groupCollections)
             ..where((gc) => gc.collectionId.equals(collectionId)))
           .go();
       for (final gid in groupIds) {
         await db.into(db.groupCollections).insert(
-          GroupCollectionsCompanion.insert(groupId: gid, collectionId: collectionId),
-        );
+              GroupCollectionsCompanion.insert(
+                  groupId: gid, collectionId: collectionId),
+            );
       }
     });
     // 현재 보고 있는 화면이 갱신되어야 할 수 있음
@@ -312,15 +320,17 @@ class MediaProvider extends ChangeNotifier
   }
 
   /// 특정 그룹의 콜렉션 매핑 업데이트
-  Future<void> updateCollectionsForGroup(int groupId, List<int> collectionIds) async {
+  Future<void> updateCollectionsForGroup(
+      int groupId, List<int> collectionIds) async {
     await db.transaction(() async {
       await (db.delete(db.groupCollections)
             ..where((gc) => gc.groupId.equals(groupId)))
           .go();
       for (final cid in collectionIds) {
         await db.into(db.groupCollections).insert(
-          GroupCollectionsCompanion.insert(groupId: groupId, collectionId: cid),
-        );
+              GroupCollectionsCompanion.insert(
+                  groupId: groupId, collectionId: cid),
+            );
       }
     });
     // 현재 보고 있는 화면이 갱신되어야 할 수 있음

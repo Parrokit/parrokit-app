@@ -3,7 +3,7 @@ import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:parrokit/core/app/router/app_router.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/features/collection/library/presentation/providers/tag_filter_provider.dart';
@@ -79,7 +79,7 @@ class ClipListView extends StatelessWidget {
     if (ok == true) {
       if (!context.mounted) return;
       final ok2 =
-          await context.read<MediaProvider>().deleteClipById(item.clip.id);
+          await context.read<ClipProvider>().deleteClipById(item.clip.id);
 
       if (!context.mounted) return;
       // ✅ showToast 사용
@@ -147,9 +147,9 @@ class ClipListView extends StatelessWidget {
                               '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}',
                             );
                             if (ok == true && context.mounted) {
-                              final media = context.read<MediaProvider>();
-                              media.backToCollections();
-                              media.loadCollections();
+                              final clipProvider = context.read<ClipProvider>();
+                              clipProvider.backToCollections();
+                              clipProvider.loadCollections();
                             }
                           },
                           child: Container(

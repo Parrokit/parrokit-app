@@ -23,7 +23,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/core/app/config/app_config.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/shared/utils/audio_bg.dart';
 import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/features/collection/clip/player/domain/player_state.dart';
@@ -39,7 +39,7 @@ class ClipPlayerViewModel extends ChangeNotifier
     with PlaybackControlMixin, AudioModeMixin, UiControlMixin {
   ClipPlayerViewModel({
     required this.clipId,
-    required this.mediaProvider,
+    required this.clipProvider,
     this.initialIndex = 0,
   }) {
     _init();
@@ -50,7 +50,7 @@ class ClipPlayerViewModel extends ChangeNotifier
   // ─────────────────────────────────────────────────────────────────
 
   final int clipId;
-  final MediaProvider mediaProvider;
+  final ClipProvider clipProvider;
   final int initialIndex;
 
   // ─────────────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ class ClipPlayerViewModel extends ChangeNotifier
 
   /// 클립 데이터 로드.
   Future<void> loadClip() async {
-    final payload = await mediaProvider.fetchClipById(clipId);
+    final payload = await clipProvider.fetchClipById(clipId);
 
     if (payload == null) {
       _isLoading = false;
@@ -286,7 +286,7 @@ class ClipPlayerViewModel extends ChangeNotifier
     Uint8List? thumbBytes;
     try {
       final item =
-          mediaProvider.clipItems.firstWhere((it) => it.clip.id == clipId);
+          clipProvider.clipItems.firstWhere((it) => it.clip.id == clipId);
       thumbBytes = item.thumbnail;
     } catch (_) {
       thumbBytes = null;

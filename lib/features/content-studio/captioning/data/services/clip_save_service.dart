@@ -9,7 +9,7 @@
 // Data Layer > Services
 // ============================================================================
 
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
 import '../../domain/clip_form_data.dart';
@@ -19,7 +19,7 @@ import 'time_code_service.dart';
 
 /// 클립 저장 서비스.
 class ClipSaveService {
-  final MediaProvider repo;
+  final ClipProvider repo;
   final FileStagingService staging;
   final TimecodeService _timecode = TimecodeService();
 
@@ -56,7 +56,7 @@ class ClipSaveService {
         .toList();
 
     if (mode is EditMode) {
-      await repo.updateMedia(
+      await repo.updateClip(
         clipId: mode.clipId,
         collectionName: formData.collectionName,
         clipTitle: formData.clipTitle,
@@ -66,7 +66,7 @@ class ClipSaveService {
         tags: formData.tags,
       );
     } else {
-      await repo.addMedia(
+      await repo.addClip(
         collectionName: formData.collectionName,
         clipTitle: formData.clipTitle,
         filePath: relPath,

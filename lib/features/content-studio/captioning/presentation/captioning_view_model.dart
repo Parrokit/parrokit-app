@@ -13,7 +13,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/dao/collections_dao.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart' as utils;
@@ -57,7 +57,7 @@ class CaptioningViewModel extends ChangeNotifier
         EditorTagMixin,
         EditorAutocompleteMixin {
   CaptioningViewModel({
-    required this.mediaProvider,
+    required this.clipProvider,
     required this.userProvider,
     required this.collectionsDao,
     this.clipId,
@@ -71,7 +71,7 @@ class CaptioningViewModel extends ChangeNotifier
   // ─────────────────────────────────────────────────────────────────
   // 의존성
   // ─────────────────────────────────────────────────────────────────
-  final MediaProvider mediaProvider;
+  final ClipProvider clipProvider;
   final UserProvider userProvider;
   @override
   final CollectionsDao collectionsDao;
@@ -154,10 +154,10 @@ class CaptioningViewModel extends ChangeNotifier
 
     // Service 기반 UseCase 초기화
     _saveClip = SaveClipUseCase(
-      service: ClipSaveService(repo: mediaProvider, staging: staging),
+      service: ClipSaveService(repo: clipProvider, staging: staging),
     );
     _loadClipForEdit = LoadClipForEditUseCase(
-      service: ClipLoadService(mediaProvider: mediaProvider),
+      service: ClipLoadService(clipProvider: clipProvider),
     );
 
     final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';

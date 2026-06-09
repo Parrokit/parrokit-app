@@ -12,7 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/features/collection/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/data/local/app_database.dart'; // Tag definition
 
@@ -57,15 +57,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
     tab = widget.initialTab == 1 ? LibraryTab.tag : LibraryTab.folder;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final media = context.read<MediaProvider>();
+      final clipProvider = context.read<ClipProvider>();
       final tagProv = context.read<TagFilterProvider>();
 
       await tagProv.startWatching();
-      await media.loadCollections();
-      media.startWatchingDistinctTags();
+      clipProvider.startWatchingDistinctTags();
 
       if (widget.initialCollectionId != null) {
-        await media.selectCollection(widget.initialCollectionId);
+        await clipProvider.loadCollections();
+        await clipProvider.selectCollection(widget.initialCollectionId);
+      } else {
+        await clipProvider.loadGroups();
       }
     });
   }
@@ -81,11 +83,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   void _onSelectAllTags() {
-    final media = context.read<MediaProvider>();
-    if (media.distinctTags.isEmpty) return;
+    final clipProvider = context.read<ClipProvider>();
+    if (clipProvider.distinctTags.isEmpty) return;
 
     context.read<TagFilterProvider>().setTags(
-          media.distinctTags.map((t) => t.name),
+          clipProvider.distinctTags.map((t) => t.name),
         );
   }
 
@@ -96,7 +98,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final media = context.watch<MediaProvider>();
+    final clipProvider = context.watch<ClipProvider>();
     final tagProv = context.watch<TagFilterProvider>();
 
     return Scaffold(
@@ -114,7 +116,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               child: tab == LibraryTab.folder
                   ? const LibraryFolderSection()
                   : LibraryTagSection(
-                      allTags: media.distinctTags,
+                      allTags: clipProvider.distinctTags,
                       selectedTags: tagProv.activeTagNames.toSet(),
                       onTagSelected: _onTagSelected,
                       onTagDeleted: _onTagDeleted,

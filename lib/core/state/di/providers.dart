@@ -19,7 +19,7 @@ import 'package:parrokit/core/state/provider/iap_provider.dart';
 import 'package:parrokit/features/collection/clip/shorts/presentation/providers/ad_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/features/collection/clip/shorts/presentation/providers/shorts_provider.dart';
 import 'package:parrokit/features/collection/clip/shorts/data/shorts_repository.dart';
 import 'package:parrokit/features/collection/library/presentation/providers/tag_filter_provider.dart';
@@ -80,8 +80,8 @@ List<SingleChildWidget> buildProviders({
       lazy: false,
       create: (c) => ClipActivityProvider(c.read<AppDatabase>()),
     ),
-    ChangeNotifierProvider<MediaProvider>(
-      create: (c) => MediaProvider(c.read<AppDatabase>()),
+    ChangeNotifierProvider<ClipProvider>(
+      create: (c) => ClipProvider(c.read<AppDatabase>()),
     ),
     ChangeNotifierProvider<ShortsProvider>(
       create: (c) => ShortsProvider(ShortsRepository(c.read<AppDatabase>())),

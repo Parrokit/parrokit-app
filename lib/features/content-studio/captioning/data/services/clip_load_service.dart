@@ -9,12 +9,11 @@
 // Data Layer > Services
 // ============================================================================
 
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 import 'package:parrokit/features/content-studio/captioning/data/services/time_code_service.dart';
 import 'package:parrokit/features/content-studio/captioning/domain/clip_form_data.dart';
 import 'package:parrokit/features/content-studio/captioning/domain/editor_mode.dart';
-
 
 /// 편집용 클립 로드 결과.
 class LoadClipResult {
@@ -31,17 +30,17 @@ class LoadClipResult {
 
 /// 편집용 클립 데이터 로드 서비스.
 class ClipLoadService {
-  final MediaProvider mediaProvider;
+  final ClipProvider clipProvider;
   final TimecodeService _timecode = TimecodeService();
 
-  ClipLoadService({required this.mediaProvider});
+  ClipLoadService({required this.clipProvider});
 
   /// 클립 ID로 편집 데이터를 로드합니다.
   Future<LoadClipResult> loadForEdit(int clipId) async {
     // 클립 조회
     final db.Clip clip;
     try {
-      clip = mediaProvider.clips.firstWhere((c) => c.id == clipId);
+      clip = clipProvider.clips.firstWhere((c) => c.id == clipId);
     } catch (_) {
       throw Exception('편집할 클립을 찾을 수 없습니다.');
     }
@@ -49,22 +48,21 @@ class ClipLoadService {
     // 컬렉션 이름 조회 (collectionId가 있는 경우)
     String? collectionName;
     if (clip.collectionId != null) {
-      final collection = mediaProvider.collections
-          .cast<db.Collection?>()
-          .firstWhere(
-            (c) => c?.id == clip.collectionId,
-            orElse: () => null,
-          );
+      final collection =
+          clipProvider.collections.cast<db.Collection?>().firstWhere(
+                (c) => c?.id == clip.collectionId,
+                orElse: () => null,
+              );
       collectionName = collection?.name;
     }
 
     // 태그 조회
-    final tagList = (mediaProvider.tagsByClip[clipId] ?? const <db.Tag>[])
+    final tagList = (clipProvider.tagsByClip[clipId] ?? const <db.Tag>[])
         .map((t) => t.name)
         .toList();
 
     // 세그먼트 조회
-    final clipView = await mediaProvider.fetchClipById(clipId);
+    final clipView = await clipProvider.fetchClipById(clipId);
     if (clipView == null) {
       throw Exception('편집할 클립을 찾을 수 없습니다.');
     }

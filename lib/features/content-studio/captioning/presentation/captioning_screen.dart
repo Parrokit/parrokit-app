@@ -13,7 +13,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/data/local/app_database.dart' as db;
 
@@ -42,7 +42,7 @@ class CaptioningScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => CaptioningViewModel(
-        mediaProvider: context.read<MediaProvider>(),
+        clipProvider: context.read<ClipProvider>(),
         userProvider: context.read<UserProvider>(),
         collectionsDao: context.read<db.AppDatabase>().collectionsDao,
         clipId: clipId,

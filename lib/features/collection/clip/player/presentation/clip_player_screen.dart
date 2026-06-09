@@ -21,7 +21,7 @@ import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/features/collection/clip/player/domain/player_state.dart';
 
 import 'clip_player_view_model.dart';
@@ -51,7 +51,7 @@ class ClipPlayerScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (ctx) => ClipPlayerViewModel(
         clipId: clipId,
-        mediaProvider: ctx.read<MediaProvider>(),
+        clipProvider: ctx.read<ClipProvider>(),
         initialIndex: initialIndex,
       ),
       child: _ClipPlayerView(clipId: clipId),

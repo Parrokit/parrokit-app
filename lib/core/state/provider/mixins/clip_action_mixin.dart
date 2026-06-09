@@ -1,19 +1,19 @@
 // ============================================================================
-// lib/core/provider/mixins/media_action_mixin.dart
+// lib/core/state/provider/mixins/clip_action_mixin.dart
 // ============================================================================
 //
 // [역할]
-// 미디어 CRUD 및 액션 로직 분리 (Mixin)
+// 클립 CRUD 및 액션 로직 분리 (Mixin)
 //
 // [레이어]
-// Core > Provider > Mixins
+// Core > State > Provider > Mixins
 // ============================================================================
 
 import 'package:flutter/foundation.dart';
 import '../../../../../data/local/app_database.dart';
 import '../../../infrastructure/services/media_service.dart';
 
-mixin MediaActionMixin on ChangeNotifier {
+mixin ClipActionMixin on ChangeNotifier {
   AppDatabase get db;
   MediaService get service;
 
@@ -59,15 +59,14 @@ mixin MediaActionMixin on ChangeNotifier {
       await service.deleteClipById(clip.id);
     }
 
-    await (db.delete(db.collections)
-          ..where((c) => c.id.equals(collectionId)))
+    await (db.delete(db.collections)..where((c) => c.id.equals(collectionId)))
         .go();
 
     await selectGroup(selectedGroupId);
     return true;
   }
 
-  Future<void> addMedia({
+  Future<void> addClip({
     required String? collectionName,
     required String clipTitle,
     required String filePath,
@@ -85,7 +84,7 @@ mixin MediaActionMixin on ChangeNotifier {
     );
   }
 
-  Future<void> updateMedia({
+  Future<void> updateClip({
     required int clipId,
     required String? collectionName,
     required String clipTitle,
