@@ -9,12 +9,16 @@ class FolderGrid extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.deleteMode = false,
+    this.isGridView = true,
+    this.onToggleView,
   });
 
   final String sectionTitle;
   final List<String> items;
   final ValueChanged<int> onTap;
   final bool deleteMode;
+  final bool isGridView;
+  final VoidCallback? onToggleView;
 
   @override
   Widget build(BuildContext context) {
@@ -22,43 +26,70 @@ class FolderGrid extends StatelessWidget {
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: Text(sectionTitle,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800)),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(sectionTitle,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800)),
+                if (onToggleView != null)
+                  IconButton(
+                    onPressed: onToggleView,
+                    icon: Icon(isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded),
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
           ),
         ),
         if (items.isEmpty)
           const SliverFillRemaining(
-            child: Center(child: Text('아직 등록된 컬렉션이 없어요.')),
+            child: Center(child: Text('아직 등록된 항목이 없어요.')),
           )
         else
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (ctx, i) {
-                final isVirtualFolder = sectionTitle == '그룹' && i == 0;
-                return FolderCard(
-                  name: items[i],
-                  onTap: () => onTap(i),
-                  deleteMode: deleteMode && !isVirtualFolder,
-                );
-              },
-              childCount: items.length,
-            ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            sliver: isGridView
+                ? SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: 1,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) => _buildCard(i),
+                      childCount: items.length,
+                    ),
+                  )
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: SizedBox(
+                          height: 72,
+                          child: _buildCard(i),
+                        ),
+                      ),
+                      childCount: items.length,
+                    ),
+                  ),
           ),
-        ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
+    );
+  }
+
+  Widget _buildCard(int i) {
+    final isVirtualFolder = sectionTitle == '그룹' && i == 0;
+    return FolderCard(
+      name: items[i],
+      onTap: () => onTap(i),
+      deleteMode: deleteMode && !isVirtualFolder,
+      isGridView: isGridView,
     );
   }
 }

@@ -34,8 +34,10 @@ class LibraryFolderSection extends StatefulWidget {
 
 class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   bool _deleteMode = false;
+  bool _isGridView = true;
 
   void _toggleDeleteMode() => setState(() => _deleteMode = !_deleteMode);
+  void _toggleViewMode() => setState(() => _isGridView = !_isGridView);
 
   void _showFabMenu(BuildContext fabCtx, bool isAtGroupRoot) {
     final renderBox = fabCtx.findRenderObject() as RenderBox;
@@ -319,6 +321,8 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                       sectionTitle: '그룹',
                       items: gridItems,
                       deleteMode: _deleteMode,
+                      isGridView: _isGridView,
+                      onToggleView: _toggleViewMode,
                       onTap: (idx) {
                         if (idx == 0) {
                           if (!_deleteMode) {
@@ -345,6 +349,8 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                           .map((c) => (c as dynamic).name as String)
                           .toList(),
                       deleteMode: _deleteMode,
+                      isGridView: _isGridView,
+                      onToggleView: _toggleViewMode,
                       onTap: (idx) {
                         final col = media.collections[idx];
                         if (_deleteMode) {

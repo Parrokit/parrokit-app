@@ -9,11 +9,13 @@ class FolderCard extends StatelessWidget {
     required this.name,
     required this.onTap,
     this.deleteMode = false,
+    this.isGridView = true,
   });
 
   final String name;
   final VoidCallback onTap;
   final bool deleteMode;
+  final bool isGridView;
 
   @override
   Widget build(BuildContext context) {
@@ -33,26 +35,49 @@ class FolderCard extends StatelessWidget {
           ),
         ),
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              deleteMode ? Icons.delete_outline_rounded : Icons.folder_rounded,
-              size: 28,
-              color: deleteMode ? cs.error : null,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+        child: isGridView
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    deleteMode ? Icons.delete_outline_rounded : Icons.folder_rounded,
+                    size: 28,
                     color: deleteMode ? cs.error : null,
                   ),
-            ),
-          ],
-        ),
+                  const SizedBox(height: 8),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: deleteMode ? cs.error : null,
+                        ),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  const SizedBox(width: 8),
+                  Icon(
+                    deleteMode ? Icons.delete_outline_rounded : Icons.folder_rounded,
+                    size: 28,
+                    color: deleteMode ? cs.error : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: deleteMode ? cs.error : null,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
