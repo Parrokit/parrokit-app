@@ -161,9 +161,9 @@ class MediaProvider extends ChangeNotifier
 
   /// 새 컬렉션 생성 후 목록 갱신.
   Future<void> createCollection(String name) async {
-    // groupId가 추가된 CollectionsDao.findOrCreate를 쓰기 위해 db.into.insert로 구현.
+    final int? targetGroupId = selectedGroupId == -1 ? null : selectedGroupId;
     await db.into(db.collections).insert(
-      CollectionsCompanion.insert(name: name, groupId: Value(selectedGroupId)),
+      CollectionsCompanion.insert(name: name, groupId: Value(targetGroupId)),
     );
     await selectGroup(selectedGroupId); // 현재 그룹의 컬렉션 다시 불러오기
   }

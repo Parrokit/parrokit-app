@@ -91,7 +91,7 @@ class FolderGrid extends StatelessWidget {
   Widget _buildCard(int i) {
     if (i == items.length) {
       return FolderCard(
-        name: '추가하기',
+        name: '$sectionTitle 추가',
         onTap: onAdd!,
         isGridView: isGridView,
         isAddCard: true,
