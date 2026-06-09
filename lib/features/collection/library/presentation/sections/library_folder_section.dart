@@ -42,24 +42,29 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   void _toggleViewMode() => setState(() => _isGridView = !_isGridView);
 
   void _showFabMenu(BuildContext fabCtx, bool isAtGroupRoot) {
-    final renderBox = fabCtx.findRenderObject() as RenderBox;
-    final overlay =
-        Overlay.of(fabCtx).context.findRenderObject() as RenderBox;
-    final offset = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
-    final size = renderBox.size;
+    final cs = Theme.of(fabCtx).colorScheme;
 
-    showMenu<String>(
+    showModalBottomSheet<String>(
       context: fabCtx,
-      position: RelativeRect.fromLTRB(
-        offset.dx,
-        offset.dy - 110,
-        overlay.size.width - offset.dx - size.width,
-        overlay.size.height - offset.dy,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(Icons.add_rounded, color: cs.primary),
+              title: Text(isAtGroupRoot ? '그룹 추가' : '콜렉션 추가'),
+              onTap: () => Navigator.pop(context, 'add'),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline_rounded, color: cs.error),
+              title: Text('삭제 모드', style: TextStyle(color: cs.error)),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
-      items: [
-        PopupMenuItem(value: 'add', child: Text(isAtGroupRoot ? '그룹 추가하기' : '콜렉션 추가하기')),
-        const PopupMenuItem(value: 'delete', child: Text('삭제 모드')),
-      ],
     ).then((value) {
       if (!mounted) return;
       if (value == 'add') {
