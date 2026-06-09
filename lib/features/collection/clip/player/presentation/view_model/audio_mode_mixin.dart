@@ -11,7 +11,7 @@ import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/core/shared/utils/audio_bg.dart';
 import 'package:parrokit/data/local/app_database.dart';
-import 'package:parrokit/features/collection/player/domain/player_state.dart';
+import 'package:parrokit/features/collection/clip/player/domain/player_state.dart';
 
 /// 오디오 전용 모드 믹스인.
 ///

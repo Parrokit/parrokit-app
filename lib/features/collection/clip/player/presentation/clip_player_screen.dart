@@ -22,7 +22,7 @@ import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/state/provider/media_provider.dart';
-import 'package:parrokit/features/collection/player/domain/player_state.dart';
+import 'package:parrokit/features/collection/clip/player/domain/player_state.dart';
 
 import 'clip_player_view_model.dart';
 import 'widgets/circle_icon_button.dart';

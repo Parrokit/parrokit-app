@@ -21,7 +21,7 @@ import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:provider/provider.dart';
 
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
-import 'package:parrokit/features/collection/player/presentation/clip_player_screen.dart';
+import 'package:parrokit/features/collection/clip/player/presentation/clip_player_screen.dart';
 
 import 'widgets/recent_clip_card.dart';
 import 'widgets/recent_list_skeleton.dart';

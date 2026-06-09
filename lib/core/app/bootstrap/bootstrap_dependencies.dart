@@ -5,8 +5,8 @@ import 'package:parrokit/core/infrastructure/repositories/user_repository.dart';
 import 'package:parrokit/core/infrastructure/services/firebase/firebase_auth_service.dart';
 import 'package:parrokit/core/infrastructure/services/firebase/firebase_user_service.dart';
 import 'package:parrokit/data/local/prefs/user_prefs.dart';
-import 'package:parrokit/features/collection/shorts/data/shorts_ad_repository.dart';
-import 'package:parrokit/features/collection/shorts/presentation/providers/ad_provider.dart';
+import 'package:parrokit/features/collection/clip/shorts/data/shorts_ad_repository.dart';
+import 'package:parrokit/features/collection/clip/shorts/presentation/providers/ad_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // 테마 provider를 생성하고 저장된 테마를 로드한다.
