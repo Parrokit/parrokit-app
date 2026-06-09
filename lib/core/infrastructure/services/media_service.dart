@@ -15,11 +15,40 @@ import 'package:path_provider/path_provider.dart';
 import '../../../data/local/app_database.dart';
 import '../../../data/models/clip_view.dart';
 
-/// 미디어 데이터(Collection, Clip) 조작 및 비즈니스 로직 담당 서비스
+/// 미디어 데이터(Group, Collection, Clip) 조작 및 비즈니스 로직 담당 서비스
+/// 추후 Local/Server 동기화를 위해 MediaRepository 인터페이스로 추출될 수 있음.
 class MediaService {
   final AppDatabase db;
 
   MediaService(this.db);
+
+  // ─────────────────────────────────────────────────────────────────
+  // Group Operations
+  // ─────────────────────────────────────────────────────────────────
+
+  Future<List<Group>> getAllGroups() => db.groupsDao.getAllGroups();
+
+  Future<void> createGroup(String name) => db.groupsDao.insertGroup(name);
+
+  Future<void> deleteGroupById(int id) async {
+    // Cascade delete manually (or handle carefully)
+    await db.transaction(() async {
+      final cols = await (db.select(db.collections)..where((c) => c.groupId.equals(id))).get();
+      for (final col in cols) {
+        // Find clips and delete them
+        final clips = await (db.select(db.clips)..where((c) => c.collectionId.equals(col.id))).get();
+        for (final c in clips) {
+          await deleteClipById(c.id);
+        }
+        await (db.delete(db.collections)..where((c) => c.id.equals(col.id))).go();
+      }
+      await db.groupsDao.deleteGroupById(id);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Clip Operations
+  // ─────────────────────────────────────────────────────────────────
 
   /// Clip ID로 단일 클립 정보(세그먼트 포함) 조회.
   Future<ClipView?> fetchClipById(int clipId) async {

@@ -37,7 +37,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
 
   void _toggleDeleteMode() => setState(() => _deleteMode = !_deleteMode);
 
-  void _showFabMenu(BuildContext fabCtx) {
+  void _showFabMenu(BuildContext fabCtx, bool isAtGroupRoot) {
     final renderBox = fabCtx.findRenderObject() as RenderBox;
     final overlay =
         Overlay.of(fabCtx).context.findRenderObject() as RenderBox;
@@ -52,18 +52,86 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
         overlay.size.width - offset.dx - size.width,
         overlay.size.height - offset.dy,
       ),
-      items: const [
-        PopupMenuItem(value: 'add', child: Text('추가하기')),
-        PopupMenuItem(value: 'delete', child: Text('삭제 모드')),
+      items: [
+        PopupMenuItem(value: 'add', child: Text(isAtGroupRoot ? '그룹 추가하기' : '콜렉션 추가하기')),
+        const PopupMenuItem(value: 'delete', child: Text('삭제 모드')),
       ],
     ).then((value) {
       if (!mounted) return;
       if (value == 'add') {
-        _showCreateCollectionDialog(context);
+        if (isAtGroupRoot) {
+          _showCreateGroupDialog(context);
+        } else {
+          _showCreateCollectionDialog(context);
+        }
       } else if (value == 'delete') {
         setState(() => _deleteMode = true);
       }
     });
+  }
+
+  Future<void> _showDeleteGroupDialog(
+    BuildContext context,
+    int groupId,
+    String name,
+  ) async {
+    if (!context.mounted) return;
+    final cs = Theme.of(context).colorScheme;
+    
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('그룹 삭제'),
+        content: Text("'$name' 그룹과 하위의 모든 콜렉션, 클립이 삭제됩니다.\n\n이 작업은 되돌릴 수 없습니다."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true && context.mounted) {
+      await context.read<MediaProvider>().deleteGroupById(groupId);
+    }
+  }
+
+  Future<void> _showCreateGroupDialog(BuildContext context) async {
+    final ctl = TextEditingController();
+    final media = context.read<MediaProvider>();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('그룹 추가'),
+        content: TextField(
+          controller: ctl,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '그룹 이름'),
+          onSubmitted: (_) async {
+            final name = ctl.text.trim();
+            if (name.isNotEmpty) await media.createGroup(name);
+            if (ctx.mounted) Navigator.pop(ctx);
+          },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+          TextButton(
+            onPressed: () async {
+              final name = ctl.text.trim();
+              if (name.isNotEmpty) await media.createGroup(name);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('추가'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _showDeleteCollectionDialog(
@@ -143,7 +211,25 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
 
     // Breadcrumbs 생성
     final crumbs = <String>['라이브러리'];
+    String? selectedGroupName;
     String? selectedCollectionName;
+
+    if (media.selectedGroupId != null) {
+      final grp = media.groups.cast<dynamic>().firstWhere(
+            (g) => (g.id as int) == media.selectedGroupId,
+            orElse: () => null,
+          );
+      if (grp != null) {
+        selectedGroupName = grp.name as String;
+        crumbs.add(selectedGroupName);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            context.read<MediaProvider>().backToGroups();
+          }
+        });
+      }
+    }
 
     if (media.selectedCollectionId != null) {
       final col = media.collections.cast<dynamic>().firstWhere(
@@ -162,10 +248,12 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
       }
     }
 
-    final isInsideCollection = media.selectedCollectionId != null;
+    final isAtClipList = media.selectedCollectionId != null;
+    final isAtCollectionList = media.selectedGroupId != null && media.selectedCollectionId == null;
+    final isAtGroupRoot = media.selectedGroupId == null;
 
-    // 컬렉션 밖으로 나오면 삭제 모드 자동 해제
-    if (isInsideCollection && _deleteMode) {
+    // 클립 목록으로 들어오면 삭제 모드 자동 해제
+    if (isAtClipList && _deleteMode) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => setState(() => _deleteMode = false));
     }
@@ -179,13 +267,16 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
               onTapCrumb: (i) {
                 if (i == 0) {
                   setState(() => _deleteMode = false);
+                  media.backToGroups();
+                } else if (i == 1 && crumbs.length > 2) {
+                  setState(() => _deleteMode = false);
                   media.backToCollections();
                 }
               },
             ),
 
             // 삭제 모드 배너
-            if (_deleteMode && !isInsideCollection)
+            if (_deleteMode && !isAtClipList)
               Container(
                 color: cs.errorContainer,
                 width: double.infinity,
@@ -214,8 +305,27 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
             Expanded(
               child: Builder(
                 builder: (_) {
-                  // 1) Collections
-                  if (!isInsideCollection) {
+                  // 1) Groups
+                  if (isAtGroupRoot) {
+                    return FolderGrid(
+                      sectionTitle: '그룹',
+                      items: media.groups
+                          .map((g) => (g as dynamic).name as String)
+                          .toList(),
+                      deleteMode: _deleteMode,
+                      onTap: (idx) {
+                        final grp = media.groups[idx];
+                        if (_deleteMode) {
+                          _showDeleteGroupDialog(context, grp.id, grp.name);
+                        } else {
+                          media.selectGroup(grp.id);
+                        }
+                      },
+                    );
+                  }
+
+                  // 2) Collections
+                  if (isAtCollectionList) {
                     return FolderGrid(
                       sectionTitle: '컬렉션',
                       items: media.collections
@@ -234,7 +344,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                     );
                   }
 
-                  // 2) Clips
+                  // 3) Clips
                   return ClipListView(
                     items: media.clipItems,
                     onOpen: (ci) {
@@ -256,7 +366,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
           child: Builder(
             builder: (fabCtx) => FloatingActionButton(
               heroTag: 'library_fab',
-              onPressed: isInsideCollection
+              onPressed: isAtClipList
                   ? () {
                       final colName =
                           Uri.encodeComponent(selectedCollectionName ?? '');
@@ -264,8 +374,8 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                         '${AppRoutes.clipsPath}/${AppRoutes.clipsCreatePath}?collectionName=$colName',
                       );
                     }
-                  : () => _showFabMenu(fabCtx),
-              child: Icon(isInsideCollection
+                  : () => _showFabMenu(fabCtx, isAtGroupRoot),
+              child: Icon(isAtClipList
                   ? Icons.add
                   : Icons.more_horiz_rounded),
             ),

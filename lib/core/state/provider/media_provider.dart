@@ -40,6 +40,10 @@ class MediaProvider extends ChangeNotifier
   // State
   // ─────────────────────────────────────────────────────────────────
 
+  List<Group> groups = [];
+  @override
+  int? selectedGroupId;
+
   List<Collection> collections = [];
   @override
   int? selectedCollectionId;
@@ -56,16 +60,66 @@ class MediaProvider extends ChangeNotifier
     return _service.fetchClipById(clipId);
   }
 
-  /// 모든 컬렉션 로드.
+  /// 모든 그룹 로드.
+  @override
+  Future<void> loadGroups() async {
+    groups = await _service.getAllGroups();
+    
+    // 초기화
+    selectedGroupId = null;
+    selectedCollectionId = null;
+    collections = [];
+    clips = [];
+    clipItems = [];
+    tagsByClip = {};
+    notifyListeners();
+  }
+
+  /// 그룹 선택. 그룹에 속한 컬렉션 목록을 불러옵니다.
+  /// id가 null이면 소속 그룹이 없는 최상위 컬렉션을 불러옵니다.
+  @override
+  Future<void> selectGroup(int? id) async {
+    selectedGroupId = id;
+    selectedCollectionId = null;
+    clips = [];
+    clipItems = [];
+    tagsByClip = {};
+
+    if (id == null) {
+      collections = await (db.select(db.collections)
+            ..where((c) => c.groupId.isNull())
+            ..orderBy([(c) => OrderingTerm.asc(c.name)]))
+          .get();
+    } else {
+      collections = await (db.select(db.collections)
+            ..where((c) => c.groupId.equals(id))
+            ..orderBy([(c) => OrderingTerm.asc(c.name)]))
+          .get();
+    }
+    notifyListeners();
+  }
+
+  /// 새 그룹 생성 후 목록 갱신.
+  Future<void> createGroup(String name) async {
+    await _service.createGroup(name);
+    await loadGroups();
+  }
+
+  /// 그룹 삭제 후 목록 갱신.
+  Future<void> deleteGroupById(int id) async {
+    await _service.deleteGroupById(id);
+    if (selectedGroupId == id) {
+      selectedGroupId = null;
+    }
+    await loadGroups();
+  }
+
+  /// 모든 컬렉션 로드 (호환성 또는 필요 시 사용).
   @override
   Future<void> loadCollections() async {
     collections = await (db.select(db.collections)
           ..orderBy([(c) => OrderingTerm.asc(c.name)]))
         .get();
-    selectedCollectionId = null;
-    clips = [];
-    clipItems = [];
-    tagsByClip = {};
     notifyListeners();
   }
 
@@ -103,17 +157,31 @@ class MediaProvider extends ChangeNotifier
 
   /// 새 컬렉션 생성 후 목록 갱신.
   Future<void> createCollection(String name) async {
-    await db.collectionsDao.findOrCreate(name);
-    await loadCollections();
+    // groupId가 추가된 CollectionsDao.findOrCreate를 쓰기 위해 db.into.insert로 구현.
+    await db.into(db.collections).insert(
+      CollectionsCompanion.insert(name: name, groupId: Value(selectedGroupId)),
+    );
+    await selectGroup(selectedGroupId); // 현재 그룹의 컬렉션 다시 불러오기
   }
 
-  /// 컬렉션 목록으로 돌아감.
+  /// 그룹으로 돌아감 (선택한 컬렉션 해제)
   void backToCollections() {
     selectedCollectionId = null;
     clips = [];
     clipItems = [];
     tagsByClip = {};
     notifyListeners();
+  }
+
+  /// 라이브러리 루트(그룹 목록)로 돌아감
+  void backToGroups() {
+    selectedGroupId = null;
+    selectedCollectionId = null;
+    collections = [];
+    clips = [];
+    clipItems = [];
+    tagsByClip = {};
+    loadGroups();
   }
 
   // ─────────────────────────────────────────────────────────────────

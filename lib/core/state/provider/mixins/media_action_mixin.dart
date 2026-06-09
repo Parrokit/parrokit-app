@@ -18,9 +18,12 @@ mixin MediaActionMixin on ChangeNotifier {
   MediaService get service;
 
   // Navigation / Refresh required methods
+  int? get selectedGroupId;
   int? get selectedCollectionId;
 
+  Future<void> selectGroup(int? id);
   Future<void> selectCollection(int? id);
+  Future<void> loadGroups();
   Future<void> loadCollections();
 
   // ─────────────────────────────────────────────────────────────────
@@ -43,7 +46,7 @@ mixin MediaActionMixin on ChangeNotifier {
       }
     }
 
-    await loadCollections();
+    await selectGroup(selectedGroupId);
     return true;
   }
 
@@ -60,7 +63,7 @@ mixin MediaActionMixin on ChangeNotifier {
           ..where((c) => c.id.equals(collectionId)))
         .go();
 
-    await loadCollections();
+    await selectGroup(selectedGroupId);
     return true;
   }
 
