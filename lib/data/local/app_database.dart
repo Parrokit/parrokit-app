@@ -13,6 +13,7 @@ import 'tables/tags.dart';
 import 'tables/clip_tags.dart';
 import 'tables/recent_clip_views.dart';
 import 'tables/groups.dart';
+import 'tables/group_collections.dart';
 
 import 'dao/collections_dao.dart';
 import 'dao/groups_dao.dart';
@@ -29,6 +30,7 @@ part 'app_database.g.dart';
     Tags,
     ClipTags,
     RecentClipViews,
+    GroupCollections,
   ],
   daos: [
     GroupsDao,

@@ -31,17 +31,10 @@ class MediaService {
   Future<void> createGroup(String name) => db.groupsDao.insertGroup(name);
 
   Future<void> deleteGroupById(int id) async {
-    // Cascade delete manually (or handle carefully)
     await db.transaction(() async {
-      final cols = await (db.select(db.collections)..where((c) => c.groupId.equals(id))).get();
-      for (final col in cols) {
-        // Find clips and delete them
-        final clips = await (db.select(db.clips)..where((c) => c.collectionId.equals(col.id))).get();
-        for (final c in clips) {
-          await deleteClipById(c.id);
-        }
-        await (db.delete(db.collections)..where((c) => c.id.equals(col.id))).go();
-      }
+      // 그룹과 매핑된 연결 정보 삭제
+      await (db.delete(db.groupCollections)..where((gc) => gc.groupId.equals(id))).go();
+      // 그룹 자체 삭제
       await db.groupsDao.deleteGroupById(id);
     });
   }

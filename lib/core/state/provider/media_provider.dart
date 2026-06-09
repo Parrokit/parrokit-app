@@ -86,20 +86,29 @@ class MediaProvider extends ChangeNotifier
     tagsByClip = {};
 
     if (id == null) {
-      collections = await (db.select(db.collections)
-            ..where((c) => c.groupId.isNull())
-            ..orderBy([(c) => OrderingTerm.asc(c.name)]))
-          .get();
+      // 그룹이 없는 콜렉션
+      final query = db.select(db.collections).join([
+        leftOuterJoin(db.groupCollections, db.groupCollections.collectionId.equalsExp(db.collections.id))
+      ])..where(db.groupCollections.groupId.isNull());
+      
+      final rows = await query.get();
+      collections = rows.map((r) => r.readTable(db.collections)).toList();
     } else if (id == -1) {
+      // 모든 콜렉션
       collections = await (db.select(db.collections)
             ..orderBy([(c) => OrderingTerm.asc(c.name)]))
           .get();
     } else {
-      collections = await (db.select(db.collections)
-            ..where((c) => c.groupId.equals(id))
-            ..orderBy([(c) => OrderingTerm.asc(c.name)]))
-          .get();
+      // 특정 그룹의 콜렉션
+      final query = db.select(db.collections).join([
+        innerJoin(db.groupCollections, db.groupCollections.collectionId.equalsExp(db.collections.id))
+      ])..where(db.groupCollections.groupId.equals(id));
+
+      final rows = await query.get();
+      collections = rows.map((r) => r.readTable(db.collections)).toList();
     }
+    
+    collections.sort((a, b) => a.name.compareTo(b.name));
     notifyListeners();
   }
 
@@ -161,11 +170,18 @@ class MediaProvider extends ChangeNotifier
 
   /// 새 컬렉션 생성 후 목록 갱신.
   Future<void> createCollection(String name) async {
-    final int? targetGroupId = selectedGroupId == -1 ? null : selectedGroupId;
-    await db.into(db.collections).insert(
-      CollectionsCompanion.insert(name: name, groupId: Value(targetGroupId)),
+    final collectionId = await db.into(db.collections).insert(
+      CollectionsCompanion.insert(name: name),
     );
-    await selectGroup(selectedGroupId); // 현재 그룹의 컬렉션 다시 불러오기
+    
+    if (selectedGroupId != null && selectedGroupId != -1) {
+      await db.into(db.groupCollections).insert(
+        GroupCollectionsCompanion.insert(
+            groupId: selectedGroupId!, collectionId: collectionId),
+      );
+    }
+    
+    await selectGroup(selectedGroupId); // 현재 그룹의 콜렉션 다시 불러오기
   }
 
   /// 그룹으로 돌아감 (선택한 컬렉션 해제)
@@ -244,5 +260,58 @@ class MediaProvider extends ChangeNotifier
       );
     }
   }
+  /// 모든 콜렉션 조회 (관리 모달용)
+  Future<List<Collection>> fetchAllCollections() async {
+    return await (db.select(db.collections)..orderBy([(c) => OrderingTerm.asc(c.name)])).get();
+  }
 
+  /// 콜렉션의 매핑된 그룹 ID 목록 조회
+  Future<List<int>> getGroupIdsForCollection(int collectionId) async {
+    final query = db.select(db.groupCollections)
+      ..where((gc) => gc.collectionId.equals(collectionId));
+    final rows = await query.get();
+    return rows.map((r) => r.groupId).toList();
+  }
+
+  /// 특정 그룹의 매핑된 콜렉션 ID 목록 조회
+  Future<List<int>> getCollectionIdsForGroup(int groupId) async {
+    final query = db.select(db.groupCollections)
+      ..where((gc) => gc.groupId.equals(groupId));
+    final rows = await query.get();
+    return rows.map((r) => r.collectionId).toList();
+  }
+
+  /// 특정 콜렉션의 그룹 매핑 업데이트
+  Future<void> updateGroupsForCollection(int collectionId, List<int> groupIds) async {
+    await db.transaction(() async {
+      await (db.delete(db.groupCollections)
+            ..where((gc) => gc.collectionId.equals(collectionId)))
+          .go();
+      for (final gid in groupIds) {
+        await db.into(db.groupCollections).insert(
+          GroupCollectionsCompanion.insert(groupId: gid, collectionId: collectionId),
+        );
+      }
+    });
+    // 현재 보고 있는 화면이 갱신되어야 할 수 있음
+    await loadGroups();
+    await selectGroup(selectedGroupId);
+  }
+
+  /// 특정 그룹의 콜렉션 매핑 업데이트
+  Future<void> updateCollectionsForGroup(int groupId, List<int> collectionIds) async {
+    await db.transaction(() async {
+      await (db.delete(db.groupCollections)
+            ..where((gc) => gc.groupId.equals(groupId)))
+          .go();
+      for (final cid in collectionIds) {
+        await db.into(db.groupCollections).insert(
+          GroupCollectionsCompanion.insert(groupId: groupId, collectionId: cid),
+        );
+      }
+    });
+    // 현재 보고 있는 화면이 갱신되어야 할 수 있음
+    await loadGroups();
+    await selectGroup(selectedGroupId);
+  }
 }

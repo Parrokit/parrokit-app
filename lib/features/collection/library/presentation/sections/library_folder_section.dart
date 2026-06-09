@@ -18,6 +18,7 @@ import 'package:parrokit/core/app/router/app_router.dart';
 import 'package:parrokit/core/state/provider/media_provider.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/folder_grid.dart';
+import '../widgets/group_collection_manager_modal.dart';
 import '../widgets/clip_list_view.dart';
 
 /// [역할]
@@ -61,6 +62,11 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
               title: Text('삭제 모드', style: TextStyle(color: cs.error)),
               onTap: () => Navigator.pop(context, 'delete'),
             ),
+            ListTile(
+              leading: Icon(Icons.settings_suggest_rounded, color: cs.primary),
+              title: const Text('그룹/콜렉션 관리'),
+              onTap: () => Navigator.pop(context, 'manage'),
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -75,6 +81,15 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
         }
       } else if (value == 'delete') {
         setState(() => _deleteMode = true);
+      } else if (value == 'manage') {
+        final mp = context.read<MediaProvider>();
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => GroupCollectionManagerModal(
+            initialGroupId: mp.selectedGroupId == -1 ? null : mp.selectedGroupId,
+          ),
+        );
       }
     });
   }

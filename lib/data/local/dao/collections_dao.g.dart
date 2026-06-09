@@ -4,7 +4,6 @@ part of 'collections_dao.dart';
 
 // ignore_for_file: type=lint
 mixin _$CollectionsDaoMixin on DatabaseAccessor<AppDatabase> {
-  $GroupsTable get groups => attachedDatabase.groups;
   $CollectionsTable get collections => attachedDatabase.collections;
   $ClipsTable get clips => attachedDatabase.clips;
   $SegmentsTable get segments => attachedDatabase.segments;
@@ -17,8 +16,6 @@ mixin _$CollectionsDaoMixin on DatabaseAccessor<AppDatabase> {
 class CollectionsDaoManager {
   final _$CollectionsDaoMixin _db;
   CollectionsDaoManager(this._db);
-  $$GroupsTableTableManager get groups =>
-      $$GroupsTableTableManager(_db.attachedDatabase, _db.groups);
   $$CollectionsTableTableManager get collections =>
       $$CollectionsTableTableManager(_db.attachedDatabase, _db.collections);
   $$ClipsTableTableManager get clips =>

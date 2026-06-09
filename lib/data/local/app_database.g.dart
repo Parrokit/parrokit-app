@@ -194,22 +194,13 @@ class $CollectionsTable extends Collections
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
-  static const VerificationMeta _groupIdMeta =
-      const VerificationMeta('groupId');
-  @override
-  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
-      'group_id', aliasedName, true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES "groups" (id)'));
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
   @override
-  List<GeneratedColumn> get $columns => [id, groupId, name];
+  List<GeneratedColumn> get $columns => [id, name];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -222,10 +213,6 @@ class $CollectionsTable extends Collections
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('group_id')) {
-      context.handle(_groupIdMeta,
-          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -244,8 +231,6 @@ class $CollectionsTable extends Collections
     return Collection(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      groupId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}group_id']),
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
     );
@@ -259,16 +244,12 @@ class $CollectionsTable extends Collections
 
 class Collection extends DataClass implements Insertable<Collection> {
   final int id;
-  final int? groupId;
   final String name;
-  const Collection({required this.id, this.groupId, required this.name});
+  const Collection({required this.id, required this.name});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    if (!nullToAbsent || groupId != null) {
-      map['group_id'] = Variable<int>(groupId);
-    }
     map['name'] = Variable<String>(name);
     return map;
   }
@@ -276,9 +257,6 @@ class Collection extends DataClass implements Insertable<Collection> {
   CollectionsCompanion toCompanion(bool nullToAbsent) {
     return CollectionsCompanion(
       id: Value(id),
-      groupId: groupId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(groupId),
       name: Value(name),
     );
   }
@@ -288,7 +266,6 @@ class Collection extends DataClass implements Insertable<Collection> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Collection(
       id: serializer.fromJson<int>(json['id']),
-      groupId: serializer.fromJson<int?>(json['groupId']),
       name: serializer.fromJson<String>(json['name']),
     );
   }
@@ -297,24 +274,17 @@ class Collection extends DataClass implements Insertable<Collection> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'groupId': serializer.toJson<int?>(groupId),
       'name': serializer.toJson<String>(name),
     };
   }
 
-  Collection copyWith(
-          {int? id,
-          Value<int?> groupId = const Value.absent(),
-          String? name}) =>
-      Collection(
+  Collection copyWith({int? id, String? name}) => Collection(
         id: id ?? this.id,
-        groupId: groupId.present ? groupId.value : this.groupId,
         name: name ?? this.name,
       );
   Collection copyWithCompanion(CollectionsCompanion data) {
     return Collection(
       id: data.id.present ? data.id.value : this.id,
-      groupId: data.groupId.present ? data.groupId.value : this.groupId,
       name: data.name.present ? data.name.value : this.name,
     );
   }
@@ -323,54 +293,43 @@ class Collection extends DataClass implements Insertable<Collection> {
   String toString() {
     return (StringBuffer('Collection(')
           ..write('id: $id, ')
-          ..write('groupId: $groupId, ')
           ..write('name: $name')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, groupId, name);
+  int get hashCode => Object.hash(id, name);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Collection &&
-          other.id == this.id &&
-          other.groupId == this.groupId &&
-          other.name == this.name);
+      (other is Collection && other.id == this.id && other.name == this.name);
 }
 
 class CollectionsCompanion extends UpdateCompanion<Collection> {
   final Value<int> id;
-  final Value<int?> groupId;
   final Value<String> name;
   const CollectionsCompanion({
     this.id = const Value.absent(),
-    this.groupId = const Value.absent(),
     this.name = const Value.absent(),
   });
   CollectionsCompanion.insert({
     this.id = const Value.absent(),
-    this.groupId = const Value.absent(),
     required String name,
   }) : name = Value(name);
   static Insertable<Collection> custom({
     Expression<int>? id,
-    Expression<int>? groupId,
     Expression<String>? name,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (groupId != null) 'group_id': groupId,
       if (name != null) 'name': name,
     });
   }
 
-  CollectionsCompanion copyWith(
-      {Value<int>? id, Value<int?>? groupId, Value<String>? name}) {
+  CollectionsCompanion copyWith({Value<int>? id, Value<String>? name}) {
     return CollectionsCompanion(
       id: id ?? this.id,
-      groupId: groupId ?? this.groupId,
       name: name ?? this.name,
     );
   }
@@ -380,9 +339,6 @@ class CollectionsCompanion extends UpdateCompanion<Collection> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
-    }
-    if (groupId.present) {
-      map['group_id'] = Variable<int>(groupId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -394,7 +350,6 @@ class CollectionsCompanion extends UpdateCompanion<Collection> {
   String toString() {
     return (StringBuffer('CollectionsCompanion(')
           ..write('id: $id, ')
-          ..write('groupId: $groupId, ')
           ..write('name: $name')
           ..write(')'))
         .toString();
@@ -1634,6 +1589,209 @@ class RecentClipViewsCompanion extends UpdateCompanion<RecentClipView> {
   }
 }
 
+class $GroupCollectionsTable extends GroupCollections
+    with TableInfo<$GroupCollectionsTable, GroupCollection> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GroupCollectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
+      'group_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES "groups" (id)'));
+  static const VerificationMeta _collectionIdMeta =
+      const VerificationMeta('collectionId');
+  @override
+  late final GeneratedColumn<int> collectionId = GeneratedColumn<int>(
+      'collection_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES collections (id)'));
+  @override
+  List<GeneratedColumn> get $columns => [groupId, collectionId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'group_collections';
+  @override
+  VerificationContext validateIntegrity(Insertable<GroupCollection> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('collection_id')) {
+      context.handle(
+          _collectionIdMeta,
+          collectionId.isAcceptableOrUnknown(
+              data['collection_id']!, _collectionIdMeta));
+    } else if (isInserting) {
+      context.missing(_collectionIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {groupId, collectionId};
+  @override
+  GroupCollection map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GroupCollection(
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}group_id'])!,
+      collectionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}collection_id'])!,
+    );
+  }
+
+  @override
+  $GroupCollectionsTable createAlias(String alias) {
+    return $GroupCollectionsTable(attachedDatabase, alias);
+  }
+}
+
+class GroupCollection extends DataClass implements Insertable<GroupCollection> {
+  final int groupId;
+  final int collectionId;
+  const GroupCollection({required this.groupId, required this.collectionId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['group_id'] = Variable<int>(groupId);
+    map['collection_id'] = Variable<int>(collectionId);
+    return map;
+  }
+
+  GroupCollectionsCompanion toCompanion(bool nullToAbsent) {
+    return GroupCollectionsCompanion(
+      groupId: Value(groupId),
+      collectionId: Value(collectionId),
+    );
+  }
+
+  factory GroupCollection.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GroupCollection(
+      groupId: serializer.fromJson<int>(json['groupId']),
+      collectionId: serializer.fromJson<int>(json['collectionId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'groupId': serializer.toJson<int>(groupId),
+      'collectionId': serializer.toJson<int>(collectionId),
+    };
+  }
+
+  GroupCollection copyWith({int? groupId, int? collectionId}) =>
+      GroupCollection(
+        groupId: groupId ?? this.groupId,
+        collectionId: collectionId ?? this.collectionId,
+      );
+  GroupCollection copyWithCompanion(GroupCollectionsCompanion data) {
+    return GroupCollection(
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      collectionId: data.collectionId.present
+          ? data.collectionId.value
+          : this.collectionId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupCollection(')
+          ..write('groupId: $groupId, ')
+          ..write('collectionId: $collectionId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(groupId, collectionId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GroupCollection &&
+          other.groupId == this.groupId &&
+          other.collectionId == this.collectionId);
+}
+
+class GroupCollectionsCompanion extends UpdateCompanion<GroupCollection> {
+  final Value<int> groupId;
+  final Value<int> collectionId;
+  final Value<int> rowid;
+  const GroupCollectionsCompanion({
+    this.groupId = const Value.absent(),
+    this.collectionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GroupCollectionsCompanion.insert({
+    required int groupId,
+    required int collectionId,
+    this.rowid = const Value.absent(),
+  })  : groupId = Value(groupId),
+        collectionId = Value(collectionId);
+  static Insertable<GroupCollection> custom({
+    Expression<int>? groupId,
+    Expression<int>? collectionId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (groupId != null) 'group_id': groupId,
+      if (collectionId != null) 'collection_id': collectionId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GroupCollectionsCompanion copyWith(
+      {Value<int>? groupId, Value<int>? collectionId, Value<int>? rowid}) {
+    return GroupCollectionsCompanion(
+      groupId: groupId ?? this.groupId,
+      collectionId: collectionId ?? this.collectionId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (groupId.present) {
+      map['group_id'] = Variable<int>(groupId.value);
+    }
+    if (collectionId.present) {
+      map['collection_id'] = Variable<int>(collectionId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GroupCollectionsCompanion(')
+          ..write('groupId: $groupId, ')
+          ..write('collectionId: $collectionId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1645,6 +1803,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ClipTagsTable clipTags = $ClipTagsTable(this);
   late final $RecentClipViewsTable recentClipViews =
       $RecentClipViewsTable(this);
+  late final $GroupCollectionsTable groupCollections =
+      $GroupCollectionsTable(this);
   late final GroupsDao groupsDao = GroupsDao(this as AppDatabase);
   late final CollectionsDao collectionsDao =
       CollectionsDao(this as AppDatabase);
@@ -1652,8 +1812,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [groups, collections, clips, segments, tags, clipTags, recentClipViews];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        groups,
+        collections,
+        clips,
+        segments,
+        tags,
+        clipTags,
+        recentClipViews,
+        groupCollections
+      ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
         [
@@ -1695,17 +1863,19 @@ final class $$GroupsTableReferences
     extends BaseReferences<_$AppDatabase, $GroupsTable, Group> {
   $$GroupsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static MultiTypedResultKey<$CollectionsTable, List<Collection>>
-      _collectionsRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.collections,
-              aliasName:
-                  $_aliasNameGenerator(db.groups.id, db.collections.groupId));
+  static MultiTypedResultKey<$GroupCollectionsTable, List<GroupCollection>>
+      _groupCollectionsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.groupCollections,
+              aliasName: $_aliasNameGenerator(
+                  db.groups.id, db.groupCollections.groupId));
 
-  $$CollectionsTableProcessedTableManager get collectionsRefs {
-    final manager = $$CollectionsTableTableManager($_db, $_db.collections)
-        .filter((f) => f.groupId.id.sqlEquals($_itemColumn<int>('id')!));
+  $$GroupCollectionsTableProcessedTableManager get groupCollectionsRefs {
+    final manager =
+        $$GroupCollectionsTableTableManager($_db, $_db.groupCollections)
+            .filter((f) => f.groupId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_collectionsRefsTable($_db));
+    final cache =
+        $_typedResult.readTableOrNull(_groupCollectionsRefsTable($_db));
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
@@ -1726,19 +1896,19 @@ class $$GroupsTableFilterComposer
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
-  Expression<bool> collectionsRefs(
-      Expression<bool> Function($$CollectionsTableFilterComposer f) f) {
-    final $$CollectionsTableFilterComposer composer = $composerBuilder(
+  Expression<bool> groupCollectionsRefs(
+      Expression<bool> Function($$GroupCollectionsTableFilterComposer f) f) {
+    final $$GroupCollectionsTableFilterComposer composer = $composerBuilder(
         composer: this,
         getCurrentColumn: (t) => t.id,
-        referencedTable: $db.collections,
+        referencedTable: $db.groupCollections,
         getReferencedColumn: (t) => t.groupId,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$CollectionsTableFilterComposer(
+            $$GroupCollectionsTableFilterComposer(
               $db: $db,
-              $table: $db.collections,
+              $table: $db.groupCollections,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -1779,19 +1949,19 @@ class $$GroupsTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
-  Expression<T> collectionsRefs<T extends Object>(
-      Expression<T> Function($$CollectionsTableAnnotationComposer a) f) {
-    final $$CollectionsTableAnnotationComposer composer = $composerBuilder(
+  Expression<T> groupCollectionsRefs<T extends Object>(
+      Expression<T> Function($$GroupCollectionsTableAnnotationComposer a) f) {
+    final $$GroupCollectionsTableAnnotationComposer composer = $composerBuilder(
         composer: this,
         getCurrentColumn: (t) => t.id,
-        referencedTable: $db.collections,
+        referencedTable: $db.groupCollections,
         getReferencedColumn: (t) => t.groupId,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
-            $$CollectionsTableAnnotationComposer(
+            $$GroupCollectionsTableAnnotationComposer(
               $db: $db,
-              $table: $db.collections,
+              $table: $db.groupCollections,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -1812,7 +1982,7 @@ class $$GroupsTableTableManager extends RootTableManager<
     $$GroupsTableUpdateCompanionBuilder,
     (Group, $$GroupsTableReferences),
     Group,
-    PrefetchHooks Function({bool collectionsRefs})> {
+    PrefetchHooks Function({bool groupCollectionsRefs})> {
   $$GroupsTableTableManager(_$AppDatabase db, $GroupsTable table)
       : super(TableManagerState(
           db: db,
@@ -1843,21 +2013,24 @@ class $$GroupsTableTableManager extends RootTableManager<
               .map((e) =>
                   (e.readTable(table), $$GroupsTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({collectionsRefs = false}) {
+          prefetchHooksCallback: ({groupCollectionsRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (collectionsRefs) db.collections],
+              explicitlyWatchedTables: [
+                if (groupCollectionsRefs) db.groupCollections
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
-                  if (collectionsRefs)
-                    await $_getPrefetchedData<Group, $GroupsTable, Collection>(
+                  if (groupCollectionsRefs)
+                    await $_getPrefetchedData<Group, $GroupsTable,
+                            GroupCollection>(
                         currentTable: table,
-                        referencedTable:
-                            $$GroupsTableReferences._collectionsRefsTable(db),
+                        referencedTable: $$GroupsTableReferences
+                            ._groupCollectionsRefsTable(db),
                         managerFromTypedResult: (p0) =>
                             $$GroupsTableReferences(db, table, p0)
-                                .collectionsRefs,
+                                .groupCollectionsRefs,
                         referencedItemsForCurrentItem: (item,
                                 referencedItems) =>
                             referencedItems.where((e) => e.groupId == item.id),
@@ -1880,37 +2053,21 @@ typedef $$GroupsTableProcessedTableManager = ProcessedTableManager<
     $$GroupsTableUpdateCompanionBuilder,
     (Group, $$GroupsTableReferences),
     Group,
-    PrefetchHooks Function({bool collectionsRefs})>;
+    PrefetchHooks Function({bool groupCollectionsRefs})>;
 typedef $$CollectionsTableCreateCompanionBuilder = CollectionsCompanion
     Function({
   Value<int> id,
-  Value<int?> groupId,
   required String name,
 });
 typedef $$CollectionsTableUpdateCompanionBuilder = CollectionsCompanion
     Function({
   Value<int> id,
-  Value<int?> groupId,
   Value<String> name,
 });
 
 final class $$CollectionsTableReferences
     extends BaseReferences<_$AppDatabase, $CollectionsTable, Collection> {
   $$CollectionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $GroupsTable _groupIdTable(_$AppDatabase db) => db.groups
-      .createAlias($_aliasNameGenerator(db.collections.groupId, db.groups.id));
-
-  $$GroupsTableProcessedTableManager? get groupId {
-    final $_column = $_itemColumn<int>('group_id');
-    if ($_column == null) return null;
-    final manager = $$GroupsTableTableManager($_db, $_db.groups)
-        .filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_groupIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
-  }
 
   static MultiTypedResultKey<$ClipsTable, List<Clip>> _clipsRefsTable(
           _$AppDatabase db) =>
@@ -1923,6 +2080,23 @@ final class $$CollectionsTableReferences
         .filter((f) => f.collectionId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_clipsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
+  static MultiTypedResultKey<$GroupCollectionsTable, List<GroupCollection>>
+      _groupCollectionsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.groupCollections,
+              aliasName: $_aliasNameGenerator(
+                  db.collections.id, db.groupCollections.collectionId));
+
+  $$GroupCollectionsTableProcessedTableManager get groupCollectionsRefs {
+    final manager = $$GroupCollectionsTableTableManager(
+            $_db, $_db.groupCollections)
+        .filter((f) => f.collectionId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache =
+        $_typedResult.readTableOrNull(_groupCollectionsRefsTable($_db));
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
@@ -1943,26 +2117,6 @@ class $$CollectionsTableFilterComposer
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
-  $$GroupsTableFilterComposer get groupId {
-    final $$GroupsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.groupId,
-        referencedTable: $db.groups,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$GroupsTableFilterComposer(
-              $db: $db,
-              $table: $db.groups,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
-
   Expression<bool> clipsRefs(
       Expression<bool> Function($$ClipsTableFilterComposer f) f) {
     final $$ClipsTableFilterComposer composer = $composerBuilder(
@@ -1976,6 +2130,27 @@ class $$CollectionsTableFilterComposer
             $$ClipsTableFilterComposer(
               $db: $db,
               $table: $db.clips,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> groupCollectionsRefs(
+      Expression<bool> Function($$GroupCollectionsTableFilterComposer f) f) {
+    final $$GroupCollectionsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.groupCollections,
+        getReferencedColumn: (t) => t.collectionId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$GroupCollectionsTableFilterComposer(
+              $db: $db,
+              $table: $db.groupCollections,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -1999,26 +2174,6 @@ class $$CollectionsTableOrderingComposer
 
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
-
-  $$GroupsTableOrderingComposer get groupId {
-    final $$GroupsTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.groupId,
-        referencedTable: $db.groups,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$GroupsTableOrderingComposer(
-              $db: $db,
-              $table: $db.groups,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
 }
 
 class $$CollectionsTableAnnotationComposer
@@ -2035,26 +2190,6 @@ class $$CollectionsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
-
-  $$GroupsTableAnnotationComposer get groupId {
-    final $$GroupsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.groupId,
-        referencedTable: $db.groups,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$GroupsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.groups,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
 
   Expression<T> clipsRefs<T extends Object>(
       Expression<T> Function($$ClipsTableAnnotationComposer a) f) {
@@ -2076,6 +2211,27 @@ class $$CollectionsTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> groupCollectionsRefs<T extends Object>(
+      Expression<T> Function($$GroupCollectionsTableAnnotationComposer a) f) {
+    final $$GroupCollectionsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.groupCollections,
+        getReferencedColumn: (t) => t.collectionId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$GroupCollectionsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.groupCollections,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$CollectionsTableTableManager extends RootTableManager<
@@ -2089,7 +2245,7 @@ class $$CollectionsTableTableManager extends RootTableManager<
     $$CollectionsTableUpdateCompanionBuilder,
     (Collection, $$CollectionsTableReferences),
     Collection,
-    PrefetchHooks Function({bool groupId, bool clipsRefs})> {
+    PrefetchHooks Function({bool clipsRefs, bool groupCollectionsRefs})> {
   $$CollectionsTableTableManager(_$AppDatabase db, $CollectionsTable table)
       : super(TableManagerState(
           db: db,
@@ -2102,22 +2258,18 @@ class $$CollectionsTableTableManager extends RootTableManager<
               $$CollectionsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<int?> groupId = const Value.absent(),
             Value<String> name = const Value.absent(),
           }) =>
               CollectionsCompanion(
             id: id,
-            groupId: groupId,
             name: name,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
-            Value<int?> groupId = const Value.absent(),
             required String name,
           }) =>
               CollectionsCompanion.insert(
             id: id,
-            groupId: groupId,
             name: name,
           ),
           withReferenceMapper: (p0) => p0
@@ -2126,36 +2278,15 @@ class $$CollectionsTableTableManager extends RootTableManager<
                     $$CollectionsTableReferences(db, table, e)
                   ))
               .toList(),
-          prefetchHooksCallback: ({groupId = false, clipsRefs = false}) {
+          prefetchHooksCallback: (
+              {clipsRefs = false, groupCollectionsRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (clipsRefs) db.clips],
-              addJoins: <
-                  T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic>>(state) {
-                if (groupId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.groupId,
-                    referencedTable:
-                        $$CollectionsTableReferences._groupIdTable(db),
-                    referencedColumn:
-                        $$CollectionsTableReferences._groupIdTable(db).id,
-                  ) as T;
-                }
-
-                return state;
-              },
+              explicitlyWatchedTables: [
+                if (clipsRefs) db.clips,
+                if (groupCollectionsRefs) db.groupCollections
+              ],
+              addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (clipsRefs)
@@ -2167,6 +2298,19 @@ class $$CollectionsTableTableManager extends RootTableManager<
                         managerFromTypedResult: (p0) =>
                             $$CollectionsTableReferences(db, table, p0)
                                 .clipsRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.collectionId == item.id),
+                        typedResults: items),
+                  if (groupCollectionsRefs)
+                    await $_getPrefetchedData<Collection, $CollectionsTable,
+                            GroupCollection>(
+                        currentTable: table,
+                        referencedTable: $$CollectionsTableReferences
+                            ._groupCollectionsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$CollectionsTableReferences(db, table, p0)
+                                .groupCollectionsRefs,
                         referencedItemsForCurrentItem:
                             (item, referencedItems) => referencedItems
                                 .where((e) => e.collectionId == item.id),
@@ -2189,7 +2333,7 @@ typedef $$CollectionsTableProcessedTableManager = ProcessedTableManager<
     $$CollectionsTableUpdateCompanionBuilder,
     (Collection, $$CollectionsTableReferences),
     Collection,
-    PrefetchHooks Function({bool groupId, bool clipsRefs})>;
+    PrefetchHooks Function({bool clipsRefs, bool groupCollectionsRefs})>;
 typedef $$ClipsTableCreateCompanionBuilder = ClipsCompanion Function({
   Value<int> id,
   Value<int?> collectionId,
@@ -3688,6 +3832,314 @@ typedef $$RecentClipViewsTableProcessedTableManager = ProcessedTableManager<
     (RecentClipView, $$RecentClipViewsTableReferences),
     RecentClipView,
     PrefetchHooks Function({bool clipId})>;
+typedef $$GroupCollectionsTableCreateCompanionBuilder
+    = GroupCollectionsCompanion Function({
+  required int groupId,
+  required int collectionId,
+  Value<int> rowid,
+});
+typedef $$GroupCollectionsTableUpdateCompanionBuilder
+    = GroupCollectionsCompanion Function({
+  Value<int> groupId,
+  Value<int> collectionId,
+  Value<int> rowid,
+});
+
+final class $$GroupCollectionsTableReferences extends BaseReferences<
+    _$AppDatabase, $GroupCollectionsTable, GroupCollection> {
+  $$GroupCollectionsTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $GroupsTable _groupIdTable(_$AppDatabase db) => db.groups.createAlias(
+      $_aliasNameGenerator(db.groupCollections.groupId, db.groups.id));
+
+  $$GroupsTableProcessedTableManager get groupId {
+    final $_column = $_itemColumn<int>('group_id')!;
+
+    final manager = $$GroupsTableTableManager($_db, $_db.groups)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_groupIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $CollectionsTable _collectionIdTable(_$AppDatabase db) =>
+      db.collections.createAlias($_aliasNameGenerator(
+          db.groupCollections.collectionId, db.collections.id));
+
+  $$CollectionsTableProcessedTableManager get collectionId {
+    final $_column = $_itemColumn<int>('collection_id')!;
+
+    final manager = $$CollectionsTableTableManager($_db, $_db.collections)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_collectionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$GroupCollectionsTableFilterComposer
+    extends Composer<_$AppDatabase, $GroupCollectionsTable> {
+  $$GroupCollectionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$GroupsTableFilterComposer get groupId {
+    final $$GroupsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.groupId,
+        referencedTable: $db.groups,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$GroupsTableFilterComposer(
+              $db: $db,
+              $table: $db.groups,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$CollectionsTableFilterComposer get collectionId {
+    final $$CollectionsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.collectionId,
+        referencedTable: $db.collections,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CollectionsTableFilterComposer(
+              $db: $db,
+              $table: $db.collections,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$GroupCollectionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $GroupCollectionsTable> {
+  $$GroupCollectionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$GroupsTableOrderingComposer get groupId {
+    final $$GroupsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.groupId,
+        referencedTable: $db.groups,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$GroupsTableOrderingComposer(
+              $db: $db,
+              $table: $db.groups,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$CollectionsTableOrderingComposer get collectionId {
+    final $$CollectionsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.collectionId,
+        referencedTable: $db.collections,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CollectionsTableOrderingComposer(
+              $db: $db,
+              $table: $db.collections,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$GroupCollectionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GroupCollectionsTable> {
+  $$GroupCollectionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$GroupsTableAnnotationComposer get groupId {
+    final $$GroupsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.groupId,
+        referencedTable: $db.groups,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$GroupsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.groups,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$CollectionsTableAnnotationComposer get collectionId {
+    final $$CollectionsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.collectionId,
+        referencedTable: $db.collections,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CollectionsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.collections,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$GroupCollectionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GroupCollectionsTable,
+    GroupCollection,
+    $$GroupCollectionsTableFilterComposer,
+    $$GroupCollectionsTableOrderingComposer,
+    $$GroupCollectionsTableAnnotationComposer,
+    $$GroupCollectionsTableCreateCompanionBuilder,
+    $$GroupCollectionsTableUpdateCompanionBuilder,
+    (GroupCollection, $$GroupCollectionsTableReferences),
+    GroupCollection,
+    PrefetchHooks Function({bool groupId, bool collectionId})> {
+  $$GroupCollectionsTableTableManager(
+      _$AppDatabase db, $GroupCollectionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GroupCollectionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GroupCollectionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GroupCollectionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> groupId = const Value.absent(),
+            Value<int> collectionId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupCollectionsCompanion(
+            groupId: groupId,
+            collectionId: collectionId,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required int groupId,
+            required int collectionId,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GroupCollectionsCompanion.insert(
+            groupId: groupId,
+            collectionId: collectionId,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$GroupCollectionsTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({groupId = false, collectionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (groupId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.groupId,
+                    referencedTable:
+                        $$GroupCollectionsTableReferences._groupIdTable(db),
+                    referencedColumn:
+                        $$GroupCollectionsTableReferences._groupIdTable(db).id,
+                  ) as T;
+                }
+                if (collectionId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.collectionId,
+                    referencedTable: $$GroupCollectionsTableReferences
+                        ._collectionIdTable(db),
+                    referencedColumn: $$GroupCollectionsTableReferences
+                        ._collectionIdTable(db)
+                        .id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$GroupCollectionsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $GroupCollectionsTable,
+    GroupCollection,
+    $$GroupCollectionsTableFilterComposer,
+    $$GroupCollectionsTableOrderingComposer,
+    $$GroupCollectionsTableAnnotationComposer,
+    $$GroupCollectionsTableCreateCompanionBuilder,
+    $$GroupCollectionsTableUpdateCompanionBuilder,
+    (GroupCollection, $$GroupCollectionsTableReferences),
+    GroupCollection,
+    PrefetchHooks Function({bool groupId, bool collectionId})>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3705,4 +4157,6 @@ class $AppDatabaseManager {
       $$ClipTagsTableTableManager(_db, _db.clipTags);
   $$RecentClipViewsTableTableManager get recentClipViews =>
       $$RecentClipViewsTableTableManager(_db, _db.recentClipViews);
+  $$GroupCollectionsTableTableManager get groupCollections =>
+      $$GroupCollectionsTableTableManager(_db, _db.groupCollections);
 }
