@@ -391,7 +391,8 @@ class CaptioningViewModel extends ChangeNotifier
 
       // UI에 데이터 채우기
       final form = result.formData;
-      collectionNameCtl.text = form.collectionName ?? '';
+      collectionNameCtl.text =
+          form.collectionName ?? initialCollectionName ?? '';
       titleCtl.text = form.clipTitle;
 
       if (form.durationMs != null && form.durationMs! > 0) {

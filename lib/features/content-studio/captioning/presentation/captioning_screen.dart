@@ -78,7 +78,7 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
     final userProvider = context.watch<UserProvider>();
     final showAppBar = widget.showAppBar;
 
-    final hubProvider = context.watch<StudioHubProvider>();
+    final hubProvider = context.watch<StudioHubProvider?>();
 
     // 저장 후 닫기 - 한 번만 처리
     if (vm.shouldClose && !_hasHandledClose) {
@@ -90,9 +90,9 @@ class _CaptioningBodyState extends State<_CaptioningBody> {
       });
     }
 
-    if (hubProvider.pendingCaptionFilePath != null) {
+    if (hubProvider?.pendingCaptionFilePath != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
+        if (context.mounted && hubProvider != null) {
           hubProvider.consumePendingCaptionFile((path) {
             vm.setExistingFile(path);
           });

@@ -314,9 +314,10 @@ ShellRoute get _shellRoute => ShellRoute(
               path: AppRoutes.collectionClipPath,
               name: AppRoutes.collectionClip,
               builder: (context, state) => LibraryScreen(
-                initialCollectionId:
-                    int.tryParse(state.uri.queryParameters['collectionId'] ?? ''),
-                initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? ''),
+                initialCollectionId: int.tryParse(
+                    state.uri.queryParameters['collectionId'] ?? ''),
+                initialTab:
+                    int.tryParse(state.uri.queryParameters['tab'] ?? ''),
               ),
             ),
           ],
@@ -433,7 +434,11 @@ ShellRoute get _shellRoute => ShellRoute(
               builder: (context, state) {
                 final clipIdStr = state.uri.queryParameters['clipId'];
                 final clipId = int.tryParse(clipIdStr ?? '');
-                return CaptioningScreen(clipId: clipId);
+                return CaptioningScreen(
+                  clipId: clipId,
+                  initialCollectionName:
+                      state.uri.queryParameters['collectionName'],
+                );
               },
             ),
             GoRoute(

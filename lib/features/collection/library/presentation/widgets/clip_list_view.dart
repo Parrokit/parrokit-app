@@ -143,11 +143,25 @@ class ClipListView extends StatelessWidget {
                       child: Material(
                         child: InkWell(
                           onTap: () async {
+                            final clipProvider = context.read<ClipProvider>();
+                            final currentCollection =
+                                clipProvider.selectedCollectionId == null
+                                    ? null
+                                    : clipProvider.collections
+                                        .cast<dynamic>()
+                                        .firstWhere(
+                                          (c) =>
+                                              (c.id as int) ==
+                                              clipProvider.selectedCollectionId,
+                                          orElse: () => null,
+                                        );
+                            final collectionName =
+                                currentCollection?.name as String?;
                             final ok = await context.push<bool>(
-                              '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}',
+                              '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}'
+                              '${collectionName != null ? '&collectionName=${Uri.encodeComponent(collectionName)}' : ''}',
                             );
                             if (ok == true && context.mounted) {
-                              final clipProvider = context.read<ClipProvider>();
                               clipProvider.backToCollections();
                               clipProvider.loadCollections();
                             }
