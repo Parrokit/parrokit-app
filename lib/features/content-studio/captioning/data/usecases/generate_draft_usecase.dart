@@ -16,9 +16,9 @@ export '../services/draft_generation_service.dart' show DraftResult;
 
 /// STT + LLM 초안 생성 UseCase.
 class GenerateDraftUseCase {
-  final DraftGenerationService _service;
+  final CaptionDraftGenerator _service;
 
-  GenerateDraftUseCase({required DraftGenerationService service})
+  GenerateDraftUseCase({required CaptionDraftGenerator service})
       : _service = service;
 
   /// 영상 파일에서 STT를 수행하고 번역/발음 초안을 생성합니다.

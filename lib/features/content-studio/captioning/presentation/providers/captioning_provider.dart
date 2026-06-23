@@ -11,7 +11,6 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
@@ -19,17 +18,14 @@ import 'package:parrokit/data/local/dao/collections_dao.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart' as utils;
 
 import '../../data/adapters/asr_engine.dart';
-import '../../data/adapters/openai_llm_adapter.dart';
-import '../../data/adapters/openai_diarize_asr_adapter.dart';
-import '../../data/adapters/openai_whisper_asr_adapter.dart';
-import '../../data/ports/asr_port.dart';
+import '../../data/adapters/openai_api_exception.dart';
 import '../../data/adapters/video_picker_files.dart';
 import '../../data/adapters/video_picker_gallery.dart';
 import '../../data/services/audio_to_video.dart';
 import '../../data/services/clip_load_service.dart';
 import '../../data/services/clip_save_service.dart';
-import '../../data/services/draft_generation_service.dart';
 import '../../data/services/file_staging_service.dart';
+import '../../data/services/remote_caption_draft_service.dart';
 import '../../data/services/video_meta_service.dart';
 import '../../data/usecases/extract_duration_usecase.dart';
 import '../../data/usecases/extract_thumbnail_usecase.dart';
@@ -37,7 +33,6 @@ import '../../data/usecases/generate_draft_usecase.dart';
 import '../../data/usecases/load_clip_for_edit_usecase.dart';
 import '../../data/usecases/pick_video_usecase.dart';
 import '../../data/usecases/save_clip_usecase.dart';
-import '../../data/usecases/transcribe_usecase.dart';
 
 import '../../domain/models/clip_form_data.dart';
 import '../../domain/models/edit_mode.dart';
@@ -156,21 +151,13 @@ class CaptioningProvider extends ChangeNotifier
       service: ClipLoadService(clipProvider: clipProvider),
     );
 
-    final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
-    final llmAdapter = OpenAILlmAdapter(apiKey: apiKey);
-
-    GenerateDraftUseCase buildDraftUseCase(ASRPort asr) => GenerateDraftUseCase(
-          service: DraftGenerationService(
-            transcribe: TranscribeUseCase(asr),
-            llm: llmAdapter,
-          ),
-        );
-
     _generateDraftByEngine = {
-      AsrEngine.diarize:
-          buildDraftUseCase(OpenAIDiarizeAsrAdapter(apiKey: apiKey)),
-      AsrEngine.whisper:
-          buildDraftUseCase(OpenAIWhisperAsrAdapter(apiKey: apiKey)),
+      AsrEngine.diarize: GenerateDraftUseCase(
+        service: RemoteCaptionDraftService(engine: AsrEngine.diarize),
+      ),
+      AsrEngine.whisper: GenerateDraftUseCase(
+        service: RemoteCaptionDraftService(engine: AsrEngine.whisper),
+      ),
     };
 
     // 세그먼트 폼 초기화
@@ -268,7 +255,7 @@ class CaptioningProvider extends ChangeNotifier
       });
     } catch (e) {
       Future.delayed(const Duration(milliseconds: 400), () {
-        showToast('STT/번역 실패: $e');
+        showToast(_sttFailureMessage(e));
       });
       _setSttState(SttProcessState.error);
       Future.delayed(const Duration(seconds: 2), () {
@@ -277,6 +264,22 @@ class CaptioningProvider extends ChangeNotifier
         }
       });
     }
+  }
+
+  String _sttFailureMessage(Object error) {
+    if (error is OpenAIApiException) {
+      return error.userMessage;
+    }
+
+    if (error is RemoteCaptionDraftException) {
+      return error.message;
+    }
+
+    if (error is ArgumentError) {
+      return error.message?.toString() ?? '자동 자막 설정을 확인해 주세요.';
+    }
+
+    return '자동 자막 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
   }
 
   void _setSttState(SttProcessState state) {

@@ -138,12 +138,14 @@ Future<void> showSttConfirmDialog(
                                 ),
                                 const SizedBox(width: 8),
                                 FilledButton(
-                                  onPressed: () async {
-                                    await vm.startStt(selected);
-                                    if (context.mounted) {
-                                      Navigator.pop(context);
-                                    }
-                                  },
+                                  onPressed: vm.isSttProcessing
+                                      ? null
+                                      : () async {
+                                          await vm.startStt(selected);
+                                          if (context.mounted) {
+                                            Navigator.pop(context);
+                                          }
+                                        },
                                   style: FilledButton.styleFrom(
                                       backgroundColor: cs.primary),
                                   child: const Text('시작'),
