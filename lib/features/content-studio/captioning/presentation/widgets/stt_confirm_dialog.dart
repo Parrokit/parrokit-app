@@ -20,11 +20,12 @@ import 'stt_progress_card.dart';
 Future<void> showSttConfirmDialog(
   BuildContext context, {
   required CaptioningProvider vm,
-  AsrEngine initial = AsrEngine.diarize,
+  AsrEngine initial = AsrEngine.whisper,
 }) async {
   final theme = Theme.of(context);
   final isDark = theme.brightness == Brightness.dark;
   final bg = isDark ? AppColors.surfaceContainerDark : AppColors.surface;
+  const visibleEngines = [AsrEngine.whisper];
 
   return showModalBottomSheet<void>(
     context: context,
@@ -33,7 +34,8 @@ Future<void> showSttConfirmDialog(
     barrierColor: Colors.black.withValues(alpha: 0.4),
     showDragHandle: false,
     builder: (ctx) {
-      AsrEngine selected = initial;
+      AsrEngine selected =
+          visibleEngines.contains(initial) ? initial : AsrEngine.whisper;
       final cs = Theme.of(ctx).colorScheme;
 
       return ListenableBuilder(
@@ -116,7 +118,7 @@ Future<void> showSttConfirmDialog(
                               ),
                             ),
                             const SizedBox(height: 24),
-                            ...AsrEngine.values.map((e) {
+                            ...visibleEngines.map((e) {
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
                                 child: _ModelOptionCard(
