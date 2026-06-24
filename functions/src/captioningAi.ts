@@ -15,6 +15,14 @@ const CAPTION_BATCH_SIZE = 5;
 const OPENAI_ASR_ENDPOINT = "https://api.openai.com/v1/audio/transcriptions";
 const OPENAI_CHAT_ENDPOINT = "https://api.openai.com/v1/chat/completions";
 const OPENAI_CHAT_MODEL = "gpt-4o-mini";
+const CAPTION_PROMPT_PATH = join(
+  process.cwd(),
+  "prompts",
+  "generations",
+  "caption-generation.prompt"
+);
+
+let captionDraftSystemPromptCache: string | undefined;
 
 type CaptionEngine = "diarize" | "whisper";
 
@@ -307,7 +315,7 @@ async function completeCaptionBatch(
       response_format: {type: "json_object"},
       temperature: 0.2,
       messages: [
-        {role: "system", content: captionDraftSystemPrompt},
+        {role: "system", content: await loadCaptionDraftSystemPrompt()},
         {
           role: "user",
           content:
@@ -338,6 +346,12 @@ async function completeCaptionBatch(
     console.error("[Captioning] invalid caption JSON", error);
     return [];
   }
+}
+
+async function loadCaptionDraftSystemPrompt(): Promise<string> {
+  captionDraftSystemPromptCache ??=
+    (await fs.readFile(CAPTION_PROMPT_PATH, "utf8")).trim();
+  return captionDraftSystemPromptCache;
 }
 
 async function throwOpenAiHttpsError(
@@ -461,15 +475,3 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function stringValue(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
-
-const captionDraftSystemPrompt = [
-  "너는 일본어 대사 텍스트를 한국어 학습자를 위해 세그먼트별로",
-  "가공하는 JSON 생성기다. 반드시 입력으로 주어진 asr_segments의",
-  "길이와 순서를 그대로 유지하며 동일 개수의 출력 세그먼트를 생성한다.",
-  "각 출력 세그먼트는 {\"orig\":\"\",\"ko\":\"\",\"pron\":\"\"} 만 포함한다.",
-  "orig는 입력 text를 그대로 사용하되 필요한 경우 경미한 기호나",
-  "띄어쓰기만 수정 가능하다. ko는 자연스럽고 간결한 존댓말 번역이다.",
-  "pron은 일본어 문장을 한국어 발음 표기로 적되 실제 발음에 가깝게",
-  "음차한다. 세그먼트 추가, 삭제, 병합, 분할, 순서 변경, 설명,",
-  "코드블록, 주석은 금지한다. 출력은 반드시 하나의 JSON 객체만 허용한다.",
-].join(" ");
