@@ -2,21 +2,28 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../domain/usecases/generate_video_usecase.dart';
 import '../domain/usecases/check_video_operation_usecase.dart';
+import '../domain/usecases/list_recent_video_generations_usecase.dart';
 import '../data/data_sources/video_remote_data_source.dart';
 import '../data/repositories/video_generation_repository_impl.dart';
+import '../domain/models/video_generation_models.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 
 class VideoProvider extends ChangeNotifier {
   late final GenerateVideoUseCase _generateUseCase;
   late final CheckVideoOperationUseCase _checkOperationUseCase;
+  late final ListRecentVideoGenerationsUseCase _listRecentUseCase;
 
   VideoProvider({
     GenerateVideoUseCase? generateUseCase,
     CheckVideoOperationUseCase? checkOperationUseCase,
+    ListRecentVideoGenerationsUseCase? listRecentUseCase,
   }) {
     final repository = VideoGenerationRepositoryImpl(VideoRemoteDataSource());
     _generateUseCase = generateUseCase ?? GenerateVideoUseCase(repository);
-    _checkOperationUseCase = checkOperationUseCase ?? CheckVideoOperationUseCase(repository);
+    _checkOperationUseCase =
+        checkOperationUseCase ?? CheckVideoOperationUseCase(repository);
+    _listRecentUseCase =
+        listRecentUseCase ?? ListRecentVideoGenerationsUseCase(repository);
   }
 
   String _dialogue = '';
@@ -31,7 +38,7 @@ class VideoProvider extends ChangeNotifier {
   int _duration = 5;
   int get duration => _duration;
 
-  String _model = 'veo3.1-lite';
+  String _model = veo31LiteModelId;
   String get model => _model;
 
   bool _isGenerating = false;
@@ -42,6 +49,9 @@ class VideoProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+
+  List<VideoGenerationRecord> _recentVideos = const [];
+  List<VideoGenerationRecord> get recentVideos => _recentVideos;
 
   Timer? _pollingTimer;
 
@@ -76,6 +86,25 @@ class VideoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void showSavedVideo(String videoUrl) {
+    _generatedFilePath = videoUrl;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  Future<void> loadRecentVideos() async {
+    AppLogger.i('[VideoProvider][Recent] start');
+    try {
+      _recentVideos = await _listRecentUseCase.call();
+      AppLogger.i(
+          '[VideoProvider][Recent] success count=${_recentVideos.length}');
+      notifyListeners();
+    } catch (e, stack) {
+      AppLogger.e('[VideoProvider][Recent] error reason=$e',
+          error: e, stackTrace: stack);
+    }
+  }
+
   Future<void> generateVideo() async {
     if (_dialogue.trim().isEmpty && _scenePrompt.trim().isEmpty) return;
 
@@ -84,7 +113,8 @@ class VideoProvider extends ChangeNotifier {
     _generatedFilePath = null;
     notifyListeners();
 
-    AppLogger.i('[VideoProvider][Generate] start ratio=$_ratio duration=$_duration model=$_model');
+    AppLogger.i(
+        '[VideoProvider][Generate] start ratio=$_ratio duration=$_duration model=$_model');
 
     try {
       final operationName = await _generateUseCase.call(
@@ -93,13 +123,15 @@ class VideoProvider extends ChangeNotifier {
         ratio: _ratio,
         duration: _duration,
         model: _model,
-        debug: true, // 디버그 모드 기본 켜짐
+        debug: false,
       );
-      
-      AppLogger.i('[VideoProvider][Generate] success operationName=$operationName');
+
+      AppLogger.i(
+          '[VideoProvider][Generate] success operationName=$operationName');
       _startPolling(operationName);
     } catch (e, stack) {
-      AppLogger.e('[VideoProvider][Generate] error reason=$e', error: e, stackTrace: stack);
+      AppLogger.e('[VideoProvider][Generate] error reason=$e',
+          error: e, stackTrace: stack);
       _errorMessage = e.toString();
       _isGenerating = false;
       notifyListeners();
@@ -110,23 +142,28 @@ class VideoProvider extends ChangeNotifier {
     AppLogger.i('[VideoProvider][Polling] start operationName=$operationName');
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      AppLogger.d('[VideoProvider][Polling] check operationName=$operationName');
+      AppLogger.d(
+          '[VideoProvider][Polling] check operationName=$operationName');
       try {
         final result = await _checkOperationUseCase.call(operationName);
         if (result['done'] == true) {
           timer.cancel();
           if (result['error'] != null) {
-            AppLogger.e('[VideoProvider][Polling] error reason=${result['error']}');
+            AppLogger.e(
+                '[VideoProvider][Polling] error reason=${result['error']}');
             _errorMessage = result['error'].toString();
           } else {
-            AppLogger.i('[VideoProvider][Polling] success videoUri=${result['videoUri']}');
+            AppLogger.i(
+                '[VideoProvider][Polling] success videoUri=${result['videoUri']}');
             _generatedFilePath = result['videoUri'];
+            await loadRecentVideos();
           }
           _isGenerating = false;
           notifyListeners();
         }
       } catch (e, stack) {
-        AppLogger.e('[VideoProvider][Polling] error reason=$e', error: e, stackTrace: stack);
+        AppLogger.e('[VideoProvider][Polling] error reason=$e',
+            error: e, stackTrace: stack);
         timer.cancel();
         _errorMessage = 'Polling failed: $e';
         _isGenerating = false;

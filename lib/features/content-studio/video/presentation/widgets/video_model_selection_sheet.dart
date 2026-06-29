@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
+import 'package:parrokit/features/content-studio/video/domain/models/video_generation_models.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 
 class VideoModelSelectionSheet extends StatelessWidget {
@@ -14,18 +15,14 @@ class VideoModelSelectionSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final models = [
-      {'id': 'veo3.1-lite', 'name': 'Veo 3.1 Lite', 'description': '빠른 생성 속도, 적은 비용'},
-      {'id': 'veo3.1-full', 'name': 'Veo 3.1 Full', 'description': '고품질 영상 생성, 디테일 최적화'},
-    ];
-
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,33 +53,37 @@ class VideoModelSelectionSheet extends StatelessWidget {
           ListView.builder(
             shrinkWrap: true,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            itemCount: models.length,
+            itemCount: veo31Models.length,
             itemBuilder: (context, index) {
-              final model = models[index];
-              final isSelected = provider.model == model['id'];
+              final model = veo31Models[index];
+              final isSelected = provider.model == model.id;
 
               return ListTile(
                 title: Text(
-                  model['name']!,
+                  model.name,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     color: isSelected ? theme.colorScheme.primary : null,
                   ),
                 ),
                 subtitle: Text(
-                  model['description']!,
+                  model.description,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
                   ),
                 ),
                 trailing: isSelected
-                    ? Icon(Icons.check_circle_rounded, color: theme.colorScheme.primary)
+                    ? Icon(Icons.check_circle_rounded,
+                        color: theme.colorScheme.primary)
                     : null,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 onTap: () {
-                  provider.updateModel(model['id']!);
+                  provider.updateModel(model.id);
                   Navigator.pop(context);
                 },
               );

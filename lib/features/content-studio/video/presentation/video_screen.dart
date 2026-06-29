@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -6,6 +10,7 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
+import 'package:parrokit/features/content-studio/video/domain/models/video_generation_models.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 import 'package:parrokit/features/content-studio/video/presentation/widgets/video_model_selection_sheet.dart';
 
@@ -23,6 +28,10 @@ class _VideoScreenState extends State<VideoScreen> {
   void initState() {
     super.initState();
     _promptController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<VideoProvider>().loadRecentVideos();
+    });
   }
 
   @override
@@ -88,13 +97,14 @@ class _VideoScreenState extends State<VideoScreen> {
                   _StyleRow(
                     icon: Icons.auto_awesome_rounded,
                     title: '영상 모델',
-                    value: provider.model == 'veo3.1-lite' ? 'Veo 3.1 Lite' : 'Veo 3.1 Full',
+                    value: veo31ModelById(provider.model).name,
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
                         backgroundColor: Colors.transparent,
                         isScrollControlled: true,
-                        builder: (context) => VideoModelSelectionSheet(provider: provider),
+                        builder: (context) =>
+                            VideoModelSelectionSheet(provider: provider),
                       );
                     },
                   ),
@@ -102,15 +112,20 @@ class _VideoScreenState extends State<VideoScreen> {
                   _OptionGroup(
                     label: '화면비',
                     options: const ['9:16', '1:1', '16:9'],
-                    selectedIndex: ['9:16', '1:1', '16:9'].indexOf(provider.ratio),
-                    onChanged: (index) => provider.updateRatio(['9:16', '1:1', '16:9'][index]),
+                    selectedIndex:
+                        ['9:16', '1:1', '16:9'].indexOf(provider.ratio),
+                    onChanged: (index) =>
+                        provider.updateRatio(['9:16', '1:1', '16:9'][index]),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _OptionGroup(
                     label: '길이',
-                    options: const ['5초', '10초', '15초'],
-                    selectedIndex: ![5, 10, 15].contains(provider.duration) ? 0 : [5, 10, 15].indexOf(provider.duration),
-                    onChanged: (index) => provider.updateDuration([5, 10, 15][index]),
+                    options: const ['4초', '5초', '6초', '7초', '8초'],
+                    selectedIndex: ![4, 5, 6, 7, 8].contains(provider.duration)
+                        ? 1
+                        : [4, 5, 6, 7, 8].indexOf(provider.duration),
+                    onChanged: (index) =>
+                        provider.updateDuration([4, 5, 6, 7, 8][index]),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _StyleRow(
@@ -150,7 +165,8 @@ class _VideoScreenState extends State<VideoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: provider.isGenerating || provider.scenePrompt.trim().isEmpty
+                      onPressed: provider.isGenerating ||
+                              provider.scenePrompt.trim().isEmpty
                           ? null
                           : provider.generateVideo,
                       icon: provider.isGenerating
@@ -163,12 +179,15 @@ class _VideoScreenState extends State<VideoScreen> {
                               ),
                             )
                           : const Icon(Icons.movie_creation_rounded),
-                      label: Text(provider.isGenerating ? '영상 생성 중...' : '영상 생성'),
+                      label:
+                          Text(provider.isGenerating ? '영상 생성 중...' : '영상 생성'),
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: AppSpacing.lg),
+            _RecentVideoPanel(isDark: isDark),
           ],
         ),
       ),
@@ -196,28 +215,63 @@ class _VideoPreviewState extends State<_VideoPreview> {
     super.dispose();
   }
 
+  Future<VideoPlayerController> _createController(String url) async {
+    if (url.startsWith('data:')) {
+      final match =
+          RegExp(r'^data:([^;]+);base64,(.*)$', dotAll: true).firstMatch(url);
+      if (match == null) {
+        throw FormatException('Invalid data URI');
+      }
+
+      final mimeType = match.group(1) ?? 'video/mp4';
+      final encoded = match.group(2) ?? '';
+      final bytes = base64Decode(encoded);
+      final tempDir = await getTemporaryDirectory();
+      final extension = mimeType.contains('mp4') ? '.mp4' : '.bin';
+      final file = File(
+        '${tempDir.path}/parrokit_video_${DateTime.now().microsecondsSinceEpoch}$extension',
+      );
+
+      await file.writeAsBytes(bytes, flush: true);
+      return VideoPlayerController.file(file);
+    }
+
+    if (url.startsWith('file://')) {
+      return VideoPlayerController.file(File(Uri.parse(url).toFilePath()));
+    }
+
+    if (url.startsWith('/')) {
+      return VideoPlayerController.file(File(url));
+    }
+
+    return VideoPlayerController.networkUrl(Uri.parse(url));
+  }
+
   void _initPlayer(String url) async {
     if (_lastUrl == url) return;
     _lastUrl = url;
     _playerError = null;
-    
+
     final oldController = _controller;
-    final newController = VideoPlayerController.networkUrl(Uri.parse(url));
-    _controller = newController;
-    
+
     try {
+      final newController = await _createController(url);
+      _controller = newController;
       await newController.initialize();
       newController.setLooping(true);
       newController.play();
     } catch (e, stack) {
-      AppLogger.e("[VideoScreen][_VideoPreviewState] Video initialization error: $e", error: e, stackTrace: stack);
+      AppLogger.e(
+          "[VideoScreen][_VideoPreviewState] Video initialization error: $e",
+          error: e,
+          stackTrace: stack);
       if (mounted) {
         setState(() {
           _playerError = "영상을 불러올 수 없습니다. 네트워크 연결이나 권한을 확인하세요.";
         });
       }
     }
-    
+
     oldController?.dispose();
     if (mounted) setState(() {});
   }
@@ -243,14 +297,18 @@ class _VideoPreviewState extends State<_VideoPreview> {
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: Container(
-        padding: videoUrl != null ? EdgeInsets.zero : const EdgeInsets.all(AppSpacing.lg),
+        padding: videoUrl != null
+            ? EdgeInsets.zero
+            : const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: widget.isDark
               ? AppColors.surfaceContainerDark
               : AppColors.surfaceContainer,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: widget.isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+            color: widget.isDark
+                ? AppColors.dividerSubtleDark
+                : AppColors.dividerSubtle,
           ),
         ),
         child: ClipRRect(
@@ -303,7 +361,8 @@ class _VideoPreviewState extends State<_VideoPreview> {
                     ],
                   ),
                 ),
-              ] else if (_controller != null && _controller!.value.isInitialized) ...[
+              ] else if (_controller != null &&
+                  _controller!.value.isInitialized) ...[
                 Positioned.fill(
                   child: VideoPlayer(_controller!),
                 ),
@@ -326,7 +385,8 @@ class _VideoPreviewState extends State<_VideoPreview> {
                           : Container(
                               color: Colors.black26,
                               child: const Center(
-                                child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 48),
+                                child: Icon(Icons.play_arrow_rounded,
+                                    color: Colors.white, size: 48),
                               ),
                             ),
                     ),
@@ -339,11 +399,13 @@ class _VideoPreviewState extends State<_VideoPreview> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline_rounded, color: Colors.red, size: 32),
+                        const Icon(Icons.error_outline_rounded,
+                            color: Colors.red, size: 32),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           _playerError!,
-                          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.red),
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: Colors.red),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -404,6 +466,129 @@ class _Panel extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentVideoPanel extends StatelessWidget {
+  const _RecentVideoPanel({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final mutedText =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final provider = context.watch<VideoProvider>();
+    final recentVideos = provider.recentVideos;
+
+    return _Panel(
+      title: '최근 생성 영상',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '생성된 영상은 24시간 동안 보관됩니다. 같은 계정으로 다시 들어오면 이어서 볼 수 있습니다.',
+            style: theme.textTheme.bodySmall?.copyWith(color: mutedText),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (recentVideos.isEmpty)
+            Text(
+              '아직 저장된 영상이 없습니다.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: mutedText),
+            )
+          else
+            Column(
+              children: recentVideos.map((record) {
+                final hasVideo = record.videoUrl != null &&
+                    record.videoUrl!.isNotEmpty;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: InkWell(
+                    onTap: hasVideo
+                        ? () {
+                            provider.showSavedVideo(record.videoUrl!);
+                          }
+                        : null,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.surfaceContainerHighDark
+                            : AppColors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.dividerSubtleDark
+                              : AppColors.dividerSubtle,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.sm),
+                            ),
+                            child: const Icon(
+                              Icons.video_library_rounded,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  record.modelId,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  record.prompt,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: mutedText,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '보관 ${record.ttlHours}시간 · ${record.status}',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: mutedText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (hasVideo)
+                            const Icon(
+                              Icons.play_arrow_rounded,
+                              color: AppColors.primary,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(growable: false),
+            ),
         ],
       ),
     );
@@ -513,35 +698,35 @@ class _StyleRow extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surfaceContainerHighDark
-            : AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: theme.colorScheme.primary),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.surfaceContainerHighDark
+                : AppColors.surfaceContainer,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
-          Text(value, style: theme.textTheme.bodyMedium),
-          const SizedBox(width: AppSpacing.xs),
-          const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-        ],
-      ),
-    ));
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(value, style: theme.textTheme.bodyMedium),
+              const SizedBox(width: AppSpacing.xs),
+              const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+            ],
+          ),
+        ));
   }
 }
 

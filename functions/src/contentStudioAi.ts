@@ -1,17 +1,540 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
+import * as admin from "firebase-admin";
+import {getStorage} from "firebase-admin/storage";
 import {genkit} from "genkit";
 import {vertexAI} from "@genkit-ai/google-genai";
 import {enableFirebaseTelemetry} from "@genkit-ai/firebase";
 import {ElevenLabsClient} from "@elevenlabs/elevenlabs-js";
 import textToSpeech from "@google-cloud/text-to-speech";
-import {GoogleGenAI} from "@google/genai";
+import {GenerateVideosOperation, GoogleGenAI} from "@google/genai";
 import {WaveFile} from "wavefile";
 import * as Buffer from "buffer";
 
 // 파이어베이스 시크릿 매니저에서 API 키를 안전하게 불러옵니다.
 const elevenLabsApiKey = defineSecret("ELEVENLABS_API_KEY");
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
+const VIDEO_COLLECTION = "content-studio-videos";
+const VIDEO_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+
+const VEO_MODEL_ALIASES: Record<string, string> = {
+  "veo3.1-lite": "veo-3.1-lite-generate-preview",
+  "veo3.1-fast": "veo-3.1-fast-generate-preview",
+  "veo3.1-standard": "veo-3.1-generate-preview",
+  "veo3.1-full": "veo-3.1-generate-preview",
+  "veo-3.1-lite-generate-preview": "veo-3.1-lite-generate-preview",
+  "veo-3.1-fast-generate-preview": "veo-3.1-fast-generate-preview",
+  "veo-3.1-generate-preview": "veo-3.1-generate-preview",
+};
+
+/**
+ * 사용자가 보낸 Veo 모델 ID를 실제 API 호출용 모델 ID로 정규화합니다.
+ *
+ * @param {string | undefined} modelId 사용자가 보낸 모델 ID
+ * @return {string} 실제 호출에 사용할 Veo 모델 ID
+ */
+function normalizeVeoModelId(modelId?: string): string {
+  if (!modelId) {
+    return "veo-3.1-lite-generate-preview";
+  }
+
+  return VEO_MODEL_ALIASES[modelId] || "veo-3.1-lite-generate-preview";
+}
+
+/**
+ * 서버/SDK 에러 객체에서 사람이 읽을 수 있는 메시지를 추출합니다.
+ *
+ * @param {unknown} error 에러 객체
+ * @return {string} 추출된 에러 메시지
+ */
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const typedError = error as {
+      message?: unknown;
+      error?: {message?: unknown};
+      response?: {data?: {error?: {message?: unknown}}};
+    };
+
+    if (
+      typeof typedError.message === "string" &&
+      typedError.message.length > 0
+    ) {
+      return typedError.message;
+    }
+
+    if (
+      typeof typedError.error?.message === "string" &&
+      typedError.error.message.length > 0
+    ) {
+      return typedError.error.message;
+    }
+
+    if (
+      typeof typedError.response?.data?.error?.message === "string" &&
+      typedError.response.data.error.message.length > 0
+    ) {
+      return typedError.response.data.error.message;
+    }
+  }
+
+  return "Unknown video generation error";
+}
+
+/**
+ * Veo 비디오 생성 길이를 허용 범위인 4~8초로 제한합니다.
+ *
+ * @param {number | undefined} durationSeconds 요청된 길이
+ * @return {number} 보정된 길이
+ */
+function clampDurationSeconds(durationSeconds?: number): number {
+  if (typeof durationSeconds !== "number" || Number.isNaN(durationSeconds)) {
+    return 5;
+  }
+
+  if (durationSeconds < 4) {
+    return 4;
+  }
+
+  if (durationSeconds > 8) {
+    return 8;
+  }
+
+  return Math.round(durationSeconds);
+}
+
+/**
+ * Google GenAI 비디오 응답에서 접근 가능한 첫 번째 영상 주소를 찾습니다.
+ *
+ * @param {unknown} value 응답 객체 또는 그 하위 값
+ * @return {string | null} 사용 가능한 영상 주소
+ */
+function extractVideoUriFromValue(value: unknown): string | null {
+  const seen = new Set<object>();
+  const queue: unknown[] = [value];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    if (typeof current === "string") {
+      if (
+        current.startsWith("http://") ||
+        current.startsWith("https://") ||
+        current.startsWith("gs://") ||
+        current.startsWith("data:")
+      ) {
+        return current;
+      }
+      continue;
+    }
+
+    if (
+      typeof current !== "object" ||
+      current === null ||
+      seen.has(current as object)
+    ) {
+      continue;
+    }
+
+    seen.add(current as object);
+
+    const typedCurrent = current as {
+      uri?: unknown;
+      videoBytes?: unknown;
+      encodedVideo?: unknown;
+      bytesBase64Encoded?: unknown;
+      mimeType?: unknown;
+      video?: unknown;
+      videos?: unknown;
+      generatedVideos?: unknown;
+      generatedSamples?: unknown;
+      generateVideoResponse?: unknown;
+      response?: unknown;
+      [key: string]: unknown;
+    };
+
+    if (typeof typedCurrent.uri === "string" && typedCurrent.uri.length > 0) {
+      return typedCurrent.uri;
+    }
+
+    let base64Video: string | null = null;
+    if (
+      typeof typedCurrent.videoBytes === "string" &&
+      typedCurrent.videoBytes.length > 0
+    ) {
+      base64Video = typedCurrent.videoBytes;
+    } else if (
+      typeof typedCurrent.encodedVideo === "string" &&
+      typedCurrent.encodedVideo.length > 0
+    ) {
+      base64Video = typedCurrent.encodedVideo;
+    } else if (
+      typeof typedCurrent.bytesBase64Encoded === "string" &&
+      typedCurrent.bytesBase64Encoded.length > 0
+    ) {
+      base64Video = typedCurrent.bytesBase64Encoded;
+    }
+
+    if (base64Video) {
+      let mimeType = "video/mp4";
+      if (
+        typeof typedCurrent.mimeType === "string" &&
+        typedCurrent.mimeType.length > 0
+      ) {
+        mimeType = typedCurrent.mimeType;
+      }
+      return `data:${mimeType};base64,${base64Video}`;
+    }
+
+    if (typedCurrent.video !== undefined) {
+      queue.push(typedCurrent.video);
+    }
+
+    if (typedCurrent.videos !== undefined) {
+      queue.push(typedCurrent.videos);
+    }
+
+    if (typedCurrent.generatedVideos !== undefined) {
+      queue.push(typedCurrent.generatedVideos);
+    }
+
+    if (typedCurrent.generatedSamples !== undefined) {
+      queue.push(typedCurrent.generatedSamples);
+    }
+
+    if (typedCurrent.generateVideoResponse !== undefined) {
+      queue.push(typedCurrent.generateVideoResponse);
+    }
+
+    if (typedCurrent.response !== undefined) {
+      queue.push(typedCurrent.response);
+    }
+
+    for (const key of Object.keys(typedCurrent)) {
+      if (
+        key !== "uri" &&
+        key !== "videoBytes" &&
+        key !== "encodedVideo" &&
+        key !== "bytesBase64Encoded" &&
+        key !== "mimeType" &&
+        key !== "video" &&
+        key !== "videos" &&
+        key !== "generatedVideos" &&
+        key !== "generatedSamples" &&
+        key !== "generateVideoResponse" &&
+        key !== "response"
+      ) {
+        queue.push(typedCurrent[key]);
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * GCS 경로 또는 Storage URL을 플레이 가능한 HTTPS 주소로 변환합니다.
+ *
+ * @param {string} videoUri 원본 비디오 URI
+ * @return {Promise<string>} 플레이 가능한 비디오 URL
+ */
+async function resolvePlayableVideoUrl(videoUri: string): Promise<string> {
+  if (videoUri.startsWith("data:")) {
+    return videoUri;
+  }
+
+  if (videoUri.startsWith("https://")) {
+    return videoUri;
+  }
+
+  const gsMatch = videoUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+  if (gsMatch) {
+    const bucketName = gsMatch[1];
+    const filePath = decodeURIComponent(gsMatch[2]);
+    const [signedUrl] = await getStorage()
+      .bucket(bucketName)
+      .file(filePath)
+      .getSignedUrl({
+        action: "read",
+        expires: Date.now() + 60 * 60 * 1000,
+      });
+
+    return signedUrl;
+  }
+
+  const storageMatch = videoUri.match(
+    /^https:\/\/storage\.googleapis\.com\/([^/]+)\/(.+)$/
+  );
+  if (storageMatch) {
+    const bucketName = storageMatch[1];
+    const filePath = decodeURIComponent(storageMatch[2]);
+    const [signedUrl] = await getStorage()
+      .bucket(bucketName)
+      .file(filePath)
+      .getSignedUrl({
+        action: "read",
+        expires: Date.now() + 60 * 60 * 1000,
+      });
+
+    return signedUrl;
+  }
+
+  return videoUri;
+}
+
+/**
+ * 비디오 생성 결과를 보관할 Storage 경로를 만듭니다.
+ *
+ * @param {string} uid 사용자 ID
+ * @param {string} generationId 생성 ID
+ * @return {string} Storage 경로
+ */
+function buildVideoStoragePath(uid: string, generationId: string): string {
+  return `users/${uid}/content-studio/videos/${generationId}.mp4`;
+}
+
+/**
+ * 비디오 생성 결과 메타데이터를 저장합니다.
+ *
+ * @param {object} params 저장할 데이터
+ * @return {Promise<string>} 생성 ID
+ */
+async function createVideoGenerationRecord(params: {
+  uid: string;
+  operationName: string;
+  prompt: string;
+  modelId: string;
+  aspectRatio: string;
+  durationSeconds: number;
+}): Promise<string> {
+  const generationId = admin.firestore().collection(VIDEO_COLLECTION).doc().id;
+  const now = admin.firestore.Timestamp.now();
+  const expiresAt = admin.firestore.Timestamp.fromMillis(
+    Date.now() + VIDEO_STORAGE_TTL_MS
+  );
+
+  await admin.firestore().collection(VIDEO_COLLECTION).doc(generationId).set({
+    uid: params.uid,
+    generationId,
+    operationName: params.operationName,
+    prompt: params.prompt,
+    modelId: params.modelId,
+    aspectRatio: params.aspectRatio,
+    durationSeconds: params.durationSeconds,
+    storagePath: null,
+    downloadUrl: null,
+    mimeType: null,
+    createdAt: now,
+    updatedAt: now,
+    expiresAt,
+    status: "processing",
+  });
+
+  return generationId;
+}
+
+/**
+ * 비디오 생성 문서를 uid와 operationName으로 찾습니다.
+ *
+ * @param {string} uid 사용자 ID
+ * @param {string} operationName Gemini operation 이름
+ * @return {Promise<admin.firestore.DocumentSnapshot | null>} 문서
+ */
+async function findVideoGenerationDocument(
+  uid: string,
+  operationName: string
+): Promise<admin.firestore.DocumentSnapshot | null> {
+  const snapshot = await admin
+    .firestore()
+    .collection(VIDEO_COLLECTION)
+    .where("uid", "==", uid)
+    .where("operationName", "==", operationName)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  return snapshot.docs[0];
+}
+
+/**
+ * 외부 응답의 비디오를 Storage에 저장하고 signed URL을 반환합니다.
+ *
+ * @param {object} params 다운로드/저장 정보
+ * @return {Promise<object>} 저장 결과
+ */
+async function downloadAndStoreVideo(params: {
+  uid: string;
+  generationId: string;
+  videoUri: string;
+}): Promise<{
+  storagePath: string;
+  downloadUrl: string;
+  mimeType: string;
+}> {
+  let bytes: Buffer.Buffer;
+  let mimeType = "video/mp4";
+
+  if (params.videoUri.startsWith("gs://")) {
+    const match = params.videoUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+    if (!match) {
+      throw new Error("Invalid gs:// video URI.");
+    }
+
+    const bucketName = match[1];
+    const filePath = decodeURIComponent(match[2]);
+    const [fileBytes] = await getStorage()
+      .bucket(bucketName)
+      .file(filePath)
+      .download();
+    bytes = Buffer.Buffer.from(fileBytes);
+  } else if (params.videoUri.startsWith("https://storage.googleapis.com/")) {
+    const match = params.videoUri.match(
+      /^https:\/\/storage\.googleapis\.com\/([^/]+)\/(.+)$/
+    );
+    if (!match) {
+      throw new Error("Invalid storage.googleapis.com video URI.");
+    }
+
+    const bucketName = match[1];
+    const filePath = decodeURIComponent(match[2]);
+    const [fileBytes] = await getStorage()
+      .bucket(bucketName)
+      .file(filePath)
+      .download();
+    bytes = Buffer.Buffer.from(fileBytes);
+  } else {
+    const apiKey = geminiApiKey.value();
+    const requestUrl = params.videoUri.includes("?") ?
+      `${params.videoUri}&key=${apiKey}` :
+      `${params.videoUri}?key=${apiKey}`;
+    const response = await fetch(requestUrl);
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to download generated video: ${response.status}` +
+          ` ${response.statusText}`
+      );
+    }
+
+    mimeType = response.headers.get("content-type") || "video/mp4";
+    bytes = Buffer.Buffer.from(await response.arrayBuffer());
+  }
+
+  const storagePath = buildVideoStoragePath(params.uid, params.generationId);
+  const file = getStorage().bucket().file(storagePath);
+
+  await file.save(bytes, {
+    contentType: mimeType,
+    resumable: false,
+    metadata: {
+      metadata: {
+        uid: params.uid,
+        generationId: params.generationId,
+        expiresAt: new Date(Date.now() + VIDEO_STORAGE_TTL_MS).toISOString(),
+      },
+    },
+  });
+
+  const [downloadUrl] = await file.getSignedUrl({
+    action: "read",
+    expires: Date.now() + 60 * 60 * 1000,
+  });
+
+  return {
+    storagePath,
+    downloadUrl,
+    mimeType,
+  };
+}
+
+/**
+ * 영상 목록 문서에서 사용자가 접근 가능한 URL을 다시 생성합니다.
+ *
+ * @param {string} storagePath Storage 경로
+ * @return {Promise<string>} signed URL
+ */
+async function signVideoStoragePath(storagePath: string): Promise<string> {
+  const [downloadUrl] = await getStorage()
+    .bucket()
+    .file(storagePath)
+    .getSignedUrl({
+      action: "read",
+      expires: Date.now() + 60 * 60 * 1000,
+    });
+
+  return downloadUrl;
+}
+
+/**
+ * Firestore Timestamp가 만료되었는지 확인합니다.
+ *
+ * @param {unknown} value Timestamp 값
+ * @return {boolean} 만료 여부
+ */
+function isExpiredTimestamp(value: unknown): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const timestamp = value as {toMillis?: () => number};
+  if (typeof timestamp.toMillis !== "function") {
+    return false;
+  }
+
+  return timestamp.toMillis() <= Date.now();
+}
+
+/**
+ * Firestore 저장 문서 데이터를 응답용으로 변환합니다.
+ *
+ * @param {FirebaseFirestore.DocumentData} data 문서 데이터
+ * @return {Record<string, unknown>} 응답 payload
+ */
+async function serializeVideoGenerationDocument(
+  data: admin.firestore.DocumentData
+): Promise<Record<string, unknown>> {
+  const storagePath =
+    typeof data.storagePath === "string" ? data.storagePath : null;
+  const downloadUrl =
+    typeof data.downloadUrl === "string" ? data.downloadUrl : null;
+  const expiresAt = data.expiresAt;
+  let refreshedDownloadUrl = downloadUrl;
+
+  if (storagePath) {
+    refreshedDownloadUrl = await signVideoStoragePath(storagePath);
+  }
+
+  return {
+    generationId:
+      typeof data.generationId === "string" ? data.generationId : null,
+    operationName:
+      typeof data.operationName === "string" ? data.operationName : null,
+    prompt: typeof data.prompt === "string" ? data.prompt : null,
+    modelId: typeof data.modelId === "string" ? data.modelId : null,
+    aspectRatio:
+      typeof data.aspectRatio === "string" ? data.aspectRatio : null,
+    durationSeconds:
+      typeof data.durationSeconds === "number" ? data.durationSeconds : null,
+    storagePath,
+    videoUrl: refreshedDownloadUrl,
+    mimeType: typeof data.mimeType === "string" ? data.mimeType : null,
+    status: typeof data.status === "string" ? data.status : null,
+    createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
+    updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() ?? null,
+    expiresAt: expiresAt?.toDate?.()?.toISOString?.() ?? null,
+    ttlHours: 24,
+  };
+}
 
 // 1. 파이어베이스 콘솔(Genkit 탭)로 로그 전송 활성화 (콜드스타트 타임아웃 방지)
 enableFirebaseTelemetry({
@@ -348,8 +871,19 @@ export const listElevenLabsVoices = onCall(
 export const generateVideo = onCall(
   {secrets: [geminiApiKey]},
   async (request) => {
+    let generationId: string | null = null;
+
     try {
+      const uid = request.auth?.uid;
+      if (!uid) {
+        throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+      }
+
       const {prompt, aspectRatio, duration, modelId, debug} = request.data;
+
+      if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
+        throw new HttpsError("invalid-argument", "prompt is required");
+      }
 
       // 디버그 모드인 경우: 실제 과금 발생 없이 더미 Operation 반환
       if (debug === true || modelId === "debug") {
@@ -362,26 +896,64 @@ export const generateVideo = onCall(
         apiKey: geminiApiKey.value(),
       });
 
-      console.log(`[Video] Requesting video generation. Prompt: ${prompt}`);
-
-      // Veo 3.1 Lite (또는 Preview)
-      const targetModel = modelId || "veo-2.0-generate-001";
+      const targetModel = normalizeVeoModelId(modelId);
+      const targetDurationSeconds = clampDurationSeconds(duration);
+      generationId = await createVideoGenerationRecord({
+        uid,
+        operationName: "pending",
+        prompt,
+        modelId: targetModel,
+        aspectRatio: aspectRatio || "16:9",
+        durationSeconds: targetDurationSeconds,
+      });
+      console.log(
+        "[Video] Requesting video generation. " +
+        `modelId=${modelId || "default"} targetModel=${targetModel} ` +
+        `aspectRatio=${aspectRatio || "16:9"} duration=${targetDurationSeconds}`
+      );
+      console.log(`[Video] Prompt: ${prompt}`);
 
       const operation = await client.models.generateVideos({
         model: targetModel,
-        prompt: prompt,
+        source: {
+          prompt,
+        },
         config: {
           aspectRatio: aspectRatio || "16:9",
-          durationSeconds: duration || 5,
+          durationSeconds: targetDurationSeconds,
         },
       });
 
+      await admin
+        .firestore()
+        .collection(VIDEO_COLLECTION)
+        .doc(generationId)
+        .update({
+          operationName: operation.name,
+          updatedAt: admin.firestore.Timestamp.now(),
+        });
+
       return {operationName: operation.name};
     } catch (error: any) {
+      if (typeof generationId === "string" && generationId.length > 0) {
+        await admin
+          .firestore()
+          .collection(VIDEO_COLLECTION)
+          .doc(generationId)
+          .set(
+            {
+              status: "failed",
+              updatedAt: admin.firestore.Timestamp.now(),
+            },
+            {merge: true}
+          )
+          .catch(() => undefined);
+      }
+      const message = extractErrorMessage(error);
       console.error("Video Generation Error:", error);
       throw new HttpsError(
-        "internal",
-        error.message || "Failed to start video generation"
+        "failed-precondition",
+        message
       );
     }
   }
@@ -392,6 +964,11 @@ export const getVideoOperationStatus = onCall(
   {secrets: [geminiApiKey]},
   async (request) => {
     try {
+      const uid = request.auth?.uid;
+      if (!uid) {
+        throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+      }
+
       const {operationName} = request.data;
 
       if (!operationName) {
@@ -404,49 +981,115 @@ export const getVideoOperationStatus = onCall(
         return {
           done: true,
           videoUri: "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+          ttlHours: 24,
         };
       }
 
-      // SDK를 활용한 Operation 상태 조회
-      // (현재 버전에 따라 client.operations.get 또는 apiClient 직접 호출 필요할 수 있음)
-      // 최신 SDK는 아직 getOperation 메서드를 명시적으로 노출하지 않는 경우가 있어,
-      // 우회하거나 직접 REST 호출할 수도 있습니다.
-      // 일단 get()을 시도하되, 없으면 직접 fetch합니다.
-
+      const docSnapshot = await findVideoGenerationDocument(uid, operationName);
       let done = false;
       let videoUri = null;
       let error = null;
+      let generationData: admin.firestore.DocumentData | null = null;
 
-      // GenAI SDK의 apiClient로 직접 요청
-      const apiKey = geminiApiKey.value();
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/${operationName}` +
-        `?key=${apiKey}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch operation: ${response.statusText}`);
+      if (docSnapshot) {
+        generationData = docSnapshot.data() || null;
+        if (generationData) {
+          const currentGenerationData = generationData;
+          if (
+            currentGenerationData.expiresAt &&
+            isExpiredTimestamp(currentGenerationData.expiresAt)
+          ) {
+            const expiredStoragePath =
+              typeof currentGenerationData.storagePath === "string" ?
+                currentGenerationData.storagePath :
+                null;
+            if (expiredStoragePath) {
+              await getStorage().bucket().file(expiredStoragePath).delete({
+                ignoreNotFound: true,
+              });
+            }
+            await docSnapshot.ref.delete();
+            return {
+              done: true,
+              videoUri: null,
+              error: "영상 보관 기간이 만료되었습니다.",
+              ttlHours: 24,
+            };
+          }
+        }
       }
 
-      const opData = await response.json();
-      done = opData.done === true;
+      const client = new GoogleGenAI({
+        apiKey: geminiApiKey.value(),
+      });
+
+      const operation = new GenerateVideosOperation();
+      operation.name = operationName;
+
+      const updatedOperation = await client.operations.getVideosOperation({
+        operation,
+      });
+
+      done = updatedOperation.done === true;
 
       if (done) {
-        if (opData.error) {
-          error = opData.error.message;
-        } else if (
-          opData.response &&
-          opData.response.generatedVideos &&
-          opData.response.generatedVideos.length > 0
-        ) {
-          const video = opData.response.generatedVideos[0].video;
-          if (video.uri) {
-            videoUri = video.uri;
-          } else if (video.videoBytes) {
-            // base64로 온 경우
-            videoUri =
-              `data:${video.mimeType || "video/mp4"};base64,` +
-              `${video.videoBytes}`;
+        if (updatedOperation.error) {
+          error = extractErrorMessage(updatedOperation.error);
+        } else {
+          videoUri = extractVideoUriFromValue(updatedOperation.response);
+          if (!videoUri) {
+            const apiKey = geminiApiKey.value();
+            const response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/${operationName}` +
+              `?key=${apiKey}`
+            );
+
+            if (!response.ok) {
+              throw new Error(
+                `Failed to fetch operation: ${response.statusText}`
+              );
+            }
+
+            const rawOperation = await response.json();
+            if (rawOperation.error) {
+              error = extractErrorMessage(rawOperation.error);
+            } else {
+              videoUri = extractVideoUriFromValue(rawOperation);
+            }
+          }
+
+          if (videoUri && generationData) {
+            if (!generationData.storagePath) {
+              const generationId =
+                String(generationData.generationId || docSnapshot?.id || "");
+              const stored = await downloadAndStoreVideo({
+                uid,
+                generationId,
+                videoUri,
+              });
+
+              await docSnapshot?.ref.update({
+                storagePath: stored.storagePath,
+                downloadUrl: stored.downloadUrl,
+                mimeType: stored.mimeType,
+                status: "completed",
+                updatedAt: admin.firestore.Timestamp.now(),
+              });
+
+              videoUri = stored.downloadUrl;
+            } else {
+              videoUri = await signVideoStoragePath(generationData.storagePath);
+            }
+          } else if (videoUri) {
+            videoUri = await resolvePlayableVideoUrl(videoUri);
+          } else {
+            console.log(
+              "[Video][Status] Done but no video URI found.",
+              JSON.stringify({
+                keys: Object.keys(updatedOperation.response || {}),
+                response: updatedOperation.response || null,
+              })
+            );
           }
         }
       }
@@ -455,12 +1098,79 @@ export const getVideoOperationStatus = onCall(
         done,
         videoUri,
         error,
+        ttlHours: 24,
       };
     } catch (error: any) {
       console.error("Video Operation Status Error:", error);
       throw new HttpsError(
         "internal",
         error.message || "Failed to get video status"
+      );
+    }
+  }
+);
+
+export const listVideoGenerations = onCall(
+  {secrets: [geminiApiKey]},
+  async (request) => {
+    try {
+      const uid = request.auth?.uid;
+      if (!uid) {
+        throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+      }
+
+      const snapshot = await admin
+        .firestore()
+        .collection(VIDEO_COLLECTION)
+        .where("uid", "==", uid)
+        .get();
+
+      const items = await Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          const expired = data.expiresAt && isExpiredTimestamp(data.expiresAt);
+          if (expired) {
+            const storagePath =
+              typeof data.storagePath === "string" ? data.storagePath : null;
+            if (storagePath) {
+              await getStorage().bucket().file(storagePath).delete({
+                ignoreNotFound: true,
+              });
+            }
+            await doc.ref.delete();
+            return null;
+          }
+
+          return {
+            createdAtMillis: data.createdAt?.toMillis?.() ?? 0,
+            payload: await serializeVideoGenerationDocument({
+              ...data,
+              generationId: data.generationId || doc.id,
+            }),
+          };
+        })
+      );
+
+      const filteredItems = items.filter(
+        (
+          item
+        ): item is {
+          createdAtMillis: number;
+          payload: Record<string, unknown>;
+        } => item !== null
+      );
+
+      filteredItems.sort((a, b) => b.createdAtMillis - a.createdAtMillis);
+
+      return {
+        items: filteredItems.slice(0, 20).map((item) => item.payload),
+        ttlHours: 24,
+      };
+    } catch (error: any) {
+      console.error("Video Generation List Error:", error);
+      throw new HttpsError(
+        "internal",
+        error.message || "Failed to list video generations"
       );
     }
   }
