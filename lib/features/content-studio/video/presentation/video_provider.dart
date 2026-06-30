@@ -60,10 +60,12 @@ class VideoProvider extends ChangeNotifier {
   List<VideoGenerationRecord> get recentVideos => _recentVideos;
 
   Timer? _pollingTimer;
+  Timer? _recentRefreshTimer;
 
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _recentRefreshTimer?.cancel();
     super.dispose();
   }
 
@@ -153,11 +155,32 @@ class VideoProvider extends ChangeNotifier {
       _recentVideos = await _listRecentUseCase.call();
       AppLogger.i(
           '[VideoProvider][Recent] success count=${_recentVideos.length}');
+      _syncRecentRefreshTimer();
       notifyListeners();
     } catch (e, stack) {
       AppLogger.e('[VideoProvider][Recent] error reason=$e',
           error: e, stackTrace: stack);
     }
+  }
+
+  void _syncRecentRefreshTimer() {
+    final shouldRefresh = _recentVideos.any((record) {
+      return record.hasExpiryCountdown;
+    });
+
+    if (!shouldRefresh) {
+      _recentRefreshTimer?.cancel();
+      _recentRefreshTimer = null;
+      return;
+    }
+
+    if (_recentRefreshTimer != null) {
+      return;
+    }
+
+    _recentRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      notifyListeners();
+    });
   }
 
   Future<void> generateVideo() async {

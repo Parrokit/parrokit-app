@@ -12,6 +12,7 @@ class VideoGenerationModel {
 
 class VideoGenerationRecord {
   const VideoGenerationRecord({
+    required this.uid,
     required this.generationId,
     required this.prompt,
     required this.modelId,
@@ -25,6 +26,7 @@ class VideoGenerationRecord {
     required this.ttlHours,
   });
 
+  final String uid;
   final String generationId;
   final String prompt;
   final String modelId;
@@ -35,10 +37,32 @@ class VideoGenerationRecord {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? expiresAt;
-  final int ttlHours;
+  final int? ttlHours;
+
+  bool get isOperatorAccount => isOperatorUid(uid);
+  bool get hasExpiryCountdown => !isOperatorAccount && expiresAt != null;
+
+  String get retentionLabel {
+    if (isOperatorAccount) {
+      return '운영자 계정 · 계속 보관';
+    }
+
+    final expiry = expiresAt;
+    if (expiry == null) {
+      return '보관 정보 없음';
+    }
+
+    final remaining = expiry.difference(DateTime.now());
+    if (remaining.isNegative) {
+      return '남은 시간 0분';
+    }
+
+    return '남은 시간 ${_formatRemainingDuration(remaining)}';
+  }
 
   factory VideoGenerationRecord.fromMap(Map<String, dynamic> map) {
     return VideoGenerationRecord(
+      uid: (map['uid'] ?? '').toString(),
       generationId: (map['generationId'] ?? '').toString(),
       prompt: (map['prompt'] ?? '').toString(),
       modelId: (map['modelId'] ?? '').toString(),
@@ -52,7 +76,7 @@ class VideoGenerationRecord {
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTime(map['updatedAt']),
       expiresAt: _parseDateTime(map['expiresAt']),
-      ttlHours: (map['ttlHours'] as num?)?.toInt() ?? 24,
+      ttlHours: (map['ttlHours'] as num?)?.toInt(),
     );
   }
 
@@ -63,6 +87,37 @@ class VideoGenerationRecord {
     }
     return null;
   }
+
+  static String _formatRemainingDuration(Duration duration) {
+    final totalMinutes = duration.inMinutes;
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+    final seconds = duration.inSeconds % 60;
+
+    if (hours > 0) {
+      if (minutes > 0) {
+        return '$hours시간 $minutes분';
+      }
+
+      return '$hours시간';
+    }
+
+    if (minutes > 0) {
+      return '$minutes분';
+    }
+
+    return '$seconds초';
+  }
+}
+
+const Set<String> operatorUids = {
+  '4PlLHHXdrmX1xVTkgAuRKsb5nA22',
+  'dDsWhAQWQxfCWI4xHIayCkjLD662',
+  'naver:iDj5CROn8PODq_1sTN1Yjt2tvaaKiJUppIfKR5-IXmA',
+};
+
+bool isOperatorUid(String? uid) {
+  return uid != null && operatorUids.contains(uid);
 }
 
 const String veo31LiteModelId = 'veo-3.1-lite-generate-preview';

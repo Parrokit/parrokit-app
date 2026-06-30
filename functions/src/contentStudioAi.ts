@@ -16,6 +16,21 @@ const elevenLabsApiKey = defineSecret("ELEVENLABS_API_KEY");
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 const VIDEO_COLLECTION = "content-studio-videos";
 const VIDEO_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+const OPERATOR_UIDS = new Set([
+  "4PlLHHXdrmX1xVTkgAuRKsb5nA22",
+  "dDsWhAQWQxfCWI4xHIayCkjLD662",
+  "naver:iDj5CROn8PODq_1sTN1Yjt2tvaaKiJUppIfKR5-IXmA",
+]);
+
+/**
+ * 운영자 전용 UID인지 확인합니다.
+ *
+ * @param {string | null | undefined} uid 사용자 ID
+ * @return {boolean} 운영자 여부
+ */
+function isOperatorUid(uid: string | null | undefined): boolean {
+  return typeof uid === "string" && OPERATOR_UIDS.has(uid);
+}
 
 const VEO_MODEL_ALIASES: Record<string, string> = {
   "veo3.1-lite": "veo-3.1-lite-generate-preview",
@@ -316,9 +331,10 @@ async function createVideoGenerationRecord(params: {
 }): Promise<string> {
   const generationId = admin.firestore().collection(VIDEO_COLLECTION).doc().id;
   const now = admin.firestore.Timestamp.now();
-  const expiresAt = admin.firestore.Timestamp.fromMillis(
-    Date.now() + VIDEO_STORAGE_TTL_MS
-  );
+  const operatorAccount = isOperatorUid(params.uid);
+  const expiresAt = operatorAccount ?
+    null :
+    admin.firestore.Timestamp.fromMillis(Date.now() + VIDEO_STORAGE_TTL_MS);
 
   await admin.firestore().collection(VIDEO_COLLECTION).doc(generationId).set({
     uid: params.uid,
@@ -334,6 +350,7 @@ async function createVideoGenerationRecord(params: {
     createdAt: now,
     updatedAt: now,
     expiresAt,
+    ttlHours: operatorAccount ? null : 24,
     status: "processing",
   });
 
@@ -381,6 +398,7 @@ async function downloadAndStoreVideo(params: {
   downloadUrl: string;
   mimeType: string;
 }> {
+  const operatorAccount = isOperatorUid(params.uid);
   let bytes: Buffer.Buffer;
   let mimeType = "video/mp4";
 
@@ -440,7 +458,9 @@ async function downloadAndStoreVideo(params: {
       metadata: {
         uid: params.uid,
         generationId: params.generationId,
-        expiresAt: new Date(Date.now() + VIDEO_STORAGE_TTL_MS).toISOString(),
+        expiresAt: operatorAccount ?
+          null :
+          new Date(Date.now() + VIDEO_STORAGE_TTL_MS).toISOString(),
       },
     },
   });
@@ -507,7 +527,6 @@ async function serializeVideoGenerationDocument(
     typeof data.storagePath === "string" ? data.storagePath : null;
   const downloadUrl =
     typeof data.downloadUrl === "string" ? data.downloadUrl : null;
-  const expiresAt = data.expiresAt;
   let refreshedDownloadUrl = downloadUrl;
 
   if (storagePath) {
@@ -515,6 +534,7 @@ async function serializeVideoGenerationDocument(
   }
 
   return {
+    uid: typeof data.uid === "string" ? data.uid : null,
     generationId:
       typeof data.generationId === "string" ? data.generationId : null,
     operationName:
@@ -531,8 +551,8 @@ async function serializeVideoGenerationDocument(
     status: typeof data.status === "string" ? data.status : null,
     createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
     updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() ?? null,
-    expiresAt: expiresAt?.toDate?.()?.toISOString?.() ?? null,
-    ttlHours: 24,
+    expiresAt: data.expiresAt?.toDate?.()?.toISOString?.() ?? null,
+    ttlHours: typeof data.ttlHours === "number" ? data.ttlHours : null,
   };
 }
 
@@ -1015,7 +1035,7 @@ export const getVideoOperationStatus = onCall(
         return {
           done: true,
           videoUri: "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
-          ttlHours: 24,
+          ttlHours: null,
         };
       }
 
@@ -1029,7 +1049,9 @@ export const getVideoOperationStatus = onCall(
         generationData = docSnapshot.data() || null;
         if (generationData) {
           const currentGenerationData = generationData;
+          const operatorAccount = isOperatorUid(currentGenerationData.uid);
           if (
+            !operatorAccount &&
             currentGenerationData.expiresAt &&
             isExpiredTimestamp(currentGenerationData.expiresAt)
           ) {
@@ -1047,7 +1069,7 @@ export const getVideoOperationStatus = onCall(
               done: true,
               videoUri: null,
               error: "영상 보관 기간이 만료되었습니다.",
-              ttlHours: 24,
+              ttlHours: null,
             };
           }
         }
@@ -1132,7 +1154,7 @@ export const getVideoOperationStatus = onCall(
         done,
         videoUri,
         error,
-        ttlHours: 24,
+        ttlHours: null,
       };
     } catch (error: any) {
       console.error("Video Operation Status Error:", error);
@@ -1158,11 +1180,15 @@ export const listVideoGenerations = onCall(
         .collection(VIDEO_COLLECTION)
         .where("uid", "==", uid)
         .get();
+      const operatorAccount = isOperatorUid(uid);
 
       const items = await Promise.all(
         snapshot.docs.map(async (doc) => {
           const data = doc.data();
-          const expired = data.expiresAt && isExpiredTimestamp(data.expiresAt);
+          const expired =
+            !operatorAccount &&
+            data.expiresAt &&
+            isExpiredTimestamp(data.expiresAt);
           if (expired) {
             const storagePath =
               typeof data.storagePath === "string" ? data.storagePath : null;
@@ -1198,7 +1224,7 @@ export const listVideoGenerations = onCall(
 
       return {
         items: filteredItems.slice(0, 20).map((item) => item.payload),
-        ttlHours: 24,
+        ttlHours: operatorAccount ? null : 24,
       };
     } catch (error: any) {
       console.error("Video Generation List Error:", error);

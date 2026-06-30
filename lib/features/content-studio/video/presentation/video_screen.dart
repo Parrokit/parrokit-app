@@ -575,7 +575,7 @@ class _RecentVideoPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '생성된 영상은 24시간 동안 보관됩니다. 같은 계정으로 다시 들어오면 이어서 볼 수 있습니다.',
+            '일반 계정의 생성 영상은 24시간 동안 보관됩니다. 운영자 계정은 계속 보관되며, 같은 계정으로 다시 들어오면 이어서 볼 수 있습니다.',
             style: theme.textTheme.bodySmall?.copyWith(color: mutedText),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -634,7 +634,9 @@ class _RecentVideoPanel extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  record.modelId,
+                                  record.isOperatorAccount
+                                      ? '운영자 계정 · ${record.modelId}'
+                                      : record.modelId,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.titleSmall?.copyWith(
@@ -652,7 +654,7 @@ class _RecentVideoPanel extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  '보관 ${record.ttlHours}시간 · ${record.status}',
+                                  '${record.retentionLabel} · ${record.status}',
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color: mutedText,
                                   ),
