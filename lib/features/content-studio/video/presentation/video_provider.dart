@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import '../domain/usecases/generate_video_usecase.dart';
 import '../domain/usecases/check_video_operation_usecase.dart';
@@ -50,6 +53,9 @@ class VideoProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  bool _isExportingForCaptioning = false;
+  bool get isExportingForCaptioning => _isExportingForCaptioning;
+
   List<VideoGenerationRecord> _recentVideos = const [];
   List<VideoGenerationRecord> get recentVideos => _recentVideos;
 
@@ -90,6 +96,55 @@ class VideoProvider extends ChangeNotifier {
     _generatedFilePath = videoUrl;
     _errorMessage = null;
     notifyListeners();
+  }
+
+  Future<String?> prepareGeneratedVideoForCaptioning() async {
+    final source = _generatedFilePath;
+    if (source == null || source.isEmpty) {
+      return null;
+    }
+
+    if (source.startsWith('file://')) {
+      return Uri.parse(source).toFilePath();
+    }
+
+    if (source.startsWith('/')) {
+      return source;
+    }
+
+    if (source.startsWith('data:')) {
+      return null;
+    }
+
+    _isExportingForCaptioning = true;
+    notifyListeners();
+
+    try {
+      final client = HttpClient();
+      final request = await client.getUrl(Uri.parse(source));
+      final response = await request.close();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('download failed: ${response.statusCode}');
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File(
+        '${tempDir.path}/parrokit_caption_video_${DateTime.now().millisecondsSinceEpoch}.mp4',
+      );
+      final sink = file.openWrite();
+      await response.pipe(sink);
+      await sink.close();
+      return file.path;
+    } catch (e, stack) {
+      AppLogger.e('[VideoProvider][ExportToCaptioning] error reason=$e',
+          error: e, stackTrace: stack);
+      _errorMessage = '캡션 편집기로 보낼 영상을 준비하지 못했습니다.';
+      notifyListeners();
+      return null;
+    } finally {
+      _isExportingForCaptioning = false;
+      notifyListeners();
+    }
   }
 
   Future<void> loadRecentVideos() async {

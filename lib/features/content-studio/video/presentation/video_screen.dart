@@ -10,6 +10,7 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
+import 'package:parrokit/features/content-studio/hub/presentation/studio_hub_provider.dart';
 import 'package:parrokit/features/content-studio/video/domain/models/video_generation_models.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 import 'package:parrokit/features/content-studio/video/presentation/widgets/video_model_selection_sheet.dart';
@@ -68,6 +69,57 @@ class _VideoScreenState extends State<VideoScreen> {
           ),
           children: [
             _VideoPreview(isDark: isDark),
+            if (provider.generatedFilePath != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _Panel(
+                title: '생성 결과 관리',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '자동 자막 생성으로 넘기면 이 영상을 캡션 편집기 플레이어에 바로 불러옵니다.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: mutedText,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: provider.isExportingForCaptioning
+                            ? null
+                            : () async {
+                                final localPath = await provider
+                                    .prepareGeneratedVideoForCaptioning();
+                                if (!context.mounted || localPath == null) {
+                                  return;
+                                }
+
+                                context
+                                    .read<StudioHubProvider>()
+                                    .sendAudioToCaptioning(localPath);
+                              },
+                        icon: provider.isExportingForCaptioning
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.subtitles_rounded),
+                        label: Text(
+                          provider.isExportingForCaptioning
+                              ? '준비 중...'
+                              : '자동 자막 생성',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.sectionGap),
             _Panel(
               title: '영상 프롬프트',
@@ -503,8 +555,8 @@ class _RecentVideoPanel extends StatelessWidget {
           else
             Column(
               children: recentVideos.map((record) {
-                final hasVideo = record.videoUrl != null &&
-                    record.videoUrl!.isNotEmpty;
+                final hasVideo =
+                    record.videoUrl != null && record.videoUrl!.isNotEmpty;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: InkWell(
@@ -537,8 +589,7 @@ class _RecentVideoPanel extends StatelessWidget {
                               color: theme.colorScheme.primary.withValues(
                                 alpha: 0.12,
                               ),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.sm),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: const Icon(
                               Icons.video_library_rounded,
@@ -578,9 +629,11 @@ class _RecentVideoPanel extends StatelessWidget {
                             ),
                           ),
                           if (hasVideo)
-                            const Icon(
-                              Icons.play_arrow_rounded,
-                              color: AppColors.primary,
+                            TextButton(
+                              onPressed: () {
+                                provider.showSavedVideo(record.videoUrl!);
+                              },
+                              child: const Text('불러오기'),
                             ),
                         ],
                       ),
