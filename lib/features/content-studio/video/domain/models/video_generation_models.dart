@@ -44,7 +44,7 @@ class VideoGenerationRecord {
 
   String get retentionLabel {
     if (isOperatorAccount) {
-      return '운영자 계정 · 계속 보관';
+      return '계속 보관';
     }
 
     final expiry = expiresAt;

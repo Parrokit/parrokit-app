@@ -508,12 +508,14 @@ class _VideoPreviewState extends State<_VideoPreview> {
 
 class _Panel extends StatelessWidget {
   const _Panel({
-    required this.title,
+    this.title,
+    this.titleWidget,
     required this.child,
     this.trailing,
-  });
+  }) : assert(title != null || titleWidget != null);
 
-  final String title;
+  final String? title;
+  final Widget? titleWidget;
   final Widget child;
   final Widget? trailing;
 
@@ -537,12 +539,13 @@ class _Panel extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                child: titleWidget ??
+                    Text(
+                      title!,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
               ),
               if (trailing != null) trailing!,
             ],
@@ -550,6 +553,37 @@ class _Panel extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           child,
         ],
+      ),
+    );
+  }
+}
+
+class _SquareChip extends StatelessWidget {
+  const _SquareChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.surfaceContainerHighDark
+            : AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isDark ? AppColors.dividerSubtleDark : AppColors.dividerSubtle,
+        ),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -567,9 +601,25 @@ class _RecentVideoPanel extends StatelessWidget {
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
     final provider = context.watch<VideoProvider>();
     final recentVideos = provider.recentVideos;
+    final isOperatorAccount =
+        recentVideos.any((record) => record.isOperatorAccount);
 
     return _Panel(
-      title: '최근 생성 영상',
+      titleWidget: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '최근 생성 영상',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          if (isOperatorAccount) ...[
+            const SizedBox(width: AppSpacing.sm),
+            _SquareChip(label: '운영자 계정'),
+          ],
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -633,9 +683,7 @@ class _RecentVideoPanel extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  record.isOperatorAccount
-                                      ? '운영자 계정 · ${record.modelId}'
-                                      : record.modelId,
+                                  record.modelId,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.titleSmall?.copyWith(
