@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -26,6 +27,8 @@ class VideoScreen extends StatefulWidget {
 }
 
 class _VideoScreenState extends State<VideoScreen> {
+  static const int _dialogueMaxLength = 100;
+
   late final TextEditingController _dialogueController;
   late final TextEditingController _promptController;
 
@@ -141,7 +144,7 @@ class _VideoScreenState extends State<VideoScreen> {
             _Panel(
               title: '대화 스크립트',
               trailing: Text(
-                '${provider.dialogue.length} / 500',
+                '${provider.dialogue.length} / $_dialogueMaxLength',
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: mutedText,
                 ),
@@ -150,6 +153,9 @@ class _VideoScreenState extends State<VideoScreen> {
                 controller: _dialogueController,
                 minLines: 4,
                 maxLines: 8,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(_dialogueMaxLength),
+                ],
                 onChanged: provider.updateDialogue,
                 decoration: const InputDecoration(
                   hintText:
@@ -167,17 +173,28 @@ class _VideoScreenState extends State<VideoScreen> {
                   color: mutedText,
                 ),
               ),
+              child: TextField(
+                controller: _promptController,
+                minLines: 5,
+                maxLines: 8,
+                onChanged: provider.updateScenePrompt,
+                decoration: const InputDecoration(
+                  hintText: '예: 책상 위 노트북 화면에 영어 회화 문장이 나타나는 밝은 학습 영상',
+                  alignLabelWithHint: true,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _Panel(
+              title: '추천 받기',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(
-                    controller: _promptController,
-                    minLines: 5,
-                    maxLines: 8,
-                    onChanged: provider.updateScenePrompt,
-                    decoration: const InputDecoration(
-                      hintText: '예: 책상 위 노트북 화면에 영어 회화 문장이 나타나는 밝은 학습 영상',
-                      alignLabelWithHint: true,
+                  Text(
+                    '챗봇과 대화하면서 대화 스크립트와 영상 프롬프트를 함께 추천받을 수 있어요.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: mutedText,
+                      height: 1.45,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -191,7 +208,7 @@ class _VideoScreenState extends State<VideoScreen> {
                         showChatBotSheet(context);
                       },
                       icon: const Icon(Icons.smart_toy_rounded),
-                      label: const Text('챗봇에게 프롬프트 추천받기'),
+                      label: const Text('챗봇으로 프롬프트 추천받기'),
                     ),
                   ),
                 ],

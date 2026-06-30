@@ -12,6 +12,8 @@ import '../domain/models/video_generation_models.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 
 class VideoProvider extends ChangeNotifier {
+  static const int dialogueMaxLength = 100;
+
   late final GenerateVideoUseCase _generateUseCase;
   late final CheckVideoOperationUseCase _checkOperationUseCase;
   late final ListRecentVideoGenerationsUseCase _listRecentUseCase;
@@ -70,7 +72,11 @@ class VideoProvider extends ChangeNotifier {
   }
 
   void updateDialogue(String newDialogue) {
-    _dialogue = newDialogue;
+    if (newDialogue.length > dialogueMaxLength) {
+      _dialogue = newDialogue.substring(0, dialogueMaxLength);
+    } else {
+      _dialogue = newDialogue;
+    }
     notifyListeners();
   }
 
