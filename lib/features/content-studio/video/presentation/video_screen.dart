@@ -12,6 +12,8 @@ import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/content-studio/hub/presentation/studio_hub_provider.dart';
+import 'package:parrokit/features/content-studio/chat-bot/presentation/chat_bot_provider.dart';
+import 'package:parrokit/features/content-studio/chat-bot/presentation/widgets/chat_bot_sheet.dart';
 import 'package:parrokit/features/content-studio/video/domain/models/video_generation_models.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
 import 'package:parrokit/features/content-studio/video/presentation/widgets/video_model_selection_sheet.dart';
@@ -81,6 +83,8 @@ class _VideoScreenState extends State<VideoScreen> {
             24,
           ),
           children: [
+            const _VideoWarningBanner(),
+            const SizedBox(height: AppSpacing.lg),
             _VideoPreview(isDark: isDark),
             if (provider.generatedFilePath != null) ...[
               const SizedBox(height: AppSpacing.lg),
@@ -163,15 +167,34 @@ class _VideoScreenState extends State<VideoScreen> {
                   color: mutedText,
                 ),
               ),
-              child: TextField(
-                controller: _promptController,
-                minLines: 5,
-                maxLines: 8,
-                onChanged: provider.updateScenePrompt,
-                decoration: const InputDecoration(
-                  hintText: '예: 책상 위 노트북 화면에 영어 회화 문장이 나타나는 밝은 학습 영상',
-                  alignLabelWithHint: true,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _promptController,
+                    minLines: 5,
+                    maxLines: 8,
+                    onChanged: provider.updateScenePrompt,
+                    decoration: const InputDecoration(
+                      hintText: '예: 책상 위 노트북 화면에 영어 회화 문장이 나타나는 밝은 학습 영상',
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        context
+                            .read<ChatBotProvider>()
+                            .updateChatbotMode('video');
+                        showChatBotSheet(context);
+                      },
+                      icon: const Icon(Icons.smart_toy_rounded),
+                      label: const Text('챗봇에게 프롬프트 추천받기'),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -585,6 +608,118 @@ class _SquareChip extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
+    );
+  }
+}
+
+class _VideoWarningBanner extends StatelessWidget {
+  const _VideoWarningBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.warningSoftDark : AppColors.warningSoft,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: isDark ? AppColors.warningDark : AppColors.warning,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: isDark ? AppColors.warningDark : AppColors.warning,
+            size: 20,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '동영상 생성 전 확인',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '스크립트가 영상에 전부 들어가지 않을 수 있습니다.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _VideoWarningPoint(
+                  text: '영상 길이와 스크립트 길이는 너무 길지 않도록 적절하게 설정해 주세요.',
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 4),
+                _VideoWarningPoint(
+                  text: '스크립트가 자연스럽게 반영될 수 있도록 간결하게 작성해 주세요.',
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '의도와 다르게 생성된 동영상에 대한 책임은 사용자에게 있습니다.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VideoWarningPoint extends StatelessWidget {
+  const _VideoWarningPoint({
+    required this.text,
+    required this.isDark,
+  });
+
+  final String text;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '•',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color:
+                    isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                fontWeight: FontWeight.w900,
+              ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ),
+      ],
     );
   }
 }
