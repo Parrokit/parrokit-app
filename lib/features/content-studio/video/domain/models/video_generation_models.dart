@@ -61,8 +61,15 @@ class VideoGenerationRecord {
   }
 
   factory VideoGenerationRecord.fromMap(Map<String, dynamic> map) {
+    final storagePath =
+        (map['storagePath'] ?? map['storage_path'] ?? '').toString();
+    final uid = _resolveUid(
+      (map['uid'] ?? '').toString(),
+      storagePath,
+    );
+
     return VideoGenerationRecord(
-      uid: (map['uid'] ?? '').toString(),
+      uid: uid,
       generationId: (map['generationId'] ?? '').toString(),
       prompt: (map['prompt'] ?? '').toString(),
       modelId: (map['modelId'] ?? '').toString(),
@@ -86,6 +93,21 @@ class VideoGenerationRecord {
       return DateTime.tryParse(value);
     }
     return null;
+  }
+
+  static String _resolveUid(String uid, String storagePath) {
+    if (uid.isNotEmpty) {
+      return uid;
+    }
+
+    final match = RegExp(r'^users/([^/]+)/content-studio/videos/').firstMatch(
+      storagePath,
+    );
+    if (match != null && match.group(1) != null) {
+      return Uri.decodeComponent(match.group(1)!);
+    }
+
+    return '';
   }
 
   static String _formatRemainingDuration(Duration duration) {

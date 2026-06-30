@@ -153,6 +153,11 @@ class VideoProvider extends ChangeNotifier {
     AppLogger.i('[VideoProvider][Recent] start');
     try {
       _recentVideos = await _listRecentUseCase.call();
+      for (final record in _recentVideos) {
+        AppLogger.i(
+          '[VideoProvider][Recent] item uid=${record.uid} operator=${record.isOperatorAccount} generationId=${record.generationId}',
+        );
+      }
       AppLogger.i(
           '[VideoProvider][Recent] success count=${_recentVideos.length}');
       _syncRecentRefreshTimer();

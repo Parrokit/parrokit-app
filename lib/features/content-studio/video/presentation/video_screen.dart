@@ -10,6 +10,7 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/features/content-studio/hub/presentation/studio_hub_provider.dart';
 import 'package:parrokit/features/content-studio/video/domain/models/video_generation_models.dart';
 import 'package:parrokit/features/content-studio/video/presentation/video_provider.dart';
@@ -33,6 +34,8 @@ class _VideoScreenState extends State<VideoScreen> {
     _promptController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final uid = context.read<UserProvider>().currentUser?.id;
+      AppLogger.i('[ContentStudio][Video] enter uid=${uid ?? "null"}');
       context.read<VideoProvider>().loadRecentVideos();
     });
   }
@@ -344,11 +347,7 @@ class _VideoPreviewState extends State<_VideoPreview> {
       await newController.initialize();
       newController.setLooping(true);
       newController.play();
-    } catch (e, stack) {
-      AppLogger.e(
-          "[VideoScreen][_VideoPreviewState] Video initialization error: $e",
-          error: e,
-          stackTrace: stack);
+    } catch (e) {
       if (mounted) {
         setState(() {
           _playerError = "영상을 불러올 수 없습니다. 네트워크 연결이나 권한을 확인하세요.";
