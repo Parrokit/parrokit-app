@@ -14,6 +14,7 @@ Future<void> showChatBotSheet(
   BuildContext context, {
   void Function(int tabIndex, Map<String, dynamic>? actionData)?
       onTriggerAction,
+  String? initialMessage,
 }) async {
   final chatBotProvider = Provider.of<ChatBotProvider>(context, listen: false);
   final mediaQuery = MediaQuery.of(context);
@@ -30,6 +31,7 @@ Future<void> showChatBotSheet(
       return ChangeNotifierProvider.value(
         value: chatBotProvider,
         child: _ChatBotSheet(
+          initialMessage: initialMessage,
           onTriggerAction: onTriggerAction,
           statusBarHeight: statusBarHeight,
         ),
@@ -40,10 +42,12 @@ Future<void> showChatBotSheet(
 
 class _ChatBotSheet extends StatefulWidget {
   const _ChatBotSheet({
+    this.initialMessage,
     this.onTriggerAction,
     required this.statusBarHeight,
   });
 
+  final String? initialMessage;
   final void Function(int tabIndex, Map<String, dynamic>? actionData)?
       onTriggerAction;
   final double statusBarHeight;
@@ -61,6 +65,13 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final initialMessage = widget.initialMessage?.trim();
+      if (!mounted || initialMessage == null || initialMessage.isEmpty) {
+        return;
+      }
+      context.read<ChatBotProvider>().sendMessage(initialMessage);
+    });
   }
 
   void _onTextChanged() {
@@ -127,8 +138,7 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
 
     if (provider.pendingVideoRecommendations != null) {
       final recommendations = provider.pendingVideoRecommendations!;
-      debugPrint(
-          '[Chatbot][UI] Detected pendingVideoRecommendations in build');
+      debugPrint('[Chatbot][UI] Detected pendingVideoRecommendations in build');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && provider.pendingVideoRecommendations != null) {
           debugPrint(

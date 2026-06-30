@@ -28,6 +28,20 @@ class VideoScreen extends StatefulWidget {
 
 class _VideoScreenState extends State<VideoScreen> {
   static const int _dialogueMaxLength = 100;
+  static const List<String> _recommendationLanguages = [
+    '영어',
+    '일본어',
+    '중국어',
+    '스페인어',
+  ];
+  static const List<String> _recommendationSituations = [
+    '카페',
+    '여행',
+    '친구 대화',
+    '회사',
+    '쇼핑',
+    '병원',
+  ];
 
   late final TextEditingController _dialogueController;
   late final TextEditingController _promptController;
@@ -50,6 +64,52 @@ class _VideoScreenState extends State<VideoScreen> {
     _dialogueController.dispose();
     _promptController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openVideoRecommendationFlow() async {
+    final selection = await showModalBottomSheet<_VideoRecommendationSelection>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _VideoRecommendationFilterSheet(
+        languages: _recommendationLanguages,
+        situations: _recommendationSituations,
+      ),
+    );
+
+    if (!mounted || selection == null) {
+      return;
+    }
+
+    final initialMessage = _buildRecommendationPrompt(selection);
+
+    context.read<ChatBotProvider>().updateChatbotMode('video');
+    await showChatBotSheet(
+      context,
+      initialMessage: initialMessage,
+      onTriggerAction: (tabIndex, actionData) {
+        if (tabIndex != 2 || actionData == null) {
+          return;
+        }
+        final provider = context.read<VideoProvider>();
+        final script = actionData['script'] as String?;
+        final prompt = actionData['prompt'] as String?;
+        if (script != null) {
+          provider.updateDialogue(script);
+        }
+        if (prompt != null) {
+          provider.updateScenePrompt(prompt);
+        }
+      },
+    );
+  }
+
+  String _buildRecommendationPrompt(
+    _VideoRecommendationSelection selection,
+  ) {
+    final language = selection.language?.trim() ?? '';
+    final situation = selection.situation?.trim() ?? '';
+    return '$language로 $situation 상황의 짧은 회화 영상 추천 프롬프트를 작성해줘.';
   }
 
   @override
@@ -200,15 +260,10 @@ class _VideoScreenState extends State<VideoScreen> {
                   const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        context
-                            .read<ChatBotProvider>()
-                            .updateChatbotMode('video');
-                        showChatBotSheet(context);
-                      },
+                    child: FilledButton.icon(
+                      onPressed: _openVideoRecommendationFlow,
                       icon: const Icon(Icons.smart_toy_rounded),
-                      label: const Text('챗봇으로 프롬프트 추천받기'),
+                      label: const Text('추천 프롬프트 받기'),
                     ),
                   ),
                 ],
@@ -329,6 +384,254 @@ class _VideoPreview extends StatefulWidget {
 
   @override
   State<_VideoPreview> createState() => _VideoPreviewState();
+}
+
+class _VideoRecommendationSelection {
+  const _VideoRecommendationSelection({
+    this.language,
+    this.situation,
+  });
+
+  final String? language;
+  final String? situation;
+}
+
+class _VideoRecommendationFilterSheet extends StatefulWidget {
+  const _VideoRecommendationFilterSheet({
+    required this.languages,
+    required this.situations,
+  });
+
+  final List<String> languages;
+  final List<String> situations;
+
+  @override
+  State<_VideoRecommendationFilterSheet> createState() =>
+      _VideoRecommendationFilterSheetState();
+}
+
+class _VideoRecommendationFilterSheetState
+    extends State<_VideoRecommendationFilterSheet> {
+  late final TextEditingController _languageController;
+  late final TextEditingController _situationController;
+  String? _selectedLanguage;
+  String? _selectedSituation;
+
+  @override
+  void initState() {
+    super.initState();
+    _languageController = TextEditingController();
+    _situationController = TextEditingController();
+    _languageController.addListener(_onRecommendationInputChanged);
+    _situationController.addListener(_onRecommendationInputChanged);
+    _selectedLanguage = null;
+    _selectedSituation = null;
+  }
+
+  @override
+  void dispose() {
+    _languageController.removeListener(_onRecommendationInputChanged);
+    _situationController.removeListener(_onRecommendationInputChanged);
+    _languageController.dispose();
+    _situationController.dispose();
+    super.dispose();
+  }
+
+  void _onRecommendationInputChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  String? _resolveLanguage() {
+    final direct = _languageController.text.trim();
+    if (direct.isNotEmpty) {
+      return direct;
+    }
+    return _selectedLanguage;
+  }
+
+  String? _resolveSituation() {
+    final direct = _situationController.text.trim();
+    if (direct.isNotEmpty) {
+      return direct;
+    }
+    return _selectedSituation;
+  }
+
+  bool get _hasRecommendationInput {
+    return _languageController.text.trim().isNotEmpty &&
+        _situationController.text.trim().isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final mutedText =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.md,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '추천 조건 선택',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  '외국어와 상황을 모두 직접 입력해 주세요. 두 항목이 모두 있어야 추천을 시작할 수 있습니다.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: mutedText,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                _FilterSection(
+                  label: '외국어',
+                  children: widget.languages.map((language) {
+                    final isSelected = _selectedLanguage == language;
+                    return ChoiceChip(
+                      label: Text(language),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedLanguage = isSelected ? null : language;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _languageController,
+                  decoration: const InputDecoration(
+                    labelText: '외국어 직접 입력',
+                    hintText: '예: 프랑스어, 태국어',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                _FilterSection(
+                  label: '상황',
+                  children: widget.situations.map((situation) {
+                    final isSelected = _selectedSituation == situation;
+                    return ChoiceChip(
+                      label: Text(situation),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedSituation = isSelected ? null : situation;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _situationController,
+                  decoration: const InputDecoration(
+                    labelText: '상황 직접 입력',
+                    hintText: '예: 공항 체크인, 생일 파티',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                if (!_hasRecommendationInput) ...[
+                  Text(
+                    '외국어와 상황을 모두 입력해 주세요.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('닫기'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _hasRecommendationInput
+                            ? () {
+                                Navigator.of(context).pop(
+                                  _VideoRecommendationSelection(
+                                    language: _resolveLanguage(),
+                                    situation: _resolveSituation(),
+                                  ),
+                                );
+                              }
+                            : null,
+                        child: const Text('추천 프롬프트 받기'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterSection extends StatelessWidget {
+  const _FilterSection({
+    required this.label,
+    required this.children,
+  });
+
+  final String label;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color:
+                isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: children,
+        ),
+      ],
+    );
+  }
 }
 
 class _VideoPreviewState extends State<_VideoPreview> {
