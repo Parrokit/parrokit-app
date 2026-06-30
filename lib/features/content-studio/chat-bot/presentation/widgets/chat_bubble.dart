@@ -137,15 +137,59 @@ class ChatBubble extends StatelessWidget {
                           ),
                         ),
                         if (message.actionType == 'tts_trigger' ||
-                            message.actionType == 'video_trigger') ...[
+                            message.actionType == 'video_trigger' ||
+                            message.actionType ==
+                                'video_prompt_recommendation') ...[
                           const SizedBox(height: 12),
                           InkWell(
                             onTap: () {
                               if (onTriggerAction != null) {
                                 final isVideo =
-                                    message.actionType == 'video_trigger';
+                                    message.actionType == 'video_trigger' ||
+                                        message.actionType ==
+                                            'video_prompt_recommendation';
                                 final targetTab = isVideo ? 2 : 1;
-                                onTriggerAction!(targetTab, message.actionData);
+                                if (message.actionType ==
+                                        'video_prompt_recommendation' &&
+                                    message.actionData != null) {
+                                  final recommendations =
+                                      message.actionData!['recommendations'];
+                                  if (recommendations is List &&
+                                      recommendations.isNotEmpty) {
+                                    final first = recommendations.first;
+                                    if (first is Map) {
+                                      onTriggerAction!(targetTab, {
+                                        'script':
+                                            first['script']?.toString() ?? '',
+                                        'prompt':
+                                            first['prompt']?.toString() ?? '',
+                                      });
+                                    } else {
+                                      onTriggerAction!(
+                                          targetTab, message.actionData);
+                                    }
+                                  } else {
+                                    final scripts =
+                                        message.actionData!['scripts'];
+                                    final prompts =
+                                        message.actionData!['prompts'];
+                                    if (scripts is List &&
+                                        prompts is List &&
+                                        scripts.isNotEmpty &&
+                                        prompts.isNotEmpty) {
+                                      onTriggerAction!(targetTab, {
+                                        'script': scripts.first.toString(),
+                                        'prompt': prompts.first.toString(),
+                                      });
+                                    } else {
+                                      onTriggerAction!(
+                                          targetTab, message.actionData);
+                                    }
+                                  }
+                                } else {
+                                  onTriggerAction!(
+                                      targetTab, message.actionData);
+                                }
                                 Navigator.of(context).pop();
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -153,7 +197,10 @@ class ChatBubble extends StatelessWidget {
                                     content: Text(
                                       message.actionType == 'video_trigger'
                                           ? '비디오 생성 화면으로 이동합니다'
-                                          : 'TTS 생성 화면으로 이동합니다',
+                                          : message.actionType ==
+                                                  'video_prompt_recommendation'
+                                              ? '비디오 프롬프트 추천을 적용합니다'
+                                              : 'TTS 생성 화면으로 이동합니다',
                                     ),
                                     behavior: SnackBarBehavior.floating,
                                   ),
@@ -166,7 +213,10 @@ class ChatBubble extends StatelessWidget {
                                   horizontal: 16, vertical: 10),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: message.actionType == 'video_trigger'
+                                  colors: (message.actionType ==
+                                              'video_trigger' ||
+                                          message.actionType ==
+                                              'video_prompt_recommendation')
                                       ? [
                                           AppColors.primary,
                                           const Color(0xFF00C6FF)
@@ -181,11 +231,13 @@ class ChatBubble extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color:
-                                        (message.actionType == 'video_trigger'
-                                                ? AppColors.primary
-                                                : AppColors.secondary)
-                                            .withValues(alpha: 0.25),
+                                    color: ((message.actionType ==
+                                                    'video_trigger' ||
+                                                message.actionType ==
+                                                    'video_prompt_recommendation')
+                                            ? AppColors.primary
+                                            : AppColors.secondary)
+                                        .withValues(alpha: 0.25),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                   ),
@@ -195,7 +247,9 @@ class ChatBubble extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    message.actionType == 'video_trigger'
+                                    message.actionType == 'video_trigger' ||
+                                            message.actionType ==
+                                                'video_prompt_recommendation'
                                         ? Icons.videocam_rounded
                                         : Icons.audiotrack_rounded,
                                     size: 16,
@@ -205,7 +259,10 @@ class ChatBubble extends StatelessWidget {
                                   Text(
                                     message.actionType == 'video_trigger'
                                         ? '비디오 생성하기'
-                                        : 'TTS 생성하기',
+                                        : message.actionType ==
+                                                'video_prompt_recommendation'
+                                            ? '한 쌍 추가하기'
+                                            : 'TTS 생성하기',
                                     style:
                                         theme.textTheme.labelMedium?.copyWith(
                                       color: Colors.white,

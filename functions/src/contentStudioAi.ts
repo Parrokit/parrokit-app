@@ -558,20 +558,49 @@ export const ChatbotOutputSchema = z.object({
     "tts_trigger",
     "video_trigger",
     "script_recommendation",
+    "video_prompt_recommendation",
   ]),
-  actionData: z.object({
-    text: z.string().optional(),
-    language: z.string().optional(),
-    provider: z.string().optional(),
-    voiceId: z.string().optional(),
-    prompt: z.string().optional(),
-    ratio: z.string().optional(),
-    duration: z.number().optional(),
-    routingOptions: z.array(z.string()).optional(),
-    targetMode: z.string().optional(),
-    scripts: z.array(z.string()).optional(),
-  }).nullable().optional(),
+  actionData: z
+    .object({
+      text: z.string().nullable().optional(),
+      language: z.string().nullable().optional(),
+      provider: z.string().nullable().optional(),
+      voiceId: z.string().nullable().optional(),
+      prompt: z.string().nullable().optional(),
+      ratio: z.string().nullable().optional(),
+      duration: z.number().nullable().optional(),
+      routingOptions: z.array(z.string()).nullable().optional(),
+      targetMode: z.string().nullable().optional(),
+      scripts: z.array(z.string()).nullable().optional(),
+      prompts: z.array(z.string()).nullable().optional(),
+    })
+    .nullable()
+    .optional(),
 });
+
+/**
+ * Recursively removes nullish values from arrays and objects so flow output
+ * matches the callable schema expected by the Flutter client.
+ *
+ * @param {T} value The value to clean.
+ * @return {T} The cleaned value without nullish fields.
+ */
+function pruneNullishValues<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item) => item !== null && item !== undefined)
+      .map((item) => pruneNullishValues(item)) as T;
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, item]) => item !== null && item !== undefined)
+      .map(([key, item]) => [key, pruneNullishValues(item)] as const);
+    return Object.fromEntries(entries) as T;
+  }
+
+  return value;
+}
 
 // 3. 각각의 Dotprompt 파일을 불러와서 Flow 정의
 export const chatbotFlow = ai.defineFlow(
@@ -588,7 +617,7 @@ export const chatbotFlow = ai.defineFlow(
     outputSchema: ChatbotOutputSchema,
   },
   async (input) => {
-    // 비용 폭탄 방지: 프론트엔드가 100개를 보내더라도, 무조건 최근 10개(대화 5번 왕복)만 잘라서 사용
+    // 비용 폭탄 방지: 프론트엔드가 100개를 보내더라도, 무조건 최근 몇 개만 사용
     const MAX_HISTORY = 6;
     const recentHistory = (input.history || []).slice(-MAX_HISTORY);
 
@@ -621,11 +650,11 @@ export const chatbotFlow = ai.defineFlow(
     );
 
     // 만약 response.output이 존재하지 않는 경우를 대비한 대체값 제공
-    return response.output || {
+    return pruneNullishValues(response.output || {
       reply: response.text || "",
       actionType: "none",
       actionData: null,
-    };
+    });
   }
 );
 
@@ -809,17 +838,22 @@ export const generateTtsFlow = ai.defineFlow(
 
 
 // 4. 앱(Flutter)에서 호출할 수 있도록 Firebase Functions로 내보내기
-export const generateChatbotResponse = onCall(async (request) => {
-  try {
-    return await chatbotFlow(request.data);
-  } catch (error: any) {
-    console.error("Chatbot Wrapper Error:", error);
-    throw new HttpsError(
-      "aborted",
-      error.message || "Failed to generate response"
-    );
+export const generateChatbotResponse = onCall(
+  {
+    timeoutSeconds: 180,
+  },
+  async (request) => {
+    try {
+      return await chatbotFlow(request.data);
+    } catch (error: any) {
+      console.error("Chatbot Wrapper Error:", error);
+      throw new HttpsError(
+        "aborted",
+        error.message || "Failed to generate response"
+      );
+    }
   }
-});
+);
 
 export const generateTts = onCall(
   {secrets: [elevenLabsApiKey, geminiApiKey]},

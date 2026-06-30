@@ -23,11 +23,13 @@ class VideoScreen extends StatefulWidget {
 }
 
 class _VideoScreenState extends State<VideoScreen> {
+  late final TextEditingController _dialogueController;
   late final TextEditingController _promptController;
 
   @override
   void initState() {
     super.initState();
+    _dialogueController = TextEditingController();
     _promptController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -37,6 +39,7 @@ class _VideoScreenState extends State<VideoScreen> {
 
   @override
   void dispose() {
+    _dialogueController.dispose();
     _promptController.dispose();
     super.dispose();
   }
@@ -48,6 +51,13 @@ class _VideoScreenState extends State<VideoScreen> {
     final mutedText =
         isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
     final provider = context.watch<VideoProvider>();
+
+    if (_dialogueController.text != provider.dialogue) {
+      _dialogueController.value = _dialogueController.value.copyWith(
+        text: provider.dialogue,
+        selection: TextSelection.collapsed(offset: provider.dialogue.length),
+      );
+    }
 
     if (_promptController.text != provider.scenePrompt) {
       _promptController.value = _promptController.value.copyWith(
@@ -121,6 +131,27 @@ class _VideoScreenState extends State<VideoScreen> {
               ),
             ],
             const SizedBox(height: AppSpacing.sectionGap),
+            _Panel(
+              title: '대화 스크립트',
+              trailing: Text(
+                '${provider.dialogue.length} / 500',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: mutedText,
+                ),
+              ),
+              child: TextField(
+                controller: _dialogueController,
+                minLines: 4,
+                maxLines: 8,
+                onChanged: provider.updateDialogue,
+                decoration: const InputDecoration(
+                  hintText:
+                      '예: A: Could you show me how to say this in English?\nB: Sure, let me give you a simple example.',
+                  alignLabelWithHint: true,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
             _Panel(
               title: '영상 프롬프트',
               trailing: Text(
@@ -218,7 +249,8 @@ class _VideoScreenState extends State<VideoScreen> {
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: provider.isGenerating ||
-                              provider.scenePrompt.trim().isEmpty
+                              (provider.scenePrompt.trim().isEmpty &&
+                                  provider.dialogue.trim().isEmpty)
                           ? null
                           : provider.generateVideo,
                       icon: provider.isGenerating

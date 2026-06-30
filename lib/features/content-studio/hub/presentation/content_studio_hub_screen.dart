@@ -226,10 +226,10 @@ class _ContentStudioHubScreenState extends State<ContentStudioHubScreen> {
                                                     actionData['ratio']
                                                         as String);
                                               }
-                                              if (actionData['dialogue'] !=
+                                              if (actionData['script'] !=
                                                   null) {
                                                 videoProv.updateDialogue(
-                                                    actionData['dialogue']
+                                                    actionData['script']
                                                         as String);
                                               }
                                             }
