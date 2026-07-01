@@ -33,7 +33,9 @@ class MediaService {
   Future<void> deleteGroupById(int id) async {
     await db.transaction(() async {
       // 그룹과 매핑된 연결 정보 삭제
-      await (db.delete(db.groupCollections)..where((gc) => gc.groupId.equals(id))).go();
+      await (db.delete(db.groupCollections)
+            ..where((gc) => gc.groupId.equals(id)))
+          .go();
       // 그룹 자체 삭제
       await db.groupsDao.deleteGroupById(id);
     });
@@ -116,8 +118,7 @@ class MediaService {
       // 컬렉션 선택적 생성
       int? collectionId;
       if (collectionName != null && collectionName.trim().isNotEmpty) {
-        final col =
-            await db.collectionsDao.findOrCreate(collectionName.trim());
+        final col = await db.collectionsDao.findOrCreate(collectionName.trim());
         collectionId = col.id;
       }
 
@@ -164,6 +165,7 @@ class MediaService {
     required int durationMs,
     required List<Segment> segments,
     required List<String>? tags,
+    String? storageMode,
   }) async {
     // 이전 collectionId 확보
     final prevClip = await (db.select(db.clips)
@@ -175,8 +177,7 @@ class MediaService {
       // 새 컬렉션 결정
       int? newCollectionId;
       if (collectionName != null && collectionName.trim().isNotEmpty) {
-        final col =
-            await db.collectionsDao.findOrCreate(collectionName.trim());
+        final col = await db.collectionsDao.findOrCreate(collectionName.trim());
         newCollectionId = col.id;
       }
 
@@ -187,6 +188,8 @@ class MediaService {
           title: Value(clipTitle),
           filePath: Value(filePath),
           durationMs: Value(durationMs),
+          storageMode:
+              storageMode == null ? const Value.absent() : Value(storageMode),
         ),
       );
 

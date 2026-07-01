@@ -92,6 +92,7 @@ mixin ClipActionMixin on ChangeNotifier {
     required int durationMs,
     required List<Segment> segments,
     required List<String>? tags,
+    String? storageMode,
   }) async {
     await service.updateMedia(
       clipId: clipId,
@@ -101,6 +102,7 @@ mixin ClipActionMixin on ChangeNotifier {
       durationMs: durationMs,
       segments: segments,
       tags: tags,
+      storageMode: storageMode,
     );
   }
 }

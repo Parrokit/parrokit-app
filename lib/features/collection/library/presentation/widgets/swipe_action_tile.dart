@@ -17,10 +17,10 @@ class SwipeActionTile extends StatefulWidget {
   final ValueChanged<bool>? onOpenChanged;
 
   @override
-  State<SwipeActionTile> createState() => _SwipeActionTileState();
+  SwipeActionTileState createState() => SwipeActionTileState();
 }
 
-class _SwipeActionTileState extends State<SwipeActionTile>
+class SwipeActionTileState extends State<SwipeActionTile>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 180));
@@ -38,6 +38,10 @@ class _SwipeActionTileState extends State<SwipeActionTile>
     }
     widget.onOpenChanged?.call(open);
   }
+
+  void close() => _snap(false);
+
+  void open() => _snap(true);
 
   @override
   void dispose() {

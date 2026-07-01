@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/models/clip_item.dart';
@@ -30,6 +31,327 @@ class ClipListView extends StatelessWidget {
     final m = total ~/ 60;
     final s = total % 60;
     return '${m.toString().padLeft(2, '0')}분 ${s.toString().padLeft(2, '0')}초';
+  }
+
+  Widget? _buildStorageChip(BuildContext context, String storageMode) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final label = switch (storageMode) {
+      'local' => '로컬',
+      'server' => '서버',
+      'cloud' => '클라우드',
+      _ => null,
+    };
+
+    if (label == null) return null;
+
+    final background = switch (storageMode) {
+      'local' => cs.secondaryContainer.withValues(alpha: 0.55),
+      'server' => cs.tertiaryContainer.withValues(alpha: 0.55),
+      'cloud' => cs.primaryContainer.withValues(alpha: 0.55),
+      _ => cs.secondaryContainer.withValues(alpha: 0.55),
+    };
+
+    final foreground = switch (storageMode) {
+      'local' => cs.onSecondaryContainer.withValues(alpha: 0.9),
+      'server' => cs.onTertiaryContainer.withValues(alpha: 0.9),
+      'cloud' => cs.onPrimaryContainer.withValues(alpha: 0.9),
+      _ => cs.onSecondaryContainer.withValues(alpha: 0.9),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: foreground,
+        ),
+      ),
+    );
+  }
+
+  String? _collectionNameFor(
+    ClipProvider provider,
+    ClipItem item,
+  ) {
+    if (item.clip.collectionId == null) return null;
+    for (final collection in provider.collections) {
+      if (collection.id == item.clip.collectionId) {
+        return collection.name;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _refreshClipListAfterStorageChange(
+    ClipProvider provider,
+  ) async {
+    await provider.selectCollection(provider.selectedCollectionId);
+  }
+
+  Future<bool> _applyStorageMode(
+    ClipProvider provider,
+    ClipItem item, {
+    required String storageMode,
+    String? filePath,
+  }) async {
+    final collectionName = _collectionNameFor(provider, item);
+
+    await provider.updateClip(
+      clipId: item.clip.id,
+      collectionName: collectionName,
+      clipTitle: item.clip.title,
+      filePath: filePath ?? item.clip.filePath,
+      durationMs: item.clip.durationMs,
+      segments: item.segments,
+      tags: item.tags.map((tag) => tag.name).toList(),
+      storageMode: storageMode,
+    );
+
+    await _refreshClipListAfterStorageChange(provider);
+    return true;
+  }
+
+  Future<bool> _pickCloudSourceAndApply(
+    ClipProvider provider,
+    ClipItem item,
+  ) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.video,
+      allowMultiple: false,
+    );
+
+    if (result == null || result.files.isEmpty) return false;
+    final picked = result.files.first;
+    final pickedPath = picked.path;
+    if (pickedPath == null || pickedPath.isEmpty) return false;
+
+    return _applyStorageMode(
+      provider,
+      item,
+      storageMode: 'cloud',
+      filePath: pickedPath,
+    );
+  }
+
+  void _showStorageModeSheet(
+    BuildContext context,
+    ClipItem item, {
+    required VoidCallback onApplied,
+  }) {
+    var selectedMode = item.clip.storageMode;
+    final provider = context.read<ClipProvider>();
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final theme = Theme.of(sheetContext);
+            final cs = theme.colorScheme;
+
+            Widget buildOption({
+              required IconData icon,
+              required String title,
+              required String subtitle,
+              required Color iconColor,
+              required String value,
+            }) {
+              final isSelected = selectedMode == value;
+              return Material(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(18),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => setSheetState(() => selectedMode = value),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: isSelected,
+                          onChanged: (_) =>
+                              setSheetState(() => selectedMode = value),
+                          activeColor: iconColor,
+                        ),
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: iconColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(icon, color: iconColor),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          isSelected
+                              ? Icons.check_circle_rounded
+                              : Icons.chevron_right_rounded,
+                          color: isSelected
+                              ? iconColor
+                              : cs.onSurfaceVariant.withValues(alpha: 0.6),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      '저장 위치 전환',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '저장 위치를 체크한 뒤 적용하세요.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    buildOption(
+                      icon: Icons.phone_android_rounded,
+                      title: '로컬',
+                      subtitle: '이 기기 안에 저장합니다.',
+                      iconColor: AppColors.info,
+                      value: 'local',
+                    ),
+                    const SizedBox(height: 10),
+                    buildOption(
+                      icon: Icons.cloud_queue_rounded,
+                      title: '서버',
+                      subtitle: '앱 서버 저장으로 전환합니다.',
+                      iconColor: AppColors.secondary,
+                      value: 'server',
+                    ),
+                    const SizedBox(height: 10),
+                    buildOption(
+                      icon: Icons.cloud_upload_rounded,
+                      title: '클라우드',
+                      subtitle: '폰에서 영상 파일을 골라 클라우드 저장으로 전환합니다.',
+                      iconColor: AppColors.warning,
+                      value: 'cloud',
+                    ),
+                    const SizedBox(height: 18),
+                    FilledButton(
+                      onPressed: selectedMode.isEmpty
+                          ? null
+                          : () async {
+                              Navigator.pop(sheetContext);
+                              final success = switch (selectedMode) {
+                                'local' => await _applyStorageMode(
+                                    provider,
+                                    item,
+                                    storageMode: 'local',
+                                  ),
+                                'server' => await _applyStorageMode(
+                                    provider,
+                                    item,
+                                    storageMode: 'server',
+                                  ),
+                                'cloud' => await _pickCloudSourceAndApply(
+                                    provider,
+                                    item,
+                                  ),
+                                _ => false,
+                              };
+                              if (success) {
+                                onApplied();
+                              }
+                            },
+                      child: const Text('적용'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSwipeAction({
+    required Color color,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Material(
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            height: double.infinity,
+            color: color,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white, size: 20),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _confirmDeleteClip(BuildContext context, ClipItem item) async {
@@ -124,6 +446,7 @@ class ClipListView extends StatelessWidget {
               final item = items[i];
               final clip = item.clip;
               final dur = _fmtMs(clip.durationMs);
+              final swipeKey = GlobalKey<SwipeActionTileState>();
 
               ImageProvider? thumbProvider;
               if (item.thumbnail != null) {
@@ -131,64 +454,60 @@ class ClipListView extends StatelessWidget {
               } else if (resolveThumb != null) {
                 thumbProvider = resolveThumb!(item);
               }
+              final storageChip = _buildStorageChip(ctx, clip.storageMode);
 
               // ⬇️ 여기서 아이템만 애니메이션 적용
               return _FadeSlideIn(
                 index: i,
                 version: tick, // 태그 결과 바뀔 때만 애니 시작
                 child: SwipeActionTile(
-                  actionWidth: 160,
+                  key: swipeKey,
+                  actionWidth: 300,
                   actions: [
-                    Expanded(
-                      child: Material(
-                        child: InkWell(
-                          onTap: () async {
-                            final clipProvider = context.read<ClipProvider>();
-                            final currentCollection =
-                                clipProvider.selectedCollectionId == null
-                                    ? null
-                                    : clipProvider.collections
-                                        .cast<dynamic>()
-                                        .firstWhere(
-                                          (c) =>
-                                              (c.id as int) ==
-                                              clipProvider.selectedCollectionId,
-                                          orElse: () => null,
-                                        );
-                            final collectionName =
-                                currentCollection?.name as String?;
-                            final ok = await context.push<bool>(
-                              '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}'
-                              '${collectionName != null ? '&collectionName=${Uri.encodeComponent(collectionName)}' : ''}',
-                            );
-                            if (ok == true && context.mounted) {
-                              clipProvider.backToCollections();
-                              clipProvider.loadCollections();
-                            }
-                          },
-                          child: Container(
-                            height: double.infinity,
-                            color: AppColors.info,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.edit_rounded,
-                                color: Colors.white, size: 22),
-                          ),
-                        ),
+                    _buildSwipeAction(
+                      color: AppColors.info,
+                      icon: Icons.edit_rounded,
+                      label: '편집',
+                      onTap: () async {
+                        final clipProvider = context.read<ClipProvider>();
+                        final currentCollection =
+                            clipProvider.selectedCollectionId == null
+                                ? null
+                                : clipProvider.collections
+                                    .cast<dynamic>()
+                                    .firstWhere(
+                                      (c) =>
+                                          (c.id as int) ==
+                                          clipProvider.selectedCollectionId,
+                                      orElse: () => null,
+                                    );
+                        final collectionName =
+                            currentCollection?.name as String?;
+                        final ok = await context.push<bool>(
+                          '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}'
+                          '${collectionName != null ? '&collectionName=${Uri.encodeComponent(collectionName)}' : ''}',
+                        );
+                        if (ok == true && context.mounted) {
+                          clipProvider.backToCollections();
+                          clipProvider.loadCollections();
+                        }
+                      },
+                    ),
+                    _buildSwipeAction(
+                      color: AppColors.warning,
+                      icon: Icons.swap_horiz_rounded,
+                      label: '전환',
+                      onTap: () => _showStorageModeSheet(
+                        context,
+                        item,
+                        onApplied: () => swipeKey.currentState?.close(),
                       ),
                     ),
-                    Expanded(
-                      child: Material(
-                        child: InkWell(
-                          onTap: () => _confirmDeleteClip(context, item),
-                          child: Container(
-                            height: double.infinity,
-                            color: AppColors.danger,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.delete_rounded,
-                                color: Colors.white, size: 22),
-                          ),
-                        ),
-                      ),
+                    _buildSwipeAction(
+                      color: AppColors.danger,
+                      icon: Icons.delete_rounded,
+                      label: '삭제',
+                      onTap: () => _confirmDeleteClip(context, item),
                     ),
                   ],
                   child: InkWell(
@@ -220,6 +539,7 @@ class ClipListView extends StatelessWidget {
                                   spacing: 6,
                                   runSpacing: 4,
                                   children: [
+                                    if (storageChip != null) storageChip,
                                     for (final t in item.tags.take(4))
                                       MiniChip(label: t.name),
                                   ],
