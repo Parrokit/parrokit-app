@@ -24,6 +24,8 @@ import 'mixins/clip_tag_mixin.dart';
 import 'mixins/clip_action_mixin.dart';
 
 class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
+  static const int serverStorageQuotaBytes = 1024 * 1024 * 1024;
+
   @override
   final AppDatabase db;
   late final MediaService _service;
@@ -50,6 +52,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   List<ClipItem> clipItems = [];
   List<Clip> clips = [];
   Map<int, List<Tag>> tagsByClip = {};
+  int serverStorageUsedBytes = 0;
 
   // ─────────────────────────────────────────────────────────────────
   // Methods
@@ -57,6 +60,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   Future<ClipView?> fetchClipById(int clipId) async {
     return _service.fetchClipById(clipId);
+  }
+
+  @override
+  Future<void> refreshServerStorageUsage() async {
+    serverStorageUsedBytes = await _service.getServerStorageUsedBytes();
   }
 
   /// 모든 그룹 로드.
@@ -71,6 +79,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     clips = [];
     clipItems = [];
     tagsByClip = {};
+    await refreshServerStorageUsage();
     notifyListeners();
   }
 
@@ -112,6 +121,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
 
     collections.sort((a, b) => a.name.compareTo(b.name));
+    await refreshServerStorageUsage();
     notifyListeners();
   }
 
@@ -136,6 +146,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     collections = await (db.select(db.collections)
           ..orderBy([(c) => OrderingTerm.asc(c.name)]))
         .get();
+    await refreshServerStorageUsage();
     notifyListeners();
   }
 
@@ -160,6 +171,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
 
     await _buildClipItems();
+    await refreshServerStorageUsage();
     notifyListeners();
   }
 

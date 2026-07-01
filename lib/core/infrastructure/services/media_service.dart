@@ -114,6 +114,7 @@ class MediaService {
     required List<Segment> segments,
     required List<String>? tags,
   }) async {
+    final storageBytes = await _fileSizeFor(filePath);
     await db.transaction(() async {
       // 컬렉션 선택적 생성
       int? collectionId;
@@ -127,6 +128,7 @@ class MediaService {
               collectionId: Value(collectionId),
               title: clipTitle,
               filePath: filePath,
+              storageBytes: Value(storageBytes),
               durationMs: durationMs,
             ),
           );
@@ -187,6 +189,7 @@ class MediaService {
           collectionId: Value(newCollectionId),
           title: Value(clipTitle),
           filePath: Value(filePath),
+          storageBytes: Value(await _fileSizeFor(filePath)),
           durationMs: Value(durationMs),
           storageMode:
               storageMode == null ? const Value.absent() : Value(storageMode),
@@ -249,5 +252,23 @@ class MediaService {
             name: name,
           ),
         );
+  }
+
+  Future<int> _fileSizeFor(String pathFromClip) async {
+    try {
+      final abs = await _absolutePathFor(pathFromClip);
+      final f = File(abs);
+      if (await f.exists()) {
+        return await f.length();
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  Future<int> getServerStorageUsedBytes() async {
+    final rows = await (db.select(db.clips)
+          ..where((c) => c.storageMode.equals('server')))
+        .get();
+    return rows.fold<int>(0, (sum, clip) => sum + clip.storageBytes);
   }
 }

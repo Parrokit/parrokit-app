@@ -25,6 +25,7 @@ mixin ClipActionMixin on ChangeNotifier {
   Future<void> selectCollection(int? id);
   Future<void> loadGroups();
   Future<void> loadCollections();
+  Future<void> refreshServerStorageUsage();
 
   // ─────────────────────────────────────────────────────────────────
   // Actions
@@ -82,6 +83,8 @@ mixin ClipActionMixin on ChangeNotifier {
       segments: segments,
       tags: tags,
     );
+    await refreshServerStorageUsage();
+    notifyListeners();
   }
 
   Future<void> updateClip({
@@ -104,5 +107,7 @@ mixin ClipActionMixin on ChangeNotifier {
       tags: tags,
       storageMode: storageMode,
     );
+    await refreshServerStorageUsage();
+    notifyListeners();
   }
 }

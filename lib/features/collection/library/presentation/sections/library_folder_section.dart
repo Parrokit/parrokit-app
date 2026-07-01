@@ -42,6 +42,93 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   void _toggleDeleteMode() => setState(() => _deleteMode = !_deleteMode);
   void _toggleViewMode() => setState(() => _isGridView = !_isGridView);
 
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    var value = bytes.toDouble();
+    var unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex++;
+    }
+    return '${value.toStringAsFixed(value >= 10 || unitIndex == 0 ? 0 : 1)} ${units[unitIndex]}';
+  }
+
+  Widget _buildServerStorageProgress(BuildContext context) {
+    final clipProvider = context.watch<ClipProvider>();
+    final cs = Theme.of(context).colorScheme;
+    final used = clipProvider.serverStorageUsedBytes;
+    final total = ClipProvider.serverStorageQuotaBytes;
+    final progress = total == 0 ? 0.0 : (used / total).clamp(0.0, 1.0);
+    final isFull = used >= total;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: cs.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.storage_rounded,
+                  size: 18,
+                  color: isFull ? cs.error : cs.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '서버 저장 용량',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: cs.onSurface,
+                        ),
+                  ),
+                ),
+                Text(
+                  '${_formatBytes(used)} / ${_formatBytes(total)}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 10,
+                backgroundColor: cs.surfaceContainerHigh,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isFull ? cs.error : cs.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isFull
+                  ? '서버 용량이 가득 찼습니다. 새 파일을 저장하려면 공간을 확보하세요.'
+                  : '서버에 저장 가능한 공간이 제한되어 있습니다.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showFabMenu(BuildContext fabCtx, bool isAtGroupRoot) {
     final cs = Theme.of(fabCtx).colorScheme;
 
@@ -354,6 +441,8 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                 }
               },
             ),
+
+            _buildServerStorageProgress(context),
 
             // 삭제 모드 배너
             if (_deleteMode && !isAtClipList)

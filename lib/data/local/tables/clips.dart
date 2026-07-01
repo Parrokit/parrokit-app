@@ -9,5 +9,7 @@ class Clips extends Table {
   TextColumn get filePath => text()(); // 로컬 파일 경로
   TextColumn get storageMode =>
       text().withDefault(const Constant('local'))(); // local/server/cloud
+  IntColumn get storageBytes =>
+      integer().withDefault(const Constant(0))(); // 저장 파일 크기(bytes)
   IntColumn get durationMs => integer()(); // 전체 길이(ms)
 }

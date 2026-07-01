@@ -398,6 +398,14 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('local'));
+  static const VerificationMeta _storageBytesMeta =
+      const VerificationMeta('storageBytes');
+  @override
+  late final GeneratedColumn<int> storageBytes = GeneratedColumn<int>(
+      'storage_bytes', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _durationMsMeta =
       const VerificationMeta('durationMs');
   @override
@@ -405,8 +413,15 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
       'duration_ms', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, collectionId, title, filePath, storageMode, durationMs];
+  List<GeneratedColumn> get $columns => [
+        id,
+        collectionId,
+        title,
+        filePath,
+        storageMode,
+        storageBytes,
+        durationMs
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -452,6 +467,12 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
     } else if (isInserting) {
       context.missing(_durationMsMeta);
     }
+    if (data.containsKey('storage_bytes')) {
+      context.handle(
+          _storageBytesMeta,
+          storageBytes.isAcceptableOrUnknown(
+              data['storage_bytes']!, _storageBytesMeta));
+    }
     return context;
   }
 
@@ -471,6 +492,8 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
           .read(DriftSqlType.string, data['${effectivePrefix}file_path'])!,
       storageMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}storage_mode'])!,
+      storageBytes: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}storage_bytes'])!,
       durationMs: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}duration_ms'])!,
     );
@@ -488,6 +511,7 @@ class Clip extends DataClass implements Insertable<Clip> {
   final String title;
   final String filePath;
   final String storageMode;
+  final int storageBytes;
   final int durationMs;
   const Clip(
       {required this.id,
@@ -495,6 +519,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       required this.title,
       required this.filePath,
       required this.storageMode,
+      required this.storageBytes,
       required this.durationMs});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -506,6 +531,7 @@ class Clip extends DataClass implements Insertable<Clip> {
     map['title'] = Variable<String>(title);
     map['file_path'] = Variable<String>(filePath);
     map['storage_mode'] = Variable<String>(storageMode);
+    map['storage_bytes'] = Variable<int>(storageBytes);
     map['duration_ms'] = Variable<int>(durationMs);
     return map;
   }
@@ -519,6 +545,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       title: Value(title),
       filePath: Value(filePath),
       storageMode: Value(storageMode),
+      storageBytes: Value(storageBytes),
       durationMs: Value(durationMs),
     );
   }
@@ -532,6 +559,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       title: serializer.fromJson<String>(json['title']),
       filePath: serializer.fromJson<String>(json['filePath']),
       storageMode: serializer.fromJson<String?>(json['storageMode']) ?? 'local',
+      storageBytes: serializer.fromJson<int>(json['storageBytes']),
       durationMs: serializer.fromJson<int>(json['durationMs']),
     );
   }
@@ -544,6 +572,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       'title': serializer.toJson<String>(title),
       'filePath': serializer.toJson<String>(filePath),
       'storageMode': serializer.toJson<String>(storageMode),
+      'storageBytes': serializer.toJson<int>(storageBytes),
       'durationMs': serializer.toJson<int>(durationMs),
     };
   }
@@ -554,6 +583,7 @@ class Clip extends DataClass implements Insertable<Clip> {
           String? title,
           String? filePath,
           String? storageMode,
+          int? storageBytes,
           int? durationMs}) =>
       Clip(
         id: id ?? this.id,
@@ -562,6 +592,7 @@ class Clip extends DataClass implements Insertable<Clip> {
         title: title ?? this.title,
         filePath: filePath ?? this.filePath,
         storageMode: storageMode ?? this.storageMode,
+        storageBytes: storageBytes ?? this.storageBytes,
         durationMs: durationMs ?? this.durationMs,
       );
   Clip copyWithCompanion(ClipsCompanion data) {
@@ -574,6 +605,9 @@ class Clip extends DataClass implements Insertable<Clip> {
       filePath: data.filePath.present ? data.filePath.value : this.filePath,
       storageMode:
           data.storageMode.present ? data.storageMode.value : this.storageMode,
+      storageBytes: data.storageBytes.present
+          ? data.storageBytes.value
+          : this.storageBytes,
       durationMs:
           data.durationMs.present ? data.durationMs.value : this.durationMs,
     );
@@ -587,14 +621,15 @@ class Clip extends DataClass implements Insertable<Clip> {
           ..write('title: $title, ')
           ..write('filePath: $filePath, ')
           ..write('storageMode: $storageMode, ')
+          ..write('storageBytes: $storageBytes, ')
           ..write('durationMs: $durationMs')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, collectionId, title, filePath, storageMode, durationMs);
+  int get hashCode => Object.hash(
+      id, collectionId, title, filePath, storageMode, storageBytes, durationMs);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -604,6 +639,7 @@ class Clip extends DataClass implements Insertable<Clip> {
           other.title == this.title &&
           other.filePath == this.filePath &&
           other.storageMode == this.storageMode &&
+          other.storageBytes == this.storageBytes &&
           other.durationMs == this.durationMs);
 }
 
@@ -613,6 +649,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
   final Value<String> title;
   final Value<String> filePath;
   final Value<String> storageMode;
+  final Value<int> storageBytes;
   final Value<int> durationMs;
   const ClipsCompanion({
     this.id = const Value.absent(),
@@ -620,6 +657,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     this.title = const Value.absent(),
     this.filePath = const Value.absent(),
     this.storageMode = const Value.absent(),
+    this.storageBytes = const Value.absent(),
     this.durationMs = const Value.absent(),
   });
   ClipsCompanion.insert({
@@ -628,6 +666,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     required String title,
     required String filePath,
     this.storageMode = const Value.absent(),
+    this.storageBytes = const Value.absent(),
     required int durationMs,
   })  : title = Value(title),
         filePath = Value(filePath),
@@ -638,6 +677,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     Expression<String>? title,
     Expression<String>? filePath,
     Expression<String>? storageMode,
+    Expression<int>? storageBytes,
     Expression<int>? durationMs,
   }) {
     return RawValuesInsertable({
@@ -646,6 +686,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       if (title != null) 'title': title,
       if (filePath != null) 'file_path': filePath,
       if (storageMode != null) 'storage_mode': storageMode,
+      if (storageBytes != null) 'storage_bytes': storageBytes,
       if (durationMs != null) 'duration_ms': durationMs,
     });
   }
@@ -656,6 +697,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       Value<String>? title,
       Value<String>? filePath,
       Value<String>? storageMode,
+      Value<int>? storageBytes,
       Value<int>? durationMs}) {
     return ClipsCompanion(
       id: id ?? this.id,
@@ -663,6 +705,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       title: title ?? this.title,
       filePath: filePath ?? this.filePath,
       storageMode: storageMode ?? this.storageMode,
+      storageBytes: storageBytes ?? this.storageBytes,
       durationMs: durationMs ?? this.durationMs,
     );
   }
@@ -685,6 +728,9 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     if (storageMode.present) {
       map['storage_mode'] = Variable<String>(storageMode.value);
     }
+    if (storageBytes.present) {
+      map['storage_bytes'] = Variable<int>(storageBytes.value);
+    }
     if (durationMs.present) {
       map['duration_ms'] = Variable<int>(durationMs.value);
     }
@@ -699,6 +745,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
           ..write('title: $title, ')
           ..write('filePath: $filePath, ')
           ..write('storageMode: $storageMode, ')
+          ..write('storageBytes: $storageBytes, ')
           ..write('durationMs: $durationMs')
           ..write(')'))
         .toString();
@@ -2379,6 +2426,7 @@ typedef $$ClipsTableCreateCompanionBuilder = ClipsCompanion Function({
   required String title,
   required String filePath,
   Value<String> storageMode,
+  Value<int> storageBytes,
   required int durationMs,
 });
 typedef $$ClipsTableUpdateCompanionBuilder = ClipsCompanion Function({
@@ -2387,6 +2435,7 @@ typedef $$ClipsTableUpdateCompanionBuilder = ClipsCompanion Function({
   Value<String> title,
   Value<String> filePath,
   Value<String> storageMode,
+  Value<int> storageBytes,
   Value<int> durationMs,
 });
 
@@ -2471,6 +2520,9 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
 
   ColumnFilters<String> get filePath => $composableBuilder(
       column: $table.filePath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get storageBytes => $composableBuilder(
+      column: $table.storageBytes, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => ColumnFilters(column));
@@ -2577,6 +2629,10 @@ class $$ClipsTableOrderingComposer
   ColumnOrderings<String> get filePath => $composableBuilder(
       column: $table.filePath, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get storageBytes => $composableBuilder(
+      column: $table.storageBytes,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => ColumnOrderings(column));
 
@@ -2618,6 +2674,9 @@ class $$ClipsTableAnnotationComposer
 
   GeneratedColumn<String> get filePath =>
       $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<int> get storageBytes => $composableBuilder(
+      column: $table.storageBytes, builder: (column) => column);
 
   GeneratedColumn<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => column);
@@ -2738,6 +2797,7 @@ class $$ClipsTableTableManager extends RootTableManager<
             Value<String> title = const Value.absent(),
             Value<String> filePath = const Value.absent(),
             Value<String> storageMode = const Value.absent(),
+            Value<int> storageBytes = const Value.absent(),
             Value<int> durationMs = const Value.absent(),
           }) =>
               ClipsCompanion(
@@ -2746,6 +2806,7 @@ class $$ClipsTableTableManager extends RootTableManager<
             title: title,
             filePath: filePath,
             storageMode: storageMode,
+            storageBytes: storageBytes,
             durationMs: durationMs,
           ),
           createCompanionCallback: ({
@@ -2754,6 +2815,7 @@ class $$ClipsTableTableManager extends RootTableManager<
             required String title,
             required String filePath,
             Value<String> storageMode = const Value.absent(),
+            Value<int> storageBytes = const Value.absent(),
             required int durationMs,
           }) =>
               ClipsCompanion.insert(
@@ -2762,6 +2824,7 @@ class $$ClipsTableTableManager extends RootTableManager<
             title: title,
             filePath: filePath,
             storageMode: storageMode,
+            storageBytes: storageBytes,
             durationMs: durationMs,
           ),
           withReferenceMapper: (p0) => p0
