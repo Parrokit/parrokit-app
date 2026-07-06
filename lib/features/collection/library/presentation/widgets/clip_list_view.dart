@@ -33,23 +33,42 @@ class ClipListView extends StatelessWidget {
     return '${m.toString().padLeft(2, '0')}분 ${s.toString().padLeft(2, '0')}초';
   }
 
+  String? _storageLabel(String storageMode) {
+    if (storageMode == 'local') return '로컬';
+    if (storageMode == 'server') return '서버';
+    if (storageMode == 'cloud') return '클라우드';
+
+    if (storageMode.startsWith('cloud:')) {
+      final provider = storageMode.split(':').length > 1
+          ? storageMode.split(':')[1]
+          : '';
+      final providerLabel = switch (provider) {
+        'gdrive' => 'Google Drive',
+        'icloud' => 'iCloud',
+        'dropbox' => 'Dropbox',
+        _ => null,
+      };
+      return providerLabel == null ? '클라우드' : '클라우드 · $providerLabel';
+    }
+
+    return null;
+  }
+
   Widget? _buildStorageChip(BuildContext context, String storageMode) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final label = switch (storageMode) {
-      'local' => '로컬',
-      'server' => '서버',
-      'cloud' => '클라우드',
-      _ => null,
-    };
+    final label = _storageLabel(storageMode);
 
     if (label == null) return null;
+
+    final isCloud = storageMode.startsWith('cloud');
 
     final background = switch (storageMode) {
       'local' => cs.secondaryContainer.withValues(alpha: 0.55),
       'server' => cs.tertiaryContainer.withValues(alpha: 0.55),
       'cloud' => cs.primaryContainer.withValues(alpha: 0.55),
+      _ when isCloud => cs.primaryContainer.withValues(alpha: 0.55),
       _ => cs.secondaryContainer.withValues(alpha: 0.55),
     };
 
@@ -57,6 +76,7 @@ class ClipListView extends StatelessWidget {
       'local' => cs.onSecondaryContainer.withValues(alpha: 0.9),
       'server' => cs.onTertiaryContainer.withValues(alpha: 0.9),
       'cloud' => cs.onPrimaryContainer.withValues(alpha: 0.9),
+      _ when isCloud => cs.onPrimaryContainer.withValues(alpha: 0.9),
       _ => cs.onSecondaryContainer.withValues(alpha: 0.9),
     };
 
