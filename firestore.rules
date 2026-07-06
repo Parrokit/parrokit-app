@@ -33,17 +33,37 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
-      // collection/clip 동기화 상태 및 백필 메타
+      // 콘텐츠 namespace
+      match /namespaces/{namespaceId} {
+        match /groups/{groupId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+
+        match /groupCollections/{linkId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+
+        match /collections/{collectionId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+
+        match /clips/{clipId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
+      // 동기화 상태 namespace
+      match /namespaces/{namespaceId}/meta/{metaId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // legacy path - 점진적 전환용
       match /syncMeta/{metaId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
-
-      // collection 메타데이터
       match /collections/{collectionId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
-
-      // clip 메타데이터
       match /clips/{clipId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }

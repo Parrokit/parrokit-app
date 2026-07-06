@@ -18,6 +18,12 @@ typedef CollectionSyncProgressCallback = void Function(
 /// - clips는 collection remoteId를 참조해 동기화
 /// - segments / tags는 clip 문서에 내장해서 초기 구조를 단순화
 class CollectionSyncService {
+  static const String _namespacesCollectionName = 'namespaces';
+  static const String _libraryNamespaceId = 'library';
+  static const String _syncNamespaceId = 'sync';
+  static const String _syncMetaCollectionName = 'meta';
+  static const String _syncMetaDocId = 'collectionData';
+
   CollectionSyncService({
     db.AppDatabase? database,
     FirebaseFirestore? firestore,
@@ -26,9 +32,6 @@ class CollectionSyncService {
 
   final db.AppDatabase? _database;
   final FirebaseFirestore _firestore;
-
-  static const String _syncMetaCollectionName = 'syncMeta';
-  static const String _collectionDataDocId = 'collectionData';
 
   db.AppDatabase get _db {
     final database = _database;
@@ -42,8 +45,26 @@ class CollectionSyncService {
     return _firestore
         .collection('users')
         .doc(uid)
+        .collection(_namespacesCollectionName)
+        .doc(_syncNamespaceId)
         .collection(_syncMetaCollectionName)
-        .doc(_collectionDataDocId);
+        .doc(_syncMetaDocId);
+  }
+
+  DocumentReference<Map<String, dynamic>> _libraryNamespaceDoc(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection(_namespacesCollectionName)
+        .doc(_libraryNamespaceId);
+  }
+
+  CollectionReference<Map<String, dynamic>> _groupsRef(String uid) {
+    return _libraryNamespaceDoc(uid).collection('groups');
+  }
+
+  CollectionReference<Map<String, dynamic>> _groupCollectionsRef(String uid) {
+    return _libraryNamespaceDoc(uid).collection('groupCollections');
   }
 
   Future<bool> needsInitialBackfill(String uid) async {
@@ -57,7 +78,7 @@ class CollectionSyncService {
 
       final counts = await _countPendingItems();
       AppLogger.d(
-        '[Collection][Backfill] check-local-pending uid=${_maskUid(uid)} collections=${counts.collections} clips=${counts.clips} total=${counts.total}',
+        '[Collection][Backfill] check-local-pending uid=${_maskUid(uid)} groups=${counts.groups} groupCollections=${counts.groupCollections} collections=${counts.collections} clips=${counts.clips} total=${counts.total}',
       );
       return counts.total > 0;
     } catch (e, st) {
@@ -90,7 +111,7 @@ class CollectionSyncService {
 
       final counts = await _countPendingItems(force: force);
       AppLogger.d(
-        '[Collection][Backfill] service-counts uid=${_maskUid(uid)} collections=${counts.collections} clips=${counts.clips} total=${counts.total}',
+        '[Collection][Backfill] service-counts uid=${_maskUid(uid)} groups=${counts.groups} groupCollections=${counts.groupCollections} collections=${counts.collections} clips=${counts.clips} total=${counts.total}',
       );
       if (counts.total == 0) {
         await _markInitialBackfillDone(uid);
@@ -104,9 +125,21 @@ class CollectionSyncService {
       var current = 0;
       onProgress?.call(current, counts.total, 'collection 동기화 준비');
 
+      current = await _syncGroups(
+        uid: uid,
+        current: current,
+        total: counts.total,
+        onProgress: onProgress,
+      );
       current = await _syncCollections(
         uid: uid,
         force: force,
+        current: current,
+        total: counts.total,
+        onProgress: onProgress,
+      );
+      current = await _syncGroupCollections(
+        uid: uid,
         current: current,
         total: counts.total,
         onProgress: onProgress,
@@ -135,27 +168,25 @@ class CollectionSyncService {
   }
 
   CollectionReference<Map<String, dynamic>> _collectionsRef(String uid) {
-    return _firestore.collection('users').doc(uid).collection('collections');
+    return _libraryNamespaceDoc(uid).collection('collections');
   }
 
   CollectionReference<Map<String, dynamic>> _clipsRef(String uid) {
-    return _firestore.collection('users').doc(uid).collection('clips');
+    return _libraryNamespaceDoc(uid).collection('clips');
   }
 
   Future<_SyncCounts> _countPendingItems({bool force = false}) async {
     try {
+      final groups = await _db.select(_db.groups).get();
+      final groupCollections = await _db.select(_db.groupCollections).get();
       final collections = await _db.select(_db.collections).get();
       final clips = await _db.select(_db.clips).get();
 
-      final pendingCollections = force
-          ? collections.length
-          : collections.where(_needsCollectionSync).length;
-      final pendingClips =
-          force ? clips.length : clips.where(_needsClipSync).length;
-
       return _SyncCounts(
-        collections: pendingCollections,
-        clips: pendingClips,
+        groups: groups.length,
+        groupCollections: groupCollections.length,
+        collections: force ? collections.length : collections.where(_needsCollectionSync).length,
+        clips: force ? clips.length : clips.where(_needsClipSync).length,
       );
     } catch (e, st) {
       AppLogger.e(
@@ -165,6 +196,36 @@ class CollectionSyncService {
       );
       rethrow;
     }
+  }
+
+  Future<int> _syncGroups({
+    required String uid,
+    required int current,
+    required int total,
+    CollectionSyncProgressCallback? onProgress,
+  }) async {
+    final rows = await _db.select(_db.groups).get();
+    final ref = _groupsRef(uid);
+    AppLogger.d(
+      '[Collection][Backfill] groups-start uid=${_maskUid(uid)} rows=${rows.length}',
+    );
+
+    for (final group in rows) {
+      final docRef = ref.doc(group.id.toString());
+      await docRef.set({
+        'localId': group.id,
+        'name': group.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      current++;
+      onProgress?.call(current, total, 'group $current / $total 동기화 중');
+    }
+
+    AppLogger.d(
+      '[Collection][Backfill] groups-end uid=${_maskUid(uid)} current=$current total=$total',
+    );
+    return current;
   }
 
   bool _needsCollectionSync(db.Collection row) {
@@ -224,6 +285,54 @@ class CollectionSyncService {
 
     AppLogger.d(
       '[Collection][Backfill] collections-end uid=${_maskUid(uid)} current=$current total=$total',
+    );
+    return current;
+  }
+
+  Future<int> _syncGroupCollections({
+    required String uid,
+    required int current,
+    required int total,
+    CollectionSyncProgressCallback? onProgress,
+  }) async {
+    final rows = await _db.select(_db.groupCollections).get();
+    final collectionRows = await _db.select(_db.collections).get();
+    final collectionRemoteIdByLocalId = <int, String>{
+      for (final collection in collectionRows)
+        if (collection.remoteId != null) collection.id: collection.remoteId!,
+    };
+    final ref = _groupCollectionsRef(uid);
+    AppLogger.d(
+      '[Collection][Backfill] groupCollections-start uid=${_maskUid(uid)} rows=${rows.length}',
+    );
+
+    for (final row in rows) {
+      final collectionRemoteId = collectionRemoteIdByLocalId[row.collectionId];
+      if (collectionRemoteId == null) {
+        throw StateError(
+          '그룹(${row.groupId})의 컬렉션(${row.collectionId})이 아직 서버에 동기화되지 않았습니다.',
+        );
+      }
+
+      final docId = '${row.groupId}_${row.collectionId}';
+      final docRef = ref.doc(docId);
+      await docRef.set({
+        'groupLocalId': row.groupId,
+        'collectionLocalId': row.collectionId,
+        'collectionRemoteId': collectionRemoteId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      current++;
+      onProgress?.call(
+        current,
+        total,
+        'groupCollection $current / $total 동기화 중',
+      );
+    }
+
+    AppLogger.d(
+      '[Collection][Backfill] groupCollections-end uid=${_maskUid(uid)} current=$current total=$total',
     );
     return current;
   }
@@ -347,13 +456,17 @@ class CollectionSyncService {
 }
 
 class _SyncCounts {
+  final int groups;
+  final int groupCollections;
   final int collections;
   final int clips;
 
   const _SyncCounts({
+    required this.groups,
+    required this.groupCollections,
     required this.collections,
     required this.clips,
   });
 
-  int get total => collections + clips;
+  int get total => groups + groupCollections + collections + clips;
 }

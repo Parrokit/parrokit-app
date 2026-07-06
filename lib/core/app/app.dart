@@ -121,7 +121,7 @@ class _AppState extends State<App> {
         AppLogger.i(
           '[Collection][Backfill] start uid=${_maskUid(user.id)}',
         );
-        await clipProviderRef.syncCollectionDataToServer(user.id, force: true);
+        await clipProviderRef.syncCollectionDataToServer(user.id);
         AppLogger.i(
           '[Collection][Backfill] success uid=${_maskUid(user.id)}',
         );
