@@ -20,7 +20,7 @@ import '../../../data/models/clip_view.dart';
 import '../../../../data/models/clip_item.dart';
 
 import 'package:parrokit/core/infrastructure/services/media_service.dart';
-import 'package:parrokit/core/infrastructure/services/firebase/library_sync_service.dart';
+import 'package:parrokit/core/infrastructure/services/firebase/collection_sync_service.dart';
 import 'mixins/clip_tag_mixin.dart';
 import 'mixins/clip_action_mixin.dart';
 
@@ -30,14 +30,14 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   @override
   final AppDatabase db;
   late final MediaService _service;
-  late final LibrarySyncService _librarySyncService;
+  late final CollectionSyncService _collectionSyncService;
 
   @override
   MediaService get service => _service;
 
   ClipProvider(this.db) {
     _service = MediaService(db);
-    _librarySyncService = LibrarySyncService(database: db);
+    _collectionSyncService = CollectionSyncService(database: db);
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -70,9 +70,9 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     serverStorageUsedBytes = await _service.getServerStorageUsedBytes();
   }
 
-  /// 현재 로그인 유저의 메타데이터를 Firestore로 동기화합니다.
-  Future<void> syncLibraryToServer(String uid) async {
-    await _librarySyncService.syncLibrary(uid: uid);
+  /// 현재 로그인 유저의 collection 메타데이터를 Firestore로 동기화합니다.
+  Future<void> syncCollectionDataToServer(String uid) async {
+    await _collectionSyncService.syncCollectionData(uid: uid);
     notifyListeners();
   }
 

@@ -14,7 +14,7 @@ import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../data/local/app_database.dart';
 import '../../../data/models/clip_view.dart';
-import 'firebase/library_sync_status.dart';
+import 'firebase/sync_status.dart';
 
 /// 미디어 데이터(Group, Collection, Clip) 조작 및 비즈니스 로직 담당 서비스
 /// 추후 Local/Server 동기화를 위해 MediaRepository 인터페이스로 추출될 수 있음.
@@ -131,7 +131,7 @@ class MediaService {
               filePath: filePath,
               storageBytes: Value(storageBytes),
               durationMs: durationMs,
-              syncStatus: const Value(LibrarySyncStatus.pending),
+              syncStatus: const Value(SyncStatus.pending),
             ),
           );
 
@@ -193,7 +193,7 @@ class MediaService {
           filePath: Value(filePath),
           storageBytes: Value(await _fileSizeFor(filePath)),
           durationMs: Value(durationMs),
-          syncStatus: const Value(LibrarySyncStatus.pending),
+          syncStatus: const Value(SyncStatus.pending),
           storageMode:
               storageMode == null ? const Value.absent() : Value(storageMode),
         ),

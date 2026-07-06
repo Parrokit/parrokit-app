@@ -3,15 +3,15 @@ import 'package:drift/drift.dart';
 
 import 'package:parrokit/data/local/app_database.dart' as db;
 
-import 'library_sync_status.dart';
+import 'sync_status.dart';
 
-/// 로컬 라이브러리 메타데이터를 Firestore로 동기화하는 서비스.
+/// 로컬 collection 메타데이터를 Firestore로 동기화하는 서비스.
 ///
 /// - collections 먼저 동기화
 /// - clips는 collection remoteId를 참조해 동기화
 /// - segments / tags는 clip 문서에 내장해서 초기 구조를 단순화
-class LibrarySyncService {
-  LibrarySyncService({
+class CollectionSyncService {
+  CollectionSyncService({
     db.AppDatabase? database,
     FirebaseFirestore? firestore,
   })  : _database = database,
@@ -28,8 +28,8 @@ class LibrarySyncService {
     return database;
   }
 
-  /// 전체 라이브러리 메타데이터를 동기화합니다.
-  Future<void> syncLibrary({required String uid}) async {
+  /// 전체 collection 메타데이터를 동기화합니다.
+  Future<void> syncCollectionData({required String uid}) async {
     await _syncCollections(uid: uid);
     await _syncClips(uid: uid);
   }
@@ -49,7 +49,7 @@ class LibrarySyncService {
 
     for (final collection in rows) {
       if (collection.remoteId != null &&
-          collection.syncStatus == LibrarySyncStatus.synced) {
+          collection.syncStatus == SyncStatus.synced) {
         continue;
       }
 
@@ -67,7 +67,7 @@ class LibrarySyncService {
           .write(
         db.CollectionsCompanion(
           remoteId: Value(docRef.id),
-          syncStatus: const Value(LibrarySyncStatus.synced),
+          syncStatus: const Value(SyncStatus.synced),
           lastSyncedAt: Value(now),
         ),
       );
@@ -85,7 +85,7 @@ class LibrarySyncService {
     final now = DateTime.now().toUtc();
 
     for (final clip in clips) {
-      if (clip.remoteId != null && clip.syncStatus == LibrarySyncStatus.synced) {
+      if (clip.remoteId != null && clip.syncStatus == SyncStatus.synced) {
         continue;
       }
 
@@ -146,7 +146,7 @@ class LibrarySyncService {
       await (_db.update(_db.clips)..where((c) => c.id.equals(clip.id))).write(
         db.ClipsCompanion(
           remoteId: Value(docRef.id),
-          syncStatus: const Value(LibrarySyncStatus.synced),
+          syncStatus: const Value(SyncStatus.synced),
           lastSyncedAt: Value(now),
         ),
       );
