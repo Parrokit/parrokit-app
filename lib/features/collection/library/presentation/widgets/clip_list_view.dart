@@ -237,77 +237,79 @@ class ClipListView extends StatelessWidget {
                     const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      '저장 위치 바꾸기',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '저장 위치 바꾸기',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '원하는 위치를 고르면, 기기 안에 남겨둘지도 함께 정할 수 있어요.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
+                      const SizedBox(height: 6),
+                      Text(
+                        '원하는 위치를 고르면, 기기 안에 남겨둘지도 함께 정할 수 있어요.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    buildOption(
-                      icon: Icons.phone_android_rounded,
-                      title: '로컬',
-                      subtitle: '이 기기 안에 저장해 인터넷이 없어도 바로 봅니다.',
-                      iconColor: AppColors.info,
-                      value: 'local',
-                    ),
-                    const SizedBox(height: 10),
-                    buildOption(
-                      icon: Icons.cloud_queue_rounded,
-                      title: '서버',
-                      subtitle: '서버에 저장하고, 기기에도 남겨 더 빨리 열 수 있습니다.',
-                      iconColor: AppColors.secondary,
-                      value: 'server',
-                    ),
-                    const SizedBox(height: 10),
-                    buildOption(
-                      icon: Icons.cloud_upload_rounded,
-                      title: '클라우드',
-                      subtitle: '클라우드에 저장하고, 자주 보는 파일은 기기에도 둘 수 있습니다.',
-                      iconColor: AppColors.warning,
-                      value: 'cloud',
-                    ),
-                    const SizedBox(height: 18),
-                    FilledButton(
-                      onPressed: selectedMode.isEmpty
-                          ? null
-                          : () async {
-                              Navigator.pop(sheetContext);
-                              final success = switch (selectedMode) {
-                                'local' => await _applyStorageMode(
-                                    provider,
-                                    item,
-                                    storageMode: 'local',
-                                  ),
-                                'server' => await _applyStorageMode(
-                                    provider,
-                                    item,
-                                    storageMode: 'server',
-                                  ),
-                                'cloud' => await _pickCloudSourceAndApply(
-                                    provider,
-                                    item,
-                                  ),
-                                _ => false,
-                              };
-                              if (success) {
-                                onApplied();
-                              }
-                            },
-                      child: const Text('적용'),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      buildOption(
+                        icon: Icons.phone_android_rounded,
+                        title: '로컬',
+                        subtitle: '이 기기 안에 저장해 인터넷이 없어도 바로 봅니다.',
+                        iconColor: AppColors.info,
+                        value: 'local',
+                      ),
+                      const SizedBox(height: 10),
+                      buildOption(
+                        icon: Icons.cloud_queue_rounded,
+                        title: '서버',
+                        subtitle: '서버에 저장하고, 기기에도 남겨 더 빨리 열 수 있습니다.',
+                        iconColor: AppColors.secondary,
+                        value: 'server',
+                      ),
+                      const SizedBox(height: 10),
+                      buildOption(
+                        icon: Icons.cloud_upload_rounded,
+                        title: '클라우드',
+                        subtitle: '클라우드에 저장하고, 자주 보는 파일은 기기에도 둘 수 있습니다.',
+                        iconColor: AppColors.warning,
+                        value: 'cloud',
+                      ),
+                      const SizedBox(height: 18),
+                      FilledButton(
+                        onPressed: selectedMode.isEmpty
+                            ? null
+                            : () async {
+                                Navigator.pop(sheetContext);
+                                final success = switch (selectedMode) {
+                                  'local' => await _applyStorageMode(
+                                      provider,
+                                      item,
+                                      storageMode: 'local',
+                                    ),
+                                  'server' => await _applyStorageMode(
+                                      provider,
+                                      item,
+                                      storageMode: 'server',
+                                    ),
+                                  'cloud' => await _pickCloudSourceAndApply(
+                                      provider,
+                                      item,
+                                    ),
+                                  _ => false,
+                                };
+                                if (success) {
+                                  onApplied();
+                                }
+                              },
+                        child: const Text('적용'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
