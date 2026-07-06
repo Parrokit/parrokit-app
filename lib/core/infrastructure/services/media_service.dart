@@ -18,7 +18,9 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../../data/local/app_database.dart';
+import '../../../data/models/clip_item.dart';
 import '../../../data/models/clip_view.dart';
 import '../../shared/utils/app_logger.dart';
 import 'cloud/google_drive_storage_service.dart';
@@ -686,7 +688,70 @@ class MediaService {
         0, (totalBytes, clip) => totalBytes + clip.storageBytes);
   }
 
+  Future<List<ClipItem>> fetchClipItemsByStorageMode(
+    String storageMode,
+  ) async {
+    final clips = await (db.select(db.clips)
+          ..where((c) => c.storageMode.equals(storageMode))
+          ..orderBy([(c) => OrderingTerm.desc(c.lastSyncedAt)]))
+        .get();
+    return _buildClipItems(clips);
+  }
+
   Future<GoogleDriveStorageQuota?> getGoogleDriveStorageQuota() async {
     return _googleDriveStorageService.fetchStorageQuota();
+  }
+
+  Future<List<ClipItem>> _buildClipItems(List<Clip> clips) async {
+    final tagsByClip = <int, List<Tag>>{};
+
+    if (clips.isNotEmpty) {
+      final clipIds = clips.map((c) => c.id).toList();
+      final jt = db.clipTags;
+      final rows = await (db.select(db.tags).join([
+        innerJoin(jt, jt.tagId.equalsExp(db.tags.id)),
+      ])
+            ..where(jt.clipId.isIn(clipIds)))
+          .get();
+
+      for (final row in rows) {
+        final tag = row.readTable(db.tags);
+        final ct = row.readTable(jt);
+        tagsByClip.putIfAbsent(ct.clipId, () => []).add(tag);
+      }
+    }
+
+    final items = <ClipItem>[];
+    for (final clip in clips) {
+      final segments = await (db.select(db.segments)
+            ..where((s) => s.clipId.equals(clip.id))
+            ..orderBy([(s) => OrderingTerm.asc(s.startMs)]))
+          .get();
+
+      final absPath = await _absolutePathFor(clip.filePath);
+
+      Uint8List? thumbBytes;
+      try {
+        thumbBytes = await VideoThumbnail.thumbnailData(
+          video: absPath,
+          imageFormat: ImageFormat.JPEG,
+          quality: 70,
+          timeMs: 500,
+        );
+      } catch (_) {
+        thumbBytes = null;
+      }
+
+      items.add(
+        ClipItem(
+          clip: clip,
+          tags: tagsByClip[clip.id] ?? const [],
+          segments: segments,
+          thumbnail: thumbBytes,
+        ),
+      );
+    }
+
+    return items;
   }
 }

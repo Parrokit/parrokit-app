@@ -83,6 +83,12 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     return _service.fetchClipById(clipId);
   }
 
+  Future<List<ClipItem>> fetchClipItemsByStorageMode(
+    String storageMode,
+  ) async {
+    return _service.fetchClipItemsByStorageMode(storageMode);
+  }
+
   Future<void> refreshServerStorageUsage() async {
     await refreshStorageUsage();
   }
