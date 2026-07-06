@@ -118,6 +118,17 @@ class ClipListView extends StatelessWidget {
     return true;
   }
 
+  Future<bool> _moveToLocal(
+    ClipProvider provider,
+    ClipItem item,
+  ) async {
+    final success = await provider.moveClipToLocal(item.clip.id);
+    if (!success) return false;
+
+    await _refreshClipListAfterStorageChange(provider);
+    return true;
+  }
+
   Future<bool> _moveToServer(
     ClipProvider provider,
     ClipItem item,
@@ -297,10 +308,9 @@ class ClipListView extends StatelessWidget {
                             : () async {
                                 Navigator.pop(sheetContext);
                                 final success = switch (selectedMode) {
-                                  'local' => await _applyStorageMode(
+                                  'local' => await _moveToLocal(
                                       provider,
                                       item,
-                                      storageMode: 'local',
                                     ),
                                   'server' => await _moveToServer(
                                       provider,
@@ -317,9 +327,13 @@ class ClipListView extends StatelessWidget {
                                   onApplied();
                                   if (selectedMode == 'server') {
                                     showToast('서버에 저장했어요.');
+                                  } else if (selectedMode == 'local') {
+                                    showToast('로컬로 옮겼어요.');
                                   }
                                 } else if (selectedMode == 'server') {
                                   showToast('서버 저장에 실패했어요.');
+                                } else if (selectedMode == 'local') {
+                                  showToast('로컬 전환에 실패했어요.');
                                 }
                               },
                         child: const Text('적용'),

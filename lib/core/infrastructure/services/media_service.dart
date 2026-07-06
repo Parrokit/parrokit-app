@@ -335,6 +335,76 @@ class MediaService {
     }
   }
 
+  /// 서버 저장된 클립을 로컬 저장으로 전환합니다.
+  ///
+  /// - 로컬 파일이 없으면 서버 파일을 먼저 내려받습니다.
+  /// - 그 다음 서버 원본 파일을 삭제합니다.
+  /// - 로컬 DB와 Firestore 메타데이터는 local 모드로 갱신합니다.
+  Future<void> moveClipToLocal(int clipId) async {
+    AppLogger.i('[Clip][Storage] move-to-local start clipId=$clipId');
+
+    final target = await (db.select(db.clips)
+          ..where((c) => c.id.equals(clipId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (target == null) {
+      throw StateError('클립을 찾을 수 없습니다.');
+    }
+
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw StateError('로컬 전환을 위해 로그인 정보가 필요합니다.');
+    }
+
+    final remoteId = target.remoteId;
+    if (remoteId == null || remoteId.isEmpty) {
+      await _ensureLocalClipFileExists(target);
+      await _markClipAsLocal(clipId: clipId, remoteId: null);
+      AppLogger.i('[Clip][Storage] move-to-local success clipId=$clipId reason=no-remote-id');
+      return;
+    }
+
+    final remoteDocRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('namespaces')
+        .doc('library')
+        .collection('clips')
+        .doc(remoteId);
+    final remoteDoc = await remoteDocRef.get();
+    final remoteData = remoteDoc.data();
+    if (remoteData == null) {
+      throw StateError('서버 메타데이터를 찾을 수 없습니다.');
+    }
+
+    final storagePath = remoteData['storagePath'] as String?;
+    final downloadUrl = remoteData['downloadUrl'] as String?;
+
+    await _ensureLocalClipFileExists(
+      target,
+      storagePath: storagePath,
+      downloadUrl: downloadUrl,
+    );
+
+    await _deleteRemoteStorageObject(storagePath: storagePath, downloadUrl: downloadUrl);
+
+    await remoteDocRef.set({
+      'localId': target.id,
+      'collectionLocalId': target.collectionId,
+      'title': target.title,
+      'storageMode': 'local',
+      'storageBytes': target.storageBytes,
+      'durationMs': target.durationMs,
+      'storagePath': FieldValue.delete(),
+      'downloadUrl': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await _markClipAsLocal(clipId: clipId, remoteId: remoteId);
+
+    AppLogger.i('[Clip][Storage] move-to-local success clipId=$clipId remoteId=$remoteId');
+  }
+
   // ─────────────────────────────────────────────────────────────────
   // Helpers (Private logic methods)
   // ─────────────────────────────────────────────────────────────────
@@ -375,6 +445,67 @@ class MediaService {
           ..limit(1))
         .getSingleOrNull();
     return collection?.remoteId;
+  }
+
+  Future<void> _ensureLocalClipFileExists(
+    Clip target, {
+    String? storagePath,
+    String? downloadUrl,
+  }) async {
+    final absPath = await _absolutePathFor(target.filePath);
+    final file = File(absPath);
+    if (await file.exists() && await file.length() > 0) {
+      return;
+    }
+
+    final ref = storagePath != null && storagePath.isNotEmpty
+        ? FirebaseStorage.instance.ref(storagePath)
+        : (downloadUrl != null && downloadUrl.isNotEmpty
+            ? FirebaseStorage.instance.refFromURL(downloadUrl)
+            : null);
+    if (ref == null) {
+      throw StateError('로컬 파일을 복원할 수 없습니다.');
+    }
+
+    await file.parent.create(recursive: true);
+    await ref.writeToFile(file);
+  }
+
+  Future<void> _deleteRemoteStorageObject({
+    String? storagePath,
+    String? downloadUrl,
+  }) async {
+    final ref = storagePath != null && storagePath.isNotEmpty
+        ? FirebaseStorage.instance.ref(storagePath)
+        : (downloadUrl != null && downloadUrl.isNotEmpty
+            ? FirebaseStorage.instance.refFromURL(downloadUrl)
+            : null);
+    if (ref == null) return;
+
+    try {
+      await ref.delete();
+    } catch (e, st) {
+      AppLogger.w(
+        '[Clip][Storage] remote-delete failed',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  Future<void> _markClipAsLocal({
+    required int clipId,
+    required String? remoteId,
+  }) async {
+    final now = DateTime.now();
+    await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
+      ClipsCompanion(
+        remoteId: remoteId == null ? const Value.absent() : Value(remoteId),
+        storageMode: const Value('local'),
+        syncStatus: const Value(SyncStatus.synced),
+        lastSyncedAt: Value(now),
+      ),
+    );
   }
 
   Future<int> getServerStorageUsedBytes() async {

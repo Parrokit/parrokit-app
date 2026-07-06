@@ -127,4 +127,20 @@ mixin ClipActionMixin on ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> moveClipToLocal(int clipId) async {
+    try {
+      await service.moveClipToLocal(clipId);
+      await refreshServerStorageUsage();
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] move-to-local failed clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
 }
