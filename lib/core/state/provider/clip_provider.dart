@@ -60,6 +60,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   int _collectionBackfillTotal = 0;
   String _collectionBackfillMessage = '';
   String? _collectionBackfillError;
+  bool _isServerUploadRunning = false;
+  int _serverUploadProgress = 0;
+  int _serverUploadTotal = 0;
+  String _serverUploadMessage = '';
+  String? _serverUploadError;
 
   // ─────────────────────────────────────────────────────────────────
   // Methods
@@ -81,6 +86,13 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   String? get collectionBackfillError => _collectionBackfillError;
   bool get shouldShowCollectionBackfillBanner =>
       _isCollectionBackfilling || _collectionBackfillError != null;
+  bool get isServerUploadRunning => _isServerUploadRunning;
+  int get serverUploadProgress => _serverUploadProgress;
+  int get serverUploadTotal => _serverUploadTotal;
+  String get serverUploadMessage => _serverUploadMessage;
+  String? get serverUploadError => _serverUploadError;
+  bool get shouldShowServerUploadBanner =>
+      _isServerUploadRunning || _serverUploadError != null;
 
   /// 현재 로그인 유저의 collection 메타데이터를 Firestore로 동기화합니다.
   Future<void> syncCollectionDataToServer(
@@ -150,6 +162,58 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
         error: e.toString(),
       );
       rethrow;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  @override
+  Future<bool> moveClipToServer(int clipId) async {
+    if (_isServerUploadRunning) return false;
+
+    _setServerUploadState(
+      isRunning: true,
+      progress: 0,
+      total: 0,
+      message: '서버에 올리는 중',
+      error: null,
+    );
+
+    try {
+      await _service.moveClipToServer(
+        clipId,
+        onProgress: (current, total, message) {
+          _setServerUploadState(
+            isRunning: true,
+            progress: current,
+            total: total,
+            message: message,
+            error: null,
+          );
+        },
+      );
+      _setServerUploadState(
+        isRunning: false,
+        progress: _serverUploadTotal == 0 ? 0 : _serverUploadTotal,
+        total: _serverUploadTotal,
+        message: 'server 저장 완료',
+        error: null,
+      );
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] move-to-server error clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      _setServerUploadState(
+        isRunning: false,
+        progress: _serverUploadProgress,
+        total: _serverUploadTotal,
+        message: 'server 저장 실패',
+        error: e.toString(),
+      );
+      return false;
     } finally {
       notifyListeners();
     }
@@ -344,6 +408,35 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     } else if (!isBackfilling && error != null) {
       AppLogger.w(
         '[Collection][Backfill] state=failed progress=$progress total=$total message=$message error=$error',
+      );
+    }
+    notifyListeners();
+  }
+
+  void _setServerUploadState({
+    required bool isRunning,
+    required int progress,
+    required int total,
+    required String message,
+    required String? error,
+  }) {
+    final wasRunning = _isServerUploadRunning;
+    _isServerUploadRunning = isRunning;
+    _serverUploadProgress = progress;
+    _serverUploadTotal = total;
+    _serverUploadMessage = message;
+    _serverUploadError = error;
+    if (isRunning && !wasRunning) {
+      AppLogger.d(
+        '[Clip][Storage] state=loading progress=$progress total=$total message=$message',
+      );
+    } else if (!isRunning && error == null) {
+      AppLogger.d(
+        '[Clip][Storage] state=success progress=$progress total=$total message=$message',
+      );
+    } else if (!isRunning && error != null) {
+      AppLogger.w(
+        '[Clip][Storage] state=failed progress=$progress total=$total message=$message error=$error',
       );
     }
     notifyListeners();

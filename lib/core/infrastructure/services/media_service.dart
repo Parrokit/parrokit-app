@@ -9,6 +9,7 @@
 // Core > Services
 // ============================================================================
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,6 +21,12 @@ import '../../../data/local/app_database.dart';
 import '../../../data/models/clip_view.dart';
 import '../../shared/utils/app_logger.dart';
 import 'firebase/sync_status.dart';
+
+typedef ClipServerUploadProgressCallback = void Function(
+  int current,
+  int total,
+  String message,
+);
 
 /// 미디어 데이터(Group, Collection, Clip) 조작 및 비즈니스 로직 담당 서비스
 /// 추후 Local/Server 동기화를 위해 MediaRepository 인터페이스로 추출될 수 있음.
@@ -241,7 +248,10 @@ class MediaService {
   }
 
   /// 클립 파일을 서버 저장소로 업로드하고 서버 저장 상태로 전환합니다.
-  Future<void> moveClipToServer(int clipId) async {
+  Future<void> moveClipToServer(
+    int clipId, {
+    ClipServerUploadProgressCallback? onProgress,
+  }) async {
     AppLogger.i('[Clip][Storage] move-to-server start clipId=$clipId');
 
     final target = await (db.select(db.clips)
@@ -266,44 +276,63 @@ class MediaService {
     final remoteDocId = target.remoteId ?? clipId.toString();
     final storagePath = 'users/${user.uid}/clips/$clipId/source';
     final storageRef = FirebaseStorage.instance.ref(storagePath);
-    final uploadTask = await storageRef.putFile(file);
-    final downloadUrl = await uploadTask.ref.getDownloadURL();
-    final now = DateTime.now();
+    final fileSize = await file.length();
+    onProgress?.call(0, fileSize, 'server 업로드 준비 중');
 
-    final collectionRemoteId = await _collectionRemoteIdForClip(target.collectionId);
+    final uploadTask = storageRef.putFile(file);
+    late final StreamSubscription<TaskSnapshot> subscription;
+    try {
+      subscription = uploadTask.snapshotEvents.listen((snapshot) {
+        final total = snapshot.totalBytes > 0 ? snapshot.totalBytes : fileSize;
+        onProgress?.call(
+          snapshot.bytesTransferred,
+          total,
+          'server 업로드 중',
+        );
+      });
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('namespaces')
-        .doc('library')
-        .collection('clips')
-        .doc(remoteDocId)
-        .set({
-      'localId': target.id,
-      'collectionLocalId': target.collectionId,
-      if (collectionRemoteId != null) 'collectionRemoteId': collectionRemoteId,
-      'title': target.title,
-      'storageMode': 'server',
-      'storageBytes': target.storageBytes,
-      'durationMs': target.durationMs,
-      'storagePath': storagePath,
-      'downloadUrl': downloadUrl,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+      final taskSnapshot = await uploadTask;
+      final downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      final now = DateTime.now();
 
-    await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
-      ClipsCompanion(
-        remoteId: Value(remoteDocId),
-        storageMode: const Value('server'),
-        syncStatus: const Value(SyncStatus.synced),
-        lastSyncedAt: Value(now),
-      ),
-    );
+      final collectionRemoteId =
+          await _collectionRemoteIdForClip(target.collectionId);
 
-    AppLogger.i(
-      '[Clip][Storage] move-to-server success clipId=$clipId remoteId=$remoteDocId',
-    );
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('namespaces')
+          .doc('library')
+          .collection('clips')
+          .doc(remoteDocId)
+          .set({
+        'localId': target.id,
+        'collectionLocalId': target.collectionId,
+        if (collectionRemoteId != null) 'collectionRemoteId': collectionRemoteId,
+        'title': target.title,
+        'storageMode': 'server',
+        'storageBytes': target.storageBytes,
+        'durationMs': target.durationMs,
+        'storagePath': storagePath,
+        'downloadUrl': downloadUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
+        ClipsCompanion(
+          remoteId: Value(remoteDocId),
+          storageMode: const Value('server'),
+          syncStatus: const Value(SyncStatus.synced),
+          lastSyncedAt: Value(now),
+        ),
+      );
+
+      AppLogger.i(
+        '[Clip][Storage] move-to-server success clipId=$clipId remoteId=$remoteDocId',
+      );
+    } finally {
+      await subscription.cancel();
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────

@@ -59,13 +59,42 @@ class _AppState extends State<App> {
         return Stack(
           children: [
             Positioned.fill(child: child ?? const SizedBox.shrink()),
-            if (clipProvider.shouldShowCollectionBackfillBanner)
-              _CollectionBackfillBanner(
-                isLoading: clipProvider.isCollectionBackfilling,
-                progress: clipProvider.collectionBackfillProgress,
-                total: clipProvider.collectionBackfillTotal,
-                message: clipProvider.collectionBackfillMessage,
-                error: clipProvider.collectionBackfillError,
+            if (clipProvider.shouldShowCollectionBackfillBanner ||
+                clipProvider.shouldShowServerUploadBanner)
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (clipProvider.shouldShowCollectionBackfillBanner)
+                            _CollectionBackfillBanner(
+                              isLoading: clipProvider.isCollectionBackfilling,
+                              progress: clipProvider.collectionBackfillProgress,
+                              total: clipProvider.collectionBackfillTotal,
+                              message: clipProvider.collectionBackfillMessage,
+                              error: clipProvider.collectionBackfillError,
+                            ),
+                          if (clipProvider.shouldShowCollectionBackfillBanner &&
+                              clipProvider.shouldShowServerUploadBanner)
+                            const SizedBox(height: 10),
+                          if (clipProvider.shouldShowServerUploadBanner)
+                            _ServerUploadBanner(
+                              isLoading: clipProvider.isServerUploadRunning,
+                              progress: clipProvider.serverUploadProgress,
+                              total: clipProvider.serverUploadTotal,
+                              message: clipProvider.serverUploadMessage,
+                              error: clipProvider.serverUploadError,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
           ],
         );
@@ -404,6 +433,200 @@ class _CollectionBackfillBanner extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ServerUploadBanner extends StatelessWidget {
+  const _ServerUploadBanner({
+    required this.isLoading,
+    required this.progress,
+    required this.total,
+    required this.message,
+    required this.error,
+  });
+
+  final bool isLoading;
+  final int progress;
+  final int total;
+  final String message;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final progressValue = total > 0 ? (progress / total).clamp(0.0, 1.0) : null;
+    final isError = error != null;
+    final isComplete = !isLoading && error == null;
+    final accentColor = isError
+        ? colorScheme.error
+        : isComplete
+            ? colorScheme.secondary
+            : colorScheme.primary;
+    final surfaceColor = isError
+        ? colorScheme.errorContainer
+        : isComplete
+            ? colorScheme.secondaryContainer.withValues(alpha: 0.75)
+            : colorScheme.surfaceContainerHighest;
+    final foreground = isError
+        ? colorScheme.onErrorContainer
+        : isComplete
+            ? colorScheme.onSecondaryContainer
+            : colorScheme.onSurface;
+    final title = isError
+        ? '서버 저장에 실패했어요'
+        : isLoading
+            ? '클립을 서버에 올리는 중'
+            : '서버 저장이 끝났어요';
+    final subtitle = isError
+        ? '잠시 후 다시 시도할 수 있어요.'
+        : isLoading
+            ? '파일을 서버로 옮기고 있습니다.'
+            : '서버 저장이 완료됐어요.';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          border: Border.all(
+            color: accentColor.withValues(alpha: 0.18),
+            width: 1,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: isLoading
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            value: progressValue,
+                            color: accentColor,
+                          ),
+                        )
+                      : Icon(
+                          isError
+                              ? Icons.error_outline_rounded
+                              : Icons.cloud_done_rounded,
+                          size: 20,
+                          color: accentColor,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: foreground,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                        if (!isLoading && !isError)
+                          Icon(
+                            Icons.done_rounded,
+                            size: 18,
+                            color: accentColor,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: foreground.withValues(alpha: 0.82),
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (isLoading && total > 0) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          minHeight: 7,
+                          value: progressValue,
+                          backgroundColor: accentColor.withValues(alpha: 0.12),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            accentColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            '$progress / $total',
+                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: foreground.withValues(alpha: 0.78),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '잠시만 기다려주세요',
+                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: foreground.withValues(alpha: 0.60),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ] else if (isError) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colorScheme.onErrorContainer.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          error!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: foreground.withValues(alpha: 0.80),
+                              ),
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        message,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: foreground.withValues(alpha: 0.72),
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
