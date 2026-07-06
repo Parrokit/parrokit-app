@@ -3,7 +3,7 @@
 // ============================================================================
 //
 // [역할]
-// 캐시(임시 파일) 삭제 및 용량 확인 섹션.
+// 임시 보관 파일 삭제 및 용량 확인 섹션.
 //
 // [레이어]
 // Presentation Layer > Sections
@@ -47,13 +47,13 @@ class _CacheSectionState extends State<CacheSection> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          '임시 파일 청소',
+          '임시 보관 파일 정리',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          '개발자가 미처 지우지 못한 임시 파일들을 말끔히 정리해 드릴게요.\n\n💡 캐시는 시스템에 의해 자동으로 생성되므로, 지운 후에도 새로운 파일들이 계속 추가될 수 있어요.\n\n정리 대상 용량: $_cacheSize',
+          '앱이 잠깐 보관해 둔 파일들을 정리해 드릴게요.\n\n정리 후에도 앱을 쓰는 동안 다시 파일이 생길 수 있어요.\n\n정리 대상 용량: $_cacheSize',
           style: theme.textTheme.bodyMedium?.copyWith(
             height: 1.5,
             color: theme.colorScheme.onSurfaceVariant,
@@ -84,7 +84,7 @@ class _CacheSectionState extends State<CacheSection> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('임시 파일이 삭제되었습니다.')),
+          const SnackBar(content: Text('임시 보관 파일이 삭제되었습니다.')),
         );
       }
     }
@@ -95,12 +95,12 @@ class _CacheSectionState extends State<CacheSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle('캐시 삭제'),
+        const SectionTitle('임시 보관 파일'),
         const SizedBox(height: 10),
         CardContainer(
           child: NavTile(
             icon: Icons.cleaning_services_outlined,
-            title: '임시 보관함 정리', // 사용자가 "임시 보관함" 용어를 사용함
+            title: '임시 보관함 정리',
             // 로딩 중이면 인디케이터, 아니면 텍스트 표시
             trailing: _isLoading
                 ? const SizedBox(

@@ -242,14 +242,14 @@ class ClipListView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '저장 위치 전환',
+                      '저장 위치 바꾸기',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '저장 위치를 체크한 뒤 적용하세요.',
+                      '원하는 위치를 고르면, 기기 안에 남겨둘지도 함께 정할 수 있어요.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),
@@ -258,7 +258,7 @@ class ClipListView extends StatelessWidget {
                     buildOption(
                       icon: Icons.phone_android_rounded,
                       title: '로컬',
-                      subtitle: '이 기기 안에 저장합니다.',
+                      subtitle: '이 기기 안에 저장해 인터넷이 없어도 바로 봅니다.',
                       iconColor: AppColors.info,
                       value: 'local',
                     ),
@@ -266,7 +266,7 @@ class ClipListView extends StatelessWidget {
                     buildOption(
                       icon: Icons.cloud_queue_rounded,
                       title: '서버',
-                      subtitle: '앱 서버 저장으로 전환합니다.',
+                      subtitle: '서버에 저장하고, 기기에도 남겨 더 빨리 열 수 있습니다.',
                       iconColor: AppColors.secondary,
                       value: 'server',
                     ),
@@ -274,7 +274,7 @@ class ClipListView extends StatelessWidget {
                     buildOption(
                       icon: Icons.cloud_upload_rounded,
                       title: '클라우드',
-                      subtitle: '폰에서 영상 파일을 골라 클라우드 저장으로 전환합니다.',
+                      subtitle: '클라우드에 저장하고, 자주 보는 파일은 기기에도 둘 수 있습니다.',
                       iconColor: AppColors.warning,
                       value: 'cloud',
                     ),
