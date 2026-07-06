@@ -26,7 +26,7 @@ mixin ClipActionMixin on ChangeNotifier {
   Future<void> selectCollection(int? id);
   Future<void> loadGroups();
   Future<void> loadCollections();
-  Future<void> refreshServerStorageUsage();
+  Future<void> refreshStorageUsage();
 
   // ─────────────────────────────────────────────────────────────────
   // Actions
@@ -84,7 +84,7 @@ mixin ClipActionMixin on ChangeNotifier {
       segments: segments,
       tags: tags,
     );
-    await refreshServerStorageUsage();
+    await refreshStorageUsage();
     notifyListeners();
   }
 
@@ -108,14 +108,14 @@ mixin ClipActionMixin on ChangeNotifier {
       tags: tags,
       storageMode: storageMode,
     );
-    await refreshServerStorageUsage();
+    await refreshStorageUsage();
     notifyListeners();
   }
 
   Future<bool> moveClipToServer(int clipId) async {
     try {
       await service.moveClipToServer(clipId);
-      await refreshServerStorageUsage();
+      await refreshStorageUsage();
       notifyListeners();
       return true;
     } catch (e, st) {
@@ -131,6 +131,7 @@ mixin ClipActionMixin on ChangeNotifier {
   Future<bool> moveClipToGoogleDrive(int clipId) async {
     try {
       await service.moveClipToGoogleDrive(clipId);
+      await refreshStorageUsage();
       notifyListeners();
       return true;
     } catch (e, st) {
@@ -146,7 +147,7 @@ mixin ClipActionMixin on ChangeNotifier {
   Future<bool> moveClipToLocal(int clipId) async {
     try {
       await service.moveClipToLocal(clipId);
-      await refreshServerStorageUsage();
+      await refreshStorageUsage();
       notifyListeners();
       return true;
     } catch (e, st) {

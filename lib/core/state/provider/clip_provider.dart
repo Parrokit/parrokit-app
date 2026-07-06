@@ -55,6 +55,9 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   List<Clip> clips = [];
   Map<int, List<Tag>> tagsByClip = {};
   int serverStorageUsedBytes = 0;
+  int localStorageUsedBytes = 0;
+  int cloudStorageUsedBytes = 0;
+  int? cloudStorageQuotaBytes;
   bool _isCollectionBackfilling = false;
   int _collectionBackfillProgress = 0;
   int _collectionBackfillTotal = 0;
@@ -79,9 +82,22 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     return _service.fetchClipById(clipId);
   }
 
-  @override
   Future<void> refreshServerStorageUsage() async {
+    await refreshStorageUsage();
+  }
+
+  @override
+  Future<void> refreshStorageUsage() async {
     serverStorageUsedBytes = await _service.getServerStorageUsedBytes();
+    localStorageUsedBytes = await _service.getLocalStorageUsedBytes();
+    cloudStorageUsedBytes = await _service.getCloudStorageUsedBytes();
+
+    try {
+      final quota = await _service.getGoogleDriveStorageQuota();
+      cloudStorageQuotaBytes = quota?.limitBytes;
+    } catch (_) {
+      cloudStorageQuotaBytes = null;
+    }
   }
 
   bool get isCollectionBackfilling => _isCollectionBackfilling;
@@ -295,7 +311,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     clips = [];
     clipItems = [];
     tagsByClip = {};
-    await refreshServerStorageUsage();
+    await refreshStorageUsage();
     notifyListeners();
   }
 
@@ -337,7 +353,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
 
     collections.sort((a, b) => a.name.compareTo(b.name));
-    await refreshServerStorageUsage();
+    await refreshStorageUsage();
     notifyListeners();
   }
 
@@ -362,7 +378,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     collections = await (db.select(db.collections)
           ..orderBy([(c) => OrderingTerm.asc(c.name)]))
         .get();
-    await refreshServerStorageUsage();
+    await refreshStorageUsage();
     notifyListeners();
   }
 
@@ -387,7 +403,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
 
     await _buildClipItems();
-    await refreshServerStorageUsage();
+    await refreshStorageUsage();
     notifyListeners();
   }
 

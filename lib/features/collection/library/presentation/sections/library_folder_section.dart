@@ -129,6 +129,115 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     );
   }
 
+  Widget _buildUsageCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String usageText,
+    required String description,
+    required Color color,
+    double? progress,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                      ),
+                ),
+              ),
+              Text(
+                usageText,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+          if (progress != null) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0.0, 1.0),
+                minHeight: 10,
+                backgroundColor: cs.surfaceContainerHigh,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocalStorageSummary(BuildContext context) {
+    final clipProvider = context.watch<ClipProvider>();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      child: _buildUsageCard(
+        context,
+        icon: Icons.phone_android_rounded,
+        title: '로컬 저장 용량',
+        usageText: _formatBytes(clipProvider.localStorageUsedBytes),
+        description: '인터넷이 없어도 바로 열 수 있도록 이 기기에 남아 있는 파일입니다.',
+        color: Theme.of(context).colorScheme.tertiary,
+      ),
+    );
+  }
+
+  Widget _buildCloudStorageSummary(BuildContext context) {
+    final clipProvider = context.watch<ClipProvider>();
+    final quota = clipProvider.cloudStorageQuotaBytes;
+    final used = clipProvider.cloudStorageUsedBytes;
+    final hasQuota = quota != null && quota > 0;
+    final progress = hasQuota ? (used / quota).clamp(0.0, 1.0) : null;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      child: _buildUsageCard(
+        context,
+        icon: Icons.cloud_queue_rounded,
+        title: 'Google Drive 저장 용량',
+        usageText: hasQuota
+            ? '${_formatBytes(used)} / ${_formatBytes(quota)}'
+            : _formatBytes(used),
+        description: hasQuota
+            ? '개인 Drive에 저장된 클립 용량입니다.'
+            : '개인 Drive에 저장된 클립 용량입니다. Drive 상한은 아직 가져오지 못했어요.',
+        color: Theme.of(context).colorScheme.primary,
+        progress: progress,
+      ),
+    );
+  }
+
   void _showFabMenu(BuildContext fabCtx, bool isAtGroupRoot) {
     final cs = Theme.of(fabCtx).colorScheme;
 
@@ -443,6 +552,8 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
             ),
 
             _buildServerStorageProgress(context),
+            _buildCloudStorageSummary(context),
+            _buildLocalStorageSummary(context),
 
             // 삭제 모드 배너
             if (_deleteMode && !isAtClipList)

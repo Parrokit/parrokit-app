@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/state/provider/clip_provider.dart';
 import '../widgets/card_container.dart';
-import '../widgets/nav_tile.dart';
 import '../widgets/section_title.dart';
 
 class RemoteStorageSection extends StatelessWidget {
@@ -29,48 +28,87 @@ class RemoteStorageSection extends StatelessWidget {
     return '${value.toStringAsFixed(value >= 10 || unitIndex == 0 ? 0 : 1)} ${units[unitIndex]}';
   }
 
-  Widget _buildRemoteCard(
+  Widget _buildUsageCard(
     BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
-    required String trailingText,
-    required Color iconColor,
-    required bool enabled,
+    required String usageText,
+    required Color color,
+    double? progress,
   }) {
     final cs = Theme.of(context).colorScheme;
 
-    return NavTile(
-      icon: icon,
-      title: title,
-      subtitle: subtitle,
-      showArrow: false,
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: enabled
-              ? iconColor.withValues(alpha: 0.12)
-              : cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          trailingText,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: enabled ? iconColor : cs.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.35),
         ),
       ),
-      onTap: null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: cs.onSurface,
+                      ),
+                ),
+              ),
+              Text(
+                usageText,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+          if (progress != null) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0.0, 1.0),
+                minHeight: 10,
+                backgroundColor: cs.surfaceContainerHigh,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final clipProvider = context.watch<ClipProvider>();
-    final used = clipProvider.serverStorageUsedBytes;
-    final total = ClipProvider.serverStorageQuotaBytes;
-    final progress = total == 0 ? 0.0 : (used / total).clamp(0.0, 1.0);
+    final serverUsed = clipProvider.serverStorageUsedBytes;
+    final serverTotal = ClipProvider.serverStorageQuotaBytes;
+    final serverProgress =
+        serverTotal == 0 ? 0.0 : (serverUsed / serverTotal).clamp(0.0, 1.0);
+    final cloudUsed = clipProvider.cloudStorageUsedBytes;
+    final cloudQuota = clipProvider.cloudStorageQuotaBytes;
+    final hasCloudQuota = cloudQuota != null && cloudQuota > 0;
+    final cloudProgress =
+        hasCloudQuota ? (cloudUsed / cloudQuota).clamp(0.0, 1.0) : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,34 +118,38 @@ class RemoteStorageSection extends StatelessWidget {
         CardContainer(
           child: Column(
             children: [
-              _buildRemoteCard(
+              _buildUsageCard(
                 context,
                 icon: Icons.cloud_queue_rounded,
                 title: '서버',
                 subtitle: '앱 서버에 저장된 파일과 메타데이터를 보여줍니다.',
-                trailingText: '${_formatBytes(used)} / ${_formatBytes(total)}',
-                iconColor: Theme.of(context).colorScheme.secondary,
-                enabled: true,
+                usageText:
+                    '${_formatBytes(serverUsed)} / ${_formatBytes(serverTotal)}',
+                color: Theme.of(context).colorScheme.secondary,
+                progress: serverProgress,
               ),
               const SizedBox(height: AppSpacing.sm),
-              LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor:
-                    Theme.of(context).colorScheme.surfaceContainerHigh,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).colorScheme.secondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _buildRemoteCard(
+              _buildUsageCard(
                 context,
                 icon: Icons.drive_folder_upload_rounded,
                 title: 'Google Drive',
-                subtitle: '클립을 개인 Drive에 저장하는 연결 슬롯입니다.',
-                trailingText: '연결 슬롯',
-                iconColor: Theme.of(context).colorScheme.primary,
-                enabled: false,
+                subtitle: hasCloudQuota
+                    ? '개인 Drive에 저장된 클립 용량입니다.'
+                    : '개인 Drive에 저장된 클립 용량입니다. 상한은 아직 불러오지 못했어요.',
+                usageText: hasCloudQuota
+                    ? '${_formatBytes(cloudUsed)} / ${_formatBytes(cloudQuota)}'
+                    : _formatBytes(cloudUsed),
+                color: Theme.of(context).colorScheme.primary,
+                progress: cloudProgress,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _buildUsageCard(
+                context,
+                icon: Icons.phone_android_rounded,
+                title: '로컬',
+                subtitle: '이 기기에 남아 있어 오프라인에서도 바로 열 수 있는 파일입니다.',
+                usageText: _formatBytes(clipProvider.localStorageUsedBytes),
+                color: Theme.of(context).colorScheme.tertiary,
               ),
             ],
           ),

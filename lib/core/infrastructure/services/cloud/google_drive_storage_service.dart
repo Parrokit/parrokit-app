@@ -32,6 +32,16 @@ class GoogleDriveUploadResult {
   final String? webContentLink;
 }
 
+class GoogleDriveStorageQuota {
+  GoogleDriveStorageQuota({
+    required this.usedBytes,
+    this.limitBytes,
+  });
+
+  final int usedBytes;
+  final int? limitBytes;
+}
+
 class GoogleDriveStorageService {
   static const String _driveScope =
       'https://www.googleapis.com/auth/drive.file';
@@ -54,6 +64,50 @@ class GoogleDriveStorageService {
 
   Future<void> disconnect() async {
     await _googleSignIn.signOut();
+  }
+
+  Future<GoogleDriveStorageQuota?> fetchStorageQuota() async {
+    final account = await connect();
+    if (account == null) {
+      return null;
+    }
+
+    final headers = await _authorizationHeaders(account);
+    final client = HttpClient();
+    try {
+      final uri = Uri.https(
+        'www.googleapis.com',
+        '/drive/v3/about',
+        const {'fields': 'storageQuota'},
+      );
+      final request = await client.getUrl(uri);
+      headers.forEach((key, value) {
+        request.headers.set(key, value);
+      });
+
+      final response = await request.close();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final body = await utf8.decodeStream(response);
+        throw StateError(
+          'Google Drive 저장 용량 조회 실패: ${response.statusCode} $body',
+        );
+      }
+
+      final body = await utf8.decodeStream(response);
+      final data = _asMap(body);
+      final quota = data['storageQuota'];
+      if (quota is! Map<String, dynamic>) return null;
+
+      final usedBytes = int.tryParse('${quota['usageInDrive'] ?? 0}') ?? 0;
+      final limitRaw = quota['limit'];
+      final limitBytes = limitRaw == null ? null : int.tryParse('$limitRaw');
+      return GoogleDriveStorageQuota(
+        usedBytes: usedBytes,
+        limitBytes: limitBytes,
+      );
+    } finally {
+      client.close(force: true);
+    }
   }
 
   Future<GoogleDriveUploadResult> uploadClipFile({

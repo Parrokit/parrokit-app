@@ -669,4 +669,24 @@ class MediaService {
     return rows.fold<int>(
         0, (totalBytes, clip) => totalBytes + clip.storageBytes);
   }
+
+  Future<int> getLocalStorageUsedBytes() async {
+    final rows = await (db.select(db.clips)
+          ..where((c) => c.storageMode.equals('local')))
+        .get();
+    return rows.fold<int>(
+        0, (totalBytes, clip) => totalBytes + clip.storageBytes);
+  }
+
+  Future<int> getCloudStorageUsedBytes() async {
+    final rows = await (db.select(db.clips)
+          ..where((c) => c.storageMode.like('cloud:%')))
+        .get();
+    return rows.fold<int>(
+        0, (totalBytes, clip) => totalBytes + clip.storageBytes);
+  }
+
+  Future<GoogleDriveStorageQuota?> getGoogleDriveStorageQuota() async {
+    return _googleDriveStorageService.fetchStorageQuota();
+  }
 }
