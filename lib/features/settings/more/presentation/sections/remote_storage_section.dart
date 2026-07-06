@@ -13,8 +13,15 @@ import 'package:parrokit/core/state/provider/clip_provider.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
 
-class RemoteStorageSection extends StatelessWidget {
+class RemoteStorageSection extends StatefulWidget {
   const RemoteStorageSection({super.key});
+
+  @override
+  State<RemoteStorageSection> createState() => _RemoteStorageSectionState();
+}
+
+class _RemoteStorageSectionState extends State<RemoteStorageSection> {
+  bool _isExpanded = true;
 
   String _formatBytes(int bytes) {
     if (bytes <= 0) return '0 B';
@@ -26,6 +33,54 @@ class RemoteStorageSection extends StatelessWidget {
       unitIndex++;
     }
     return '${value.toStringAsFixed(value >= 10 || unitIndex == 0 ? 0 : 1)} ${units[unitIndex]}';
+  }
+
+  Widget _buildToggle(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Material(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.tune_rounded, size: 18, color: cs.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '저장 용량',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: cs.onSurface,
+                        ),
+                  ),
+                ),
+                Text(
+                  _isExpanded ? '접기' : '펼치기',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _isExpanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: cs.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildUsageCard(
@@ -100,6 +155,7 @@ class RemoteStorageSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clipProvider = context.watch<ClipProvider>();
+    final localUsed = clipProvider.localStorageUsedBytes;
     final serverUsed = clipProvider.serverStorageUsedBytes;
     final serverTotal = ClipProvider.serverStorageQuotaBytes;
     final serverProgress =
@@ -115,45 +171,49 @@ class RemoteStorageSection extends StatelessWidget {
       children: [
         const SectionTitle('원격 저장소'),
         const SizedBox(height: 10),
-        CardContainer(
-          child: Column(
-            children: [
-              _buildUsageCard(
-                context,
-                icon: Icons.cloud_queue_rounded,
-                title: '서버',
-                subtitle: '앱 서버에 저장된 파일과 메타데이터를 보여줍니다.',
-                usageText:
-                    '${_formatBytes(serverUsed)} / ${_formatBytes(serverTotal)}',
-                color: Theme.of(context).colorScheme.secondary,
-                progress: serverProgress,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildUsageCard(
-                context,
-                icon: Icons.drive_folder_upload_rounded,
-                title: 'Google Drive',
-                subtitle: hasCloudQuota
-                    ? '개인 Drive에 저장된 클립 용량입니다.'
-                    : '개인 Drive에 저장된 클립 용량입니다. 상한은 아직 불러오지 못했어요.',
-                usageText: hasCloudQuota
-                    ? '${_formatBytes(cloudUsed)} / ${_formatBytes(cloudQuota)}'
-                    : _formatBytes(cloudUsed),
-                color: Theme.of(context).colorScheme.primary,
-                progress: cloudProgress,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildUsageCard(
-                context,
-                icon: Icons.phone_android_rounded,
-                title: '로컬',
-                subtitle: '이 기기에 남아 있어 오프라인에서도 바로 열 수 있는 파일입니다.',
-                usageText: _formatBytes(clipProvider.localStorageUsedBytes),
-                color: Theme.of(context).colorScheme.tertiary,
-              ),
-            ],
+        _buildToggle(context),
+        if (_isExpanded) ...[
+          const SizedBox(height: 10),
+          CardContainer(
+            child: Column(
+              children: [
+                _buildUsageCard(
+                  context,
+                  icon: Icons.phone_android_rounded,
+                  title: '로컬',
+                  subtitle: '이 기기에 남아 있어 오프라인에서도 바로 열 수 있는 파일입니다.',
+                  usageText: _formatBytes(localUsed),
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _buildUsageCard(
+                  context,
+                  icon: Icons.cloud_queue_rounded,
+                  title: '서버',
+                  subtitle: '앱 서버에 저장된 파일과 메타데이터를 보여줍니다.',
+                  usageText:
+                      '${_formatBytes(serverUsed)} / ${_formatBytes(serverTotal)}',
+                  color: Theme.of(context).colorScheme.secondary,
+                  progress: serverProgress,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _buildUsageCard(
+                  context,
+                  icon: Icons.drive_folder_upload_rounded,
+                  title: 'Google Drive',
+                  subtitle: hasCloudQuota
+                      ? '개인 Drive에 저장된 클립 용량입니다.'
+                      : '개인 Drive에 저장된 클립 용량입니다. Drive 상한은 아직 가져오지 못했어요.',
+                  usageText: hasCloudQuota
+                      ? '${_formatBytes(cloudUsed)} / ${_formatBytes(cloudQuota)}'
+                      : _formatBytes(cloudUsed),
+                  color: Theme.of(context).colorScheme.primary,
+                  progress: cloudProgress,
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
