@@ -128,6 +128,21 @@ mixin ClipActionMixin on ChangeNotifier {
     }
   }
 
+  Future<bool> moveClipToGoogleDrive(int clipId) async {
+    try {
+      await service.moveClipToGoogleDrive(clipId);
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] move-to-gdrive failed clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+
   Future<bool> moveClipToLocal(int clipId) async {
     try {
       await service.moveClipToLocal(clipId);

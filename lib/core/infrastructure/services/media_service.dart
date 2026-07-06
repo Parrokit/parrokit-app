@@ -16,10 +16,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../../data/local/app_database.dart';
 import '../../../data/models/clip_view.dart';
 import '../../shared/utils/app_logger.dart';
+import 'cloud/google_drive_storage_service.dart';
 import 'firebase/sync_status.dart';
 
 typedef ClipServerUploadProgressCallback = void Function(
@@ -32,6 +34,8 @@ typedef ClipServerUploadProgressCallback = void Function(
 /// 추후 Local/Server 동기화를 위해 MediaRepository 인터페이스로 추출될 수 있음.
 class MediaService {
   final AppDatabase db;
+  final GoogleDriveStorageService _googleDriveStorageService =
+      GoogleDriveStorageService();
 
   MediaService(this.db);
 
@@ -308,7 +312,8 @@ class MediaService {
           .set({
         'localId': target.id,
         'collectionLocalId': target.collectionId,
-        if (collectionRemoteId != null) 'collectionRemoteId': collectionRemoteId,
+        if (collectionRemoteId != null)
+          'collectionRemoteId': collectionRemoteId,
         'title': target.title,
         'storageMode': 'server',
         'storageBytes': target.storageBytes,
@@ -333,6 +338,82 @@ class MediaService {
     } finally {
       await subscription.cancel();
     }
+  }
+
+  /// 클립 파일을 Google Drive로 업로드하고 cloud:gdrive 상태로 전환합니다.
+  Future<void> moveClipToGoogleDrive(
+    int clipId, {
+    ClipServerUploadProgressCallback? onProgress,
+  }) async {
+    AppLogger.i('[Clip][Storage] move-to-gdrive start clipId=$clipId');
+
+    final target = await (db.select(db.clips)
+          ..where((c) => c.id.equals(clipId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (target == null) {
+      throw StateError('클립을 찾을 수 없습니다.');
+    }
+
+    final absPath = await _absolutePathFor(target.filePath);
+    final file = File(absPath);
+    if (!await file.exists()) {
+      throw StateError('업로드할 파일을 찾을 수 없습니다.');
+    }
+
+    onProgress?.call(0, 0, 'Google Drive 연결 확인 중');
+    final fileName = _buildDriveFileName(target, absPath);
+    final result = await _googleDriveStorageService.uploadClipFile(
+      file: file,
+      fileName: fileName,
+      clipId: target.id.toString(),
+      title: target.title,
+      storageBytes: target.storageBytes,
+      durationMs: target.durationMs,
+      onProgress: onProgress,
+    );
+
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final collectionRemoteId =
+          await _collectionRemoteIdForClip(target.collectionId);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('namespaces')
+          .doc('library')
+          .collection('clips')
+          .doc(result.fileId)
+          .set({
+        'localId': target.id,
+        'collectionLocalId': target.collectionId,
+        if (collectionRemoteId != null)
+          'collectionRemoteId': collectionRemoteId,
+        'title': target.title,
+        'storageMode': 'cloud:gdrive',
+        'storageProvider': 'gdrive',
+        'storageBytes': target.storageBytes,
+        'durationMs': target.durationMs,
+        'remoteFileId': result.fileId,
+        'cloudFolderId': result.folderId,
+        'downloadUrl': result.webContentLink ?? result.webViewLink,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
+    final now = DateTime.now();
+    await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
+      ClipsCompanion(
+        remoteId: Value(result.fileId),
+        storageMode: const Value('cloud:gdrive'),
+        syncStatus: const Value(SyncStatus.synced),
+        lastSyncedAt: Value(now),
+      ),
+    );
+
+    AppLogger.i(
+      '[Clip][Storage] move-to-gdrive success clipId=$clipId remoteId=${result.fileId}',
+    );
   }
 
   /// 서버 저장된 클립을 로컬 저장으로 전환합니다.
@@ -360,7 +441,17 @@ class MediaService {
     if (remoteId == null || remoteId.isEmpty) {
       await _ensureLocalClipFileExists(target);
       await _markClipAsLocal(clipId: clipId, remoteId: null);
-      AppLogger.i('[Clip][Storage] move-to-local success clipId=$clipId reason=no-remote-id');
+      AppLogger.i(
+          '[Clip][Storage] move-to-local success clipId=$clipId reason=no-remote-id');
+      return;
+    }
+
+    if (target.storageMode.startsWith('cloud:')) {
+      await _moveCloudClipToLocal(
+        clipId: clipId,
+        target: target,
+        remoteId: remoteId,
+      );
       return;
     }
 
@@ -386,7 +477,8 @@ class MediaService {
       downloadUrl: downloadUrl,
     );
 
-    await _deleteRemoteStorageObject(storagePath: storagePath, downloadUrl: downloadUrl);
+    await _deleteRemoteStorageObject(
+        storagePath: storagePath, downloadUrl: downloadUrl);
 
     await remoteDocRef.set({
       'localId': target.id,
@@ -402,7 +494,8 @@ class MediaService {
 
     await _markClipAsLocal(clipId: clipId, remoteId: remoteId);
 
-    AppLogger.i('[Clip][Storage] move-to-local success clipId=$clipId remoteId=$remoteId');
+    AppLogger.i(
+        '[Clip][Storage] move-to-local success clipId=$clipId remoteId=$remoteId');
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -445,6 +538,59 @@ class MediaService {
           ..limit(1))
         .getSingleOrNull();
     return collection?.remoteId;
+  }
+
+  Future<void> _moveCloudClipToLocal({
+    required int clipId,
+    required Clip target,
+    required String remoteId,
+  }) async {
+    final absPath = await _absolutePathFor(target.filePath);
+    final localFile = File(absPath);
+    if (!await localFile.exists() || await localFile.length() == 0) {
+      await _googleDriveStorageService.downloadClipFile(
+        fileId: remoteId,
+        destination: localFile,
+      );
+    }
+
+    try {
+      await _googleDriveStorageService.deleteFile(remoteId);
+    } catch (e, st) {
+      AppLogger.w(
+        '[Clip][Storage] cloud-delete failed remoteId=$remoteId',
+        error: e,
+        stackTrace: st,
+      );
+    }
+
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final remoteDocRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('namespaces')
+          .doc('library')
+          .collection('clips')
+          .doc(remoteId);
+      await remoteDocRef.set({
+        'localId': target.id,
+        'collectionLocalId': target.collectionId,
+        'title': target.title,
+        'storageMode': 'local',
+        'storageBytes': target.storageBytes,
+        'durationMs': target.durationMs,
+        'remoteFileId': FieldValue.delete(),
+        'cloudFolderId': FieldValue.delete(),
+        'downloadUrl': FieldValue.delete(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
+    await _markClipAsLocal(clipId: clipId, remoteId: null);
+    AppLogger.i(
+      '[Clip][Storage] move-to-local success clipId=$clipId storage=cloud',
+    );
   }
 
   Future<void> _ensureLocalClipFileExists(
@@ -508,10 +654,19 @@ class MediaService {
     );
   }
 
+  String _buildDriveFileName(Clip clip, String absPath) {
+    final extension = p.extension(absPath);
+    final safeTitle =
+        clip.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
+    final baseName = safeTitle.isEmpty ? 'clip_${clip.id}' : safeTitle;
+    return 'clip_${clip.id}_$baseName${extension.isEmpty ? '.mp4' : extension}';
+  }
+
   Future<int> getServerStorageUsedBytes() async {
     final rows = await (db.select(db.clips)
           ..where((c) => c.storageMode.equals('server')))
         .get();
-    return rows.fold<int>(0, (totalBytes, clip) => totalBytes + clip.storageBytes);
+    return rows.fold<int>(
+        0, (totalBytes, clip) => totalBytes + clip.storageBytes);
   }
 }

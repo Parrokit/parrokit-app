@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/models/clip_item.dart';
@@ -39,9 +38,8 @@ class ClipListView extends StatelessWidget {
     if (storageMode == 'cloud') return '클라우드';
 
     if (storageMode.startsWith('cloud:')) {
-      final provider = storageMode.split(':').length > 1
-          ? storageMode.split(':')[1]
-          : '';
+      final provider =
+          storageMode.split(':').length > 1 ? storageMode.split(':')[1] : '';
       final providerLabel = switch (provider) {
         'gdrive' => 'Google Drive',
         'icloud' => 'iCloud',
@@ -96,46 +94,10 @@ class ClipListView extends StatelessWidget {
     );
   }
 
-  String? _collectionNameFor(
-    ClipProvider provider,
-    ClipItem item,
-  ) {
-    if (item.clip.collectionId == null) return null;
-    for (final collection in provider.collections) {
-      if (collection.id == item.clip.collectionId) {
-        return collection.name;
-      }
-    }
-    return null;
-  }
-
   Future<void> _refreshClipListAfterStorageChange(
     ClipProvider provider,
   ) async {
     await provider.selectCollection(provider.selectedCollectionId);
-  }
-
-  Future<bool> _applyStorageMode(
-    ClipProvider provider,
-    ClipItem item, {
-    required String storageMode,
-    String? filePath,
-  }) async {
-    final collectionName = _collectionNameFor(provider, item);
-
-    await provider.updateClip(
-      clipId: item.clip.id,
-      collectionName: collectionName,
-      clipTitle: item.clip.title,
-      filePath: filePath ?? item.clip.filePath,
-      durationMs: item.clip.durationMs,
-      segments: item.segments,
-      tags: item.tags.map((tag) => tag.name).toList(),
-      storageMode: storageMode,
-    );
-
-    await _refreshClipListAfterStorageChange(provider);
-    return true;
   }
 
   Future<bool> _moveToLocal(
@@ -160,26 +122,15 @@ class ClipListView extends StatelessWidget {
     return true;
   }
 
-  Future<bool> _pickCloudSourceAndApply(
+  Future<bool> _moveToGoogleDrive(
     ClipProvider provider,
     ClipItem item,
   ) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.video,
-      allowMultiple: false,
-    );
+    final success = await provider.moveClipToGoogleDrive(item.clip.id);
+    if (!success) return false;
 
-    if (result == null || result.files.isEmpty) return false;
-    final picked = result.files.first;
-    final pickedPath = picked.path;
-    if (pickedPath == null || pickedPath.isEmpty) return false;
-
-    return _applyStorageMode(
-      provider,
-      item,
-      storageMode: 'cloud',
-      filePath: pickedPath,
-    );
+    await _refreshClipListAfterStorageChange(provider);
+    return true;
   }
 
   void _showStorageModeSheet(
@@ -316,10 +267,11 @@ class ClipListView extends StatelessWidget {
                       const SizedBox(height: 10),
                       buildOption(
                         icon: Icons.cloud_upload_rounded,
-                        title: '클라우드',
-                        subtitle: '클라우드에 저장하고, 자주 보는 파일은 기기에도 둘 수 있습니다.',
+                        title: 'Google Drive',
+                        subtitle:
+                            '내 Google Drive에 저장하고, 기기에는 빠른 열람용으로 남겨둘 수 있습니다.',
                         iconColor: AppColors.warning,
-                        value: 'cloud',
+                        value: 'cloud:gdrive',
                       ),
                       const SizedBox(height: 18),
                       FilledButton(
@@ -336,7 +288,7 @@ class ClipListView extends StatelessWidget {
                                       provider,
                                       item,
                                     ),
-                                  'cloud' => await _pickCloudSourceAndApply(
+                                  'cloud:gdrive' => await _moveToGoogleDrive(
                                       provider,
                                       item,
                                     ),
@@ -349,11 +301,15 @@ class ClipListView extends StatelessWidget {
                                     showToast('서버에 저장했어요.');
                                   } else if (selectedMode == 'local') {
                                     showToast('로컬로 옮겼어요.');
+                                  } else if (selectedMode == 'cloud:gdrive') {
+                                    showToast('Google Drive에 저장했어요.');
                                   }
                                 } else if (selectedMode == 'server') {
                                   showToast('서버 저장에 실패했어요.');
                                 } else if (selectedMode == 'local') {
                                   showToast('로컬 전환에 실패했어요.');
+                                } else if (selectedMode == 'cloud:gdrive') {
+                                  showToast('Google Drive 저장에 실패했어요.');
                                 }
                               },
                         child: const Text('적용'),

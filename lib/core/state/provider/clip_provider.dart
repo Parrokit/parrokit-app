@@ -65,6 +65,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   int _serverUploadTotal = 0;
   String _serverUploadMessage = '';
   String? _serverUploadError;
+  bool _isCloudUploadRunning = false;
+  int _cloudUploadProgress = 0;
+  int _cloudUploadTotal = 0;
+  String _cloudUploadMessage = '';
+  String? _cloudUploadError;
 
   // ─────────────────────────────────────────────────────────────────
   // Methods
@@ -93,6 +98,13 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   String? get serverUploadError => _serverUploadError;
   bool get shouldShowServerUploadBanner =>
       _isServerUploadRunning || _serverUploadError != null;
+  bool get isCloudUploadRunning => _isCloudUploadRunning;
+  int get cloudUploadProgress => _cloudUploadProgress;
+  int get cloudUploadTotal => _cloudUploadTotal;
+  String get cloudUploadMessage => _cloudUploadMessage;
+  String? get cloudUploadError => _cloudUploadError;
+  bool get shouldShowCloudUploadBanner =>
+      _isCloudUploadRunning || _cloudUploadError != null;
 
   /// 현재 로그인 유저의 collection 메타데이터를 Firestore로 동기화합니다.
   Future<void> syncCollectionDataToServer(
@@ -211,6 +223,58 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
         progress: _serverUploadProgress,
         total: _serverUploadTotal,
         message: 'server 저장 실패',
+        error: e.toString(),
+      );
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  @override
+  Future<bool> moveClipToGoogleDrive(int clipId) async {
+    if (_isCloudUploadRunning) return false;
+
+    _setCloudUploadState(
+      isRunning: true,
+      progress: 0,
+      total: 0,
+      message: 'Google Drive에 올리는 중',
+      error: null,
+    );
+
+    try {
+      await _service.moveClipToGoogleDrive(
+        clipId,
+        onProgress: (current, total, message) {
+          _setCloudUploadState(
+            isRunning: true,
+            progress: current,
+            total: total,
+            message: message,
+            error: null,
+          );
+        },
+      );
+      _setCloudUploadState(
+        isRunning: false,
+        progress: _cloudUploadTotal == 0 ? 0 : _cloudUploadTotal,
+        total: _cloudUploadTotal,
+        message: 'Google Drive 저장 완료',
+        error: null,
+      );
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] move-to-gdrive error clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      _setCloudUploadState(
+        isRunning: false,
+        progress: _cloudUploadProgress,
+        total: _cloudUploadTotal,
+        message: 'Google Drive 저장 실패',
         error: e.toString(),
       );
       return false;
@@ -437,6 +501,35 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     } else if (!isRunning && error != null) {
       AppLogger.w(
         '[Clip][Storage] state=failed progress=$progress total=$total message=$message error=$error',
+      );
+    }
+    notifyListeners();
+  }
+
+  void _setCloudUploadState({
+    required bool isRunning,
+    required int progress,
+    required int total,
+    required String message,
+    required String? error,
+  }) {
+    final wasRunning = _isCloudUploadRunning;
+    _isCloudUploadRunning = isRunning;
+    _cloudUploadProgress = progress;
+    _cloudUploadTotal = total;
+    _cloudUploadMessage = message;
+    _cloudUploadError = error;
+    if (isRunning && !wasRunning) {
+      AppLogger.d(
+        '[Clip][Cloud] state=loading progress=$progress total=$total message=$message',
+      );
+    } else if (!isRunning && error == null) {
+      AppLogger.d(
+        '[Clip][Cloud] state=success progress=$progress total=$total message=$message',
+      );
+    } else if (!isRunning && error != null) {
+      AppLogger.w(
+        '[Clip][Cloud] state=failed progress=$progress total=$total message=$message error=$error',
       );
     }
     notifyListeners();

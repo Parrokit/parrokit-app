@@ -93,7 +93,8 @@ class RemoteStorageSection extends StatelessWidget {
               LinearProgressIndicator(
                 value: progress,
                 minHeight: 8,
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                backgroundColor:
+                    Theme.of(context).colorScheme.surfaceContainerHigh,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   Theme.of(context).colorScheme.secondary,
                 ),
@@ -102,8 +103,8 @@ class RemoteStorageSection extends StatelessWidget {
               _buildRemoteCard(
                 context,
                 icon: Icons.drive_folder_upload_rounded,
-                title: '개인 Cloud',
-                subtitle: 'Google Drive, iCloud 같은 provider를 나중에 연결할 수 있어요.',
+                title: 'Google Drive',
+                subtitle: '클립을 개인 Drive에 저장하는 연결 슬롯입니다.',
                 trailingText: '연결 슬롯',
                 iconColor: Theme.of(context).colorScheme.primary,
                 enabled: false,
