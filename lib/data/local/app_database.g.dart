@@ -199,8 +199,29 @@ class $CollectionsTable extends Collections
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _remoteIdMeta =
+      const VerificationMeta('remoteId');
   @override
-  List<GeneratedColumn> get $columns => [id, name];
+  late final GeneratedColumn<String> remoteId = GeneratedColumn<String>(
+      'remote_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _syncStatusMeta =
+      const VerificationMeta('syncStatus');
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+      'sync_status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _lastSyncedAtMeta =
+      const VerificationMeta('lastSyncedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+      'last_synced_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, name, remoteId, syncStatus, lastSyncedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -220,6 +241,22 @@ class $CollectionsTable extends Collections
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('remote_id')) {
+      context.handle(_remoteIdMeta,
+          remoteId.isAcceptableOrUnknown(data['remote_id']!, _remoteIdMeta));
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+          _syncStatusMeta,
+          syncStatus.isAcceptableOrUnknown(
+              data['sync_status']!, _syncStatusMeta));
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+          _lastSyncedAtMeta,
+          lastSyncedAt.isAcceptableOrUnknown(
+              data['last_synced_at']!, _lastSyncedAtMeta));
+    }
     return context;
   }
 
@@ -233,6 +270,12 @@ class $CollectionsTable extends Collections
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      remoteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}remote_id']),
+      syncStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_status'])!,
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_synced_at']),
     );
   }
 
@@ -245,12 +288,27 @@ class $CollectionsTable extends Collections
 class Collection extends DataClass implements Insertable<Collection> {
   final int id;
   final String name;
-  const Collection({required this.id, required this.name});
+  final String? remoteId;
+  final String syncStatus;
+  final DateTime? lastSyncedAt;
+  const Collection(
+      {required this.id,
+      required this.name,
+      this.remoteId,
+      required this.syncStatus,
+      this.lastSyncedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || remoteId != null) {
+      map['remote_id'] = Variable<String>(remoteId);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
     return map;
   }
 
@@ -258,6 +316,13 @@ class Collection extends DataClass implements Insertable<Collection> {
     return CollectionsCompanion(
       id: Value(id),
       name: Value(name),
+      remoteId: remoteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteId),
+      syncStatus: Value(syncStatus),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
     );
   }
 
@@ -267,6 +332,9 @@ class Collection extends DataClass implements Insertable<Collection> {
     return Collection(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      remoteId: serializer.fromJson<String?>(json['remoteId']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
     );
   }
   @override
@@ -275,17 +343,36 @@ class Collection extends DataClass implements Insertable<Collection> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'remoteId': serializer.toJson<String?>(remoteId),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
     };
   }
 
-  Collection copyWith({int? id, String? name}) => Collection(
+  Collection copyWith(
+          {int? id,
+          String? name,
+          Value<String?> remoteId = const Value.absent(),
+          String? syncStatus,
+          Value<DateTime?> lastSyncedAt = const Value.absent()}) =>
+      Collection(
         id: id ?? this.id,
         name: name ?? this.name,
+        remoteId: remoteId.present ? remoteId.value : this.remoteId,
+        syncStatus: syncStatus ?? this.syncStatus,
+        lastSyncedAt:
+            lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
       );
   Collection copyWithCompanion(CollectionsCompanion data) {
     return Collection(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
+      syncStatus:
+          data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
     );
   }
 
@@ -293,44 +380,75 @@ class Collection extends DataClass implements Insertable<Collection> {
   String toString() {
     return (StringBuffer('Collection(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('remoteId: $remoteId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name);
+  int get hashCode => Object.hash(id, name, remoteId, syncStatus, lastSyncedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Collection && other.id == this.id && other.name == this.name);
+      (other is Collection &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.remoteId == this.remoteId &&
+          other.syncStatus == this.syncStatus &&
+          other.lastSyncedAt == this.lastSyncedAt);
 }
 
 class CollectionsCompanion extends UpdateCompanion<Collection> {
   final Value<int> id;
   final Value<String> name;
+  final Value<String?> remoteId;
+  final Value<String> syncStatus;
+  final Value<DateTime?> lastSyncedAt;
   const CollectionsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.remoteId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
   });
   CollectionsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.remoteId = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Collection> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<String>? remoteId,
+    Expression<String>? syncStatus,
+    Expression<DateTime>? lastSyncedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (remoteId != null) 'remote_id': remoteId,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
     });
   }
 
-  CollectionsCompanion copyWith({Value<int>? id, Value<String>? name}) {
+  CollectionsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String?>? remoteId,
+      Value<String>? syncStatus,
+      Value<DateTime?>? lastSyncedAt}) {
     return CollectionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      remoteId: remoteId ?? this.remoteId,
+      syncStatus: syncStatus ?? this.syncStatus,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
   }
 
@@ -343,6 +461,15 @@ class CollectionsCompanion extends UpdateCompanion<Collection> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (remoteId.present) {
+      map['remote_id'] = Variable<String>(remoteId.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
+    }
     return map;
   }
 
@@ -350,7 +477,10 @@ class CollectionsCompanion extends UpdateCompanion<Collection> {
   String toString() {
     return (StringBuffer('CollectionsCompanion(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('remoteId: $remoteId, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
   }
@@ -390,6 +520,12 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
   late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
       'file_path', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _remoteIdMeta =
+      const VerificationMeta('remoteId');
+  @override
+  late final GeneratedColumn<String> remoteId = GeneratedColumn<String>(
+      'remote_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _storageModeMeta =
       const VerificationMeta('storageMode');
   @override
@@ -412,15 +548,32 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
   late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
       'duration_ms', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _syncStatusMeta =
+      const VerificationMeta('syncStatus');
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+      'sync_status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _lastSyncedAtMeta =
+      const VerificationMeta('lastSyncedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+      'last_synced_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
         collectionId,
         title,
         filePath,
+        remoteId,
         storageMode,
         storageBytes,
-        durationMs
+        durationMs,
+        syncStatus,
+        lastSyncedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -453,11 +606,21 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
     } else if (isInserting) {
       context.missing(_filePathMeta);
     }
+    if (data.containsKey('remote_id')) {
+      context.handle(_remoteIdMeta,
+          remoteId.isAcceptableOrUnknown(data['remote_id']!, _remoteIdMeta));
+    }
     if (data.containsKey('storage_mode')) {
       context.handle(
           _storageModeMeta,
           storageMode.isAcceptableOrUnknown(
               data['storage_mode']!, _storageModeMeta));
+    }
+    if (data.containsKey('storage_bytes')) {
+      context.handle(
+          _storageBytesMeta,
+          storageBytes.isAcceptableOrUnknown(
+              data['storage_bytes']!, _storageBytesMeta));
     }
     if (data.containsKey('duration_ms')) {
       context.handle(
@@ -467,11 +630,17 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
     } else if (isInserting) {
       context.missing(_durationMsMeta);
     }
-    if (data.containsKey('storage_bytes')) {
+    if (data.containsKey('sync_status')) {
       context.handle(
-          _storageBytesMeta,
-          storageBytes.isAcceptableOrUnknown(
-              data['storage_bytes']!, _storageBytesMeta));
+          _syncStatusMeta,
+          syncStatus.isAcceptableOrUnknown(
+              data['sync_status']!, _syncStatusMeta));
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+          _lastSyncedAtMeta,
+          lastSyncedAt.isAcceptableOrUnknown(
+              data['last_synced_at']!, _lastSyncedAtMeta));
     }
     return context;
   }
@@ -490,12 +659,18 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
           .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
       filePath: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}file_path'])!,
+      remoteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}remote_id']),
       storageMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}storage_mode'])!,
       storageBytes: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}storage_bytes'])!,
       durationMs: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}duration_ms'])!,
+      syncStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_status'])!,
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_synced_at']),
     );
   }
 
@@ -510,17 +685,23 @@ class Clip extends DataClass implements Insertable<Clip> {
   final int? collectionId;
   final String title;
   final String filePath;
+  final String? remoteId;
   final String storageMode;
   final int storageBytes;
   final int durationMs;
+  final String syncStatus;
+  final DateTime? lastSyncedAt;
   const Clip(
       {required this.id,
       this.collectionId,
       required this.title,
       required this.filePath,
+      this.remoteId,
       required this.storageMode,
       required this.storageBytes,
-      required this.durationMs});
+      required this.durationMs,
+      required this.syncStatus,
+      this.lastSyncedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -530,9 +711,16 @@ class Clip extends DataClass implements Insertable<Clip> {
     }
     map['title'] = Variable<String>(title);
     map['file_path'] = Variable<String>(filePath);
+    if (!nullToAbsent || remoteId != null) {
+      map['remote_id'] = Variable<String>(remoteId);
+    }
     map['storage_mode'] = Variable<String>(storageMode);
     map['storage_bytes'] = Variable<int>(storageBytes);
     map['duration_ms'] = Variable<int>(durationMs);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
     return map;
   }
 
@@ -544,9 +732,16 @@ class Clip extends DataClass implements Insertable<Clip> {
           : Value(collectionId),
       title: Value(title),
       filePath: Value(filePath),
+      remoteId: remoteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteId),
       storageMode: Value(storageMode),
       storageBytes: Value(storageBytes),
       durationMs: Value(durationMs),
+      syncStatus: Value(syncStatus),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
     );
   }
 
@@ -558,9 +753,12 @@ class Clip extends DataClass implements Insertable<Clip> {
       collectionId: serializer.fromJson<int?>(json['collectionId']),
       title: serializer.fromJson<String>(json['title']),
       filePath: serializer.fromJson<String>(json['filePath']),
-      storageMode: serializer.fromJson<String?>(json['storageMode']) ?? 'local',
+      remoteId: serializer.fromJson<String?>(json['remoteId']),
+      storageMode: serializer.fromJson<String>(json['storageMode']),
       storageBytes: serializer.fromJson<int>(json['storageBytes']),
       durationMs: serializer.fromJson<int>(json['durationMs']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
     );
   }
   @override
@@ -571,9 +769,12 @@ class Clip extends DataClass implements Insertable<Clip> {
       'collectionId': serializer.toJson<int?>(collectionId),
       'title': serializer.toJson<String>(title),
       'filePath': serializer.toJson<String>(filePath),
+      'remoteId': serializer.toJson<String?>(remoteId),
       'storageMode': serializer.toJson<String>(storageMode),
       'storageBytes': serializer.toJson<int>(storageBytes),
       'durationMs': serializer.toJson<int>(durationMs),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
     };
   }
 
@@ -582,18 +783,25 @@ class Clip extends DataClass implements Insertable<Clip> {
           Value<int?> collectionId = const Value.absent(),
           String? title,
           String? filePath,
+          Value<String?> remoteId = const Value.absent(),
           String? storageMode,
           int? storageBytes,
-          int? durationMs}) =>
+          int? durationMs,
+          String? syncStatus,
+          Value<DateTime?> lastSyncedAt = const Value.absent()}) =>
       Clip(
         id: id ?? this.id,
         collectionId:
             collectionId.present ? collectionId.value : this.collectionId,
         title: title ?? this.title,
         filePath: filePath ?? this.filePath,
+        remoteId: remoteId.present ? remoteId.value : this.remoteId,
         storageMode: storageMode ?? this.storageMode,
         storageBytes: storageBytes ?? this.storageBytes,
         durationMs: durationMs ?? this.durationMs,
+        syncStatus: syncStatus ?? this.syncStatus,
+        lastSyncedAt:
+            lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
       );
   Clip copyWithCompanion(ClipsCompanion data) {
     return Clip(
@@ -603,6 +811,7 @@ class Clip extends DataClass implements Insertable<Clip> {
           : this.collectionId,
       title: data.title.present ? data.title.value : this.title,
       filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
       storageMode:
           data.storageMode.present ? data.storageMode.value : this.storageMode,
       storageBytes: data.storageBytes.present
@@ -610,6 +819,11 @@ class Clip extends DataClass implements Insertable<Clip> {
           : this.storageBytes,
       durationMs:
           data.durationMs.present ? data.durationMs.value : this.durationMs,
+      syncStatus:
+          data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
     );
   }
 
@@ -620,16 +834,19 @@ class Clip extends DataClass implements Insertable<Clip> {
           ..write('collectionId: $collectionId, ')
           ..write('title: $title, ')
           ..write('filePath: $filePath, ')
+          ..write('remoteId: $remoteId, ')
           ..write('storageMode: $storageMode, ')
           ..write('storageBytes: $storageBytes, ')
-          ..write('durationMs: $durationMs')
+          ..write('durationMs: $durationMs, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, collectionId, title, filePath, storageMode, storageBytes, durationMs);
+  int get hashCode => Object.hash(id, collectionId, title, filePath, remoteId,
+      storageMode, storageBytes, durationMs, syncStatus, lastSyncedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -638,9 +855,12 @@ class Clip extends DataClass implements Insertable<Clip> {
           other.collectionId == this.collectionId &&
           other.title == this.title &&
           other.filePath == this.filePath &&
+          other.remoteId == this.remoteId &&
           other.storageMode == this.storageMode &&
           other.storageBytes == this.storageBytes &&
-          other.durationMs == this.durationMs);
+          other.durationMs == this.durationMs &&
+          other.syncStatus == this.syncStatus &&
+          other.lastSyncedAt == this.lastSyncedAt);
 }
 
 class ClipsCompanion extends UpdateCompanion<Clip> {
@@ -648,26 +868,35 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
   final Value<int?> collectionId;
   final Value<String> title;
   final Value<String> filePath;
+  final Value<String?> remoteId;
   final Value<String> storageMode;
   final Value<int> storageBytes;
   final Value<int> durationMs;
+  final Value<String> syncStatus;
+  final Value<DateTime?> lastSyncedAt;
   const ClipsCompanion({
     this.id = const Value.absent(),
     this.collectionId = const Value.absent(),
     this.title = const Value.absent(),
     this.filePath = const Value.absent(),
+    this.remoteId = const Value.absent(),
     this.storageMode = const Value.absent(),
     this.storageBytes = const Value.absent(),
     this.durationMs = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
   });
   ClipsCompanion.insert({
     this.id = const Value.absent(),
     this.collectionId = const Value.absent(),
     required String title,
     required String filePath,
+    this.remoteId = const Value.absent(),
     this.storageMode = const Value.absent(),
     this.storageBytes = const Value.absent(),
     required int durationMs,
+    this.syncStatus = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
   })  : title = Value(title),
         filePath = Value(filePath),
         durationMs = Value(durationMs);
@@ -676,18 +905,24 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     Expression<int>? collectionId,
     Expression<String>? title,
     Expression<String>? filePath,
+    Expression<String>? remoteId,
     Expression<String>? storageMode,
     Expression<int>? storageBytes,
     Expression<int>? durationMs,
+    Expression<String>? syncStatus,
+    Expression<DateTime>? lastSyncedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (collectionId != null) 'collection_id': collectionId,
       if (title != null) 'title': title,
       if (filePath != null) 'file_path': filePath,
+      if (remoteId != null) 'remote_id': remoteId,
       if (storageMode != null) 'storage_mode': storageMode,
       if (storageBytes != null) 'storage_bytes': storageBytes,
       if (durationMs != null) 'duration_ms': durationMs,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
     });
   }
 
@@ -696,17 +931,23 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       Value<int?>? collectionId,
       Value<String>? title,
       Value<String>? filePath,
+      Value<String?>? remoteId,
       Value<String>? storageMode,
       Value<int>? storageBytes,
-      Value<int>? durationMs}) {
+      Value<int>? durationMs,
+      Value<String>? syncStatus,
+      Value<DateTime?>? lastSyncedAt}) {
     return ClipsCompanion(
       id: id ?? this.id,
       collectionId: collectionId ?? this.collectionId,
       title: title ?? this.title,
       filePath: filePath ?? this.filePath,
+      remoteId: remoteId ?? this.remoteId,
       storageMode: storageMode ?? this.storageMode,
       storageBytes: storageBytes ?? this.storageBytes,
       durationMs: durationMs ?? this.durationMs,
+      syncStatus: syncStatus ?? this.syncStatus,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
   }
 
@@ -725,6 +966,9 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     if (filePath.present) {
       map['file_path'] = Variable<String>(filePath.value);
     }
+    if (remoteId.present) {
+      map['remote_id'] = Variable<String>(remoteId.value);
+    }
     if (storageMode.present) {
       map['storage_mode'] = Variable<String>(storageMode.value);
     }
@@ -733,6 +977,12 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     }
     if (durationMs.present) {
       map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
     }
     return map;
   }
@@ -744,9 +994,12 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
           ..write('collectionId: $collectionId, ')
           ..write('title: $title, ')
           ..write('filePath: $filePath, ')
+          ..write('remoteId: $remoteId, ')
           ..write('storageMode: $storageMode, ')
           ..write('storageBytes: $storageBytes, ')
-          ..write('durationMs: $durationMs')
+          ..write('durationMs: $durationMs, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
   }
@@ -2144,11 +2397,17 @@ typedef $$CollectionsTableCreateCompanionBuilder = CollectionsCompanion
     Function({
   Value<int> id,
   required String name,
+  Value<String?> remoteId,
+  Value<String> syncStatus,
+  Value<DateTime?> lastSyncedAt,
 });
 typedef $$CollectionsTableUpdateCompanionBuilder = CollectionsCompanion
     Function({
   Value<int> id,
   Value<String> name,
+  Value<String?> remoteId,
+  Value<String> syncStatus,
+  Value<DateTime?> lastSyncedAt,
 });
 
 final class $$CollectionsTableReferences
@@ -2202,6 +2461,15 @@ class $$CollectionsTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt, builder: (column) => ColumnFilters(column));
 
   Expression<bool> clipsRefs(
       Expression<bool> Function($$ClipsTableFilterComposer f) f) {
@@ -2260,6 +2528,16 @@ class $$CollectionsTableOrderingComposer
 
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$CollectionsTableAnnotationComposer
@@ -2276,6 +2554,15 @@ class $$CollectionsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get remoteId =>
+      $composableBuilder(column: $table.remoteId, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt, builder: (column) => column);
 
   Expression<T> clipsRefs<T extends Object>(
       Expression<T> Function($$ClipsTableAnnotationComposer a) f) {
@@ -2345,18 +2632,30 @@ class $$CollectionsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String?> remoteId = const Value.absent(),
+            Value<String> syncStatus = const Value.absent(),
+            Value<DateTime?> lastSyncedAt = const Value.absent(),
           }) =>
               CollectionsCompanion(
             id: id,
             name: name,
+            remoteId: remoteId,
+            syncStatus: syncStatus,
+            lastSyncedAt: lastSyncedAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
+            Value<String?> remoteId = const Value.absent(),
+            Value<String> syncStatus = const Value.absent(),
+            Value<DateTime?> lastSyncedAt = const Value.absent(),
           }) =>
               CollectionsCompanion.insert(
             id: id,
             name: name,
+            remoteId: remoteId,
+            syncStatus: syncStatus,
+            lastSyncedAt: lastSyncedAt,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
@@ -2425,18 +2724,24 @@ typedef $$ClipsTableCreateCompanionBuilder = ClipsCompanion Function({
   Value<int?> collectionId,
   required String title,
   required String filePath,
+  Value<String?> remoteId,
   Value<String> storageMode,
   Value<int> storageBytes,
   required int durationMs,
+  Value<String> syncStatus,
+  Value<DateTime?> lastSyncedAt,
 });
 typedef $$ClipsTableUpdateCompanionBuilder = ClipsCompanion Function({
   Value<int> id,
   Value<int?> collectionId,
   Value<String> title,
   Value<String> filePath,
+  Value<String?> remoteId,
   Value<String> storageMode,
   Value<int> storageBytes,
   Value<int> durationMs,
+  Value<String> syncStatus,
+  Value<DateTime?> lastSyncedAt,
 });
 
 final class $$ClipsTableReferences
@@ -2521,11 +2826,23 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
   ColumnFilters<String> get filePath => $composableBuilder(
       column: $table.filePath, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<int> get storageBytes => $composableBuilder(
       column: $table.storageBytes, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt, builder: (column) => ColumnFilters(column));
 
   $$CollectionsTableFilterComposer get collectionId {
     final $$CollectionsTableFilterComposer composer = $composerBuilder(
@@ -2629,12 +2946,25 @@ class $$ClipsTableOrderingComposer
   ColumnOrderings<String> get filePath => $composableBuilder(
       column: $table.filePath, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get storageBytes => $composableBuilder(
       column: $table.storageBytes,
       builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt,
+      builder: (column) => ColumnOrderings(column));
 
   $$CollectionsTableOrderingComposer get collectionId {
     final $$CollectionsTableOrderingComposer composer = $composerBuilder(
@@ -2675,11 +3005,23 @@ class $$ClipsTableAnnotationComposer
   GeneratedColumn<String> get filePath =>
       $composableBuilder(column: $table.filePath, builder: (column) => column);
 
+  GeneratedColumn<String> get remoteId =>
+      $composableBuilder(column: $table.remoteId, builder: (column) => column);
+
+  GeneratedColumn<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => column);
+
   GeneratedColumn<int> get storageBytes => $composableBuilder(
       column: $table.storageBytes, builder: (column) => column);
 
   GeneratedColumn<int> get durationMs => $composableBuilder(
       column: $table.durationMs, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt, builder: (column) => column);
 
   $$CollectionsTableAnnotationComposer get collectionId {
     final $$CollectionsTableAnnotationComposer composer = $composerBuilder(
@@ -2796,36 +3138,48 @@ class $$ClipsTableTableManager extends RootTableManager<
             Value<int?> collectionId = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String> filePath = const Value.absent(),
+            Value<String?> remoteId = const Value.absent(),
             Value<String> storageMode = const Value.absent(),
             Value<int> storageBytes = const Value.absent(),
             Value<int> durationMs = const Value.absent(),
+            Value<String> syncStatus = const Value.absent(),
+            Value<DateTime?> lastSyncedAt = const Value.absent(),
           }) =>
               ClipsCompanion(
             id: id,
             collectionId: collectionId,
             title: title,
             filePath: filePath,
+            remoteId: remoteId,
             storageMode: storageMode,
             storageBytes: storageBytes,
             durationMs: durationMs,
+            syncStatus: syncStatus,
+            lastSyncedAt: lastSyncedAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<int?> collectionId = const Value.absent(),
             required String title,
             required String filePath,
+            Value<String?> remoteId = const Value.absent(),
             Value<String> storageMode = const Value.absent(),
             Value<int> storageBytes = const Value.absent(),
             required int durationMs,
+            Value<String> syncStatus = const Value.absent(),
+            Value<DateTime?> lastSyncedAt = const Value.absent(),
           }) =>
               ClipsCompanion.insert(
             id: id,
             collectionId: collectionId,
             title: title,
             filePath: filePath,
+            remoteId: remoteId,
             storageMode: storageMode,
             storageBytes: storageBytes,
             durationMs: durationMs,
+            syncStatus: syncStatus,
+            lastSyncedAt: lastSyncedAt,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>

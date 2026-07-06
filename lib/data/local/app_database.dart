@@ -20,6 +20,7 @@ import 'dao/groups_dao.dart';
 import 'migrations/migration_v2_to_v3.dart';
 import 'migrations/migration_v3_to_v4.dart';
 import 'migrations/migration_v4_to_v5.dart';
+import 'migrations/migration_v5_to_v6.dart';
 
 part 'app_database.g.dart';
 
@@ -43,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_open());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +66,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 5) {
             await migrateV4ToV5(m, this);
+          }
+          if (from < 6) {
+            await migrateV5ToV6(m, this);
           }
         },
         beforeOpen: (details) async {

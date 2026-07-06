@@ -26,7 +26,7 @@ class CollectionsDao extends DatabaseAccessor<AppDatabase>
     if (existing != null) return existing;
     final id = await into(collections)
         .insert(CollectionsCompanion.insert(name: name));
-    return Collection(id: id, name: name);
+    return (select(collections)..where((c) => c.id.equals(id))).getSingle();
   }
 
   // All collection names (for autocomplete)
