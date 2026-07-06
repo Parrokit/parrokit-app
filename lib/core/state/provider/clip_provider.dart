@@ -9,8 +9,6 @@
 // Core > State > Provider
 // ============================================================================
 
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -19,6 +17,7 @@ import 'package:drift/drift.dart';
 import '../../../data/models/clip_view.dart';
 import '../../../../data/models/clip_item.dart';
 
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/infrastructure/services/media_service.dart';
 import 'package:parrokit/core/infrastructure/services/firebase/collection_sync_service.dart';
 import 'mixins/clip_tag_mixin.dart';
@@ -56,6 +55,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   List<Clip> clips = [];
   Map<int, List<Tag>> tagsByClip = {};
   int serverStorageUsedBytes = 0;
+  bool _isCollectionBackfilling = false;
+  int _collectionBackfillProgress = 0;
+  int _collectionBackfillTotal = 0;
+  String _collectionBackfillMessage = '';
+  String? _collectionBackfillError;
 
   // ─────────────────────────────────────────────────────────────────
   // Methods
@@ -70,10 +74,85 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     serverStorageUsedBytes = await _service.getServerStorageUsedBytes();
   }
 
+  bool get isCollectionBackfilling => _isCollectionBackfilling;
+  int get collectionBackfillProgress => _collectionBackfillProgress;
+  int get collectionBackfillTotal => _collectionBackfillTotal;
+  String get collectionBackfillMessage => _collectionBackfillMessage;
+  String? get collectionBackfillError => _collectionBackfillError;
+  bool get shouldShowCollectionBackfillBanner =>
+      _isCollectionBackfilling || _collectionBackfillError != null;
+
   /// 현재 로그인 유저의 collection 메타데이터를 Firestore로 동기화합니다.
-  Future<void> syncCollectionDataToServer(String uid) async {
-    await _collectionSyncService.syncCollectionData(uid: uid);
-    notifyListeners();
+  Future<void> syncCollectionDataToServer(
+    String uid, {
+    bool force = false,
+  }) async {
+    if (_isCollectionBackfilling) return;
+
+    AppLogger.d(
+      '[Collection][Backfill] check uid=${_maskUid(uid)} force=$force',
+    );
+    try {
+      final shouldRun =
+          force || await _collectionSyncService.needsInitialBackfill(uid);
+      if (!shouldRun) {
+        AppLogger.i(
+          '[Collection][Backfill] skip no-pending uid=${_maskUid(uid)}',
+        );
+        return;
+      }
+
+      _setCollectionBackfillState(
+        isBackfilling: true,
+        progress: 0,
+        total: 0,
+        message: 'collection 백필 준비 중',
+        error: null,
+      );
+      AppLogger.i(
+        '[Collection][Backfill] running uid=${_maskUid(uid)}',
+      );
+
+      await _collectionSyncService.syncCollectionData(
+        uid: uid,
+        force: force,
+        onProgress: (current, total, message) {
+          _setCollectionBackfillState(
+            isBackfilling: true,
+            progress: current,
+            total: total,
+            message: message,
+            error: null,
+          );
+        },
+      );
+      AppLogger.i(
+        '[Collection][Backfill] complete uid=${_maskUid(uid)}',
+      );
+      _setCollectionBackfillState(
+        isBackfilling: false,
+        progress: _collectionBackfillTotal == 0 ? 0 : _collectionBackfillTotal,
+        total: _collectionBackfillTotal,
+        message: 'collection 백필 완료',
+        error: null,
+      );
+    } catch (e, st) {
+      AppLogger.e(
+        '[Collection][Backfill] error uid=${_maskUid(uid)}',
+        error: e,
+        stackTrace: st,
+      );
+      _setCollectionBackfillState(
+        isBackfilling: false,
+        progress: _collectionBackfillProgress,
+        total: _collectionBackfillTotal,
+        message: 'collection 백필 실패',
+        error: e.toString(),
+      );
+      rethrow;
+    } finally {
+      notifyListeners();
+    }
   }
 
   /// 모든 그룹 로드.
@@ -239,6 +318,40 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     clipItems = [];
     tagsByClip = {};
     loadGroups();
+  }
+
+  void _setCollectionBackfillState({
+    required bool isBackfilling,
+    required int progress,
+    required int total,
+    required String message,
+    required String? error,
+  }) {
+    final wasBackfilling = _isCollectionBackfilling;
+    _isCollectionBackfilling = isBackfilling;
+    _collectionBackfillProgress = progress;
+    _collectionBackfillTotal = total;
+    _collectionBackfillMessage = message;
+    _collectionBackfillError = error;
+    if (isBackfilling && !wasBackfilling) {
+      AppLogger.d(
+        '[Collection][Backfill] state=loading progress=$progress total=$total message=$message',
+      );
+    } else if (!isBackfilling && error == null) {
+      AppLogger.d(
+        '[Collection][Backfill] state=success progress=$progress total=$total message=$message',
+      );
+    } else if (!isBackfilling && error != null) {
+      AppLogger.w(
+        '[Collection][Backfill] state=failed progress=$progress total=$total message=$message error=$error',
+      );
+    }
+    notifyListeners();
+  }
+
+  String _maskUid(String uid) {
+    if (uid.length <= 4) return '****';
+    return '***${uid.substring(uid.length - 4)}';
   }
 
   // ─────────────────────────────────────────────────────────────────
