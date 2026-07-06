@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:io';
 
 import 'package:google_sign_in/google_sign_in.dart';
@@ -64,13 +65,22 @@ class GoogleDriveStorageService {
     required int durationMs,
     GoogleDriveProgressCallback? onProgress,
   }) async {
+    AppLogger.i(
+        '[GoogleDrive][Upload] connect-start file=${_maskFileName(fileName)}');
     final account = await connect();
     if (account == null) {
       throw StateError('Google Drive 연결이 필요합니다.');
     }
+    AppLogger.i(
+      '[GoogleDrive][Upload] connect-done account=${_maskAccount(account)}',
+    );
 
+    AppLogger.d('[GoogleDrive][Upload] auth-start');
     final headers = await _authorizationHeaders(account);
+    AppLogger.d('[GoogleDrive][Upload] auth-done');
+    AppLogger.d('[GoogleDrive][Upload] folder-ensure-start');
     final folderId = await _ensureAppFolder(account, headers);
+    AppLogger.d('[GoogleDrive][Upload] folder-ensure-done folderId=$folderId');
     onProgress?.call(0, 0, 'Google Drive 연결 확인 중');
 
     final uploadUri = Uri.https(
@@ -81,11 +91,10 @@ class GoogleDriveStorageService {
         'fields': 'id,name,webViewLink,webContentLink,parents',
       },
     );
-    final boundary = 'parrokit-${DateTime.now().microsecondsSinceEpoch}';
+    final boundary =
+        'parrokit-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1 << 32)}';
     final mimeType = lookupMimeType(file.path) ?? 'application/octet-stream';
-    final request = http.StreamedRequest('POST', uploadUri);
-    request.headers.addAll(headers);
-    request.headers['Content-Type'] = 'multipart/related; boundary="$boundary"';
+    final totalBytes = await file.length();
 
     final metadata = <String, dynamic>{
       'name': fileName,
@@ -99,25 +108,56 @@ class GoogleDriveStorageService {
       },
     };
 
-    request.sink.addUtf8('--$boundary\r\n');
-    request.sink.addUtf8(
-      'Content-Type: application/json; charset=UTF-8\r\n\r\n',
-    );
-    request.sink.addUtf8('${jsonEncode(metadata)}\r\n');
-    request.sink.addUtf8('--$boundary\r\n');
-    request.sink.addUtf8('Content-Type: $mimeType\r\n\r\n');
-    request.sink.add(await file.readAsBytes());
-    request.sink.addUtf8('\r\n--$boundary--');
-    await request.sink.close();
-
-    final client = http.Client();
+    final client = HttpClient();
     try {
       AppLogger.i(
         '[GoogleDrive][Upload] start file=${_maskFileName(fileName)} folderId=$folderId',
       );
-      onProgress?.call(0, 0, 'Google Drive에 저장하는 중');
-      final response = await client.send(request);
-      final responseBody = await response.stream.bytesToString();
+      onProgress?.call(0, totalBytes, 'Google Drive에 저장하는 중');
+      AppLogger.d('[GoogleDrive][Upload] request-open-start');
+      final request = await client.postUrl(uploadUri);
+      AppLogger.d('[GoogleDrive][Upload] request-open-done');
+      headers.forEach((key, value) {
+        request.headers.set(key, value);
+      });
+      request.headers.set(
+        HttpHeaders.contentTypeHeader,
+        'multipart/related; boundary="$boundary"',
+      );
+      AppLogger.d('[GoogleDrive][Upload] request-body-write-start');
+      request.write('--$boundary\r\n');
+      request.write('Content-Type: application/json; charset=UTF-8\r\n\r\n');
+      request.write('${jsonEncode(metadata)}\r\n');
+      request.write('--$boundary\r\n');
+      request.write('Content-Type: $mimeType\r\n\r\n');
+      AppLogger.d(
+        '[GoogleDrive][Upload] file-stream-start totalBytes=$totalBytes',
+      );
+      var sentBytes = 0;
+      var lastLoggedPercent = -1;
+      await for (final chunk in file.openRead()) {
+        request.add(chunk);
+        sentBytes += chunk.length;
+        final percent =
+            totalBytes == 0 ? 100 : ((sentBytes / totalBytes) * 100).floor();
+        if (percent != lastLoggedPercent && percent % 10 == 0) {
+          lastLoggedPercent = percent;
+          AppLogger.d(
+            '[GoogleDrive][Upload] file-stream-progress sent=$sentBytes total=$totalBytes percent=$percent',
+          );
+        }
+        onProgress?.call(sentBytes, totalBytes, 'Google Drive에 올리는 중');
+      }
+      AppLogger.d(
+        '[GoogleDrive][Upload] file-stream-done sentBytes=$sentBytes',
+      );
+      request.write('\r\n--$boundary--');
+      AppLogger.d('[GoogleDrive][Upload] request-close-start');
+      final response = await request.close();
+      AppLogger.d(
+        '[GoogleDrive][Upload] request-close-done status=${response.statusCode}',
+      );
+      final responseBody = await utf8.decodeStream(response);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw StateError(
           'Google Drive 업로드 실패: ${response.statusCode} $responseBody',
@@ -143,7 +183,7 @@ class GoogleDriveStorageService {
       );
       return result;
     } finally {
-      client.close();
+      client.close(force: true);
     }
   }
 
@@ -152,12 +192,18 @@ class GoogleDriveStorageService {
     required File destination,
     GoogleDriveProgressCallback? onProgress,
   }) async {
+    AppLogger.i('[GoogleDrive][Download] connect-start fileId=$fileId');
     final account = await connect();
     if (account == null) {
       throw StateError('Google Drive 연결이 필요합니다.');
     }
+    AppLogger.i(
+      '[GoogleDrive][Download] connect-done account=${_maskAccount(account)}',
+    );
 
+    AppLogger.d('[GoogleDrive][Download] auth-start');
     final headers = await _authorizationHeaders(account);
+    AppLogger.d('[GoogleDrive][Download] auth-done');
     final client = http.Client();
     try {
       final downloadUri = Uri.https(
@@ -192,12 +238,18 @@ class GoogleDriveStorageService {
   }
 
   Future<void> deleteFile(String fileId) async {
+    AppLogger.i('[GoogleDrive][Delete] connect-start fileId=$fileId');
     final account = await connect();
     if (account == null) {
       throw StateError('Google Drive 연결이 필요합니다.');
     }
+    AppLogger.i(
+      '[GoogleDrive][Delete] connect-done account=${_maskAccount(account)}',
+    );
 
+    AppLogger.d('[GoogleDrive][Delete] auth-start');
     final headers = await _authorizationHeaders(account);
+    AppLogger.d('[GoogleDrive][Delete] auth-done');
     final client = http.Client();
     try {
       final deleteUri = Uri.https(
@@ -220,12 +272,17 @@ class GoogleDriveStorageService {
   }
 
   Future<Map<String, dynamic>?> fetchFileMetadata(String fileId) async {
+    AppLogger.d('[GoogleDrive][Meta] connect-start fileId=$fileId');
     final account = await connect();
     if (account == null) {
       throw StateError('Google Drive 연결이 필요합니다.');
     }
+    AppLogger.d(
+        '[GoogleDrive][Meta] connect-done account=${_maskAccount(account)}');
 
+    AppLogger.d('[GoogleDrive][Meta] auth-start');
     final headers = await _authorizationHeaders(account);
+    AppLogger.d('[GoogleDrive][Meta] auth-done');
     final client = http.Client();
     try {
       final uri = Uri.https(
@@ -256,6 +313,9 @@ class GoogleDriveStorageService {
     final cacheKey = '${_folderCacheKeyPrefix}_${_accountKey(account)}';
     final cachedFolderId = prefs.getString(cacheKey);
     if (cachedFolderId != null && cachedFolderId.isNotEmpty) {
+      AppLogger.d(
+        '[GoogleDrive][Folder] cache-hit account=${_maskAccount(account)} folderId=$cachedFolderId',
+      );
       final metadata = await fetchFileMetadata(cachedFolderId);
       if (metadata != null &&
           metadata['mimeType'] == 'application/vnd.google-apps.folder' &&
@@ -266,6 +326,9 @@ class GoogleDriveStorageService {
 
     final client = http.Client();
     try {
+      AppLogger.d(
+        '[GoogleDrive][Folder] create-start account=${_maskAccount(account)}',
+      );
       final createUri = Uri.https(
         'www.googleapis.com',
         '/drive/v3/files',
@@ -341,8 +404,4 @@ class GoogleDriveStorageService {
     if (fileName.length <= 12) return fileName;
     return '${fileName.substring(0, 8)}...${fileName.substring(fileName.length - 4)}';
   }
-}
-
-extension on StreamSink<List<int>> {
-  void addUtf8(String value) => add(utf8.encode(value));
 }
