@@ -9,12 +9,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
-import 'package:parrokit/core/app/router/app_router.dart';
 import 'package:parrokit/core/state/provider/clip_provider.dart';
-import 'package:parrokit/features/collection/library/presentation/widgets/clip_list_view.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
 
@@ -96,11 +93,10 @@ class _RemoteStorageSectionState extends State<RemoteStorageSection> {
     required String usageText,
     required Color color,
     double? progress,
-    VoidCallback? onTap,
   }) {
     final cs = Theme.of(context).colorScheme;
 
-    final content = Container(
+    return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
@@ -154,17 +150,6 @@ class _RemoteStorageSectionState extends State<RemoteStorageSection> {
                 ),
           ),
         ],
-      ),
-    );
-
-    if (onTap == null) return content;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: content,
       ),
     );
   }
@@ -319,115 +304,6 @@ class _RemoteStorageSectionState extends State<RemoteStorageSection> {
     );
   }
 
-  Future<void> _showLocalCacheManager(BuildContext context) async {
-    final provider = context.read<ClipProvider>();
-    final localItemsFuture = provider.fetchClipItemsByStorageMode('local');
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        return DraggableScrollableSheet(
-          initialChildSize: 0.9,
-          minChildSize: 0.6,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 42,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.outlineVariant,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '기기 보관 항목 관리',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '자주 보는 동영상은 이 기기에 남겨 두면 바로 재생할 수 있습니다. 원하면 직접 옮기고 지울 수 있어요.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: FutureBuilder(
-                          future: localItemsFuture,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            if (snapshot.hasError) {
-                              return Center(
-                                child: Text(
-                                  '기기 보관 목록을 불러오지 못했어요.',
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                              );
-                            }
-
-                            final items = snapshot.data ?? const [];
-                            if (items.isEmpty) {
-                              return Center(
-                                child: Text(
-                                  '기기에 남아 있는 동영상이 없습니다.',
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                              );
-                            }
-
-                            return ClipListView(
-                              items: items,
-                              onOpen: (item) {
-                                context.pushNamed(
-                                  AppRoutes.clipsPlay,
-                                  queryParameters: {
-                                    'clipId': '${item.clip.id}',
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildLegendChip(
     BuildContext context, {
     required String label,
@@ -474,11 +350,10 @@ class _RemoteStorageSectionState extends State<RemoteStorageSection> {
                 _buildUsageCard(
                   context,
                   icon: Icons.phone_android_rounded,
-                  title: '기기 보관',
-                  subtitle: '자주 보는 동영상은 이 기기에 남겨 바로 재생합니다. 필요하면 직접 관리할 수 있어요.',
+                  title: '로컬',
+                  subtitle: '이 기기에 남아 있어 오프라인에서도 바로 열 수 있는 파일입니다.',
                   usageText: _formatBytes(localUsed),
                   color: Theme.of(context).colorScheme.tertiary,
-                  onTap: () => _showLocalCacheManager(context),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _buildUsageCard(
