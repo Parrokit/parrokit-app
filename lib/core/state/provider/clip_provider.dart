@@ -56,6 +56,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   Map<int, List<Tag>> tagsByClip = {};
   int serverStorageUsedBytes = 0;
   int localStorageUsedBytes = 0;
+  int googleDriveUsedBytes = 0;
   int cloudStorageUsedBytes = 0;
   int? cloudStorageQuotaBytes;
   bool _isCollectionBackfilling = false;
@@ -94,8 +95,10 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
     try {
       final quota = await _service.getGoogleDriveStorageQuota();
+      googleDriveUsedBytes = quota?.usedBytes ?? 0;
       cloudStorageQuotaBytes = quota?.limitBytes;
     } catch (_) {
+      googleDriveUsedBytes = 0;
       cloudStorageQuotaBytes = null;
     }
   }

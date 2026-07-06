@@ -10,6 +10,8 @@
 //
 // ============================================================================
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
@@ -265,24 +267,170 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   Widget _buildCloudStorageSummary(BuildContext context) {
     final clipProvider = context.watch<ClipProvider>();
     final quota = clipProvider.cloudStorageQuotaBytes;
-    final used = clipProvider.cloudStorageUsedBytes;
+    final used = clipProvider.googleDriveUsedBytes;
+    final parrokitUsed = clipProvider.cloudStorageUsedBytes;
     final hasQuota = quota != null && quota > 0;
-    final progress = hasQuota ? (used / quota).clamp(0.0, 1.0) : null;
+    final otherUsed = math.max(used - parrokitUsed, 0);
+    final remaining = hasQuota ? math.max(quota - used, 0) : 0;
+    final segments = hasQuota
+        ? <_StorageSegment>[
+            _StorageSegment(
+              value: otherUsed,
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+            ),
+            _StorageSegment(
+              value: parrokitUsed,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            _StorageSegment(
+              value: remaining,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+          ]
+        : <_StorageSegment>[
+            _StorageSegment(
+              value: otherUsed,
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+            ),
+            _StorageSegment(
+              value: parrokitUsed,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ];
+    final cs = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-      child: _buildUsageCard(
-        context,
-        icon: Icons.cloud_queue_rounded,
-        title: 'Google Drive 저장 용량',
-        usageText: hasQuota
-            ? '${_formatBytes(used)} / ${_formatBytes(quota)}'
-            : _formatBytes(used),
-        description: hasQuota
-            ? '개인 Drive에 저장된 클립 용량입니다.'
-            : '개인 Drive에 저장된 클립 용량입니다. Drive 상한은 아직 가져오지 못했어요.',
-        color: Theme.of(context).colorScheme.primary,
-        progress: progress,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: cs.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.cloud_queue_rounded, size: 18, color: cs.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Google Drive 저장 용량',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: cs.onSurface,
+                        ),
+                  ),
+                ),
+                Text(
+                  hasQuota
+                      ? '${_formatBytes(used)} / ${_formatBytes(quota)}'
+                      : _formatBytes(used),
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _buildSegmentedBar(context, segments: segments),
+            const SizedBox(height: 8),
+            Text(
+              hasQuota
+                  ? 'Drive 전체 사용량 안에서 Parrokit가 차지하는 실제 크기를 따로 분리해 보여줍니다.'
+                  : 'Drive 전체 사용량을 모두 가져오지 못해서 Parrokit 사용량 중심으로 보여줍니다.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildLegendChip(
+                  context,
+                  label: 'Parrokit ${_formatBytes(parrokitUsed)}',
+                  color: cs.primary,
+                ),
+                _buildLegendChip(
+                  context,
+                  label: '기타 파일 ${_formatBytes(otherUsed)}',
+                  color: cs.surfaceContainerHigh,
+                ),
+                if (hasQuota)
+                  _buildLegendChip(
+                    context,
+                    label: '남은 공간 ${_formatBytes(remaining)}',
+                    color: cs.surfaceContainerHighest,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentedBar(
+    BuildContext context, {
+    required List<_StorageSegment> segments,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final visibleSegments =
+        segments.where((segment) => segment.value > 0).toList();
+    final effectiveSegments = visibleSegments.isEmpty
+        ? [
+            _StorageSegment(
+              value: 1,
+              color: cs.surfaceContainerHigh,
+            ),
+          ]
+        : visibleSegments;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        height: 10,
+        child: Row(
+          children: effectiveSegments
+              .map(
+                (segment) => Expanded(
+                  flex: math.max(segment.value, 1),
+                  child: Container(color: segment.color),
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegendChip(
+    BuildContext context, {
+    required String label,
+    required Color color,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
       ),
     );
   }
@@ -741,6 +889,16 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
       ],
     );
   }
+}
+
+class _StorageSegment {
+  const _StorageSegment({
+    required this.value,
+    required this.color,
+  });
+
+  final int value;
+  final Color color;
 }
 
 class _CollectionAnimatedFab extends StatelessWidget {
