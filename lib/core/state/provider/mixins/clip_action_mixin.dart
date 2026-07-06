@@ -10,6 +10,7 @@
 // ============================================================================
 
 import 'package:flutter/foundation.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import '../../../../../data/local/app_database.dart';
 import '../../../infrastructure/services/media_service.dart';
 
@@ -109,5 +110,21 @@ mixin ClipActionMixin on ChangeNotifier {
     );
     await refreshServerStorageUsage();
     notifyListeners();
+  }
+
+  Future<bool> moveClipToServer(int clipId) async {
+    try {
+      await service.moveClipToServer(clipId);
+      await refreshServerStorageUsage();
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] move-to-server failed clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
   }
 }

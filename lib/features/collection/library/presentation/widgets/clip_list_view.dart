@@ -118,6 +118,17 @@ class ClipListView extends StatelessWidget {
     return true;
   }
 
+  Future<bool> _moveToServer(
+    ClipProvider provider,
+    ClipItem item,
+  ) async {
+    final success = await provider.moveClipToServer(item.clip.id);
+    if (!success) return false;
+
+    await _refreshClipListAfterStorageChange(provider);
+    return true;
+  }
+
   Future<bool> _pickCloudSourceAndApply(
     ClipProvider provider,
     ClipItem item,
@@ -291,10 +302,9 @@ class ClipListView extends StatelessWidget {
                                       item,
                                       storageMode: 'local',
                                     ),
-                                  'server' => await _applyStorageMode(
+                                  'server' => await _moveToServer(
                                       provider,
                                       item,
-                                      storageMode: 'server',
                                     ),
                                   'cloud' => await _pickCloudSourceAndApply(
                                       provider,
@@ -302,8 +312,14 @@ class ClipListView extends StatelessWidget {
                                     ),
                                   _ => false,
                                 };
+
                                 if (success) {
                                   onApplied();
+                                  if (selectedMode == 'server') {
+                                    showToast('서버에 저장했어요.');
+                                  }
+                                } else if (selectedMode == 'server') {
+                                  showToast('서버 저장에 실패했어요.');
                                 }
                               },
                         child: const Text('적용'),

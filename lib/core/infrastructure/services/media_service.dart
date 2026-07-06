@@ -9,11 +9,16 @@
 // Core > Services
 // ============================================================================
 
-import 'dart:io' show File;
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../data/local/app_database.dart';
 import '../../../data/models/clip_view.dart';
+import '../../shared/utils/app_logger.dart';
 import 'firebase/sync_status.dart';
 
 /// 미디어 데이터(Group, Collection, Clip) 조작 및 비즈니스 로직 담당 서비스
@@ -235,6 +240,72 @@ class MediaService {
     }
   }
 
+  /// 클립 파일을 서버 저장소로 업로드하고 서버 저장 상태로 전환합니다.
+  Future<void> moveClipToServer(int clipId) async {
+    AppLogger.i('[Clip][Storage] move-to-server start clipId=$clipId');
+
+    final target = await (db.select(db.clips)
+          ..where((c) => c.id.equals(clipId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (target == null) {
+      throw StateError('클립을 찾을 수 없습니다.');
+    }
+
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw StateError('서버 저장하려면 로그인이 필요합니다.');
+    }
+
+    final absPath = await _absolutePathFor(target.filePath);
+    final file = File(absPath);
+    if (!await file.exists()) {
+      throw StateError('업로드할 파일을 찾을 수 없습니다.');
+    }
+
+    final remoteDocId = target.remoteId ?? clipId.toString();
+    final storagePath = 'users/${user.uid}/clips/$clipId/source';
+    final storageRef = FirebaseStorage.instance.ref(storagePath);
+    final uploadTask = await storageRef.putFile(file);
+    final downloadUrl = await uploadTask.ref.getDownloadURL();
+    final now = DateTime.now();
+
+    final collectionRemoteId = await _collectionRemoteIdForClip(target.collectionId);
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('namespaces')
+        .doc('library')
+        .collection('clips')
+        .doc(remoteDocId)
+        .set({
+      'localId': target.id,
+      'collectionLocalId': target.collectionId,
+      if (collectionRemoteId != null) 'collectionRemoteId': collectionRemoteId,
+      'title': target.title,
+      'storageMode': 'server',
+      'storageBytes': target.storageBytes,
+      'durationMs': target.durationMs,
+      'storagePath': storagePath,
+      'downloadUrl': downloadUrl,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
+      ClipsCompanion(
+        remoteId: Value(remoteDocId),
+        storageMode: const Value('server'),
+        syncStatus: const Value(SyncStatus.synced),
+        lastSyncedAt: Value(now),
+      ),
+    );
+
+    AppLogger.i(
+      '[Clip][Storage] move-to-server success clipId=$clipId remoteId=$remoteDocId',
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────────
   // Helpers (Private logic methods)
   // ─────────────────────────────────────────────────────────────────
@@ -268,10 +339,19 @@ class MediaService {
     return 0;
   }
 
+  Future<String?> _collectionRemoteIdForClip(int? collectionId) async {
+    if (collectionId == null) return null;
+    final collection = await (db.select(db.collections)
+          ..where((c) => c.id.equals(collectionId))
+          ..limit(1))
+        .getSingleOrNull();
+    return collection?.remoteId;
+  }
+
   Future<int> getServerStorageUsedBytes() async {
     final rows = await (db.select(db.clips)
           ..where((c) => c.storageMode.equals('server')))
         .get();
-    return rows.fold<int>(0, (sum, clip) => sum + clip.storageBytes);
+    return rows.fold<int>(0, (totalBytes, clip) => totalBytes + clip.storageBytes);
   }
 }
