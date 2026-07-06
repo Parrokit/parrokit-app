@@ -69,42 +69,56 @@ class _AppState extends State<App> {
                     padding: const EdgeInsets.all(12),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 560),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (clipProvider.shouldShowCollectionBackfillBanner)
-                            _CollectionBackfillBanner(
-                              isLoading: clipProvider.isCollectionBackfilling,
-                              progress: clipProvider.collectionBackfillProgress,
-                              total: clipProvider.collectionBackfillTotal,
-                              message: clipProvider.collectionBackfillMessage,
-                              error: clipProvider.collectionBackfillError,
-                            ),
-                          if (clipProvider.shouldShowCollectionBackfillBanner &&
-                              clipProvider.shouldShowServerUploadBanner)
-                            const SizedBox(height: 10),
-                          if (clipProvider.shouldShowServerUploadBanner)
-                            _ServerUploadBanner(
-                              isLoading: clipProvider.isServerUploadRunning,
-                              progress: clipProvider.serverUploadProgress,
-                              total: clipProvider.serverUploadTotal,
-                              message: clipProvider.serverUploadMessage,
-                              error: clipProvider.serverUploadError,
-                            ),
-                          if ((clipProvider
-                                      .shouldShowCollectionBackfillBanner ||
-                                  clipProvider.shouldShowServerUploadBanner) &&
-                              clipProvider.shouldShowCloudUploadBanner)
-                            const SizedBox(height: 10),
-                          if (clipProvider.shouldShowCloudUploadBanner)
-                            _CloudUploadBanner(
-                              isLoading: clipProvider.isCloudUploadRunning,
-                              progress: clipProvider.cloudUploadProgress,
-                              total: clipProvider.cloudUploadTotal,
-                              message: clipProvider.cloudUploadMessage,
-                              error: clipProvider.cloudUploadError,
-                            ),
-                        ],
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: MediaQuery.sizeOf(context).height * 0.35,
+                        ),
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (clipProvider
+                                  .shouldShowCollectionBackfillBanner)
+                                _CollectionBackfillBanner(
+                                  isLoading:
+                                      clipProvider.isCollectionBackfilling,
+                                  progress:
+                                      clipProvider.collectionBackfillProgress,
+                                  total: clipProvider.collectionBackfillTotal,
+                                  message:
+                                      clipProvider.collectionBackfillMessage,
+                                  error: clipProvider.collectionBackfillError,
+                                ),
+                              if (clipProvider
+                                      .shouldShowCollectionBackfillBanner &&
+                                  clipProvider.shouldShowServerUploadBanner)
+                                const SizedBox(height: 10),
+                              if (clipProvider.shouldShowServerUploadBanner)
+                                _ServerUploadBanner(
+                                  isLoading: clipProvider.isServerUploadRunning,
+                                  progress: clipProvider.serverUploadProgress,
+                                  total: clipProvider.serverUploadTotal,
+                                  message: clipProvider.serverUploadMessage,
+                                  error: clipProvider.serverUploadError,
+                                ),
+                              if ((clipProvider
+                                          .shouldShowCollectionBackfillBanner ||
+                                      clipProvider
+                                          .shouldShowServerUploadBanner) &&
+                                  clipProvider.shouldShowCloudUploadBanner)
+                                const SizedBox(height: 10),
+                              if (clipProvider.shouldShowCloudUploadBanner)
+                                _CloudUploadBanner(
+                                  isLoading: clipProvider.isCloudUploadRunning,
+                                  progress: clipProvider.cloudUploadProgress,
+                                  total: clipProvider.cloudUploadTotal,
+                                  message: clipProvider.cloudUploadMessage,
+                                  error: clipProvider.cloudUploadError,
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
