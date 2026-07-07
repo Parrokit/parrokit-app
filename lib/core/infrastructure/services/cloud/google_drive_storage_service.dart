@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
@@ -179,11 +180,13 @@ class GoogleDriveStorageService {
         'multipart/related; boundary="$boundary"',
       );
       AppLogger.d('[GoogleDrive][Upload] request-body-write-start');
-      request.write('--$boundary\r\n');
-      request.write('Content-Type: application/json; charset=UTF-8\r\n\r\n');
-      request.write('${jsonEncode(metadata)}\r\n');
-      request.write('--$boundary\r\n');
-      request.write('Content-Type: $mimeType\r\n\r\n');
+      request.add(_utf8Bytes('--$boundary\r\n'));
+      request.add(
+        _utf8Bytes('Content-Type: application/json; charset=UTF-8\r\n\r\n'),
+      );
+      request.add(_utf8Bytes('${jsonEncode(metadata)}\r\n'));
+      request.add(_utf8Bytes('--$boundary\r\n'));
+      request.add(_utf8Bytes('Content-Type: $mimeType\r\n\r\n'));
       AppLogger.d(
         '[GoogleDrive][Upload] file-stream-start totalBytes=$totalBytes',
       );
@@ -205,7 +208,7 @@ class GoogleDriveStorageService {
       AppLogger.d(
         '[GoogleDrive][Upload] file-stream-done sentBytes=$sentBytes',
       );
-      request.write('\r\n--$boundary--');
+      request.add(_utf8Bytes('\r\n--$boundary--'));
       AppLogger.d('[GoogleDrive][Upload] request-close-start');
       final response = await request.close();
       AppLogger.d(
@@ -440,6 +443,8 @@ class GoogleDriveStorageService {
     if (decoded is Map<String, dynamic>) return decoded;
     return <String, dynamic>{};
   }
+
+  Uint8List _utf8Bytes(String value) => Uint8List.fromList(utf8.encode(value));
 
   String _accountKey(GoogleSignInAccount account) {
     if (account.email.isNotEmpty) return account.email;
