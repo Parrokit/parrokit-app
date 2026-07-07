@@ -84,7 +84,10 @@ List<SingleChildWidget> buildProviders({
       create: (c) => ClipProvider(c.read<AppDatabase>()),
     ),
     ChangeNotifierProvider<ShortsProvider>(
-      create: (c) => ShortsProvider(ShortsRepository(c.read<AppDatabase>())),
+      create: (c) => ShortsProvider(
+        ShortsRepository(c.read<AppDatabase>()),
+        c.read<ClipProvider>(),
+      ),
     ),
     ChangeNotifierProvider<TagFilterProvider>(
       create: (c) => TagFilterProvider(c.read<AppDatabase>()),
