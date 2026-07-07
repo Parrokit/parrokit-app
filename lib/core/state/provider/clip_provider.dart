@@ -58,6 +58,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   int localStorageUsedBytes = 0;
   int googleDriveUsedBytes = 0;
   int cloudStorageUsedBytes = 0;
+  int cachedRemoteStorageUsedBytes = 0;
   int? cloudStorageQuotaBytes;
   bool _isCollectionBackfilling = false;
   int _collectionBackfillProgress = 0;
@@ -89,6 +90,10 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     return _service.fetchClipItemsByStorageMode(storageMode);
   }
 
+  Future<List<ClipItem>> fetchCachedRemoteClipItems() {
+    return _service.fetchCachedRemoteClipItems();
+  }
+
   Future<void> refreshServerStorageUsage() async {
     await refreshStorageUsage();
   }
@@ -98,6 +103,8 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     serverStorageUsedBytes = await _service.getServerStorageUsedBytes();
     localStorageUsedBytes = await _service.getLocalStorageUsedBytes();
     cloudStorageUsedBytes = await _service.getCloudStorageUsedBytes();
+    cachedRemoteStorageUsedBytes =
+        await _service.getCachedRemoteStorageUsedBytes();
 
     try {
       final quota = await _service.getGoogleDriveStorageQuota();

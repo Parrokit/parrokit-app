@@ -159,4 +159,20 @@ mixin ClipActionMixin on ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> clearRemoteClipCache(int clipId) async {
+    try {
+      final success = await service.clearRemoteClipCache(clipId);
+      await refreshStorageUsage();
+      notifyListeners();
+      return success;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Cache] clear-cache failed clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
 }

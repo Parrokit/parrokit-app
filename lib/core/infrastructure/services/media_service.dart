@@ -688,6 +688,14 @@ class MediaService {
         0, (totalBytes, clip) => totalBytes + clip.storageBytes);
   }
 
+  Future<int> getCachedRemoteStorageUsedBytes() async {
+    final clips = await _fetchCachedRemoteClips();
+    return clips.fold<int>(
+      0,
+      (totalBytes, clip) => totalBytes + clip.storageBytes,
+    );
+  }
+
   Future<List<ClipItem>> fetchClipItemsByStorageMode(
     String storageMode,
   ) async {
@@ -698,8 +706,70 @@ class MediaService {
     return _buildClipItems(clips);
   }
 
+  Future<List<ClipItem>> fetchCachedRemoteClipItems() async {
+    final clips = await _fetchCachedRemoteClips();
+    return _buildClipItems(clips);
+  }
+
+  Future<bool> clearRemoteClipCache(int clipId) async {
+    final clip = await (db.select(db.clips)
+          ..where((c) => c.id.equals(clipId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (clip == null) {
+      throw StateError('클립을 찾을 수 없습니다.');
+    }
+    if (clip.storageMode == 'local') {
+      throw StateError('로컬 저장본은 캐시로 지울 수 없습니다.');
+    }
+
+    final absPath = await _absolutePathFor(clip.filePath);
+    final file = File(absPath);
+    if (await file.exists()) {
+      await file.delete();
+      AppLogger.i(
+        '[Clip][Cache] clear-cache success clipId=$clipId path=$absPath',
+      );
+    } else {
+      AppLogger.i(
+        '[Clip][Cache] clear-cache skip-missing clipId=$clipId path=$absPath',
+      );
+    }
+    return true;
+  }
+
   Future<GoogleDriveStorageQuota?> getGoogleDriveStorageQuota() async {
     return _googleDriveStorageService.fetchStorageQuota();
+  }
+
+  Future<List<Clip>> _fetchCachedRemoteClips() async {
+    final serverClips = await (db.select(db.clips)
+          ..where((c) => c.storageMode.equals('server'))
+          ..orderBy([(c) => OrderingTerm.desc(c.lastSyncedAt)]))
+        .get();
+    final cloudClips = await (db.select(db.clips)
+          ..where((c) => c.storageMode.like('cloud:%'))
+          ..orderBy([(c) => OrderingTerm.desc(c.lastSyncedAt)]))
+        .get();
+
+    final remoteClips = <Clip>[...serverClips, ...cloudClips];
+    final cachedClips = <Clip>[];
+
+    for (final clip in remoteClips) {
+      final absPath = await _absolutePathFor(clip.filePath);
+      final file = File(absPath);
+      if (await file.exists() && await file.length() > 0) {
+        cachedClips.add(clip);
+      }
+    }
+
+    cachedClips.sort((a, b) {
+      final aTime = a.lastSyncedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.lastSyncedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+
+    return cachedClips;
   }
 
   Future<List<ClipItem>> _buildClipItems(List<Clip> clips) async {
