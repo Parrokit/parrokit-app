@@ -194,6 +194,8 @@ class _RemoteStorageSectionState extends State<RemoteStorageSection> {
     final parrokitUsed = clipProvider.cloudStorageUsedBytes;
     final cloudQuota = clipProvider.cloudStorageQuotaBytes;
     final hasQuota = cloudQuota != null && cloudQuota > 0;
+    final isLinked = clipProvider.hasGoogleDriveLinked;
+    final isBusy = clipProvider.isGoogleDriveLinking;
     final otherUsed = math.max(driveUsed - parrokitUsed, 0);
     final remaining = hasQuota ? math.max(cloudQuota - driveUsed, 0) : 0;
 
@@ -247,21 +249,70 @@ class _RemoteStorageSectionState extends State<RemoteStorageSection> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Google Drive',
+                  isLinked ? 'Google Drive 연동됨' : 'Google Drive',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: cs.onSurface,
                       ),
                 ),
               ),
-              Text(
-                hasQuota
-                    ? '${_formatBytes(driveUsed)} / ${_formatBytes(cloudQuota)}'
-                    : _formatBytes(driveUsed),
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
+              TextButton(
+                onPressed: isBusy
+                    ? null
+                    : () async {
+                        final provider = context.read<ClipProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+                        if (provider.hasGoogleDriveLinked) {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              title: const Text('Google Drive 연동 해제'),
+                              content: const Text(
+                                '연동을 해제하면 Google Drive에 있던 파일들을 모두 기기로 옮긴 뒤, 계정을 분리합니다.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, false),
+                                  child: const Text('취소'),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, true),
+                                  child: const Text('연동 해제'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed != true) return;
+
+                          final success =
+                              await provider.disconnectGoogleDrive();
+                          if (!context.mounted) return;
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Google Drive 연동을 해제했어요.'
+                                    : 'Google Drive 연동 해제에 실패했어요.',
+                              ),
+                            ),
+                          );
+                        } else {
+                          final success = await provider.connectGoogleDrive();
+                          if (!context.mounted) return;
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Google Drive 연동을 완료했어요.'
+                                    : 'Google Drive 연동에 실패했어요.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: Text(isLinked ? '연동 해제' : '구글 드라이브 연동하기'),
               ),
             ],
           ),

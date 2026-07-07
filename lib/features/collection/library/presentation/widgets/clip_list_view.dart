@@ -138,8 +138,12 @@ class ClipListView extends StatelessWidget {
     ClipItem item, {
     required VoidCallback onApplied,
   }) {
-    var selectedMode = item.clip.storageMode;
     final provider = context.read<ClipProvider>();
+    final canUseGoogleDrive = provider.hasGoogleDriveLinked;
+    var selectedMode = item.clip.storageMode;
+    if (!canUseGoogleDrive && selectedMode == 'cloud:gdrive') {
+      selectedMode = 'server';
+    }
 
     showModalBottomSheet<void>(
       context: context,
@@ -157,6 +161,7 @@ class ClipListView extends StatelessWidget {
               required String subtitle,
               required Color iconColor,
               required String value,
+              bool enabled = true,
             }) {
               final isSelected = selectedMode == value;
               return Material(
@@ -164,7 +169,9 @@ class ClipListView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  onTap: () => setSheetState(() => selectedMode = value),
+                  onTap: enabled
+                      ? () => setSheetState(() => selectedMode = value)
+                      : null,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
@@ -172,8 +179,9 @@ class ClipListView extends StatelessWidget {
                       children: [
                         Checkbox(
                           value: isSelected,
-                          onChanged: (_) =>
-                              setSheetState(() => selectedMode = value),
+                          onChanged: enabled
+                              ? (_) => setSheetState(() => selectedMode = value)
+                              : null,
                           activeColor: iconColor,
                         ),
                         Container(
@@ -211,9 +219,11 @@ class ClipListView extends StatelessWidget {
                           isSelected
                               ? Icons.check_circle_rounded
                               : Icons.chevron_right_rounded,
-                          color: isSelected
-                              ? iconColor
-                              : cs.onSurfaceVariant.withValues(alpha: 0.6),
+                          color: enabled
+                              ? (isSelected
+                                  ? iconColor
+                                  : cs.onSurfaceVariant.withValues(alpha: 0.6))
+                              : cs.onSurfaceVariant.withValues(alpha: 0.3),
                         ),
                       ],
                     ),
@@ -268,10 +278,12 @@ class ClipListView extends StatelessWidget {
                       buildOption(
                         icon: Icons.cloud_upload_rounded,
                         title: 'Google Drive',
-                        subtitle:
-                            '내 Google Drive에 저장하고, 기기에는 빠른 열람용으로 남겨둘 수 있습니다.',
+                        subtitle: canUseGoogleDrive
+                            ? '내 Google Drive에 저장하고, 기기에는 빠른 열람용으로 남겨둘 수 있습니다.'
+                            : 'Google Drive 연동 후 사용할 수 있어요.',
                         iconColor: AppColors.warning,
                         value: 'cloud:gdrive',
+                        enabled: canUseGoogleDrive,
                       ),
                       const SizedBox(height: 18),
                       FilledButton(

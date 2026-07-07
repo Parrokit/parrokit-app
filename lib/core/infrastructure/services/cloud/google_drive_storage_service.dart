@@ -63,6 +63,11 @@ class GoogleDriveStorageService {
     return _googleSignIn.signIn();
   }
 
+  Future<bool> hasConnectedAccount() async {
+    final current = await _googleSignIn.signInSilently(suppressErrors: true);
+    return current != null;
+  }
+
   Future<void> disconnect() async {
     await _googleSignIn.signOut();
   }

@@ -61,6 +61,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   int cachedRemoteStorageUsedBytes = 0;
   int cachedRemoteClipCount = 0;
   int? cloudStorageQuotaBytes;
+  bool hasGoogleDriveLinked = false;
   bool _isCollectionBackfilling = false;
   int _collectionBackfillProgress = 0;
   int _collectionBackfillTotal = 0;
@@ -76,6 +77,9 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   int _cloudUploadTotal = 0;
   String _cloudUploadMessage = '';
   String? _cloudUploadError;
+  bool _isGoogleDriveLinking = false;
+  String _googleDriveLinkMessage = '';
+  String? _googleDriveLinkError;
 
   // ─────────────────────────────────────────────────────────────────
   // Methods
@@ -107,6 +111,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     cachedRemoteStorageUsedBytes =
         await _service.getCachedRemoteStorageUsedBytes();
     cachedRemoteClipCount = await _service.getCachedRemoteClipCount();
+    hasGoogleDriveLinked = await _service.hasGoogleDriveLinked();
 
     try {
       final quota = await _service.getGoogleDriveStorageQuota();
@@ -139,6 +144,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   String? get cloudUploadError => _cloudUploadError;
   bool get shouldShowCloudUploadBanner =>
       _isCloudUploadRunning || _cloudUploadError != null;
+  bool get isGoogleDriveLinking => _isGoogleDriveLinking;
+  String get googleDriveLinkMessage => _googleDriveLinkMessage;
+  String? get googleDriveLinkError => _googleDriveLinkError;
+  bool get shouldShowGoogleDriveLinkBanner =>
+      _isGoogleDriveLinking || _googleDriveLinkError != null;
 
   /// 현재 로그인 유저의 collection 메타데이터를 Firestore로 동기화합니다.
   Future<void> syncCollectionDataToServer(
@@ -309,6 +319,84 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
         progress: _cloudUploadProgress,
         total: _cloudUploadTotal,
         message: 'Google Drive 저장 실패',
+        error: e.toString(),
+      );
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<bool> connectGoogleDrive() async {
+    if (_isGoogleDriveLinking) return false;
+
+    _setGoogleDriveLinkState(
+      isRunning: true,
+      message: 'Google Drive를 연결하는 중',
+      error: null,
+    );
+
+    try {
+      await _service.connectGoogleDrive();
+      await refreshStorageUsage();
+      _setGoogleDriveLinkState(
+        isRunning: false,
+        message: 'Google Drive 연결 완료',
+        error: null,
+      );
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Cloud] connect-google-drive failed',
+        error: e,
+        stackTrace: st,
+      );
+      _setGoogleDriveLinkState(
+        isRunning: false,
+        message: 'Google Drive 연결 실패',
+        error: e.toString(),
+      );
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<bool> disconnectGoogleDrive() async {
+    if (_isGoogleDriveLinking) return false;
+
+    _setGoogleDriveLinkState(
+      isRunning: true,
+      message: 'Google Drive 파일을 로컬로 옮기는 중',
+      error: null,
+    );
+
+    try {
+      await _service.disconnectGoogleDriveAfterLocalMove(
+        onProgress: (current, total, message) {
+          _setGoogleDriveLinkState(
+            isRunning: true,
+            message: total == 0 ? message : '$message ($current/$total)',
+            error: null,
+          );
+        },
+      );
+      await refreshStorageUsage();
+      _setGoogleDriveLinkState(
+        isRunning: false,
+        message: 'Google Drive 연동 해제 완료',
+        error: null,
+      );
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Cloud] disconnect-google-drive failed',
+        error: e,
+        stackTrace: st,
+      );
+      _setGoogleDriveLinkState(
+        isRunning: false,
+        message: 'Google Drive 연동 해제 실패',
         error: e.toString(),
       );
       return false;
@@ -564,6 +652,30 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     } else if (!isRunning && error != null) {
       AppLogger.w(
         '[Clip][Cloud] state=failed progress=$progress total=$total message=$message error=$error',
+      );
+    }
+    notifyListeners();
+  }
+
+  void _setGoogleDriveLinkState({
+    required bool isRunning,
+    required String message,
+    required String? error,
+  }) {
+    _isGoogleDriveLinking = isRunning;
+    _googleDriveLinkMessage = message;
+    _googleDriveLinkError = error;
+    if (isRunning && error == null) {
+      AppLogger.d(
+        '[Clip][Cloud] state=loading message=$message',
+      );
+    } else if (!isRunning && error == null) {
+      AppLogger.d(
+        '[Clip][Cloud] state=success message=$message',
+      );
+    } else if (!isRunning && error != null) {
+      AppLogger.w(
+        '[Clip][Cloud] state=failed message=$message error=$error',
       );
     }
     notifyListeners();

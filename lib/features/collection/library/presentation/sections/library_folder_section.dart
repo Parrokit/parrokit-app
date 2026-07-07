@@ -40,7 +40,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   bool _deleteMode = false;
   bool _isGridView = true;
   bool _isFabExtended = true;
-  bool _isStorageExpanded = true;
+  bool _isStorageExpanded = false;
 
   void _toggleDeleteMode() => setState(() => _deleteMode = !_deleteMode);
   void _toggleViewMode() => setState(() => _isGridView = !_isGridView);

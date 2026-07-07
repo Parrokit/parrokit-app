@@ -700,6 +700,63 @@ class MediaService {
         0, (totalBytes, clip) => totalBytes + clip.storageBytes);
   }
 
+  Future<bool> hasGoogleDriveLinked() async {
+    return _googleDriveStorageService.hasConnectedAccount();
+  }
+
+  Future<void> connectGoogleDrive() async {
+    final account = await _googleDriveStorageService.connect();
+    if (account == null) {
+      throw StateError('Google Drive 연동이 취소되었습니다.');
+    }
+  }
+
+  Future<int> moveAllGoogleDriveClipsToLocal({
+    void Function(int current, int total, String message)? onProgress,
+  }) async {
+    final clips = await (db.select(db.clips)
+          ..where((c) => c.storageMode.equals('cloud:gdrive'))
+          ..orderBy([(c) => OrderingTerm.asc(c.id)]))
+        .get();
+
+    if (clips.isEmpty) {
+      onProgress?.call(0, 0, '이동할 Google Drive 파일이 없습니다.');
+      return 0;
+    }
+
+    var current = 0;
+    for (final clip in clips) {
+      onProgress?.call(
+        current,
+        clips.length,
+        'Google Drive 파일을 로컬로 옮기는 중',
+      );
+      await moveClipToLocal(clip.id);
+      current++;
+      onProgress?.call(
+        current,
+        clips.length,
+        'Google Drive 파일을 로컬로 옮기는 중',
+      );
+    }
+
+    return current;
+  }
+
+  Future<void> disconnectGoogleDriveAfterLocalMove({
+    void Function(int current, int total, String message)? onProgress,
+  }) async {
+    final moved = await moveAllGoogleDriveClipsToLocal(
+      onProgress: onProgress,
+    );
+    if (moved == 0) {
+      await _googleDriveStorageService.disconnect();
+      return;
+    }
+
+    await _googleDriveStorageService.disconnect();
+  }
+
   Future<int> getCachedRemoteStorageUsedBytes() async {
     final clips = await _fetchCachedRemoteClips();
     return clips.fold<int>(
