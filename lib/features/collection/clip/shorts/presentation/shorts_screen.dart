@@ -171,6 +171,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                   return ShortsPage(
                     key: ValueKey(item.clip.id),
                     isActive: index == _currentIndex,
+                    clipId: item.clip.id,
                     filePath: item.clip.filePath,
                     durationMs: item.clip.durationMs,
                     autoNextEnabled: shorts.autoNext,

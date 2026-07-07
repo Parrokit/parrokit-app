@@ -7,9 +7,10 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:parrokit/core/app/router/app_routes.dart';
 import '../widgets/card_container.dart';
 import '../widgets/section_title.dart';
-import '../storage_cache_management_screen.dart';
 
 class StorageSection extends StatefulWidget {
   const StorageSection({super.key});
@@ -32,12 +33,7 @@ class _StorageSectionState extends State<StorageSection> {
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const StorageCacheManagementScreen(),
-                ),
-              );
+              context.pushNamed(AppRoutes.storageCacheManagement);
             },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
