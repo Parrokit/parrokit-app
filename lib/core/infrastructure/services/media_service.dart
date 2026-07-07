@@ -279,7 +279,7 @@ class MediaService {
       throw StateError('업로드할 파일을 찾을 수 없습니다.');
     }
 
-    final remoteDocId = target.remoteId ?? clipId.toString();
+    final remoteDocId = _stableClipDocId(clipId);
     final storagePath = 'users/${user.uid}/clips/$clipId/source';
     final storageRef = FirebaseStorage.instance.ref(storagePath);
     final fileSize = await file.length();
@@ -304,14 +304,13 @@ class MediaService {
       final collectionRemoteId =
           await _collectionRemoteIdForClip(target.collectionId);
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('namespaces')
-          .doc('library')
-          .collection('clips')
-          .doc(remoteDocId)
-          .set({
+      final docRef = _libraryClipDocRef(user.uid, clipId);
+      await _cleanupLegacyLibraryClipDocs(
+        uid: user.uid,
+        clipId: clipId,
+        keepDocId: remoteDocId,
+      );
+      await docRef.set({
         'localId': target.id,
         'collectionLocalId': target.collectionId,
         if (collectionRemoteId != null)
@@ -322,6 +321,9 @@ class MediaService {
         'durationMs': target.durationMs,
         'storagePath': storagePath,
         'downloadUrl': downloadUrl,
+        'remoteFileId': FieldValue.delete(),
+        'cloudFolderId': FieldValue.delete(),
+        'storageProvider': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -379,14 +381,13 @@ class MediaService {
     if (user != null) {
       final collectionRemoteId =
           await _collectionRemoteIdForClip(target.collectionId);
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('namespaces')
-          .doc('library')
-          .collection('clips')
-          .doc(result.fileId)
-          .set({
+      final docRef = _libraryClipDocRef(user.uid, clipId);
+      await _cleanupLegacyLibraryClipDocs(
+        uid: user.uid,
+        clipId: clipId,
+        keepDocId: _stableClipDocId(clipId),
+      );
+      await docRef.set({
         'localId': target.id,
         'collectionLocalId': target.collectionId,
         if (collectionRemoteId != null)
@@ -399,6 +400,7 @@ class MediaService {
         'remoteFileId': result.fileId,
         'cloudFolderId': result.folderId,
         'downloadUrl': result.webContentLink ?? result.webViewLink,
+        'storagePath': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
@@ -406,7 +408,7 @@ class MediaService {
     final now = DateTime.now();
     await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
       ClipsCompanion(
-        remoteId: Value(result.fileId),
+        remoteId: Value(_stableClipDocId(clipId)),
         storageMode: const Value('cloud:gdrive'),
         syncStatus: const Value(SyncStatus.synced),
         lastSyncedAt: Value(now),
@@ -457,21 +459,19 @@ class MediaService {
       return;
     }
 
-    final remoteDocRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('namespaces')
-        .doc('library')
-        .collection('clips')
-        .doc(remoteId);
-    final remoteDoc = await remoteDocRef.get();
-    final remoteData = remoteDoc.data();
+    final remoteDoc = await _readLibraryClipDoc(
+      uid: user.uid,
+      clipId: clipId,
+      preferredDocId: remoteId,
+    );
+    final remoteData = remoteDoc?.data();
     if (remoteData == null) {
       throw StateError('서버 메타데이터를 찾을 수 없습니다.');
     }
 
     final storagePath = remoteData['storagePath'] as String?;
     final downloadUrl = remoteData['downloadUrl'] as String?;
+    final stableDocId = _stableClipDocId(clipId);
 
     await _ensureLocalClipFileExists(
       target,
@@ -482,6 +482,13 @@ class MediaService {
     await _deleteRemoteStorageObject(
         storagePath: storagePath, downloadUrl: downloadUrl);
 
+    final remoteDocRef = _libraryClipDocRef(user.uid, clipId);
+
+    await _cleanupLegacyLibraryClipDocs(
+      uid: user.uid,
+      clipId: clipId,
+      keepDocId: stableDocId,
+    );
     await remoteDocRef.set({
       'localId': target.id,
       'collectionLocalId': target.collectionId,
@@ -491,13 +498,16 @@ class MediaService {
       'durationMs': target.durationMs,
       'storagePath': FieldValue.delete(),
       'downloadUrl': FieldValue.delete(),
+      'remoteFileId': FieldValue.delete(),
+      'cloudFolderId': FieldValue.delete(),
+      'storageProvider': FieldValue.delete(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    await _markClipAsLocal(clipId: clipId, remoteId: remoteId);
+    await _markClipAsLocal(clipId: clipId, remoteId: stableDocId);
 
     AppLogger.i(
-        '[Clip][Storage] move-to-local success clipId=$clipId remoteId=$remoteId');
+        '[Clip][Storage] move-to-local success clipId=$clipId remoteId=$stableDocId');
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -568,13 +578,13 @@ class MediaService {
 
     final user = fb.FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final remoteDocRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('namespaces')
-          .doc('library')
-          .collection('clips')
-          .doc(remoteId);
+      final stableDocId = _stableClipDocId(clipId);
+      final remoteDocRef = _libraryClipDocRef(user.uid, clipId);
+      await _cleanupLegacyLibraryClipDocs(
+        uid: user.uid,
+        clipId: clipId,
+        keepDocId: stableDocId,
+      );
       await remoteDocRef.set({
         'localId': target.id,
         'collectionLocalId': target.collectionId,
@@ -585,11 +595,13 @@ class MediaService {
         'remoteFileId': FieldValue.delete(),
         'cloudFolderId': FieldValue.delete(),
         'downloadUrl': FieldValue.delete(),
+        'storagePath': FieldValue.delete(),
+        'storageProvider': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
 
-    await _markClipAsLocal(clipId: clipId, remoteId: null);
+    await _markClipAsLocal(clipId: clipId, remoteId: _stableClipDocId(clipId));
     AppLogger.i(
       '[Clip][Storage] move-to-local success clipId=$clipId storage=cloud',
     );
@@ -851,25 +863,12 @@ class MediaService {
   }
 
   Future<void> _restoreServerClipFile(Clip clip, File destination) async {
-    final remoteId = clip.remoteId;
-    if (remoteId == null || remoteId.isEmpty) {
-      throw StateError('서버 원본 정보를 찾을 수 없습니다.');
-    }
-
-    final user = fb.FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw StateError('서버 클립을 복원하려면 로그인이 필요합니다.');
-    }
-
-    final remoteDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('namespaces')
-        .doc('library')
-        .collection('clips')
-        .doc(remoteId)
-        .get();
-    final remoteData = remoteDoc.data();
+    final remoteDoc = await _readLibraryClipDoc(
+      uid: fb.FirebaseAuth.instance.currentUser?.uid ?? '',
+      clipId: clip.id,
+      preferredDocId: clip.remoteId,
+    );
+    final remoteData = remoteDoc?.data();
     if (remoteData == null) {
       throw StateError('서버 메타데이터를 찾을 수 없습니다.');
     }
@@ -890,14 +889,92 @@ class MediaService {
   }
 
   Future<void> _restoreCloudClipFile(Clip clip, File destination) async {
-    final remoteId = clip.remoteId;
-    if (remoteId == null || remoteId.isEmpty) {
+    final remoteDoc = await _readLibraryClipDoc(
+      uid: fb.FirebaseAuth.instance.currentUser?.uid ?? '',
+      clipId: clip.id,
+      preferredDocId: clip.remoteId,
+    );
+    final remoteData = remoteDoc?.data();
+    if (remoteData == null) {
       throw StateError('클라우드 원본 정보를 찾을 수 없습니다.');
     }
 
+    final remoteFileId = remoteData['remoteFileId'] as String?;
+    if (remoteFileId == null || remoteFileId.isEmpty) {
+      throw StateError('서버 원본 정보를 찾을 수 없습니다.');
+    }
+
     await _googleDriveStorageService.downloadClipFile(
-      fileId: remoteId,
+      fileId: remoteFileId,
       destination: destination,
     );
+  }
+
+  CollectionReference<Map<String, dynamic>> _libraryClipsRef(String uid) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('namespaces')
+        .doc('library')
+        .collection('clips');
+  }
+
+  DocumentReference<Map<String, dynamic>> _libraryClipDocRef(
+    String uid,
+    int clipId,
+  ) {
+    return _libraryClipsRef(uid).doc(_stableClipDocId(clipId));
+  }
+
+  String _stableClipDocId(int clipId) => clipId.toString();
+
+  Future<DocumentSnapshot<Map<String, dynamic>>?> _readLibraryClipDoc({
+    required String uid,
+    required int clipId,
+    String? preferredDocId,
+  }) async {
+    if (uid.isEmpty) return null;
+
+    final ref = _libraryClipsRef(uid);
+    final stableDocId = _stableClipDocId(clipId);
+    final candidates = <String>[
+      if (preferredDocId != null && preferredDocId.isNotEmpty) preferredDocId,
+      stableDocId,
+    ];
+
+    for (final docId in candidates) {
+      final snap = await ref.doc(docId).get();
+      if (snap.exists) return snap;
+    }
+
+    final legacy = await ref.where('localId', isEqualTo: clipId).get();
+    if (legacy.docs.isEmpty) return null;
+
+    legacy.docs.sort((a, b) {
+      final aTime = _timestampMillis(a.data()['updatedAt']);
+      final bTime = _timestampMillis(b.data()['updatedAt']);
+      return bTime.compareTo(aTime);
+    });
+    return legacy.docs.first;
+  }
+
+  Future<void> _cleanupLegacyLibraryClipDocs({
+    required String uid,
+    required int clipId,
+    required String keepDocId,
+  }) async {
+    if (uid.isEmpty) return;
+
+    final ref = _libraryClipsRef(uid);
+    final docs = await ref.where('localId', isEqualTo: clipId).get();
+    for (final doc in docs.docs) {
+      if (doc.id == keepDocId) continue;
+      await doc.reference.delete();
+    }
+  }
+
+  int _timestampMillis(Object? value) {
+    if (value is Timestamp) return value.millisecondsSinceEpoch;
+    return 0;
   }
 }

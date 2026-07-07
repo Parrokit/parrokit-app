@@ -185,7 +185,9 @@ class CollectionSyncService {
       return _SyncCounts(
         groups: groups.length,
         groupCollections: groupCollections.length,
-        collections: force ? collections.length : collections.where(_needsCollectionSync).length,
+        collections: force
+            ? collections.length
+            : collections.where(_needsCollectionSync).length,
         clips: force ? clips.length : clips.where(_needsClipSync).length,
       );
     } catch (e, st) {
@@ -229,11 +231,13 @@ class CollectionSyncService {
   }
 
   bool _needsCollectionSync(db.Collection row) {
-    return row.remoteId == null || row.syncStatus != SyncStatus.synced;
+    return row.remoteId != row.id.toString() ||
+        row.syncStatus != SyncStatus.synced;
   }
 
   bool _needsClipSync(db.Clip row) {
-    return row.remoteId == null || row.syncStatus != SyncStatus.synced;
+    return row.remoteId != row.id.toString() ||
+        row.syncStatus != SyncStatus.synced;
   }
 
   Future<int> _syncCollections({
@@ -255,9 +259,13 @@ class CollectionSyncService {
         continue;
       }
 
-      final docRef = collection.remoteId == null
-          ? ref.doc()
-          : ref.doc(collection.remoteId);
+      final docId = collection.id.toString();
+      final docRef = ref.doc(docId);
+      await _cleanupLegacyDocs(
+        ref: ref,
+        localId: collection.id,
+        stableDocId: docId,
+      );
 
       await docRef.set({
         'name': collection.name,
@@ -389,7 +397,13 @@ class CollectionSyncService {
         );
       }
 
-      final docRef = clip.remoteId == null ? ref.doc() : ref.doc(clip.remoteId);
+      final docId = clip.id.toString();
+      final docRef = ref.doc(docId);
+      await _cleanupLegacyDocs(
+        ref: ref,
+        localId: clip.id,
+        stableDocId: docId,
+      );
 
       await docRef.set({
         'localId': clip.id,
@@ -434,6 +448,18 @@ class CollectionSyncService {
       '[Collection][Backfill] clips-end uid=${_maskUid(uid)} current=$current total=$total',
     );
     return current;
+  }
+
+  Future<void> _cleanupLegacyDocs({
+    required CollectionReference<Map<String, dynamic>> ref,
+    required int localId,
+    required String stableDocId,
+  }) async {
+    final legacyDocs = await ref.where('localId', isEqualTo: localId).get();
+    for (final doc in legacyDocs.docs) {
+      if (doc.id == stableDocId) continue;
+      await doc.reference.delete();
+    }
   }
 
   Future<void> _markInitialBackfillDone(String uid) async {
