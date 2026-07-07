@@ -696,6 +696,11 @@ class MediaService {
     );
   }
 
+  Future<int> getCachedRemoteClipCount() async {
+    final clips = await _fetchCachedRemoteClips();
+    return clips.length;
+  }
+
   Future<List<ClipItem>> fetchClipItemsByStorageMode(
     String storageMode,
   ) async {
