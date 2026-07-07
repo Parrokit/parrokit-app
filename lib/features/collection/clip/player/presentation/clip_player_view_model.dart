@@ -74,6 +74,8 @@ class ClipPlayerViewModel extends ChangeNotifier
 
   String _appBarTitle = '재생';
   String get appBarTitle => _appBarTitle;
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
 
   // ─────────────────────────────────────────────────────────────────
   // State - Playback
@@ -163,25 +165,35 @@ class ClipPlayerViewModel extends ChangeNotifier
 
   /// 클립 데이터 로드.
   Future<void> loadClip() async {
-    final payload = await clipProvider.fetchClipById(clipId);
+    try {
+      final payload = await clipProvider.fetchClipById(clipId);
 
-    if (payload == null) {
+      if (payload == null) {
+        _errorMessage = '클립을 찾을 수 없습니다.';
+        _isLoading = false;
+        _clip = null;
+        _segments = const [];
+        notifyListeners();
+        return;
+      }
+
+      _errorMessage = null;
+      _clip = payload.clip;
+      _segments = payload.segments;
+
+      await _initVideo();
+
+      _isLoading = false;
+      _isInitialized = true;
+      _appBarTitle = (_clip?.title ?? '').isNotEmpty ? _clip!.title : '재생';
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
       _isLoading = false;
       _clip = null;
       _segments = const [];
       notifyListeners();
-      return;
     }
-
-    _clip = payload.clip;
-    _segments = payload.segments;
-
-    await _initVideo();
-
-    _isLoading = false;
-    _isInitialized = true;
-    _appBarTitle = (_clip?.title ?? '').isNotEmpty ? _clip!.title : '재생';
-    notifyListeners();
   }
 
   Future<void> _initVideo() async {

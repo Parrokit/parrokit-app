@@ -129,6 +129,28 @@ class _ClipPlayerViewState extends State<_ClipPlayerView>
     }
 
     // 클립 없음
+    if (vm.errorMessage != null) {
+      return Scaffold(
+        backgroundColor: bg,
+        appBar: AppBar(
+          backgroundColor: bg,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: fg,
+          title: const Text('재생'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              vm.errorMessage!,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
     if (vm.clip == null || vm.segments.isEmpty) {
       return Scaffold(
         backgroundColor: bg,

@@ -77,7 +77,7 @@ class MediaService {
           ..orderBy([(s) => OrderingTerm.asc(s.startMs)]))
         .get();
 
-    final abs = await _absolutePathFor(clip.filePath);
+    final abs = await _ensurePlayableClipFile(clip);
     final clipAbs = clip.copyWith(filePath: abs);
 
     return ClipView(clip: clipAbs, segments: segments);
@@ -823,5 +823,76 @@ class MediaService {
     }
 
     return items;
+  }
+
+  Future<String> _ensurePlayableClipFile(Clip clip) async {
+    final absPath = await _absolutePathFor(clip.filePath);
+    final file = File(absPath);
+    if (await file.exists() && await file.length() > 0) {
+      return absPath;
+    }
+
+    if (clip.storageMode == 'server') {
+      await _restoreServerClipFile(clip, file);
+      return absPath;
+    }
+
+    if (clip.storageMode.startsWith('cloud:')) {
+      await _restoreCloudClipFile(clip, file);
+      return absPath;
+    }
+
+    throw StateError('로컬 파일을 찾을 수 없습니다.');
+  }
+
+  Future<void> _restoreServerClipFile(Clip clip, File destination) async {
+    final remoteId = clip.remoteId;
+    if (remoteId == null || remoteId.isEmpty) {
+      throw StateError('서버 원본 정보를 찾을 수 없습니다.');
+    }
+
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw StateError('서버 클립을 복원하려면 로그인이 필요합니다.');
+    }
+
+    final remoteDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('namespaces')
+        .doc('library')
+        .collection('clips')
+        .doc(remoteId)
+        .get();
+    final remoteData = remoteDoc.data();
+    if (remoteData == null) {
+      throw StateError('서버 메타데이터를 찾을 수 없습니다.');
+    }
+
+    final storagePath = remoteData['storagePath'] as String?;
+    final downloadUrl = remoteData['downloadUrl'] as String?;
+    final ref = storagePath != null && storagePath.isNotEmpty
+        ? FirebaseStorage.instance.ref(storagePath)
+        : (downloadUrl != null && downloadUrl.isNotEmpty
+            ? FirebaseStorage.instance.refFromURL(downloadUrl)
+            : null);
+    if (ref == null) {
+      throw StateError('서버 파일 경로를 찾을 수 없습니다.');
+    }
+
+    await destination.parent.create(recursive: true);
+    await ref.writeToFile(destination);
+  }
+
+  Future<void> _restoreCloudClipFile(Clip clip, File destination) async {
+    final remoteId = clip.remoteId;
+    if (remoteId == null || remoteId.isEmpty) {
+      throw StateError('클라우드 원본 정보를 찾을 수 없습니다.');
+    }
+
+    await _googleDriveStorageService.downloadClipFile(
+      fileId: remoteId,
+      destination: destination,
+    );
   }
 }
