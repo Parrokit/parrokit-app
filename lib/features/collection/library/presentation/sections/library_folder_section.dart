@@ -270,6 +270,8 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     final used = clipProvider.googleDriveUsedBytes;
     final parrokitUsed = clipProvider.cloudStorageUsedBytes;
     final hasQuota = quota != null && quota > 0;
+    final isLinked = clipProvider.hasGoogleDriveLinked;
+    final isBusy = clipProvider.isGoogleDriveLinking;
     final otherUsed = math.max(used - parrokitUsed, 0);
     final remaining = hasQuota ? math.max(quota - used, 0) : 0;
     final segments = hasQuota
@@ -319,21 +321,70 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Google Drive 저장 용량',
+                    isLinked ? 'Google Drive 연동됨' : 'Google Drive 저장 용량',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: cs.onSurface,
                         ),
                   ),
                 ),
-                Text(
-                  hasQuota
-                      ? '${_formatBytes(used)} / ${_formatBytes(quota)}'
-                      : _formatBytes(used),
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+                TextButton(
+                  onPressed: isBusy
+                      ? null
+                      : () async {
+                          final provider = context.read<ClipProvider>();
+                          final messenger = ScaffoldMessenger.of(context);
+                          if (provider.hasGoogleDriveLinked) {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                title: const Text('Google Drive 연동 해제'),
+                                content: const Text(
+                                  '연동을 해제하면 Google Drive에 있던 파일들을 모두 기기로 옮긴 뒤, 계정을 분리합니다.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, false),
+                                    child: const Text('취소'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, true),
+                                    child: const Text('연동 해제'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed != true) return;
+
+                            final success =
+                                await provider.disconnectGoogleDrive();
+                            if (!context.mounted) return;
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? 'Google Drive 연동을 해제했어요.'
+                                      : 'Google Drive 연동 해제에 실패했어요.',
+                                ),
+                              ),
+                            );
+                          } else {
+                            final success = await provider.connectGoogleDrive();
+                            if (!context.mounted) return;
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? 'Google Drive 연동을 완료했어요.'
+                                      : 'Google Drive 연동에 실패했어요.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                  child: Text(isLinked ? '연동 해제' : '구글 드라이브 연동하기'),
                 ),
               ],
             ),
@@ -435,16 +486,58 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     );
   }
 
+  Future<T?> _showUnifiedBottomSheet<T>(
+    BuildContext context, {
+    required Widget child,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+
+    return showModalBottomSheet<T>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: cs.surface,
+      barrierColor: Colors.black.withValues(alpha: 0.42),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+          child: child,
+        ),
+      ),
+    );
+  }
+
   void _showFabMenu(BuildContext fabCtx, bool isAtGroupRoot) {
     final cs = Theme.of(fabCtx).colorScheme;
 
-    showModalBottomSheet<String>(
-      context: fabCtx,
-      builder: (context) => SafeArea(
-        child: Column(
+    _showUnifiedBottomSheet<String>(
+      fabCtx,
+      child: Builder(
+        builder: (context) => Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 8),
+            Text(
+              isAtGroupRoot ? '그룹 메뉴' : '콜렉션 메뉴',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isAtGroupRoot
+                  ? '그룹을 추가하거나 그룹 관리로 이동할 수 있어요.'
+                  : '콜렉션을 추가하거나 삭제 모드로 들어갈 수 있어요.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
             ListTile(
               leading: Icon(Icons.add_rounded, color: cs.primary),
               title: Text(isAtGroupRoot ? '그룹 추가' : '콜렉션 추가'),
@@ -460,7 +553,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
               title: const Text('그룹/콜렉션 관리'),
               onTap: () => Navigator.pop(context, 'manage'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -478,7 +571,10 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
         final clipProvider = context.read<ClipProvider>();
         showModalBottomSheet(
           context: context,
+          useRootNavigator: true,
           isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: Colors.black.withValues(alpha: 0.42),
           builder: (_) => GroupCollectionManagerModal(
             initialGroupId: clipProvider.selectedGroupId == -1
                 ? null
@@ -671,10 +767,72 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     );
   }
 
+  Future<void> _showClipFabMenu(
+    BuildContext context, {
+    required String? selectedCollectionName,
+  }) async {
+    final clipProvider = context.read<ClipProvider>();
+    final router = GoRouter.of(context);
+    final cs = Theme.of(context).colorScheme;
+
+    final action = await _showUnifiedBottomSheet<String>(
+      context,
+      child: Builder(
+        builder: (ctx) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '클립 메뉴',
+              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '클립을 추가하거나 선택 모드로 바꿀 수 있어요.',
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.add_rounded),
+              title: const Text('클립 추가'),
+              onTap: () => Navigator.pop(ctx, 'add'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.checklist_rounded),
+              title: const Text('선택 모드'),
+              onTap: () => Navigator.pop(ctx, 'select'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    switch (action) {
+      case 'add':
+        final colName = Uri.encodeComponent(selectedCollectionName ?? '');
+        router.push(
+          '${AppRoutes.clipsPath}/${AppRoutes.clipsCreatePath}?collectionName=$colName',
+        );
+        break;
+      case 'select':
+        clipProvider.openCollectionMenu();
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final clipProvider = context.watch<ClipProvider>();
     final cs = Theme.of(context).colorScheme;
+    final isSelectionMode = clipProvider.isCollectionMenuOpen &&
+        clipProvider.selectedCollectionId != null;
 
     // Breadcrumbs 생성
     final crumbs = <String>['미디어 보관함'];
@@ -735,53 +893,53 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
       children: [
         Column(
           children: [
-            BreadcrumbBar(
-              path: crumbs,
-              onTapCrumb: (i) {
-                if (i == 0) {
-                  setState(() => _deleteMode = false);
-                  clipProvider.backToGroups();
-                } else if (i == 1 && crumbs.length > 2) {
-                  setState(() => _deleteMode = false);
-                  clipProvider.backToCollections();
-                }
-              },
-            ),
-
-            _buildStorageToggle(context),
-            if (_isStorageExpanded) ...[
-              _buildLocalStorageSummary(context),
-              _buildServerStorageProgress(context),
-              _buildCloudStorageSummary(context),
-            ],
-
-            // 삭제 모드 배너
-            if (_deleteMode && !isAtClipList)
-              Container(
-                color: cs.errorContainer,
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline_rounded,
-                        size: 16, color: cs.onErrorContainer),
-                    const SizedBox(width: 8),
-                    Text('삭제 모드 — 컬렉션을 눌러 삭제',
-                        style: TextStyle(
-                            color: cs.onErrorContainer, fontSize: 13)),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: _toggleDeleteMode,
-                      child: Text('완료',
-                          style: TextStyle(color: cs.onErrorContainer)),
-                    ),
-                  ],
-                ),
+            if (!isSelectionMode) ...[
+              BreadcrumbBar(
+                path: crumbs,
+                onTapCrumb: (i) {
+                  if (i == 0) {
+                    setState(() => _deleteMode = false);
+                    clipProvider.backToGroups();
+                  } else if (i == 1 && crumbs.length > 2) {
+                    setState(() => _deleteMode = false);
+                    clipProvider.backToCollections();
+                  }
+                },
               ),
 
-            const SizedBox(height: 10),
+              _buildStorageToggle(context),
+              if (_isStorageExpanded) ...[
+                _buildLocalStorageSummary(context),
+                _buildServerStorageProgress(context),
+                _buildCloudStorageSummary(context),
+              ],
 
+              // 삭제 모드 배너
+              if (_deleteMode && !isAtClipList)
+                Container(
+                  color: cs.errorContainer,
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline_rounded,
+                          size: 16, color: cs.onErrorContainer),
+                      const SizedBox(width: 8),
+                      Text('삭제 모드 — 컬렉션을 눌러 삭제',
+                          style: TextStyle(
+                              color: cs.onErrorContainer, fontSize: 13)),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: _toggleDeleteMode,
+                        child: Text('완료',
+                            style: TextStyle(color: cs.onErrorContainer)),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+            const SizedBox(height: 10),
             Expanded(
               child: NotificationListener<UserScrollNotification>(
                 onNotification: (notification) {
@@ -852,6 +1010,11 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                     // 3) Clips
                     return ClipListView(
                       items: clipProvider.clipItems,
+                      selectionMode: isSelectionMode,
+                      selectedClipIds: clipProvider.selectedClipIds,
+                      onToggleSelection: (item) {
+                        clipProvider.toggleClipSelection(item.clip.id);
+                      },
                       onOpen: (ci) {
                         context.push(
                           '${AppRoutes.clipsPath}/${AppRoutes.clipsPlayPath}?clipId=${ci.clip.id}',
@@ -866,26 +1029,28 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
         ),
 
         // FAB
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: Builder(
-            builder: (fabCtx) => _CollectionAnimatedFab(
-              isExtended: _isFabExtended,
-              icon: isAtClipList ? Icons.add : Icons.more_horiz_rounded,
-              label: isAtClipList ? '클립 추가' : '메뉴',
-              onTap: isAtClipList
-                  ? () {
-                      final colName =
-                          Uri.encodeComponent(selectedCollectionName ?? '');
-                      context.push(
-                        '${AppRoutes.clipsPath}/${AppRoutes.clipsCreatePath}?collectionName=$colName',
-                      );
-                    }
-                  : () => _showFabMenu(fabCtx, isAtGroupRoot),
+        if (!isSelectionMode)
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: Builder(
+              builder: (fabCtx) => _CollectionAnimatedFab(
+                isExtended: _isFabExtended,
+                icon: isAtClipList
+                    ? Icons.tune_rounded
+                    : Icons.more_horiz_rounded,
+                label: isAtClipList
+                    ? '클립 메뉴'
+                    : (isAtGroupRoot ? '그룹 메뉴' : '콜렉션 메뉴'),
+                onTap: isAtClipList
+                    ? () => _showClipFabMenu(
+                          fabCtx,
+                          selectedCollectionName: selectedCollectionName,
+                        )
+                    : () => _showFabMenu(fabCtx, isAtGroupRoot),
+              ),
             ),
           ),
-        ),
       ],
     );
   }

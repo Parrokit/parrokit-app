@@ -18,11 +18,17 @@ class ClipListView extends StatelessWidget {
     super.key,
     required this.items,
     required this.onOpen,
+    this.selectionMode = false,
+    this.selectedClipIds = const <int>{},
+    this.onToggleSelection,
     this.resolveThumb,
   });
 
   final List<ClipItem> items;
   final ValueChanged<ClipItem> onOpen;
+  final bool selectionMode;
+  final Set<int> selectedClipIds;
+  final ValueChanged<ClipItem>? onToggleSelection;
   final ImageProvider<Object>? Function(ClipItem item)? resolveThumb;
 
   String _fmtMs(int ms) {
@@ -480,118 +486,215 @@ class ClipListView extends StatelessWidget {
               return _FadeSlideIn(
                 index: i,
                 version: tick, // 태그 결과 바뀔 때만 애니 시작
-                child: SwipeActionTile(
-                  key: swipeKey,
-                  actionWidth: 300,
-                  actions: [
-                    _buildSwipeAction(
-                      color: AppColors.info,
-                      icon: Icons.edit_rounded,
-                      label: '편집',
-                      onTap: () async {
-                        final clipProvider = context.read<ClipProvider>();
-                        final currentCollection =
-                            clipProvider.selectedCollectionId == null
-                                ? null
-                                : clipProvider.collections
-                                    .cast<dynamic>()
-                                    .firstWhere(
-                                      (c) =>
-                                          (c.id as int) ==
-                                          clipProvider.selectedCollectionId,
-                                      orElse: () => null,
-                                    );
-                        final collectionName =
-                            currentCollection?.name as String?;
-                        final ok = await context.push<bool>(
-                          '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}'
-                          '${collectionName != null ? '&collectionName=${Uri.encodeComponent(collectionName)}' : ''}',
-                        );
-                        if (ok == true && context.mounted) {
-                          clipProvider.backToCollections();
-                          clipProvider.loadCollections();
-                        }
-                      },
-                    ),
-                    _buildSwipeAction(
-                      color: AppColors.warning,
-                      icon: Icons.swap_horiz_rounded,
-                      label: '전환',
-                      onTap: () => _showStorageModeSheet(
-                        context,
-                        item,
-                        onApplied: () => swipeKey.currentState?.close(),
-                      ),
-                    ),
-                    _buildSwipeAction(
-                      color: AppColors.danger,
-                      icon: Icons.delete_rounded,
-                      label: '삭제',
-                      onTap: () => _confirmDeleteClip(context, item),
-                    ),
-                  ],
-                  child: InkWell(
-                    onTap: () => onOpen(item),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          EpisodeThumbnail(
-                              imageProvider: thumbProvider, duration: dur),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
+                child: selectionMode
+                    ? _SelectableClipTile(
+                        imageProvider: thumbProvider,
+                        duration: dur,
+                        title: clip.title,
+                        storageChip: storageChip,
+                        tags: item.tags,
+                        selected: selectedClipIds.contains(clip.id),
+                        onTap: onToggleSelection == null
+                            ? null
+                            : () => onToggleSelection!(item),
+                      )
+                    : SwipeActionTile(
+                        key: swipeKey,
+                        actionWidth: 300,
+                        actions: [
+                          _buildSwipeAction(
+                            color: AppColors.info,
+                            icon: Icons.edit_rounded,
+                            label: '편집',
+                            onTap: () async {
+                              final clipProvider = context.read<ClipProvider>();
+                              final currentCollection =
+                                  clipProvider.selectedCollectionId == null
+                                      ? null
+                                      : clipProvider.collections
+                                          .cast<dynamic>()
+                                          .firstWhere(
+                                            (c) =>
+                                                (c.id as int) ==
+                                                clipProvider
+                                                    .selectedCollectionId,
+                                            orElse: () => null,
+                                          );
+                              final collectionName =
+                                  currentCollection?.name as String?;
+                              final ok = await context.push<bool>(
+                                '${AppRoutes.clipsPath}/${AppRoutes.clipsEditPath}?clipId=${clip.id}'
+                                '${collectionName != null ? '&collectionName=${Uri.encodeComponent(collectionName)}' : ''}',
+                              );
+                              if (ok == true && context.mounted) {
+                                clipProvider.backToCollections();
+                                clipProvider.loadCollections();
+                              }
+                            },
+                          ),
+                          _buildSwipeAction(
+                            color: AppColors.warning,
+                            icon: Icons.swap_horiz_rounded,
+                            label: '전환',
+                            onTap: () => _showStorageModeSheet(
+                              context,
+                              item,
+                              onApplied: () => swipeKey.currentState?.close(),
+                            ),
+                          ),
+                          _buildSwipeAction(
+                            color: AppColors.danger,
+                            icon: Icons.delete_rounded,
+                            label: '삭제',
+                            onTap: () => _confirmDeleteClip(context, item),
+                          ),
+                        ],
+                        child: InkWell(
+                          onTap: () => onOpen(item),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  clip.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(ctx)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                EpisodeThumbnail(
+                                    imageProvider: thumbProvider,
+                                    duration: dur),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        clip.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(ctx)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                                fontWeight: FontWeight.w800),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        children: [
+                                          if (storageChip != null) storageChip,
+                                          for (final t in item.tags.take(4))
+                                            MiniChip(label: t.name),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 6),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children: [
-                                    if (storageChip != null) storageChip,
-                                    for (final t in item.tags.take(4))
-                                      MiniChip(label: t.name),
-                                  ],
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: Theme.of(ctx)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.4),
                                 ),
                               ],
                             ),
                           ),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: Theme.of(ctx)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.4),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                ),
               );
             },
-            separatorBuilder: (ctx, __) => Divider(
-              height: 1,
-              color: Theme.of(ctx)
-                  .colorScheme
-                  .outlineVariant
-                  .withValues(alpha: 0.6),
-            ),
+            separatorBuilder: selectionMode
+                ? (_, __) => const SizedBox.shrink()
+                : (ctx, __) => Divider(
+                      height: 1,
+                      color: Theme.of(ctx)
+                          .colorScheme
+                          .outlineVariant
+                          .withValues(alpha: 0.6),
+                    ),
           ),
 
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
+    );
+  }
+}
+
+class _SelectableClipTile extends StatelessWidget {
+  const _SelectableClipTile({
+    required this.imageProvider,
+    required this.duration,
+    required this.title,
+    required this.storageChip,
+    required this.tags,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ImageProvider<Object>? imageProvider;
+  final String duration;
+  final String title;
+  final Widget? storageChip;
+  final List<dynamic> tags;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final toggleSelection = onTap;
+    final selectedColor = cs.primaryContainer.withValues(alpha: 0.65);
+
+    return Material(
+      color: selected ? selectedColor : cs.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: selected,
+                onChanged:
+                    toggleSelection == null ? null : (_) => toggleSelection(),
+              ),
+              const SizedBox(width: 2),
+              EpisodeThumbnail(
+                  imageProvider: imageProvider, duration: duration),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          if (storageChip != null) storageChip!,
+                          for (final t in tags.take(4)) MiniChip(label: t.name),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -62,6 +62,8 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   int cachedRemoteClipCount = 0;
   int? cloudStorageQuotaBytes;
   bool hasGoogleDriveLinked = false;
+  bool _isCollectionMenuOpen = false;
+  final Set<int> _selectedClipIds = <int>{};
   bool _isCollectionBackfilling = false;
   int _collectionBackfillProgress = 0;
   int _collectionBackfillTotal = 0;
@@ -149,6 +151,10 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   String? get googleDriveLinkError => _googleDriveLinkError;
   bool get shouldShowGoogleDriveLinkBanner =>
       _isGoogleDriveLinking || _googleDriveLinkError != null;
+  bool get isCollectionMenuOpen => _isCollectionMenuOpen;
+  bool get hasSelectedClips => _selectedClipIds.isNotEmpty;
+  Set<int> get selectedClipIds => Set.unmodifiable(_selectedClipIds);
+  bool isClipSelected(int clipId) => _selectedClipIds.contains(clipId);
 
   /// 현재 로그인 유저의 collection 메타데이터를 Firestore로 동기화합니다.
   Future<void> syncCollectionDataToServer(
@@ -405,10 +411,48 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
   }
 
+  void toggleCollectionMenu() {
+    if (_isCollectionMenuOpen) {
+      closeCollectionMenu();
+    } else {
+      openCollectionMenu();
+    }
+  }
+
+  void openCollectionMenu() {
+    if (_isCollectionMenuOpen) return;
+    _isCollectionMenuOpen = true;
+    _selectedClipIds.clear();
+    notifyListeners();
+  }
+
+  void closeCollectionMenu() {
+    if (!_isCollectionMenuOpen) return;
+    _isCollectionMenuOpen = false;
+    _selectedClipIds.clear();
+    notifyListeners();
+  }
+
+  void toggleClipSelection(int clipId) {
+    if (_selectedClipIds.contains(clipId)) {
+      _selectedClipIds.remove(clipId);
+    } else {
+      _selectedClipIds.add(clipId);
+    }
+    notifyListeners();
+  }
+
+  void clearClipSelection() {
+    if (_selectedClipIds.isEmpty) return;
+    _selectedClipIds.clear();
+    notifyListeners();
+  }
+
   /// 모든 그룹 로드.
   @override
   Future<void> loadGroups() async {
     groups = await _service.getAllGroups();
+    closeCollectionMenu();
 
     // 초기화
     selectedGroupId = null;
@@ -425,6 +469,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   /// id가 null이면 소속 그룹이 없는 최상위 컬렉션을 불러옵니다.
   @override
   Future<void> selectGroup(int? id) async {
+    closeCollectionMenu();
     selectedGroupId = id;
     selectedCollectionId = null;
     clips = [];
@@ -552,6 +597,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   /// 그룹으로 돌아감 (선택한 컬렉션 해제)
   void backToCollections() {
+    closeCollectionMenu();
     selectedCollectionId = null;
     clips = [];
     clipItems = [];
@@ -561,6 +607,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   /// 라이브러리 루트(그룹 목록)로 돌아감
   void backToGroups() {
+    closeCollectionMenu();
     selectedGroupId = null;
     selectedCollectionId = null;
     collections = [];

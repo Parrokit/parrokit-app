@@ -100,18 +100,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final cs = Theme.of(context).colorScheme;
     final clipProvider = context.watch<ClipProvider>();
     final tagProv = context.watch<TagFilterProvider>();
+    final isSelectionMode = clipProvider.isCollectionMenuOpen &&
+        clipProvider.selectedCollectionId != null;
 
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 8),
-            BookmarkTabs(
-              value: tab,
-              onChanged: (v) => setState(() => tab = v),
-            ),
-            const SizedBox(height: 10),
+            if (!isSelectionMode) ...[
+              const SizedBox(height: 8),
+              BookmarkTabs(
+                value: tab,
+                onChanged: (v) => setState(() => tab = v),
+              ),
+              const SizedBox(height: 10),
+            ],
             Expanded(
               child: tab == LibraryTab.folder
                   ? const LibraryFolderSection()
