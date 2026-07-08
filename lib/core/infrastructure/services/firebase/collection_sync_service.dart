@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:parrokit/data/local/app_database.dart' as db;
 import 'package:parrokit/core/shared/utils/app_logger.dart';
@@ -231,13 +232,11 @@ class CollectionSyncService {
   }
 
   bool _needsCollectionSync(db.Collection row) {
-    return row.remoteId != row.id.toString() ||
-        row.syncStatus != SyncStatus.synced;
+    return row.syncStatus != SyncStatus.synced;
   }
 
   bool _needsClipSync(db.Clip row) {
-    return row.remoteId != row.id.toString() ||
-        row.syncStatus != SyncStatus.synced;
+    return row.syncStatus != SyncStatus.synced;
   }
 
   Future<int> _syncCollections({
@@ -397,7 +396,7 @@ class CollectionSyncService {
         );
       }
 
-      final docId = clip.id.toString();
+      final docId = clip.remoteId ?? const Uuid().v4();
       final docRef = ref.doc(docId);
       await _cleanupLegacyDocs(
         ref: ref,

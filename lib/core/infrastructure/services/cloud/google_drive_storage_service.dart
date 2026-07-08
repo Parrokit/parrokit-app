@@ -120,6 +120,7 @@ class GoogleDriveStorageService {
     required File file,
     required String fileName,
     required String clipId,
+    required String storagePath,
     required String title,
     required int storageBytes,
     required int durationMs,
@@ -139,7 +140,12 @@ class GoogleDriveStorageService {
     final headers = await _authorizationHeaders(account);
     AppLogger.d('[GoogleDrive][Upload] auth-done');
     AppLogger.d('[GoogleDrive][Upload] folder-ensure-start');
-    final folderId = await _ensureAppFolder(account, headers);
+    final folderSegments = _folderSegmentsForStoragePath(storagePath);
+    final folderId = await _ensureFolderPath(
+      account,
+      headers,
+      folderSegments,
+    );
     AppLogger.d('[GoogleDrive][Upload] folder-ensure-done folderId=$folderId');
     onProgress?.call(0, 0, 'Google Drive 연결 확인 중');
 
@@ -165,6 +171,7 @@ class GoogleDriveStorageService {
         'storageMode': 'cloud:gdrive',
         'storageBytes': storageBytes.toString(),
         'durationMs': durationMs.toString(),
+        'storagePath': storagePath,
       },
     };
 
@@ -324,6 +331,12 @@ class GoogleDriveStorageService {
       final response = await client.send(request);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final body = await response.stream.bytesToString();
+        if (response.statusCode == 404) {
+          AppLogger.w(
+            '[GoogleDrive][Delete] not-found fileId=$fileId body=$body',
+          );
+          return;
+        }
         throw StateError(
           'Google Drive 삭제 실패: ${response.statusCode} $body',
         );
@@ -367,12 +380,47 @@ class GoogleDriveStorageService {
     }
   }
 
-  Future<String> _ensureAppFolder(
+  Future<String> _ensureFolderPath(
     GoogleSignInAccount account,
     Map<String, String> headers,
+    List<String> folderSegments,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    final cacheKey = '${_folderCacheKeyPrefix}_${_accountKey(account)}';
+    var currentParentId = await _ensureRootFolder(account, headers, prefs);
+    if (folderSegments.isEmpty) {
+      return currentParentId;
+    }
+
+    var currentPath = <String>[_folderName];
+    for (final segment in folderSegments) {
+      currentPath = [...currentPath, segment];
+      currentParentId = await _ensureChildFolder(
+        account: account,
+        headers: headers,
+        prefs: prefs,
+        parentId: currentParentId,
+        folderName: segment,
+        folderPath: currentPath,
+      );
+    }
+    return currentParentId;
+  }
+
+  List<String> _folderSegmentsForStoragePath(String storagePath) {
+    final segments =
+        storagePath.split('/').where((segment) => segment.isNotEmpty).toList();
+    if (segments.length <= 1) {
+      return const [];
+    }
+    return segments.sublist(0, segments.length - 1);
+  }
+
+  Future<String> _ensureRootFolder(
+    GoogleSignInAccount account,
+    Map<String, String> headers,
+    SharedPreferences prefs,
+  ) async {
+    final cacheKey = '${_folderCacheKeyPrefix}_${_accountKey(account)}_root';
     final cachedFolderId = prefs.getString(cacheKey);
     if (cachedFolderId != null && cachedFolderId.isNotEmpty) {
       AppLogger.d(
@@ -386,10 +434,77 @@ class GoogleDriveStorageService {
       }
     }
 
+    final folderId = await _findOrCreateFolder(
+      account: account,
+      headers: headers,
+      prefs: prefs,
+      parentId: 'root',
+      folderName: _folderName,
+      folderPath: const ['Parrokit'],
+    );
+    await prefs.setString(cacheKey, folderId);
+    return folderId;
+  }
+
+  Future<String> _ensureChildFolder({
+    required GoogleSignInAccount account,
+    required Map<String, String> headers,
+    required SharedPreferences prefs,
+    required String parentId,
+    required String folderName,
+    required List<String> folderPath,
+  }) async {
+    final cacheKey =
+        '${_folderCacheKeyPrefix}_${_accountKey(account)}_${folderPath.join('__')}';
+    final cachedFolderId = prefs.getString(cacheKey);
+    if (cachedFolderId != null && cachedFolderId.isNotEmpty) {
+      AppLogger.d(
+        '[GoogleDrive][Folder] cache-hit account=${_maskAccount(account)} folderId=$cachedFolderId',
+      );
+      final metadata = await fetchFileMetadata(cachedFolderId);
+      if (metadata != null &&
+          metadata['mimeType'] == 'application/vnd.google-apps.folder' &&
+          metadata['trashed'] != true) {
+        return cachedFolderId;
+      }
+    }
+
+    final folderId = await _findOrCreateFolder(
+      account: account,
+      headers: headers,
+      prefs: prefs,
+      parentId: parentId,
+      folderName: folderName,
+      folderPath: folderPath,
+    );
+    await prefs.setString(cacheKey, folderId);
+    return folderId;
+  }
+
+  Future<String> _findOrCreateFolder({
+    required GoogleSignInAccount account,
+    required Map<String, String> headers,
+    required SharedPreferences prefs,
+    required String parentId,
+    required String folderName,
+    required List<String> folderPath,
+  }) async {
+    final existing = await _findFolderByName(
+      parentId: parentId,
+      folderName: folderName,
+      headers: headers,
+    );
+    if (existing != null) {
+      AppLogger.d(
+        '[GoogleDrive][Folder] reuse account=${_maskAccount(account)} path=${folderPath.join('/')} folderId=$existing',
+      );
+      return existing;
+    }
+
     final client = http.Client();
     try {
       AppLogger.d(
-        '[GoogleDrive][Folder] create-start account=${_maskAccount(account)}',
+        '[GoogleDrive][Folder] create-start account=${_maskAccount(account)} path=${folderPath.join('/')}',
       );
       final createUri = Uri.https(
         'www.googleapis.com',
@@ -400,9 +515,9 @@ class GoogleDriveStorageService {
       request.headers.addAll(headers);
       request.headers['Content-Type'] = 'application/json; charset=UTF-8';
       request.body = jsonEncode({
-        'name': _folderName,
+        'name': folderName,
         'mimeType': 'application/vnd.google-apps.folder',
-        'parents': ['root'],
+        'parents': [parentId],
       });
 
       final response = await client.send(request);
@@ -419,11 +534,51 @@ class GoogleDriveStorageService {
         throw StateError('Google Drive 폴더 ID를 받지 못했습니다.');
       }
 
-      await prefs.setString(cacheKey, folderId);
+      await prefs.setString(
+        '${_folderCacheKeyPrefix}_${_accountKey(account)}_${folderPath.join('__')}',
+        folderId,
+      );
       AppLogger.i(
-        '[GoogleDrive][Folder] ready account=${_maskAccount(account)} folderId=$folderId',
+        '[GoogleDrive][Folder] ready account=${_maskAccount(account)} path=${folderPath.join('/')} folderId=$folderId',
       );
       return folderId;
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<String?> _findFolderByName({
+    required String parentId,
+    required String folderName,
+    required Map<String, String> headers,
+  }) async {
+    final client = http.Client();
+    try {
+      final query = [
+        "mimeType = 'application/vnd.google-apps.folder'",
+        "trashed = false",
+        "name = '${_escapeDriveQuery(folderName)}'",
+        "'$parentId' in parents",
+      ].join(' and ');
+      final uri = Uri.https(
+        'www.googleapis.com',
+        '/drive/v3/files',
+        const {'fields': 'files(id,name,parents)'},
+      ).replace(queryParameters: {
+        'q': query,
+        'fields': 'files(id,name,parents)',
+        'pageSize': '1',
+      });
+      final response = await client.get(uri, headers: headers);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
+      }
+      final data = _asMap(response.body);
+      final files = data['files'];
+      if (files is! List || files.isEmpty) return null;
+      final first = files.first;
+      if (first is! Map<String, dynamic>) return null;
+      return first['id'] as String?;
     } finally {
       client.close();
     }
@@ -454,6 +609,10 @@ class GoogleDriveStorageService {
   String _accountKey(GoogleSignInAccount account) {
     if (account.email.isNotEmpty) return account.email;
     return 'unknown';
+  }
+
+  String _escapeDriveQuery(String value) {
+    return value.replaceAll('\\', r'\\').replaceAll("'", r"\'");
   }
 
   String _maskAccount(GoogleSignInAccount account) {

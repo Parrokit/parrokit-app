@@ -16,9 +16,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:mime/mime.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:uuid/uuid.dart';
 import '../../../data/local/app_database.dart';
 import '../../../data/models/clip_item.dart';
 import '../../../data/models/clip_view.dart';
@@ -273,38 +275,97 @@ class MediaService {
       throw StateError('서버 저장하려면 로그인이 필요합니다.');
     }
 
+    final previousStorageMode = target.storageMode;
+    final previousRemoteData = await _loadPreviousRemoteData(
+      uid: user.uid,
+      clipId: clipId,
+      remoteId: target.remoteId,
+    );
+
     final absPath = await _absolutePathFor(target.filePath);
     final file = File(absPath);
     if (!await file.exists()) {
       throw StateError('업로드할 파일을 찾을 수 없습니다.');
     }
 
-    final remoteDocId = _stableClipDocId(clipId);
-    final storagePath = 'users/${user.uid}/clips/$clipId/source';
-    final storageRef = FirebaseStorage.instance.ref(storagePath);
+    final remoteDocId = _remoteDocIdForClip(target);
+    final extension = p.extension(absPath);
+    final normalizedExtension = extension.isEmpty ? '.mp4' : extension;
+    final contentType = lookupMimeType(absPath) ?? 'application/octet-stream';
     final fileSize = await file.length();
     onProgress?.call(0, fileSize, 'server 업로드 준비 중');
+    final storagePath =
+        'users/${user.uid}/clips/$remoteDocId/video$normalizedExtension';
 
-    final uploadTask = storageRef.putFile(file);
-    late final StreamSubscription<TaskSnapshot> subscription;
-    try {
-      subscription = uploadTask.snapshotEvents.listen((snapshot) {
-        final total = snapshot.totalBytes > 0 ? snapshot.totalBytes : fileSize;
-        onProgress?.call(
-          snapshot.bytesTransferred,
-          total,
-          'server 업로드 중',
+    Future<({String storagePath, String downloadUrl})> uploadToPath(
+      String storagePath,
+    ) async {
+      final storageRef = FirebaseStorage.instance.ref(storagePath);
+      final metadata = SettableMetadata(contentType: contentType);
+      AppLogger.d(
+        '[Clip][Storage] server-upload start clipId=$clipId path=$storagePath contentType=$contentType bytes=$fileSize',
+      );
+
+      Future<({String storagePath, String downloadUrl})> runTask(
+        UploadTask uploadTask, {
+        required String progressMessage,
+      }) async {
+        late final StreamSubscription<TaskSnapshot> subscription;
+        try {
+          subscription = uploadTask.snapshotEvents.listen((snapshot) {
+            final total =
+                snapshot.totalBytes > 0 ? snapshot.totalBytes : fileSize;
+            onProgress?.call(
+              snapshot.bytesTransferred,
+              total,
+              progressMessage,
+            );
+          });
+
+          final taskSnapshot = await uploadTask;
+          AppLogger.d(
+            '[Clip][Storage] server-upload-finished clipId=$clipId path=$storagePath mode=$progressMessage',
+          );
+          final downloadUrl = await taskSnapshot.ref.getDownloadURL();
+          return (storagePath: storagePath, downloadUrl: downloadUrl);
+        } finally {
+          await subscription.cancel();
+        }
+      }
+
+      try {
+        return await runTask(
+          storageRef.putFile(file, metadata),
+          progressMessage: 'server 업로드 중',
         );
-      });
+      } on fb.FirebaseException catch (e, st) {
+        AppLogger.w(
+          '[Clip][Storage] server-upload putFile-failed clipId=$clipId path=$storagePath code=${e.code} message=${e.message}',
+          error: e,
+          stackTrace: st,
+        );
 
-      final taskSnapshot = await uploadTask;
-      final downloadUrl = await taskSnapshot.ref.getDownloadURL();
+        final bytes = await file.readAsBytes();
+        AppLogger.d(
+          '[Clip][Storage] server-upload fallback-putData clipId=$clipId path=$storagePath bytes=${bytes.length}',
+        );
+        return runTask(
+          storageRef.putData(bytes, metadata),
+          progressMessage: 'server 업로드 재시도 중',
+        );
+      }
+    }
+
+    late final ({String storagePath, String downloadUrl}) uploadResult;
+    try {
+      uploadResult = await uploadToPath(storagePath);
+
       final now = DateTime.now();
 
       final collectionRemoteId =
           await _collectionRemoteIdForClip(target.collectionId);
 
-      final docRef = _libraryClipDocRef(user.uid, clipId);
+      final docRef = _libraryClipDocRef(user.uid, remoteDocId);
       await _cleanupLegacyLibraryClipDocs(
         uid: user.uid,
         clipId: clipId,
@@ -319,8 +380,8 @@ class MediaService {
         'storageMode': 'server',
         'storageBytes': target.storageBytes,
         'durationMs': target.durationMs,
-        'storagePath': storagePath,
-        'downloadUrl': downloadUrl,
+        'storagePath': uploadResult.storagePath,
+        'downloadUrl': uploadResult.downloadUrl,
         'remoteFileId': FieldValue.delete(),
         'cloudFolderId': FieldValue.delete(),
         'storageProvider': FieldValue.delete(),
@@ -336,11 +397,29 @@ class MediaService {
         ),
       );
 
+      await _cleanupPreviousRemoteSource(
+        clipId: clipId,
+        previousStorageMode: previousStorageMode,
+        previousRemoteData: previousRemoteData,
+      );
+
       AppLogger.i(
         '[Clip][Storage] move-to-server success clipId=$clipId remoteId=$remoteDocId',
       );
-    } finally {
-      await subscription.cancel();
+    } on fb.FirebaseException catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] server-upload firebase-error clipId=$clipId code=${e.code} message=${e.message}',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    } on Exception catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] server-upload error clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
     }
   }
 
@@ -359,33 +438,47 @@ class MediaService {
       throw StateError('클립을 찾을 수 없습니다.');
     }
 
+    final user = fb.FirebaseAuth.instance.currentUser;
+    final previousStorageMode = target.storageMode;
+    final previousRemoteData = user == null
+        ? null
+        : await _loadPreviousRemoteData(
+            uid: user.uid,
+            clipId: clipId,
+            remoteId: target.remoteId,
+          );
+
     final absPath = await _absolutePathFor(target.filePath);
     final file = File(absPath);
     if (!await file.exists()) {
       throw StateError('업로드할 파일을 찾을 수 없습니다.');
     }
 
+    final remoteDocId = _remoteDocIdForClip(target);
+    final extension = p.extension(absPath);
+    final normalizedExtension = extension.isEmpty ? '.mp4' : extension;
     onProgress?.call(0, 0, 'Google Drive 연결 확인 중');
-    final fileName = _buildDriveFileName(target, absPath);
+    final fileName = _buildDriveFileName(absPath);
+    final cloudStoragePath = 'clips/$remoteDocId/video$normalizedExtension';
     final result = await _googleDriveStorageService.uploadClipFile(
       file: file,
       fileName: fileName,
       clipId: target.id.toString(),
+      storagePath: cloudStoragePath,
       title: target.title,
       storageBytes: target.storageBytes,
       durationMs: target.durationMs,
       onProgress: onProgress,
     );
 
-    final user = fb.FirebaseAuth.instance.currentUser;
     if (user != null) {
       final collectionRemoteId =
           await _collectionRemoteIdForClip(target.collectionId);
-      final docRef = _libraryClipDocRef(user.uid, clipId);
+      final docRef = _libraryClipDocRef(user.uid, remoteDocId);
       await _cleanupLegacyLibraryClipDocs(
         uid: user.uid,
         clipId: clipId,
-        keepDocId: _stableClipDocId(clipId),
+        keepDocId: remoteDocId,
       );
       await docRef.set({
         'localId': target.id,
@@ -397,10 +490,10 @@ class MediaService {
         'storageProvider': 'gdrive',
         'storageBytes': target.storageBytes,
         'durationMs': target.durationMs,
+        'storagePath': cloudStoragePath,
         'remoteFileId': result.fileId,
         'cloudFolderId': result.folderId,
         'downloadUrl': result.webContentLink ?? result.webViewLink,
-        'storagePath': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
@@ -408,11 +501,17 @@ class MediaService {
     final now = DateTime.now();
     await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
       ClipsCompanion(
-        remoteId: Value(_stableClipDocId(clipId)),
+        remoteId: Value(remoteDocId),
         storageMode: const Value('cloud:gdrive'),
         syncStatus: const Value(SyncStatus.synced),
         lastSyncedAt: Value(now),
       ),
+    );
+
+    await _cleanupPreviousRemoteSource(
+      clipId: clipId,
+      previousStorageMode: previousStorageMode,
+      previousRemoteData: previousRemoteData,
     );
 
     AppLogger.i(
@@ -454,7 +553,7 @@ class MediaService {
       await _moveCloudClipToLocal(
         clipId: clipId,
         target: target,
-        remoteId: remoteId,
+        remoteDocId: remoteId,
       );
       return;
     }
@@ -471,7 +570,7 @@ class MediaService {
 
     final storagePath = remoteData['storagePath'] as String?;
     final downloadUrl = remoteData['downloadUrl'] as String?;
-    final stableDocId = _stableClipDocId(clipId);
+    final remoteDocId = remoteId;
 
     await _ensureLocalClipFileExists(
       target,
@@ -482,12 +581,12 @@ class MediaService {
     await _deleteRemoteStorageObject(
         storagePath: storagePath, downloadUrl: downloadUrl);
 
-    final remoteDocRef = _libraryClipDocRef(user.uid, clipId);
+    final remoteDocRef = _libraryClipDocRef(user.uid, remoteDocId);
 
     await _cleanupLegacyLibraryClipDocs(
       uid: user.uid,
       clipId: clipId,
-      keepDocId: stableDocId,
+      keepDocId: remoteDocId,
     );
     await remoteDocRef.set({
       'localId': target.id,
@@ -504,10 +603,10 @@ class MediaService {
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    await _markClipAsLocal(clipId: clipId, remoteId: stableDocId);
+    await _markClipAsLocal(clipId: clipId, remoteId: remoteDocId);
 
     AppLogger.i(
-        '[Clip][Storage] move-to-local success clipId=$clipId remoteId=$stableDocId');
+        '[Clip][Storage] move-to-local success clipId=$clipId remoteId=$remoteDocId');
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -552,38 +651,108 @@ class MediaService {
     return collection?.remoteId;
   }
 
-  Future<void> _moveCloudClipToLocal({
+  Future<Map<String, dynamic>?> _loadPreviousRemoteData({
+    required String uid,
     required int clipId,
-    required Clip target,
-    required String remoteId,
+    required String? remoteId,
   }) async {
-    final absPath = await _absolutePathFor(target.filePath);
-    final localFile = File(absPath);
-    if (!await localFile.exists() || await localFile.length() == 0) {
-      await _googleDriveStorageService.downloadClipFile(
-        fileId: remoteId,
-        destination: localFile,
+    if (remoteId == null || remoteId.isEmpty) {
+      return null;
+    }
+    return (await _readLibraryClipDoc(
+      uid: uid,
+      clipId: clipId,
+      preferredDocId: remoteId,
+    ))
+        ?.data();
+  }
+
+  Future<void> _cleanupPreviousRemoteSource({
+    required int clipId,
+    required String previousStorageMode,
+    required Map<String, dynamic>? previousRemoteData,
+  }) async {
+    if (previousStorageMode == 'server') {
+      final previousStoragePath = previousRemoteData?['storagePath'] as String?;
+      final previousDownloadUrl = previousRemoteData?['downloadUrl'] as String?;
+      await _deleteRemoteStorageObject(
+        storagePath: previousStoragePath,
+        downloadUrl: previousDownloadUrl,
       );
+      return;
+    }
+
+    if (!previousStorageMode.startsWith('cloud:')) {
+      return;
+    }
+
+    final previousRemoteFileId = previousRemoteData?['remoteFileId'] as String?;
+    if (previousRemoteFileId == null || previousRemoteFileId.isEmpty) {
+      return;
     }
 
     try {
-      await _googleDriveStorageService.deleteFile(remoteId);
+      await _googleDriveStorageService.deleteFile(previousRemoteFileId);
     } catch (e, st) {
       AppLogger.w(
-        '[Clip][Storage] cloud-delete failed remoteId=$remoteId',
+        '[Clip][Storage] previous-cloud-delete failed clipId=$clipId remoteFileId=$previousRemoteFileId',
         error: e,
         stackTrace: st,
       );
     }
+  }
 
+  Future<void> _moveCloudClipToLocal({
+    required int clipId,
+    required Clip target,
+    required String remoteDocId,
+  }) async {
     final user = fb.FirebaseAuth.instance.currentUser;
+    final remoteDoc = await _readLibraryClipDoc(
+      uid: user?.uid ?? '',
+      clipId: clipId,
+      preferredDocId: remoteDocId,
+    );
+    final remoteData = remoteDoc?.data();
+    if (remoteData == null) {
+      throw StateError('클라우드 원본 정보를 찾을 수 없습니다.');
+    }
+
+    final remoteFileId = remoteData['remoteFileId'] as String?;
+    if (remoteFileId == null || remoteFileId.isEmpty) {
+      AppLogger.w(
+        '[Clip][Storage] cloud-delete skipped remoteFileId-missing clipId=$clipId docId=$remoteDocId',
+      );
+    }
+
+    final absPath = await _absolutePathFor(target.filePath);
+    final localFile = File(absPath);
+    if (!await localFile.exists() || await localFile.length() == 0) {
+      final downloadId = remoteFileId ?? remoteDocId;
+      await _googleDriveStorageService.downloadClipFile(
+        fileId: downloadId,
+        destination: localFile,
+      );
+    }
+
+    if (remoteFileId != null && remoteFileId.isNotEmpty) {
+      try {
+        await _googleDriveStorageService.deleteFile(remoteFileId);
+      } catch (e, st) {
+        AppLogger.w(
+          '[Clip][Storage] cloud-delete failed remoteFileId=$remoteFileId',
+          error: e,
+          stackTrace: st,
+        );
+      }
+    }
+
     if (user != null) {
-      final stableDocId = _stableClipDocId(clipId);
-      final remoteDocRef = _libraryClipDocRef(user.uid, clipId);
+      final remoteDocRef = _libraryClipDocRef(user.uid, remoteDocId);
       await _cleanupLegacyLibraryClipDocs(
         uid: user.uid,
         clipId: clipId,
-        keepDocId: stableDocId,
+        keepDocId: remoteDocId,
       );
       await remoteDocRef.set({
         'localId': target.id,
@@ -601,7 +770,7 @@ class MediaService {
       }, SetOptions(merge: true));
     }
 
-    await _markClipAsLocal(clipId: clipId, remoteId: _stableClipDocId(clipId));
+    await _markClipAsLocal(clipId: clipId, remoteId: remoteDocId);
     AppLogger.i(
       '[Clip][Storage] move-to-local success clipId=$clipId storage=cloud',
     );
@@ -668,12 +837,9 @@ class MediaService {
     );
   }
 
-  String _buildDriveFileName(Clip clip, String absPath) {
+  String _buildDriveFileName(String absPath) {
     final extension = p.extension(absPath);
-    final safeTitle =
-        clip.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
-    final baseName = safeTitle.isEmpty ? 'clip_${clip.id}' : safeTitle;
-    return 'clip_${clip.id}_$baseName${extension.isEmpty ? '.mp4' : extension}';
+    return 'video${extension.isEmpty ? '.mp4' : extension}';
   }
 
   Future<int> getServerStorageUsedBytes() async {
@@ -978,12 +1144,18 @@ class MediaService {
 
   DocumentReference<Map<String, dynamic>> _libraryClipDocRef(
     String uid,
-    int clipId,
+    String docId,
   ) {
-    return _libraryClipsRef(uid).doc(_stableClipDocId(clipId));
+    return _libraryClipsRef(uid).doc(docId);
   }
 
-  String _stableClipDocId(int clipId) => clipId.toString();
+  String _remoteDocIdForClip(Clip clip) {
+    final existing = clip.remoteId;
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+    return const Uuid().v4();
+  }
 
   Future<DocumentSnapshot<Map<String, dynamic>>?> _readLibraryClipDoc({
     required String uid,
@@ -993,10 +1165,8 @@ class MediaService {
     if (uid.isEmpty) return null;
 
     final ref = _libraryClipsRef(uid);
-    final stableDocId = _stableClipDocId(clipId);
     final candidates = <String>[
       if (preferredDocId != null && preferredDocId.isNotEmpty) preferredDocId,
-      stableDocId,
     ];
 
     for (final docId in candidates) {
