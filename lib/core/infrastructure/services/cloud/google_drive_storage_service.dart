@@ -131,6 +131,8 @@ class GoogleDriveStorageService {
     required String title,
     required int storageBytes,
     required int durationMs,
+    required String remoteDocId,
+    required String ownerScope,
     GoogleDriveProgressCallback? onProgress,
   }) async {
     AppLogger.i(
@@ -145,6 +147,7 @@ class GoogleDriveStorageService {
 
     AppLogger.d('[GoogleDrive][Upload] auth-start');
     final headers = await _authorizationHeaders(account);
+    final accountKey = _accountKey(account);
     AppLogger.d('[GoogleDrive][Upload] auth-done');
     AppLogger.d('[GoogleDrive][Upload] folder-ensure-start');
     final folderSegments = _folderSegmentsForStoragePath(storagePath);
@@ -174,8 +177,12 @@ class GoogleDriveStorageService {
       'parents': [folderId],
       'appProperties': <String, String>{
         'clipId': clipId,
+        'remoteDocId': remoteDocId,
         'title': title,
         'storageMode': 'gdrive',
+        'provider': 'gdrive',
+        'ownerScope': ownerScope,
+        'ownerKey': accountKey,
         'storageBytes': storageBytes.toString(),
         'durationMs': durationMs.toString(),
         'storagePath': storagePath,
@@ -245,7 +252,7 @@ class GoogleDriveStorageService {
         fileId: data['id'] as String? ?? '',
         fileName: data['name'] as String? ?? fileName,
         folderId: folderId,
-        accountKey: _accountKey(account),
+        accountKey: accountKey,
         webViewLink: data['webViewLink'] as String?,
         webContentLink: data['webContentLink'] as String?,
       );

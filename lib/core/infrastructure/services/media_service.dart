@@ -39,6 +39,9 @@ typedef ClipServerUploadProgressCallback = void Function(
 class MediaService {
   static const String _legacyAdoptedPrefsPrefix =
       'library.legacy_storage_adopted';
+  static const String _remoteCollectionIdPrefsPrefix =
+      'library.remote_collection_id';
+  static const String _remoteGroupIdPrefsPrefix = 'library.remote_group_id';
   static const String _ownerScopeDevice = 'device';
   static const String _ownerScopeAppAccount = 'app_account';
   static const String _ownerScopeCloudAccount = 'cloud_account';
@@ -67,18 +70,7 @@ class MediaService {
 
   Future<List<Group>> getAllGroups() async {
     final allGroups = await db.groupsDao.getAllGroups();
-    final visibleCollectionIds = await _visibleCollectionIds();
-    if (visibleCollectionIds.isEmpty) return [];
-
-    final mappings = await (db.select(db.groupCollections)
-          ..where((gc) => gc.collectionId.isIn(visibleCollectionIds)))
-        .get();
-    final visibleGroupIds = mappings.map((m) => m.groupId).toSet();
-
-    return allGroups
-        .where((group) => visibleGroupIds.contains(group.id))
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    return allGroups.toList()..sort((a, b) => a.name.compareTo(b.name));
   }
 
   Future<List<Collection>> getVisibleCollectionsForGroup(int? groupId) async {
@@ -409,6 +401,12 @@ class MediaService {
 
     final previousStorageMode = target.storageMode;
     final previousSourceRef = await _getCurrentClipSourceRef(target);
+    if (previousStorageMode == 'server' && previousSourceRef != null) {
+      AppLogger.i(
+        '[Clip][Storage] move-to-server skip already-server clipId=$clipId',
+      );
+      return;
+    }
 
     final sourcePath = await _resolveUploadSourcePath(target);
     final absPath = await _absolutePathFor(sourcePath);
@@ -490,6 +488,12 @@ class MediaService {
       uploadResult = await uploadToPath(storagePath);
 
       final now = DateTime.now();
+      final collectionRemoteId = await _upsertServerCollectionMetadata(
+        uid: user.uid,
+        collectionId: target.collectionId,
+      );
+      final segments = await _segmentsForClip(clipId);
+      final tagNames = await _tagNamesForClip(clipId);
 
       final docRef = _libraryClipDocRef(user.uid, remoteDocId);
       await _cleanupLegacyLibraryClipDocs(
@@ -502,10 +506,27 @@ class MediaService {
         'collectionLocalId': target.collectionId,
         'title': target.title,
         'storageMode': 'server',
-        'storageBytes': target.storageBytes,
+        'provider': _providerServer,
+        'ownerScope': _ownerScopeAppAccount,
+        'ownerKey': user.uid,
+        'remoteDocId': remoteDocId,
+        'storageBytes': fileSize,
         'durationMs': target.durationMs,
         'storagePath': uploadResult.storagePath,
         'downloadUrl': uploadResult.downloadUrl,
+        'collectionRemoteId': collectionRemoteId ?? FieldValue.delete(),
+        'segments': segments
+            .map(
+              (segment) => {
+                'startMs': segment.startMs,
+                'endMs': segment.endMs,
+                'original': segment.original,
+                'pron': segment.pron,
+                'trans': segment.trans,
+              },
+            )
+            .toList(),
+        'tags': tagNames,
         'remoteFileId': FieldValue.delete(),
         'cloudFolderId': FieldValue.delete(),
         'storageProvider': FieldValue.delete(),
@@ -528,7 +549,7 @@ class MediaService {
         ownerScope: _ownerScopeAppAccount,
         ownerKey: user.uid,
         filePath: sourcePath,
-        storageBytes: target.storageBytes,
+        storageBytes: fileSize,
       );
 
       await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
@@ -538,6 +559,7 @@ class MediaService {
           ownerScope: const Value(_ownerScopeAppAccount),
           ownerKey: Value(user.uid),
           storageMode: const Value('server'),
+          storageBytes: Value(fileSize),
         ),
       );
 
@@ -545,6 +567,15 @@ class MediaService {
         clipId: clipId,
         previousStorageMode: previousStorageMode,
         previousSourceRef: previousSourceRef,
+        currentProvider: _providerServer,
+        currentOwnerScope: _ownerScopeAppAccount,
+        currentOwnerKey: user.uid,
+      );
+      await _retainOnlyCurrentRemoteRows(
+        clipId: clipId,
+        provider: _providerServer,
+        ownerScope: _ownerScopeAppAccount,
+        ownerKey: user.uid,
       );
 
       AppLogger.i(
@@ -582,13 +613,15 @@ class MediaService {
       throw StateError('클립을 찾을 수 없습니다.');
     }
 
-    final user = fb.FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw StateError('Google Drive 저장하려면 로그인이 필요합니다.');
-    }
-
     final previousStorageMode = target.storageMode;
     final previousSourceRef = await _getCurrentClipSourceRef(target);
+    if (previousStorageMode == _providerGoogleDrive &&
+        previousSourceRef != null) {
+      AppLogger.i(
+        '[Clip][Storage] move-to-gdrive skip already-gdrive clipId=$clipId',
+      );
+      return;
+    }
 
     final sourcePath = await _resolveUploadSourcePath(target);
     final absPath = await _absolutePathFor(sourcePath);
@@ -596,6 +629,7 @@ class MediaService {
     if (!await file.exists()) {
       throw StateError('업로드할 파일을 찾을 수 없습니다.');
     }
+    final fileSize = await file.length();
 
     final remoteDocId = previousSourceRef?.remoteDocId ?? _remoteDocIdForClip();
     final extension = p.extension(absPath);
@@ -609,8 +643,10 @@ class MediaService {
       clipId: target.id.toString(),
       storagePath: cloudStoragePath,
       title: target.title,
-      storageBytes: target.storageBytes,
+      storageBytes: fileSize,
       durationMs: target.durationMs,
+      remoteDocId: remoteDocId,
+      ownerScope: _ownerScopeCloudAccount,
       onProgress: onProgress,
     );
 
@@ -633,7 +669,7 @@ class MediaService {
       ownerScope: _ownerScopeCloudAccount,
       ownerKey: result.accountKey,
       filePath: sourcePath,
-      storageBytes: target.storageBytes,
+      storageBytes: fileSize,
     );
     await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
       ClipsCompanion(
@@ -642,6 +678,7 @@ class MediaService {
         ownerScope: const Value(_ownerScopeCloudAccount),
         ownerKey: Value(result.accountKey),
         storageMode: const Value(_providerGoogleDrive),
+        storageBytes: Value(fileSize),
       ),
     );
 
@@ -649,6 +686,15 @@ class MediaService {
       clipId: clipId,
       previousStorageMode: previousStorageMode,
       previousSourceRef: previousSourceRef,
+      currentProvider: _providerGoogleDrive,
+      currentOwnerScope: _ownerScopeCloudAccount,
+      currentOwnerKey: result.accountKey,
+    );
+    await _retainOnlyCurrentRemoteRows(
+      clipId: clipId,
+      provider: _providerGoogleDrive,
+      ownerScope: _ownerScopeCloudAccount,
+      ownerKey: result.accountKey,
     );
 
     AppLogger.i(
@@ -670,6 +716,12 @@ class MediaService {
         .getSingleOrNull();
     if (target == null) {
       throw StateError('클립을 찾을 수 없습니다.');
+    }
+    if (target.storageMode == 'local') {
+      AppLogger.i(
+        '[Clip][Storage] move-to-local skip already-local clipId=$clipId',
+      );
+      return;
     }
 
     final user = fb.FirebaseAuth.instance.currentUser;
@@ -694,24 +746,7 @@ class MediaService {
     }
 
     await db.transaction(() async {
-      await (db.delete(db.clipSourceRefs)
-            ..where(
-              (c) =>
-                  c.clipId.equals(clipId) &
-                  c.provider.equals(sourceRef.provider) &
-                  c.ownerScope.equals(sourceRef.ownerScope) &
-                  c.ownerKey.equals(sourceRef.ownerKey),
-            ))
-          .go();
-      await (db.delete(db.clipCacheEntries)
-            ..where(
-              (c) =>
-                  c.clipId.equals(clipId) &
-                  c.provider.equals(sourceRef.provider) &
-                  c.ownerScope.equals(sourceRef.ownerScope) &
-                  c.ownerKey.equals(sourceRef.ownerKey),
-            ))
-          .go();
+      await _deleteAllRemoteRowsForClip(clipId);
       await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
         ClipsCompanion(
           filePath: Value(sourcePath),
@@ -719,6 +754,7 @@ class MediaService {
           ownerScope: const Value(_ownerScopeDevice),
           ownerKey: const Value.absent(),
           storageMode: const Value('local'),
+          storageBytes: Value(await _fileSizeFor(sourcePath)),
         ),
       );
     });
@@ -765,6 +801,9 @@ class MediaService {
     required int clipId,
     required String previousStorageMode,
     required ClipSourceRef? previousSourceRef,
+    required String currentProvider,
+    required String currentOwnerScope,
+    required String currentOwnerKey,
   }) async {
     if (previousSourceRef == null) {
       return;
@@ -774,8 +813,21 @@ class MediaService {
       return;
     }
 
+    if (previousSourceRef.provider == currentProvider &&
+        previousSourceRef.ownerScope == currentOwnerScope &&
+        previousSourceRef.ownerKey == currentOwnerKey) {
+      return;
+    }
+
     try {
       await _deleteRemoteLinkSource(previousSourceRef);
+      if (previousSourceRef.provider == _providerServer &&
+          previousSourceRef.ownerScope == _ownerScopeAppAccount) {
+        await _deleteLibraryClipDoc(
+          previousSourceRef.ownerKey,
+          previousSourceRef.remoteDocId,
+        );
+      }
     } catch (e, st) {
       AppLogger.w(
         '[Clip][Storage] previous-remote-delete failed clipId=$clipId remoteDocId=${previousSourceRef.remoteDocId}',
@@ -1434,6 +1486,137 @@ class MediaService {
         );
   }
 
+  Future<void> _retainOnlyCurrentRemoteRows({
+    required int clipId,
+    required String provider,
+    required String ownerScope,
+    required String ownerKey,
+  }) async {
+    await (db.delete(db.clipSourceRefs)
+          ..where(
+            (c) =>
+                c.clipId.equals(clipId) &
+                (c.provider.equals(provider) &
+                        c.ownerScope.equals(ownerScope) &
+                        c.ownerKey.equals(ownerKey))
+                    .not(),
+          ))
+        .go();
+    await (db.delete(db.clipCacheEntries)
+          ..where(
+            (c) =>
+                c.clipId.equals(clipId) &
+                (c.provider.equals(provider) &
+                        c.ownerScope.equals(ownerScope) &
+                        c.ownerKey.equals(ownerKey))
+                    .not(),
+          ))
+        .go();
+  }
+
+  Future<void> _deleteAllRemoteRowsForClip(int clipId) async {
+    await (db.delete(db.clipSourceRefs)..where((c) => c.clipId.equals(clipId)))
+        .go();
+    await (db.delete(db.clipCacheEntries)
+          ..where((c) => c.clipId.equals(clipId)))
+        .go();
+  }
+
+  Future<List<Segment>> _segmentsForClip(int clipId) {
+    return (db.select(db.segments)
+          ..where((s) => s.clipId.equals(clipId))
+          ..orderBy([(s) => OrderingTerm.asc(s.startMs)]))
+        .get();
+  }
+
+  Future<List<String>> _tagNamesForClip(int clipId) async {
+    final rows = await (db.select(db.tags).join([
+      innerJoin(
+        db.clipTags,
+        db.clipTags.tagId.equalsExp(db.tags.id),
+      ),
+    ])
+          ..where(db.clipTags.clipId.equals(clipId)))
+        .get();
+
+    return rows
+        .map((row) => row.readTable(db.tags).name)
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+  }
+
+  Future<String?> _upsertServerCollectionMetadata({
+    required String uid,
+    required int? collectionId,
+  }) async {
+    if (collectionId == null) return null;
+
+    final collection = await (db.select(db.collections)
+          ..where((c) => c.id.equals(collectionId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (collection == null) return null;
+
+    final remoteDocId = await _remoteDocIdForCollection(
+      uid: uid,
+      collectionId: collection.id,
+    );
+    await _libraryCollectionsRef(uid).doc(remoteDocId).set({
+      'localId': collection.id,
+      'remoteDocId': remoteDocId,
+      'name': collection.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await _upsertServerGroupsForCollection(
+      uid: uid,
+      collectionId: collection.id,
+      collectionRemoteId: remoteDocId,
+    );
+
+    return remoteDocId;
+  }
+
+  Future<void> _upsertServerGroupsForCollection({
+    required String uid,
+    required int collectionId,
+    required String collectionRemoteId,
+  }) async {
+    final mappings = await (db.select(db.groupCollections)
+          ..where((gc) => gc.collectionId.equals(collectionId)))
+        .get();
+
+    for (final mapping in mappings) {
+      final group = await (db.select(db.groups)
+            ..where((g) => g.id.equals(mapping.groupId))
+            ..limit(1))
+          .getSingleOrNull();
+      if (group == null) continue;
+
+      final groupRemoteId = await _remoteDocIdForGroup(
+        uid: uid,
+        groupId: group.id,
+      );
+      await _libraryGroupsRef(uid).doc(groupRemoteId).set({
+        'localId': group.id,
+        'remoteDocId': groupRemoteId,
+        'name': group.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      final groupCollectionDocId = '${groupRemoteId}_$collectionRemoteId';
+      await _libraryGroupCollectionsRef(uid).doc(groupCollectionDocId).set({
+        'groupLocalId': group.id,
+        'groupRemoteId': groupRemoteId,
+        'collectionLocalId': collectionId,
+        'collectionRemoteId': collectionRemoteId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+  }
+
   Future<String> _defaultCachePathForClip({
     required int clipId,
     required String remoteDocId,
@@ -1471,6 +1654,37 @@ class MediaService {
         .collection('clips');
   }
 
+  CollectionReference<Map<String, dynamic>> _libraryCollectionsRef(
+    String uid,
+  ) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('namespaces')
+        .doc('library')
+        .collection('collections');
+  }
+
+  CollectionReference<Map<String, dynamic>> _libraryGroupsRef(String uid) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('namespaces')
+        .doc('library')
+        .collection('groups');
+  }
+
+  CollectionReference<Map<String, dynamic>> _libraryGroupCollectionsRef(
+    String uid,
+  ) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('namespaces')
+        .doc('library')
+        .collection('groupCollections');
+  }
+
   DocumentReference<Map<String, dynamic>> _libraryClipDocRef(
     String uid,
     String docId,
@@ -1485,6 +1699,38 @@ class MediaService {
 
   String _remoteDocIdForClip() {
     return const Uuid().v4();
+  }
+
+  Future<String> _remoteDocIdForCollection({
+    required String uid,
+    required int collectionId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final prefKey = '$_remoteCollectionIdPrefsPrefix.$uid.$collectionId';
+    final saved = prefs.getString(prefKey);
+    if (saved != null && saved.isNotEmpty) {
+      return saved;
+    }
+
+    final remoteDocId = const Uuid().v4();
+    await prefs.setString(prefKey, remoteDocId);
+    return remoteDocId;
+  }
+
+  Future<String> _remoteDocIdForGroup({
+    required String uid,
+    required int groupId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final prefKey = '$_remoteGroupIdPrefsPrefix.$uid.$groupId';
+    final saved = prefs.getString(prefKey);
+    if (saved != null && saved.isNotEmpty) {
+      return saved;
+    }
+
+    final remoteDocId = const Uuid().v4();
+    await prefs.setString(prefKey, remoteDocId);
+    return remoteDocId;
   }
 
   Future<void> _cleanupLegacyLibraryClipDocs({
