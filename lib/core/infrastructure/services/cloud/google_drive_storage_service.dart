@@ -73,7 +73,7 @@ class GoogleDriveStorageService {
   }
 
   Future<GoogleDriveStorageQuota?> fetchStorageQuota() async {
-    final account = await connect();
+    final account = await _googleSignIn.signInSilently(suppressErrors: true);
     if (account == null) {
       return null;
     }
