@@ -11,6 +11,8 @@
 // Core Layer > Router
 // ============================================================================
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/app/navigation/app_bottom_navbar.dart';
@@ -55,6 +57,7 @@ class AppShell extends StatelessWidget {
         clipProvider.selectedCollectionId != null;
 
     return Scaffold(
+      extendBody: true,
       body: Stack(
         children: [
           child,
@@ -120,94 +123,105 @@ class AppShell extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final selectedClipIds = clipProvider.selectedClipIds.toList();
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 40),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.22),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            IconButton(
-              tooltip: '전환',
-              icon: const Icon(Icons.swap_horiz_rounded),
-              onPressed: selectedClipIds.isEmpty
-                  ? null
-                  : () async {
-                      final target = await showStorageTransferSheet(
-                        context,
-                        title: '선택한 ${selectedClipIds.length}개 클립 전환',
-                        subtitle:
-                            '선택한 클립 ${selectedClipIds.length}개를 한 번에 옮길 위치를 고르세요.',
-                        hasGoogleDriveLinked: clipProvider.hasGoogleDriveLinked,
-                      );
-
-                      if (!context.mounted || target == null) return;
-
-                      await clipProvider.moveClipsToStorage(
-                        selectedClipIds,
-                        target,
-                      );
-                      if (!context.mounted) return;
-                      clipProvider.closeCollectionMenu();
-                    },
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.82),
             ),
-            IconButton(
-              tooltip: '삭제',
-              icon: const Icon(Icons.delete_rounded),
-              onPressed: selectedClipIds.isEmpty
-                  ? null
-                  : () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (dialogContext) => AlertDialog(
-                          title: const Text('선택한 클립을 삭제할까요?'),
-                          content: Text(
-                            '선택한 클립 ${selectedClipIds.length}개를 삭제합니다.\n\n'
-                            '삭제한 클립은 다시 되돌릴 수 없습니다.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.pop(dialogContext, false),
-                              child: const Text('취소'),
-                            ),
-                            FilledButton(
-                              onPressed: () =>
-                                  Navigator.pop(dialogContext, true),
-                              child: const Text('삭제'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed != true) return;
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    tooltip: '전환',
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                    onPressed: selectedClipIds.isEmpty
+                        ? null
+                        : () async {
+                            final target = await showStorageTransferSheet(
+                              context,
+                              title: '선택한 ${selectedClipIds.length}개 클립 전환',
+                              subtitle:
+                                  '선택한 클립 ${selectedClipIds.length}개를 한 번에 옮길 위치를 고르세요.',
+                              hasGoogleDriveLinked:
+                                  clipProvider.hasGoogleDriveLinked,
+                            );
 
-                      for (final clipId in selectedClipIds) {
-                        await clipProvider.deleteClipById(clipId);
-                      }
-                      clipProvider.closeCollectionMenu();
-                    },
+                            if (!context.mounted || target == null) return;
+
+                            await clipProvider.moveClipsToStorage(
+                              selectedClipIds,
+                              target,
+                            );
+                            if (!context.mounted) return;
+                            clipProvider.closeCollectionMenu();
+                          },
+                  ),
+                  IconButton(
+                    tooltip: '삭제',
+                    icon: const Icon(Icons.delete_rounded),
+                    onPressed: selectedClipIds.isEmpty
+                        ? null
+                        : () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (dialogContext) => AlertDialog(
+                                title: const Text('선택한 클립을 삭제할까요?'),
+                                content: Text(
+                                  '선택한 클립 ${selectedClipIds.length}개를 삭제합니다.\n\n'
+                                  '삭제한 클립은 다시 되돌릴 수 없습니다.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, false),
+                                    child: const Text('취소'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, true),
+                                    child: const Text('삭제'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed != true) return;
+
+                            for (final clipId in selectedClipIds) {
+                              await clipProvider.deleteClipById(clipId);
+                            }
+                            clipProvider.closeCollectionMenu();
+                          },
+                  ),
+                  IconButton(
+                    tooltip: '닫기',
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: clipProvider.closeCollectionMenu,
+                  ),
+                ],
+              ),
             ),
-            IconButton(
-              tooltip: '닫기',
-              icon: const Icon(Icons.close_rounded),
-              onPressed: clipProvider.closeCollectionMenu,
-            ),
-          ],
+          ),
         ),
       ),
     );

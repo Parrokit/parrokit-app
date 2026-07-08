@@ -512,12 +512,12 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
         progress++;
         updateStorageTransfer(progress, '클립 전환 중');
+      }
 
-        if (selectedCollectionId != null) {
-          await selectCollection(selectedCollectionId);
-        } else {
-          await refreshStorageUsage();
-        }
+      if (selectedCollectionId != null) {
+        await selectCollection(selectedCollectionId);
+      } else {
+        await refreshStorageUsage();
       }
     } finally {
       endStorageTransfer();
