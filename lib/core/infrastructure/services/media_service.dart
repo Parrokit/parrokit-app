@@ -637,6 +637,7 @@ class MediaService {
     onProgress?.call(0, 0, 'Google Drive 연결 확인 중');
     final fileName = _buildDriveFileName(absPath);
     final cloudStoragePath = 'clips/$remoteDocId/video$normalizedExtension';
+    final metadataPath = 'clips/$remoteDocId/metadata.json';
     final result = await _googleDriveStorageService.uploadClipFile(
       file: file,
       fileName: fileName,
@@ -650,6 +651,28 @@ class MediaService {
       onProgress: onProgress,
     );
 
+    onProgress?.call(fileSize, fileSize, 'Google Drive 메타데이터 저장 중');
+    final metadata = await _buildCloudClipMetadata(
+      clip: target,
+      remoteDocId: remoteDocId,
+      ownerKey: result.accountKey,
+      storagePath: cloudStoragePath,
+      storageBytes: fileSize,
+    );
+    await _googleDriveStorageService.upsertJsonFile(
+      storagePath: metadataPath,
+      content: metadata,
+      appProperties: {
+        'clipId': target.id.toString(),
+        'remoteDocId': remoteDocId,
+        'storageMode': _providerGoogleDrive,
+        'provider': _providerGoogleDrive,
+        'ownerScope': _ownerScopeCloudAccount,
+        'ownerKey': result.accountKey,
+        'metadataPath': metadataPath,
+      },
+    );
+
     final now = DateTime.now();
     await _upsertClipSourceRef(
       clipId: clipId,
@@ -661,6 +684,7 @@ class MediaService {
       downloadUrl: result.webContentLink ?? result.webViewLink,
       remoteFileId: result.fileId,
       cloudFolderId: result.folderId,
+      metadataPath: metadataPath,
       lastSyncedAt: now,
     );
     await _upsertClipCacheEntry(
@@ -1180,8 +1204,16 @@ class MediaService {
 
     if (sourceRef.provider == _providerGoogleDrive) {
       final remoteFileId = sourceRef.remoteFileId;
-      if (remoteFileId == null || remoteFileId.isEmpty) return;
-      await _googleDriveStorageService.deleteFile(remoteFileId);
+      if (remoteFileId != null && remoteFileId.isNotEmpty) {
+        await _googleDriveStorageService.deleteFile(remoteFileId);
+      }
+      final folderId = sourceRef.cloudFolderId;
+      if (folderId != null && folderId.isNotEmpty) {
+        await _googleDriveStorageService.deleteFileNamedInFolder(
+          folderId: folderId,
+          fileName: 'metadata.json',
+        );
+      }
     }
   }
 
@@ -1615,6 +1647,108 @@ class MediaService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
+  }
+
+  Future<Map<String, dynamic>> _buildCloudClipMetadata({
+    required Clip clip,
+    required String remoteDocId,
+    required String ownerKey,
+    required String storagePath,
+    required int storageBytes,
+  }) async {
+    final segments = await _segmentsForClip(clip.id);
+    final tagNames = await _tagNamesForClip(clip.id);
+    final collection = await _collectionMetadataForClip(
+      ownerKey: ownerKey,
+      collectionId: clip.collectionId,
+    );
+    final groups = await _groupMetadataForCollection(
+      ownerKey: ownerKey,
+      collectionId: clip.collectionId,
+    );
+
+    return {
+      'schemaVersion': 1,
+      'remoteDocId': remoteDocId,
+      'localId': clip.id,
+      'title': clip.title,
+      'durationMs': clip.durationMs,
+      'storageBytes': storageBytes,
+      'storageMode': _providerGoogleDrive,
+      'provider': _providerGoogleDrive,
+      'ownerScope': _ownerScopeCloudAccount,
+      'ownerKey': ownerKey,
+      'storagePath': storagePath,
+      'segments': segments
+          .map(
+            (segment) => {
+              'startMs': segment.startMs,
+              'endMs': segment.endMs,
+              'original': segment.original,
+              'pron': segment.pron,
+              'trans': segment.trans,
+            },
+          )
+          .toList(),
+      'tags': tagNames,
+      'collection': collection,
+      'groups': groups,
+      'updatedAt': DateTime.now().toUtc().toIso8601String(),
+    };
+  }
+
+  Future<Map<String, dynamic>?> _collectionMetadataForClip({
+    required String ownerKey,
+    required int? collectionId,
+  }) async {
+    if (collectionId == null) return null;
+
+    final collection = await (db.select(db.collections)
+          ..where((c) => c.id.equals(collectionId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (collection == null) return null;
+
+    return {
+      'localId': collection.id,
+      'remoteDocId': await _remoteDocIdForCollection(
+        uid: ownerKey,
+        collectionId: collection.id,
+      ),
+      'name': collection.name,
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> _groupMetadataForCollection({
+    required String ownerKey,
+    required int? collectionId,
+  }) async {
+    if (collectionId == null) return const [];
+
+    final mappings = await (db.select(db.groupCollections)
+          ..where((gc) => gc.collectionId.equals(collectionId)))
+        .get();
+    final groups = <Map<String, dynamic>>[];
+
+    for (final mapping in mappings) {
+      final group = await (db.select(db.groups)
+            ..where((g) => g.id.equals(mapping.groupId))
+            ..limit(1))
+          .getSingleOrNull();
+      if (group == null) continue;
+
+      groups.add({
+        'localId': group.id,
+        'remoteDocId': await _remoteDocIdForGroup(
+          uid: ownerKey,
+          groupId: group.id,
+        ),
+        'name': group.name,
+      });
+    }
+
+    groups.sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
+    return groups;
   }
 
   Future<String> _defaultCachePathForClip({

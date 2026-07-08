@@ -35,6 +35,20 @@ class GoogleDriveUploadResult {
   final String? webContentLink;
 }
 
+class GoogleDriveJsonUploadResult {
+  GoogleDriveJsonUploadResult({
+    required this.fileId,
+    required this.fileName,
+    required this.folderId,
+    required this.accountKey,
+  });
+
+  final String fileId;
+  final String fileName;
+  final String folderId;
+  final String accountKey;
+}
+
 class GoogleDriveStorageQuota {
   GoogleDriveStorageQuota({
     required this.usedBytes,
@@ -321,6 +335,66 @@ class GoogleDriveStorageService {
     }
   }
 
+  Future<GoogleDriveJsonUploadResult> upsertJsonFile({
+    required String storagePath,
+    required Map<String, dynamic> content,
+    Map<String, String>? appProperties,
+  }) async {
+    AppLogger.i('[GoogleDrive][Json] upsert-start path=$storagePath');
+    final account = await connect();
+    if (account == null) {
+      throw StateError('Google Drive 연결이 필요합니다.');
+    }
+
+    final headers = await _authorizationHeaders(account);
+    final accountKey = _accountKey(account);
+    final folderSegments = _folderSegmentsForStoragePath(storagePath);
+    final folderId = await _ensureFolderPath(
+      account,
+      headers,
+      folderSegments,
+    );
+    final fileName = _fileNameForStoragePath(storagePath);
+    final existingFileId = await _findFileByName(
+      parentId: folderId,
+      fileName: fileName,
+      headers: headers,
+    );
+
+    final metadata = <String, dynamic>{
+      'name': fileName,
+      'mimeType': 'application/json',
+      if (existingFileId == null) 'parents': [folderId],
+      if (appProperties != null) 'appProperties': appProperties,
+    };
+    final bodyBytes = _utf8Bytes(
+      const JsonEncoder.withIndent('  ').convert(content),
+    );
+
+    final data = await _uploadMultipartBytes(
+      method: existingFileId == null ? 'POST' : 'PATCH',
+      fileId: existingFileId,
+      metadata: metadata,
+      bodyBytes: bodyBytes,
+      mimeType: 'application/json; charset=UTF-8',
+      headers: headers,
+    );
+    final fileId = data['id'] as String? ?? existingFileId ?? '';
+    if (fileId.isEmpty) {
+      throw StateError('Google Drive JSON 파일 ID를 받지 못했습니다.');
+    }
+
+    AppLogger.i(
+      '[GoogleDrive][Json] upsert-success path=$storagePath fileId=$fileId',
+    );
+    return GoogleDriveJsonUploadResult(
+      fileId: fileId,
+      fileName: data['name'] as String? ?? fileName,
+      folderId: folderId,
+      accountKey: accountKey,
+    );
+  }
+
   Future<void> deleteFile(String fileId) async {
     AppLogger.i('[GoogleDrive][Delete] connect-start fileId=$fileId');
     final account = await connect();
@@ -359,6 +433,34 @@ class GoogleDriveStorageService {
     } finally {
       client.close();
     }
+  }
+
+  Future<void> deleteFileNamedInFolder({
+    required String folderId,
+    required String fileName,
+  }) async {
+    AppLogger.i(
+      '[GoogleDrive][Delete] named-file-start folderId=$folderId file=$fileName',
+    );
+    final account = await connect();
+    if (account == null) {
+      throw StateError('Google Drive 연결이 필요합니다.');
+    }
+
+    final headers = await _authorizationHeaders(account);
+    final fileId = await _findFileByName(
+      parentId: folderId,
+      fileName: fileName,
+      headers: headers,
+    );
+    if (fileId == null || fileId.isEmpty) {
+      AppLogger.w(
+        '[GoogleDrive][Delete] named-file-not-found folderId=$folderId file=$fileName',
+      );
+      return;
+    }
+
+    await deleteFile(fileId);
   }
 
   Future<Map<String, dynamic>?> fetchFileMetadata(String fileId) async {
@@ -599,6 +701,97 @@ class GoogleDriveStorageService {
     }
   }
 
+  Future<String?> _findFileByName({
+    required String parentId,
+    required String fileName,
+    required Map<String, String> headers,
+  }) async {
+    final client = http.Client();
+    try {
+      final query = [
+        "trashed = false",
+        "name = '${_escapeDriveQuery(fileName)}'",
+        "'$parentId' in parents",
+      ].join(' and ');
+      final uri = Uri.https(
+        'www.googleapis.com',
+        '/drive/v3/files',
+      ).replace(queryParameters: {
+        'q': query,
+        'fields': 'files(id,name,parents)',
+        'pageSize': '1',
+      });
+      final response = await client.get(uri, headers: headers);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
+      }
+      final data = _asMap(response.body);
+      final files = data['files'];
+      if (files is! List || files.isEmpty) return null;
+      final first = files.first;
+      if (first is! Map<String, dynamic>) return null;
+      return first['id'] as String?;
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<Map<String, dynamic>> _uploadMultipartBytes({
+    required String method,
+    required String? fileId,
+    required Map<String, dynamic> metadata,
+    required List<int> bodyBytes,
+    required String mimeType,
+    required Map<String, String> headers,
+  }) async {
+    final path = method == 'PATCH' && fileId != null
+        ? '/upload/drive/v3/files/$fileId'
+        : '/upload/drive/v3/files';
+    final uploadUri = Uri.https(
+      'www.googleapis.com',
+      path,
+      const {
+        'uploadType': 'multipart',
+        'fields': 'id,name,parents',
+      },
+    );
+    final boundary =
+        'parrokit-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1 << 32)}';
+    final client = HttpClient();
+    try {
+      final request = method == 'PATCH'
+          ? await client.patchUrl(uploadUri)
+          : await client.postUrl(uploadUri);
+      headers.forEach((key, value) {
+        request.headers.set(key, value);
+      });
+      request.headers.set(
+        HttpHeaders.contentTypeHeader,
+        'multipart/related; boundary="$boundary"',
+      );
+      request.add(_utf8Bytes('--$boundary\r\n'));
+      request.add(
+        _utf8Bytes('Content-Type: application/json; charset=UTF-8\r\n\r\n'),
+      );
+      request.add(_utf8Bytes('${jsonEncode(metadata)}\r\n'));
+      request.add(_utf8Bytes('--$boundary\r\n'));
+      request.add(_utf8Bytes('Content-Type: $mimeType\r\n\r\n'));
+      request.add(bodyBytes);
+      request.add(_utf8Bytes('\r\n--$boundary--'));
+
+      final response = await request.close();
+      final responseBody = await utf8.decodeStream(response);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw StateError(
+          'Google Drive JSON 업로드 실패: ${response.statusCode} $responseBody',
+        );
+      }
+      return _asMap(responseBody);
+    } finally {
+      client.close(force: true);
+    }
+  }
+
   Future<Map<String, String>> _authorizationHeaders(
     GoogleSignInAccount account,
   ) async {
@@ -628,6 +821,15 @@ class GoogleDriveStorageService {
 
   String _escapeDriveQuery(String value) {
     return value.replaceAll('\\', r'\\').replaceAll("'", r"\'");
+  }
+
+  String _fileNameForStoragePath(String storagePath) {
+    final segments =
+        storagePath.split('/').where((segment) => segment.isNotEmpty).toList();
+    if (segments.isEmpty) {
+      throw StateError('Google Drive 파일 경로가 올바르지 않습니다.');
+    }
+    return segments.last;
   }
 
   String _maskAccount(GoogleSignInAccount account) {
