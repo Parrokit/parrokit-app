@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'episode_thumbnail.dart';
 import 'swipe_action_tile.dart';
 import 'mini_chip.dart';
+import 'storage_transfer_sheet.dart';
 
 class ClipListView extends StatelessWidget {
   const ClipListView({
@@ -145,202 +146,38 @@ class ClipListView extends StatelessWidget {
     required VoidCallback onApplied,
   }) {
     final provider = context.read<ClipProvider>();
-    final canUseGoogleDrive = provider.hasGoogleDriveLinked;
-    var selectedMode = item.clip.storageMode;
-    if (!canUseGoogleDrive && selectedMode == 'cloud:gdrive') {
-      selectedMode = 'server';
-    }
+    showStorageTransferSheet(
+      context,
+      title: '저장 위치 바꾸기',
+      subtitle: '원하는 위치를 고르면, 기기 안에 남겨둘지도 함께 정할 수 있어요.',
+      hasGoogleDriveLinked: provider.hasGoogleDriveLinked,
+      initialMode: item.clip.storageMode,
+    ).then((target) async {
+      if (!context.mounted || target == null) return;
+      final success = switch (target) {
+        'local' => await _moveToLocal(provider, item),
+        'server' => await _moveToServer(provider, item),
+        'cloud:gdrive' => await _moveToGoogleDrive(provider, item),
+        _ => false,
+      };
 
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.4),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) {
-            final theme = Theme.of(sheetContext);
-            final cs = theme.colorScheme;
-
-            Widget buildOption({
-              required IconData icon,
-              required String title,
-              required String subtitle,
-              required Color iconColor,
-              required String value,
-              bool enabled = true,
-            }) {
-              final isSelected = selectedMode == value;
-              return Material(
-                color: cs.surface,
-                borderRadius: BorderRadius.circular(18),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: enabled
-                      ? () => setSheetState(() => selectedMode = value)
-                      : null,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: isSelected,
-                          onChanged: enabled
-                              ? (_) => setSheetState(() => selectedMode = value)
-                              : null,
-                          activeColor: iconColor,
-                        ),
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: iconColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(icon, color: iconColor),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                title,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                subtitle,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: cs.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          isSelected
-                              ? Icons.check_circle_rounded
-                              : Icons.chevron_right_rounded,
-                          color: enabled
-                              ? (isSelected
-                                  ? iconColor
-                                  : cs.onSurfaceVariant.withValues(alpha: 0.6))
-                              : cs.onSurfaceVariant.withValues(alpha: 0.3),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return Container(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: SafeArea(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        '저장 위치 바꾸기',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '원하는 위치를 고르면, 기기 안에 남겨둘지도 함께 정할 수 있어요.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      buildOption(
-                        icon: Icons.phone_android_rounded,
-                        title: '로컬',
-                        subtitle: '이 기기 안에 저장해 인터넷이 없어도 바로 봅니다.',
-                        iconColor: AppColors.info,
-                        value: 'local',
-                      ),
-                      const SizedBox(height: 10),
-                      buildOption(
-                        icon: Icons.cloud_queue_rounded,
-                        title: '서버',
-                        subtitle: '서버에 저장하고, 기기에도 남겨 더 빨리 열 수 있습니다.',
-                        iconColor: AppColors.secondary,
-                        value: 'server',
-                      ),
-                      const SizedBox(height: 10),
-                      buildOption(
-                        icon: Icons.cloud_upload_rounded,
-                        title: 'Google Drive',
-                        subtitle: canUseGoogleDrive
-                            ? '내 Google Drive에 저장하고, 기기에는 빠른 열람용으로 남겨둘 수 있습니다.'
-                            : 'Google Drive 연동 후 사용할 수 있어요.',
-                        iconColor: AppColors.warning,
-                        value: 'cloud:gdrive',
-                        enabled: canUseGoogleDrive,
-                      ),
-                      const SizedBox(height: 18),
-                      FilledButton(
-                        onPressed: selectedMode.isEmpty
-                            ? null
-                            : () async {
-                                Navigator.pop(sheetContext);
-                                final success = switch (selectedMode) {
-                                  'local' => await _moveToLocal(
-                                      provider,
-                                      item,
-                                    ),
-                                  'server' => await _moveToServer(
-                                      provider,
-                                      item,
-                                    ),
-                                  'cloud:gdrive' => await _moveToGoogleDrive(
-                                      provider,
-                                      item,
-                                    ),
-                                  _ => false,
-                                };
-
-                                if (success) {
-                                  onApplied();
-                                  if (selectedMode == 'server') {
-                                    showToast('서버에 저장했어요.');
-                                  } else if (selectedMode == 'local') {
-                                    showToast('로컬로 옮겼어요.');
-                                  } else if (selectedMode == 'cloud:gdrive') {
-                                    showToast('Google Drive에 저장했어요.');
-                                  }
-                                } else if (selectedMode == 'server') {
-                                  showToast('서버 저장에 실패했어요.');
-                                } else if (selectedMode == 'local') {
-                                  showToast('로컬 전환에 실패했어요.');
-                                } else if (selectedMode == 'cloud:gdrive') {
-                                  showToast('Google Drive 저장에 실패했어요.');
-                                }
-                              },
-                        child: const Text('적용'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
+      if (success) {
+        onApplied();
+        if (target == 'server') {
+          showToast('서버에 저장했어요.');
+        } else if (target == 'local') {
+          showToast('로컬로 옮겼어요.');
+        } else if (target == 'cloud:gdrive') {
+          showToast('Google Drive에 저장했어요.');
+        }
+      } else if (target == 'server') {
+        showToast('서버 저장에 실패했어요.');
+      } else if (target == 'local') {
+        showToast('로컬 전환에 실패했어요.');
+      } else if (target == 'cloud:gdrive') {
+        showToast('Google Drive 저장에 실패했어요.');
+      }
+    });
   }
 
   Widget _buildSwipeAction({

@@ -44,6 +44,11 @@ class _CollectionShellScreenState extends State<CollectionShellScreen>
     final clipProvider = context.watch<ClipProvider>();
     final isClipTab = _tabController.index == 0;
     final isSelectionMode = clipProvider.isCollectionMenuOpen && isClipTab;
+    final visibleClipIds =
+        clipProvider.clipItems.map((item) => item.clip.id).toSet();
+    final selectedClipIds = clipProvider.selectedClipIds;
+    final isAllSelected = visibleClipIds.isNotEmpty &&
+        visibleClipIds.length == selectedClipIds.length;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -55,11 +60,20 @@ class _CollectionShellScreenState extends State<CollectionShellScreen>
         centerTitle: false,
         actions: [
           if (isSelectionMode)
-            TextButton(
-              onPressed: clipProvider.hasSelectedClips
-                  ? () => clipProvider.clearClipSelection()
-                  : null,
-              child: const Text('해제'),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton(
+                onPressed: visibleClipIds.isEmpty
+                    ? null
+                    : () {
+                        if (isAllSelected) {
+                          clipProvider.clearClipSelection();
+                        } else {
+                          clipProvider.selectAllVisibleClips();
+                        }
+                      },
+                child: Text(isAllSelected ? '전체 해제' : '전체 선택'),
+              ),
             ),
         ],
         bottom: isSelectionMode

@@ -82,6 +82,10 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   bool _isGoogleDriveLinking = false;
   String _googleDriveLinkMessage = '';
   String? _googleDriveLinkError;
+  bool _isStorageTransferRunning = false;
+  int _storageTransferProgress = 0;
+  int _storageTransferTotal = 0;
+  String _storageTransferMessage = '';
 
   // ─────────────────────────────────────────────────────────────────
   // Methods
@@ -155,6 +159,17 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   bool get hasSelectedClips => _selectedClipIds.isNotEmpty;
   Set<int> get selectedClipIds => Set.unmodifiable(_selectedClipIds);
   bool isClipSelected(int clipId) => _selectedClipIds.contains(clipId);
+  bool get isStorageTransferRunning => _isStorageTransferRunning;
+  int get storageTransferProgress => _storageTransferProgress;
+  int get storageTransferTotal => _storageTransferTotal;
+  String get storageTransferMessage => _storageTransferMessage;
+
+  void selectAllVisibleClips() {
+    for (final item in clipItems) {
+      _selectedClipIds.add(item.clip.id);
+    }
+    notifyListeners();
+  }
 
   /// 현재 로그인 유저의 collection 메타데이터를 Firestore로 동기화합니다.
   Future<void> syncCollectionDataToServer(
@@ -446,6 +461,67 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     if (_selectedClipIds.isEmpty) return;
     _selectedClipIds.clear();
     notifyListeners();
+  }
+
+  void startStorageTransfer(int total, String message) {
+    _isStorageTransferRunning = true;
+    _storageTransferProgress = 0;
+    _storageTransferTotal = total;
+    _storageTransferMessage = message;
+    notifyListeners();
+  }
+
+  void updateStorageTransfer(int progress, String message) {
+    _isStorageTransferRunning = true;
+    _storageTransferProgress = progress;
+    _storageTransferTotal =
+        _storageTransferTotal == 0 ? progress : _storageTransferTotal;
+    _storageTransferMessage = message;
+    notifyListeners();
+  }
+
+  void endStorageTransfer() {
+    _isStorageTransferRunning = false;
+    _storageTransferProgress = _storageTransferTotal;
+    _storageTransferMessage = '전환 완료';
+    notifyListeners();
+  }
+
+  Future<void> moveClipsToStorage(
+    List<int> clipIds,
+    String target,
+  ) async {
+    if (clipIds.isEmpty || _isStorageTransferRunning) return;
+
+    startStorageTransfer(clipIds.length, '클립 전환 중');
+
+    try {
+      var progress = 0;
+      for (final clipId in clipIds) {
+        switch (target) {
+          case 'local':
+            await moveClipToLocal(clipId);
+            break;
+          case 'server':
+            await moveClipToServer(clipId);
+            break;
+          case 'cloud:gdrive':
+            await moveClipToGoogleDrive(clipId);
+            break;
+        }
+
+        progress++;
+        updateStorageTransfer(progress, '클립 전환 중');
+
+        if (selectedCollectionId != null) {
+          await selectCollection(selectedCollectionId);
+        } else {
+          await refreshStorageUsage();
+        }
+      }
+    } finally {
+      endStorageTransfer();
+    }
   }
 
   /// 모든 그룹 로드.
