@@ -74,22 +74,14 @@ class _StorageCacheManagementScreenState
 
   String _storageLabel(String storageMode) {
     if (storageMode == 'server') return '서버';
-    if (storageMode.startsWith('cloud:')) {
-      final provider =
-          storageMode.split(':').length > 1 ? storageMode.split(':')[1] : '';
-      return switch (provider) {
-        'gdrive' => 'Google Drive',
-        'icloud' => 'iCloud',
-        _ => '클라우드',
-      };
-    }
+    if (storageMode == 'gdrive') return 'Google Drive';
     return '원격';
   }
 
   Color _storageColor(BuildContext context, String storageMode) {
     final cs = Theme.of(context).colorScheme;
     if (storageMode == 'server') return cs.secondary;
-    if (storageMode.startsWith('cloud:')) return cs.tertiary;
+    if (storageMode == 'gdrive') return cs.tertiary;
     return cs.primary;
   }
 
@@ -226,7 +218,6 @@ class _StorageCacheManagementScreenState
     final label = _storageLabel(item.clip.storageMode);
     final color = _storageColor(context, item.clip.storageMode);
     final isDeleting = _deletingIds.contains(item.clip.id);
-    final lastSynced = item.clip.lastSyncedAt;
 
     return CardContainer(
       child: Column(
@@ -276,15 +267,6 @@ class _StorageCacheManagementScreenState
                         ),
                       ],
                     ),
-                    if (lastSynced != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        '최근 저장: ${lastSynced.toLocal().toString().split('.').first}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant,
-                            ),
-                      ),
-                    ],
                   ],
                 ),
               ),

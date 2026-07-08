@@ -2,10 +2,12 @@
 
 // lib/data/local/app_database.dart
 import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
 import 'tables/collections.dart';
 import 'tables/clips.dart';
 import 'tables/segments.dart';
@@ -14,13 +16,12 @@ import 'tables/clip_tags.dart';
 import 'tables/recent_clip_views.dart';
 import 'tables/groups.dart';
 import 'tables/group_collections.dart';
+import 'tables/clip_source_refs.dart';
+import 'tables/clip_cache_entries.dart';
 
 import 'dao/collections_dao.dart';
 import 'dao/groups_dao.dart';
 import 'migrations/migration_v2_to_v3.dart';
-import 'migrations/migration_v3_to_v4.dart';
-import 'migrations/migration_v4_to_v5.dart';
-import 'migrations/migration_v5_to_v6.dart';
 
 part 'app_database.g.dart';
 
@@ -34,6 +35,8 @@ part 'app_database.g.dart';
     ClipTags,
     RecentClipViews,
     GroupCollections,
+    ClipSourceRefs,
+    ClipCacheEntries,
   ],
   daos: [
     GroupsDao,
@@ -44,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_open());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,15 +63,6 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             await migrateV2ToV3(m, this);
-          }
-          if (from < 4) {
-            await migrateV3ToV4(m, this);
-          }
-          if (from < 5) {
-            await migrateV4ToV5(m, this);
-          }
-          if (from < 6) {
-            await migrateV5ToV6(m, this);
           }
         },
         beforeOpen: (details) async {

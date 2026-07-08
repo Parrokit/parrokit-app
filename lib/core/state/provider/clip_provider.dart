@@ -10,6 +10,7 @@
 // ============================================================================
 
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../../data/local/app_database.dart';
@@ -93,6 +94,19 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   Future<ClipView?> fetchClipById(int clipId) async {
     return _service.fetchClipById(clipId);
+  }
+
+  Future<void> adoptLegacyStorageOwnership(String uid) async {
+    await _service.adoptLegacyStorageOwnershipIfNeeded(uid);
+    if (selectedCollectionId != null) {
+      await selectCollection(selectedCollectionId);
+      return;
+    }
+    if (selectedGroupId != null) {
+      await selectGroup(selectedGroupId);
+      return;
+    }
+    await loadGroups();
   }
 
   Future<List<ClipItem>> fetchClipItemsByStorageMode(
@@ -505,7 +519,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
           case 'server':
             await moveClipToServer(clipId);
             break;
-          case 'cloud:gdrive':
+          case 'gdrive':
             await moveClipToGoogleDrive(clipId);
             break;
         }
@@ -553,33 +567,13 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     tagsByClip = {};
 
     if (id == null) {
-      // 그룹이 없는 콜렉션
-      final query = db.select(db.collections).join([
-        leftOuterJoin(db.groupCollections,
-            db.groupCollections.collectionId.equalsExp(db.collections.id))
-      ])
-        ..where(db.groupCollections.groupId.isNull());
-
-      final rows = await query.get();
-      collections = rows.map((r) => r.readTable(db.collections)).toList();
+      collections = await _service.getVisibleCollectionsForGroup(null);
     } else if (id == -1) {
-      // 모든 콜렉션
-      collections = await (db.select(db.collections)
-            ..orderBy([(c) => OrderingTerm.asc(c.name)]))
-          .get();
+      collections = await _service.getVisibleCollectionsForGroup(-1);
     } else {
-      // 특정 그룹의 콜렉션
-      final query = db.select(db.collections).join([
-        innerJoin(db.groupCollections,
-            db.groupCollections.collectionId.equalsExp(db.collections.id))
-      ])
-        ..where(db.groupCollections.groupId.equals(id));
-
-      final rows = await query.get();
-      collections = rows.map((r) => r.readTable(db.collections)).toList();
+      collections = await _service.getVisibleCollectionsForGroup(id);
     }
 
-    collections.sort((a, b) => a.name.compareTo(b.name));
     await refreshStorageUsage();
     notifyListeners();
   }
@@ -602,9 +596,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   /// 모든 컬렉션 로드 (호환성 또는 필요 시 사용).
   @override
   Future<void> loadCollections() async {
-    collections = await (db.select(db.collections)
-          ..orderBy([(c) => OrderingTerm.asc(c.name)]))
-        .get();
+    collections = await _service.getAllVisibleCollections();
     await refreshStorageUsage();
     notifyListeners();
   }
@@ -618,15 +610,9 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     tagsByClip = {};
 
     if (id == null) {
-      clips = await (db.select(db.clips)
-            ..where((c) => c.collectionId.isNull())
-            ..orderBy([(c) => OrderingTerm.asc(c.id)]))
-          .get();
+      clips = await _service.getVisibleClipsForCollection(null);
     } else {
-      clips = await (db.select(db.clips)
-            ..where((c) => c.collectionId.equals(id))
-            ..orderBy([(c) => OrderingTerm.asc(c.id)]))
-          .get();
+      clips = await _service.getVisibleClipsForCollection(id);
     }
 
     await _buildClipItems();
@@ -636,10 +622,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   /// 컬렉션 내 클립 수 조회.
   Future<int> countClipsInCollection(int collectionId) async {
-    final rows = await (db.select(db.clips)
-          ..where((c) => c.collectionId.equals(collectionId)))
-        .get();
-    return rows.length;
+    return _service.countVisibleClipsInCollection(collectionId);
   }
 
   /// 이름 중복 검사 (그룹 및 콜렉션 전체)
@@ -834,30 +817,50 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
     // ClipItem 구성 (segments + thumbnail)
     clipItems = [];
+    final currentAccountId = fb.FirebaseAuth.instance.currentUser?.uid;
     for (final c in clips) {
       final segments = await (db.select(db.segments)
             ..where((s) => s.clipId.equals(c.id))
             ..orderBy([(s) => OrderingTerm.asc(s.startMs)]))
           .get();
 
-      final dir = await getApplicationDocumentsDirectory();
-      final absPath =
-          c.filePath.startsWith('/') ? c.filePath : '${dir.path}/${c.filePath}';
-
       Uint8List? thumbBytes;
-      try {
-        thumbBytes = await VideoThumbnail.thumbnailData(
-          video: absPath,
-          imageFormat: ImageFormat.JPEG,
-          quality: 70,
-          timeMs: 500,
-        );
-      } catch (_) {
-        thumbBytes = null;
+      String resolvedPath = c.filePath;
+      if (c.storageMode == 'local') {
+        resolvedPath = c.sourceFilePath ?? c.filePath;
+      } else if (currentAccountId != null) {
+        final cacheEntry = await (db.select(db.clipCacheEntries)
+              ..where((entry) =>
+                  entry.clipId.equals(c.id) &
+                  entry.provider.equals(c.storageMode) &
+                  entry.ownerScope.equals('app_account') &
+                  entry.ownerKey.equals(currentAccountId))
+              ..limit(1))
+            .getSingleOrNull();
+        if (cacheEntry != null) {
+          resolvedPath = cacheEntry.filePath;
+        }
+      }
+
+      if (resolvedPath.isNotEmpty) {
+        final dir = await getApplicationDocumentsDirectory();
+        final absPath = resolvedPath.startsWith('/')
+            ? resolvedPath
+            : '${dir.path}/$resolvedPath';
+        try {
+          thumbBytes = await VideoThumbnail.thumbnailData(
+            video: absPath,
+            imageFormat: ImageFormat.JPEG,
+            quality: 70,
+            timeMs: 500,
+          );
+        } catch (_) {
+          thumbBytes = null;
+        }
       }
       clipItems.add(
         ClipItem(
-          clip: c,
+          clip: c.copyWith(filePath: resolvedPath),
           tags: tagsByClip[c.id] ?? const [],
           segments: segments,
           thumbnail: thumbBytes,
@@ -868,9 +871,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   /// 모든 콜렉션 조회 (관리 모달용)
   Future<List<Collection>> fetchAllCollections() async {
-    return await (db.select(db.collections)
-          ..orderBy([(c) => OrderingTerm.asc(c.name)]))
-        .get();
+    return _service.getAllVisibleCollections();
   }
 
   /// 콜렉션의 매핑된 그룹 ID 목록 조회

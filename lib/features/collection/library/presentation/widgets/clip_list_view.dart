@@ -42,19 +42,7 @@ class ClipListView extends StatelessWidget {
   String? _storageLabel(String storageMode) {
     if (storageMode == 'local') return '로컬';
     if (storageMode == 'server') return '서버';
-    if (storageMode == 'cloud') return '클라우드';
-
-    if (storageMode.startsWith('cloud:')) {
-      final provider =
-          storageMode.split(':').length > 1 ? storageMode.split(':')[1] : '';
-      final providerLabel = switch (provider) {
-        'gdrive' => 'Google Drive',
-        'icloud' => 'iCloud',
-        'dropbox' => 'Dropbox',
-        _ => null,
-      };
-      return providerLabel == null ? '클라우드' : '클라우드 · $providerLabel';
-    }
+    if (storageMode == 'gdrive') return '클라우드 · Google Drive';
 
     return null;
   }
@@ -67,12 +55,11 @@ class ClipListView extends StatelessWidget {
 
     if (label == null) return null;
 
-    final isCloud = storageMode.startsWith('cloud');
+    final isCloud = storageMode == 'gdrive';
 
     final background = switch (storageMode) {
       'local' => cs.secondaryContainer.withValues(alpha: 0.55),
       'server' => cs.tertiaryContainer.withValues(alpha: 0.55),
-      'cloud' => cs.primaryContainer.withValues(alpha: 0.55),
       _ when isCloud => cs.primaryContainer.withValues(alpha: 0.55),
       _ => cs.secondaryContainer.withValues(alpha: 0.55),
     };
@@ -80,7 +67,6 @@ class ClipListView extends StatelessWidget {
     final foreground = switch (storageMode) {
       'local' => cs.onSecondaryContainer.withValues(alpha: 0.9),
       'server' => cs.onTertiaryContainer.withValues(alpha: 0.9),
-      'cloud' => cs.onPrimaryContainer.withValues(alpha: 0.9),
       _ when isCloud => cs.onPrimaryContainer.withValues(alpha: 0.9),
       _ => cs.onSecondaryContainer.withValues(alpha: 0.9),
     };
@@ -157,7 +143,7 @@ class ClipListView extends StatelessWidget {
       final success = switch (target) {
         'local' => await _moveToLocal(provider, item),
         'server' => await _moveToServer(provider, item),
-        'cloud:gdrive' => await _moveToGoogleDrive(provider, item),
+        'gdrive' => await _moveToGoogleDrive(provider, item),
         _ => false,
       };
 
@@ -167,14 +153,14 @@ class ClipListView extends StatelessWidget {
           showToast('서버에 저장했어요.');
         } else if (target == 'local') {
           showToast('로컬로 옮겼어요.');
-        } else if (target == 'cloud:gdrive') {
+        } else if (target == 'gdrive') {
           showToast('Google Drive에 저장했어요.');
         }
       } else if (target == 'server') {
         showToast('서버 저장에 실패했어요.');
       } else if (target == 'local') {
         showToast('로컬 전환에 실패했어요.');
-      } else if (target == 'cloud:gdrive') {
+      } else if (target == 'gdrive') {
         showToast('Google Drive 저장에 실패했어요.');
       }
     });

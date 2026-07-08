@@ -22,6 +22,7 @@ class GoogleDriveUploadResult {
     required this.fileId,
     required this.fileName,
     required this.folderId,
+    required this.accountKey,
     this.webViewLink,
     this.webContentLink,
   });
@@ -29,6 +30,7 @@ class GoogleDriveUploadResult {
   final String fileId;
   final String fileName;
   final String folderId;
+  final String accountKey;
   final String? webViewLink;
   final String? webContentLink;
 }
@@ -70,6 +72,11 @@ class GoogleDriveStorageService {
 
   Future<void> disconnect() async {
     await _googleSignIn.signOut();
+  }
+
+  Future<String?> currentAccountKey() async {
+    final account = await _googleSignIn.signInSilently(suppressErrors: true);
+    return account == null ? null : _accountKey(account);
   }
 
   Future<GoogleDriveStorageQuota?> fetchStorageQuota() async {
@@ -168,7 +175,7 @@ class GoogleDriveStorageService {
       'appProperties': <String, String>{
         'clipId': clipId,
         'title': title,
-        'storageMode': 'cloud:gdrive',
+        'storageMode': 'gdrive',
         'storageBytes': storageBytes.toString(),
         'durationMs': durationMs.toString(),
         'storagePath': storagePath,
@@ -238,6 +245,7 @@ class GoogleDriveStorageService {
         fileId: data['id'] as String? ?? '',
         fileName: data['name'] as String? ?? fileName,
         folderId: folderId,
+        accountKey: _accountKey(account),
         webViewLink: data['webViewLink'] as String?,
         webContentLink: data['webContentLink'] as String?,
       );

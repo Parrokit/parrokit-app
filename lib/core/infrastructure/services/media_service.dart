@@ -19,6 +19,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:uuid/uuid.dart';
 import '../../../data/local/app_database.dart';
@@ -26,7 +27,6 @@ import '../../../data/models/clip_item.dart';
 import '../../../data/models/clip_view.dart';
 import '../../shared/utils/app_logger.dart';
 import 'cloud/google_drive_storage_service.dart';
-import 'firebase/sync_status.dart';
 
 typedef ClipServerUploadProgressCallback = void Function(
   int current,
@@ -37,17 +37,115 @@ typedef ClipServerUploadProgressCallback = void Function(
 /// 미디어 데이터(Group, Collection, Clip) 조작 및 비즈니스 로직 담당 서비스
 /// 추후 Local/Server 동기화를 위해 MediaRepository 인터페이스로 추출될 수 있음.
 class MediaService {
+  static const String _legacyAdoptedPrefsPrefix =
+      'library.legacy_storage_adopted';
+  static const String _ownerScopeDevice = 'device';
+  static const String _ownerScopeAppAccount = 'app_account';
+  static const String _ownerScopeCloudAccount = 'cloud_account';
+  static const String _providerServer = 'server';
+  static const String _providerGoogleDrive = 'gdrive';
+
   final AppDatabase db;
   final GoogleDriveStorageService _googleDriveStorageService =
       GoogleDriveStorageService();
 
   MediaService(this.db);
 
+  String? get _currentAccountId => fb.FirebaseAuth.instance.currentUser?.uid;
+
+  Future<void> adoptLegacyStorageOwnershipIfNeeded(String accountId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final prefKey = '$_legacyAdoptedPrefsPrefix.$accountId';
+    if (prefs.getBool(prefKey) != true) {
+      await prefs.setBool(prefKey, true);
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────
   // Group Operations
   // ─────────────────────────────────────────────────────────────────
 
-  Future<List<Group>> getAllGroups() => db.groupsDao.getAllGroups();
+  Future<List<Group>> getAllGroups() async {
+    final allGroups = await db.groupsDao.getAllGroups();
+    final visibleCollectionIds = await _visibleCollectionIds();
+    if (visibleCollectionIds.isEmpty) return [];
+
+    final mappings = await (db.select(db.groupCollections)
+          ..where((gc) => gc.collectionId.isIn(visibleCollectionIds)))
+        .get();
+    final visibleGroupIds = mappings.map((m) => m.groupId).toSet();
+
+    return allGroups
+        .where((group) => visibleGroupIds.contains(group.id))
+        .toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+  }
+
+  Future<List<Collection>> getVisibleCollectionsForGroup(int? groupId) async {
+    final visibleCollectionIds = await _visibleCollectionIds();
+    if (visibleCollectionIds.isEmpty) return const [];
+
+    List<Collection> rows;
+    if (groupId == null) {
+      final query = db.select(db.collections).join([
+        leftOuterJoin(
+          db.groupCollections,
+          db.groupCollections.collectionId.equalsExp(db.collections.id),
+        ),
+      ])
+        ..where(
+          db.groupCollections.groupId.isNull() &
+              db.collections.id.isIn(visibleCollectionIds),
+        );
+      final joined = await query.get();
+      rows = joined.map((r) => r.readTable(db.collections)).toList();
+    } else if (groupId == -1) {
+      rows = await (db.select(db.collections)
+            ..where((c) => c.id.isIn(visibleCollectionIds)))
+          .get();
+    } else {
+      final query = db.select(db.collections).join([
+        innerJoin(
+          db.groupCollections,
+          db.groupCollections.collectionId.equalsExp(db.collections.id),
+        ),
+      ])
+        ..where(
+          db.groupCollections.groupId.equals(groupId) &
+              db.collections.id.isIn(visibleCollectionIds),
+        );
+      final joined = await query.get();
+      rows = joined.map((r) => r.readTable(db.collections)).toList();
+    }
+
+    rows.sort((a, b) => a.name.compareTo(b.name));
+    return rows;
+  }
+
+  Future<List<Collection>> getAllVisibleCollections() async {
+    final visibleCollectionIds = await _visibleCollectionIds();
+    if (visibleCollectionIds.isEmpty) return const [];
+    final rows = await (db.select(db.collections)
+          ..where((c) => c.id.isIn(visibleCollectionIds))
+          ..orderBy([(c) => OrderingTerm.asc(c.name)]))
+        .get();
+    return rows;
+  }
+
+  Future<List<Clip>> getVisibleClipsForCollection(int? collectionId) async {
+    final rows = await _visibleClips();
+    final filtered = rows.where((clip) {
+      if (collectionId == null) return clip.collectionId == null;
+      return clip.collectionId == collectionId;
+    }).toList();
+    filtered.sort((a, b) => a.id.compareTo(b.id));
+    return filtered;
+  }
+
+  Future<int> countVisibleClipsInCollection(int collectionId) async {
+    final clips = await getVisibleClipsForCollection(collectionId);
+    return clips.length;
+  }
 
   Future<void> createGroup(String name) => db.groupsDao.insertGroup(name);
 
@@ -74,6 +172,10 @@ class MediaService {
         .getSingleOrNull();
     if (clip == null) return null;
 
+    if (!await _isClipVisible(clip)) {
+      return null;
+    }
+
     final segments = await (db.select(db.segments)
           ..where((s) => s.clipId.equals(clip.id))
           ..orderBy([(s) => OrderingTerm.asc(s.startMs)]))
@@ -97,8 +199,28 @@ class MediaService {
 
       final oldCollectionId = target.collectionId;
 
+      final sourceRef = await _getCurrentClipSourceRef(target);
+      if (sourceRef != null) {
+        await _deleteRemoteLinkSource(sourceRef);
+        if (sourceRef.provider == _providerServer &&
+            sourceRef.ownerScope == _ownerScopeAppAccount) {
+          await _deleteLibraryClipDoc(
+              sourceRef.ownerKey, sourceRef.remoteDocId);
+        }
+      }
+
+      final cacheEntries = await (db.select(db.clipCacheEntries)
+            ..where((c) => c.clipId.equals(clipId)))
+          .get();
+
       // 1. DB 삭제 트랜잭션
       await db.transaction(() async {
+        await (db.delete(db.clipCacheEntries)
+              ..where((c) => c.clipId.equals(clipId)))
+            .go();
+        await (db.delete(db.clipSourceRefs)
+              ..where((c) => c.clipId.equals(clipId)))
+            .go();
         await (db.delete(db.segments)..where((s) => s.clipId.equals(clipId)))
             .go();
         await (db.delete(db.clipTags)..where((ct) => ct.clipId.equals(clipId)))
@@ -112,9 +234,18 @@ class MediaService {
       }
 
       // 3. 파일 삭제 (절대 경로 보정 후)
-      if (target.filePath.isNotEmpty) {
+      final sourcePath = target.sourceFilePath ?? target.filePath;
+      if (sourcePath.isNotEmpty) {
         try {
-          final abs = await _absolutePathFor(target.filePath);
+          final abs = await _absolutePathFor(sourcePath);
+          final f = File(abs);
+          if (await f.exists()) await f.delete();
+        } catch (_) {}
+      }
+
+      for (final cacheEntry in cacheEntries) {
+        try {
+          final abs = await _absolutePathFor(cacheEntry.filePath);
           final f = File(abs);
           if (await f.exists()) await f.delete();
         } catch (_) {}
@@ -149,9 +280,10 @@ class MediaService {
               collectionId: Value(collectionId),
               title: clipTitle,
               filePath: filePath,
+              sourceFilePath: Value(filePath),
               storageBytes: Value(storageBytes),
               durationMs: durationMs,
-              syncStatus: const Value(SyncStatus.pending),
+              ownerScope: const Value(_ownerScopeDevice),
             ),
           );
 
@@ -211,9 +343,9 @@ class MediaService {
           collectionId: Value(newCollectionId),
           title: Value(clipTitle),
           filePath: Value(filePath),
+          sourceFilePath: Value(filePath),
           storageBytes: Value(await _fileSizeFor(filePath)),
           durationMs: Value(durationMs),
-          syncStatus: const Value(SyncStatus.pending),
           storageMode:
               storageMode == null ? const Value.absent() : Value(storageMode),
         ),
@@ -276,19 +408,16 @@ class MediaService {
     }
 
     final previousStorageMode = target.storageMode;
-    final previousRemoteData = await _loadPreviousRemoteData(
-      uid: user.uid,
-      clipId: clipId,
-      remoteId: target.remoteId,
-    );
+    final previousSourceRef = await _getCurrentClipSourceRef(target);
 
-    final absPath = await _absolutePathFor(target.filePath);
+    final sourcePath = await _resolveUploadSourcePath(target);
+    final absPath = await _absolutePathFor(sourcePath);
     final file = File(absPath);
     if (!await file.exists()) {
       throw StateError('업로드할 파일을 찾을 수 없습니다.');
     }
 
-    final remoteDocId = _remoteDocIdForClip(target);
+    final remoteDocId = previousSourceRef?.remoteDocId ?? _remoteDocIdForClip();
     final extension = p.extension(absPath);
     final normalizedExtension = extension.isEmpty ? '.mp4' : extension;
     final contentType = lookupMimeType(absPath) ?? 'application/octet-stream';
@@ -362,9 +491,6 @@ class MediaService {
 
       final now = DateTime.now();
 
-      final collectionRemoteId =
-          await _collectionRemoteIdForClip(target.collectionId);
-
       final docRef = _libraryClipDocRef(user.uid, remoteDocId);
       await _cleanupLegacyLibraryClipDocs(
         uid: user.uid,
@@ -374,8 +500,6 @@ class MediaService {
       await docRef.set({
         'localId': target.id,
         'collectionLocalId': target.collectionId,
-        if (collectionRemoteId != null)
-          'collectionRemoteId': collectionRemoteId,
         'title': target.title,
         'storageMode': 'server',
         'storageBytes': target.storageBytes,
@@ -388,19 +512,39 @@ class MediaService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      await _upsertClipSourceRef(
+        clipId: clipId,
+        provider: _providerServer,
+        ownerScope: _ownerScopeAppAccount,
+        ownerKey: user.uid,
+        remoteDocId: remoteDocId,
+        storagePath: uploadResult.storagePath,
+        downloadUrl: uploadResult.downloadUrl,
+        lastSyncedAt: now,
+      );
+      await _upsertClipCacheEntry(
+        clipId: clipId,
+        provider: _providerServer,
+        ownerScope: _ownerScopeAppAccount,
+        ownerKey: user.uid,
+        filePath: sourcePath,
+        storageBytes: target.storageBytes,
+      );
+
       await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
         ClipsCompanion(
-          remoteId: Value(remoteDocId),
+          filePath: const Value(''),
+          sourceFilePath: const Value.absent(),
+          ownerScope: const Value(_ownerScopeAppAccount),
+          ownerKey: Value(user.uid),
           storageMode: const Value('server'),
-          syncStatus: const Value(SyncStatus.synced),
-          lastSyncedAt: Value(now),
         ),
       );
 
       await _cleanupPreviousRemoteSource(
         clipId: clipId,
         previousStorageMode: previousStorageMode,
-        previousRemoteData: previousRemoteData,
+        previousSourceRef: previousSourceRef,
       );
 
       AppLogger.i(
@@ -423,7 +567,7 @@ class MediaService {
     }
   }
 
-  /// 클립 파일을 Google Drive로 업로드하고 cloud:gdrive 상태로 전환합니다.
+  /// 클립 파일을 Google Drive로 업로드하고 gdrive 상태로 전환합니다.
   Future<void> moveClipToGoogleDrive(
     int clipId, {
     ClipServerUploadProgressCallback? onProgress,
@@ -439,22 +583,21 @@ class MediaService {
     }
 
     final user = fb.FirebaseAuth.instance.currentUser;
-    final previousStorageMode = target.storageMode;
-    final previousRemoteData = user == null
-        ? null
-        : await _loadPreviousRemoteData(
-            uid: user.uid,
-            clipId: clipId,
-            remoteId: target.remoteId,
-          );
+    if (user == null) {
+      throw StateError('Google Drive 저장하려면 로그인이 필요합니다.');
+    }
 
-    final absPath = await _absolutePathFor(target.filePath);
+    final previousStorageMode = target.storageMode;
+    final previousSourceRef = await _getCurrentClipSourceRef(target);
+
+    final sourcePath = await _resolveUploadSourcePath(target);
+    final absPath = await _absolutePathFor(sourcePath);
     final file = File(absPath);
     if (!await file.exists()) {
       throw StateError('업로드할 파일을 찾을 수 없습니다.');
     }
 
-    final remoteDocId = _remoteDocIdForClip(target);
+    final remoteDocId = previousSourceRef?.remoteDocId ?? _remoteDocIdForClip();
     final extension = p.extension(absPath);
     final normalizedExtension = extension.isEmpty ? '.mp4' : extension;
     onProgress?.call(0, 0, 'Google Drive 연결 확인 중');
@@ -471,47 +614,41 @@ class MediaService {
       onProgress: onProgress,
     );
 
-    if (user != null) {
-      final collectionRemoteId =
-          await _collectionRemoteIdForClip(target.collectionId);
-      final docRef = _libraryClipDocRef(user.uid, remoteDocId);
-      await _cleanupLegacyLibraryClipDocs(
-        uid: user.uid,
-        clipId: clipId,
-        keepDocId: remoteDocId,
-      );
-      await docRef.set({
-        'localId': target.id,
-        'collectionLocalId': target.collectionId,
-        if (collectionRemoteId != null)
-          'collectionRemoteId': collectionRemoteId,
-        'title': target.title,
-        'storageMode': 'cloud:gdrive',
-        'storageProvider': 'gdrive',
-        'storageBytes': target.storageBytes,
-        'durationMs': target.durationMs,
-        'storagePath': cloudStoragePath,
-        'remoteFileId': result.fileId,
-        'cloudFolderId': result.folderId,
-        'downloadUrl': result.webContentLink ?? result.webViewLink,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-
     final now = DateTime.now();
+    await _upsertClipSourceRef(
+      clipId: clipId,
+      provider: _providerGoogleDrive,
+      ownerScope: _ownerScopeCloudAccount,
+      ownerKey: result.accountKey,
+      remoteDocId: remoteDocId,
+      storagePath: cloudStoragePath,
+      downloadUrl: result.webContentLink ?? result.webViewLink,
+      remoteFileId: result.fileId,
+      cloudFolderId: result.folderId,
+      lastSyncedAt: now,
+    );
+    await _upsertClipCacheEntry(
+      clipId: clipId,
+      provider: _providerGoogleDrive,
+      ownerScope: _ownerScopeCloudAccount,
+      ownerKey: result.accountKey,
+      filePath: sourcePath,
+      storageBytes: target.storageBytes,
+    );
     await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
       ClipsCompanion(
-        remoteId: Value(remoteDocId),
-        storageMode: const Value('cloud:gdrive'),
-        syncStatus: const Value(SyncStatus.synced),
-        lastSyncedAt: Value(now),
+        filePath: const Value(''),
+        sourceFilePath: const Value.absent(),
+        ownerScope: const Value(_ownerScopeCloudAccount),
+        ownerKey: Value(result.accountKey),
+        storageMode: const Value(_providerGoogleDrive),
       ),
     );
 
     await _cleanupPreviousRemoteSource(
       clipId: clipId,
       previousStorageMode: previousStorageMode,
-      previousRemoteData: previousRemoteData,
+      previousSourceRef: previousSourceRef,
     );
 
     AppLogger.i(
@@ -540,73 +677,55 @@ class MediaService {
       throw StateError('로컬 전환을 위해 로그인 정보가 필요합니다.');
     }
 
-    final remoteId = target.remoteId;
-    if (remoteId == null || remoteId.isEmpty) {
-      await _ensureLocalClipFileExists(target);
-      await _markClipAsLocal(clipId: clipId, remoteId: null);
-      AppLogger.i(
-          '[Clip][Storage] move-to-local success clipId=$clipId reason=no-remote-id');
-      return;
+    final sourceRef = await _getCurrentClipSourceRef(target);
+    if (sourceRef == null) {
+      throw StateError('현재 계정의 원격 원본 정보를 찾을 수 없습니다.');
     }
 
-    if (target.storageMode.startsWith('cloud:')) {
-      await _moveCloudClipToLocal(
-        clipId: clipId,
-        target: target,
-        remoteDocId: remoteId,
+    final sourcePath = await _ensureLocalSourcePath(
+      target: target,
+      sourceRef: sourceRef,
+    );
+
+    await _deleteRemoteLinkSource(sourceRef);
+    if (sourceRef.provider == _providerServer &&
+        sourceRef.ownerScope == _ownerScopeAppAccount) {
+      await _deleteLibraryClipDoc(sourceRef.ownerKey, sourceRef.remoteDocId);
+    }
+
+    await db.transaction(() async {
+      await (db.delete(db.clipSourceRefs)
+            ..where(
+              (c) =>
+                  c.clipId.equals(clipId) &
+                  c.provider.equals(sourceRef.provider) &
+                  c.ownerScope.equals(sourceRef.ownerScope) &
+                  c.ownerKey.equals(sourceRef.ownerKey),
+            ))
+          .go();
+      await (db.delete(db.clipCacheEntries)
+            ..where(
+              (c) =>
+                  c.clipId.equals(clipId) &
+                  c.provider.equals(sourceRef.provider) &
+                  c.ownerScope.equals(sourceRef.ownerScope) &
+                  c.ownerKey.equals(sourceRef.ownerKey),
+            ))
+          .go();
+      await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
+        ClipsCompanion(
+          filePath: Value(sourcePath),
+          sourceFilePath: Value(sourcePath),
+          ownerScope: const Value(_ownerScopeDevice),
+          ownerKey: const Value.absent(),
+          storageMode: const Value('local'),
+        ),
       );
-      return;
-    }
-
-    final remoteDoc = await _readLibraryClipDoc(
-      uid: user.uid,
-      clipId: clipId,
-      preferredDocId: remoteId,
-    );
-    final remoteData = remoteDoc?.data();
-    if (remoteData == null) {
-      throw StateError('서버 메타데이터를 찾을 수 없습니다.');
-    }
-
-    final storagePath = remoteData['storagePath'] as String?;
-    final downloadUrl = remoteData['downloadUrl'] as String?;
-    final remoteDocId = remoteId;
-
-    await _ensureLocalClipFileExists(
-      target,
-      storagePath: storagePath,
-      downloadUrl: downloadUrl,
-    );
-
-    await _deleteRemoteStorageObject(
-        storagePath: storagePath, downloadUrl: downloadUrl);
-
-    final remoteDocRef = _libraryClipDocRef(user.uid, remoteDocId);
-
-    await _cleanupLegacyLibraryClipDocs(
-      uid: user.uid,
-      clipId: clipId,
-      keepDocId: remoteDocId,
-    );
-    await remoteDocRef.set({
-      'localId': target.id,
-      'collectionLocalId': target.collectionId,
-      'title': target.title,
-      'storageMode': 'local',
-      'storageBytes': target.storageBytes,
-      'durationMs': target.durationMs,
-      'storagePath': FieldValue.delete(),
-      'downloadUrl': FieldValue.delete(),
-      'remoteFileId': FieldValue.delete(),
-      'cloudFolderId': FieldValue.delete(),
-      'storageProvider': FieldValue.delete(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    await _markClipAsLocal(clipId: clipId, remoteId: remoteDocId);
+    });
 
     AppLogger.i(
-        '[Clip][Storage] move-to-local success clipId=$clipId remoteId=$remoteDocId');
+      '[Clip][Storage] move-to-local success clipId=$clipId remoteId=${sourceRef.remoteDocId}',
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -642,162 +761,28 @@ class MediaService {
     return 0;
   }
 
-  Future<String?> _collectionRemoteIdForClip(int? collectionId) async {
-    if (collectionId == null) return null;
-    final collection = await (db.select(db.collections)
-          ..where((c) => c.id.equals(collectionId))
-          ..limit(1))
-        .getSingleOrNull();
-    return collection?.remoteId;
-  }
-
-  Future<Map<String, dynamic>?> _loadPreviousRemoteData({
-    required String uid,
-    required int clipId,
-    required String? remoteId,
-  }) async {
-    if (remoteId == null || remoteId.isEmpty) {
-      return null;
-    }
-    return (await _readLibraryClipDoc(
-      uid: uid,
-      clipId: clipId,
-      preferredDocId: remoteId,
-    ))
-        ?.data();
-  }
-
   Future<void> _cleanupPreviousRemoteSource({
     required int clipId,
     required String previousStorageMode,
-    required Map<String, dynamic>? previousRemoteData,
+    required ClipSourceRef? previousSourceRef,
   }) async {
-    if (previousStorageMode == 'server') {
-      final previousStoragePath = previousRemoteData?['storagePath'] as String?;
-      final previousDownloadUrl = previousRemoteData?['downloadUrl'] as String?;
-      await _deleteRemoteStorageObject(
-        storagePath: previousStoragePath,
-        downloadUrl: previousDownloadUrl,
-      );
+    if (previousSourceRef == null) {
       return;
     }
 
-    if (!previousStorageMode.startsWith('cloud:')) {
-      return;
-    }
-
-    final previousRemoteFileId = previousRemoteData?['remoteFileId'] as String?;
-    if (previousRemoteFileId == null || previousRemoteFileId.isEmpty) {
+    if (previousStorageMode == 'local') {
       return;
     }
 
     try {
-      await _googleDriveStorageService.deleteFile(previousRemoteFileId);
+      await _deleteRemoteLinkSource(previousSourceRef);
     } catch (e, st) {
       AppLogger.w(
-        '[Clip][Storage] previous-cloud-delete failed clipId=$clipId remoteFileId=$previousRemoteFileId',
+        '[Clip][Storage] previous-remote-delete failed clipId=$clipId remoteDocId=${previousSourceRef.remoteDocId}',
         error: e,
         stackTrace: st,
       );
     }
-  }
-
-  Future<void> _moveCloudClipToLocal({
-    required int clipId,
-    required Clip target,
-    required String remoteDocId,
-  }) async {
-    final user = fb.FirebaseAuth.instance.currentUser;
-    final remoteDoc = await _readLibraryClipDoc(
-      uid: user?.uid ?? '',
-      clipId: clipId,
-      preferredDocId: remoteDocId,
-    );
-    final remoteData = remoteDoc?.data();
-    if (remoteData == null) {
-      throw StateError('클라우드 원본 정보를 찾을 수 없습니다.');
-    }
-
-    final remoteFileId = remoteData['remoteFileId'] as String?;
-    if (remoteFileId == null || remoteFileId.isEmpty) {
-      AppLogger.w(
-        '[Clip][Storage] cloud-delete skipped remoteFileId-missing clipId=$clipId docId=$remoteDocId',
-      );
-    }
-
-    final absPath = await _absolutePathFor(target.filePath);
-    final localFile = File(absPath);
-    if (!await localFile.exists() || await localFile.length() == 0) {
-      final downloadId = remoteFileId ?? remoteDocId;
-      await _googleDriveStorageService.downloadClipFile(
-        fileId: downloadId,
-        destination: localFile,
-      );
-    }
-
-    if (remoteFileId != null && remoteFileId.isNotEmpty) {
-      try {
-        await _googleDriveStorageService.deleteFile(remoteFileId);
-      } catch (e, st) {
-        AppLogger.w(
-          '[Clip][Storage] cloud-delete failed remoteFileId=$remoteFileId',
-          error: e,
-          stackTrace: st,
-        );
-      }
-    }
-
-    if (user != null) {
-      final remoteDocRef = _libraryClipDocRef(user.uid, remoteDocId);
-      await _cleanupLegacyLibraryClipDocs(
-        uid: user.uid,
-        clipId: clipId,
-        keepDocId: remoteDocId,
-      );
-      await remoteDocRef.set({
-        'localId': target.id,
-        'collectionLocalId': target.collectionId,
-        'title': target.title,
-        'storageMode': 'local',
-        'storageBytes': target.storageBytes,
-        'durationMs': target.durationMs,
-        'remoteFileId': FieldValue.delete(),
-        'cloudFolderId': FieldValue.delete(),
-        'downloadUrl': FieldValue.delete(),
-        'storagePath': FieldValue.delete(),
-        'storageProvider': FieldValue.delete(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-
-    await _markClipAsLocal(clipId: clipId, remoteId: remoteDocId);
-    AppLogger.i(
-      '[Clip][Storage] move-to-local success clipId=$clipId storage=cloud',
-    );
-  }
-
-  Future<void> _ensureLocalClipFileExists(
-    Clip target, {
-    String? storagePath,
-    String? downloadUrl,
-  }) async {
-    final absPath = await _absolutePathFor(target.filePath);
-    final file = File(absPath);
-    if (await file.exists() && await file.length() > 0) {
-      return;
-    }
-
-    final ref = storagePath != null && storagePath.isNotEmpty
-        ? FirebaseStorage.instance.ref(storagePath)
-        : (downloadUrl != null && downloadUrl.isNotEmpty
-            ? FirebaseStorage.instance.refFromURL(downloadUrl)
-            : null);
-    if (ref == null) {
-      throw StateError('로컬 파일을 복원할 수 없습니다.');
-    }
-
-    await file.parent.create(recursive: true);
-    await ref.writeToFile(file);
   }
 
   Future<void> _deleteRemoteStorageObject({
@@ -822,30 +807,13 @@ class MediaService {
     }
   }
 
-  Future<void> _markClipAsLocal({
-    required int clipId,
-    required String? remoteId,
-  }) async {
-    final now = DateTime.now();
-    await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
-      ClipsCompanion(
-        remoteId: remoteId == null ? const Value.absent() : Value(remoteId),
-        storageMode: const Value('local'),
-        syncStatus: const Value(SyncStatus.synced),
-        lastSyncedAt: Value(now),
-      ),
-    );
-  }
-
   String _buildDriveFileName(String absPath) {
     final extension = p.extension(absPath);
     return 'video${extension.isEmpty ? '.mp4' : extension}';
   }
 
   Future<int> getServerStorageUsedBytes() async {
-    final rows = await (db.select(db.clips)
-          ..where((c) => c.storageMode.equals('server')))
-        .get();
+    final rows = await _visibleClipsByStorageMode('server');
     return rows.fold<int>(
         0, (totalBytes, clip) => totalBytes + clip.storageBytes);
   }
@@ -859,9 +827,9 @@ class MediaService {
   }
 
   Future<int> getCloudStorageUsedBytes() async {
-    final rows = await (db.select(db.clips)
-          ..where((c) => c.storageMode.like('cloud:%')))
-        .get();
+    final rows = await _visibleRemoteClips().then(
+      (clips) => clips.where((clip) => clip.storageMode == 'gdrive').toList(),
+    );
     return rows.fold<int>(
         0, (totalBytes, clip) => totalBytes + clip.storageBytes);
   }
@@ -880,10 +848,7 @@ class MediaService {
   Future<int> moveAllGoogleDriveClipsToLocal({
     void Function(int current, int total, String message)? onProgress,
   }) async {
-    final clips = await (db.select(db.clips)
-          ..where((c) => c.storageMode.equals('cloud:gdrive'))
-          ..orderBy([(c) => OrderingTerm.asc(c.id)]))
-        .get();
+    final clips = await _visibleClipsByStorageMode('gdrive');
 
     if (clips.isEmpty) {
       onProgress?.call(0, 0, '이동할 Google Drive 파일이 없습니다.');
@@ -924,25 +889,22 @@ class MediaService {
   }
 
   Future<int> getCachedRemoteStorageUsedBytes() async {
-    final clips = await _fetchCachedRemoteClips();
-    return clips.fold<int>(
+    final entries = await _currentCacheEntries();
+    return entries.fold<int>(
       0,
-      (totalBytes, clip) => totalBytes + clip.storageBytes,
+      (totalBytes, entry) => totalBytes + entry.storageBytes,
     );
   }
 
   Future<int> getCachedRemoteClipCount() async {
-    final clips = await _fetchCachedRemoteClips();
-    return clips.length;
+    final entries = await _currentCacheEntries();
+    return entries.length;
   }
 
   Future<List<ClipItem>> fetchClipItemsByStorageMode(
     String storageMode,
   ) async {
-    final clips = await (db.select(db.clips)
-          ..where((c) => c.storageMode.equals(storageMode))
-          ..orderBy([(c) => OrderingTerm.desc(c.lastSyncedAt)]))
-        .get();
+    final clips = await _visibleClipsByStorageMode(storageMode);
     return _buildClipItems(clips);
   }
 
@@ -963,7 +925,12 @@ class MediaService {
       throw StateError('로컬 저장본은 캐시로 지울 수 없습니다.');
     }
 
-    final absPath = await _absolutePathFor(clip.filePath);
+    final cacheEntry = await _getCurrentClipCacheEntry(clip);
+    if (cacheEntry == null) {
+      return true;
+    }
+
+    final absPath = await _absolutePathFor(cacheEntry.filePath);
     final file = File(absPath);
     if (await file.exists()) {
       await file.delete();
@@ -975,6 +942,15 @@ class MediaService {
         '[Clip][Cache] clear-cache skip-missing clipId=$clipId path=$absPath',
       );
     }
+    await (db.delete(db.clipCacheEntries)
+          ..where(
+            (c) =>
+                c.clipId.equals(clipId) &
+                c.provider.equals(cacheEntry.provider) &
+                c.ownerScope.equals(cacheEntry.ownerScope) &
+                c.ownerKey.equals(cacheEntry.ownerKey),
+          ))
+        .go();
     return true;
   }
 
@@ -983,31 +959,18 @@ class MediaService {
   }
 
   Future<List<Clip>> _fetchCachedRemoteClips() async {
-    final serverClips = await (db.select(db.clips)
-          ..where((c) => c.storageMode.equals('server'))
-          ..orderBy([(c) => OrderingTerm.desc(c.lastSyncedAt)]))
-        .get();
-    final cloudClips = await (db.select(db.clips)
-          ..where((c) => c.storageMode.like('cloud:%'))
-          ..orderBy([(c) => OrderingTerm.desc(c.lastSyncedAt)]))
-        .get();
-
-    final remoteClips = <Clip>[...serverClips, ...cloudClips];
+    final remoteClips = await _visibleRemoteClips();
     final cachedClips = <Clip>[];
 
     for (final clip in remoteClips) {
-      final absPath = await _absolutePathFor(clip.filePath);
+      final cacheEntry = await _getCurrentClipCacheEntry(clip);
+      if (cacheEntry == null) continue;
+      final absPath = await _absolutePathFor(cacheEntry.filePath);
       final file = File(absPath);
       if (await file.exists() && await file.length() > 0) {
         cachedClips.add(clip);
       }
     }
-
-    cachedClips.sort((a, b) {
-      final aTime = a.lastSyncedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime = b.lastSyncedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return bTime.compareTo(aTime);
-    });
 
     return cachedClips;
   }
@@ -1038,23 +1001,28 @@ class MediaService {
             ..orderBy([(s) => OrderingTerm.asc(s.startMs)]))
           .get();
 
-      final absPath = await _absolutePathFor(clip.filePath);
+      final previewPath = await _resolvePreviewPath(clip);
 
       Uint8List? thumbBytes;
-      try {
-        thumbBytes = await VideoThumbnail.thumbnailData(
-          video: absPath,
-          imageFormat: ImageFormat.JPEG,
-          quality: 70,
-          timeMs: 500,
-        );
-      } catch (_) {
-        thumbBytes = null;
+      if (previewPath != null) {
+        final absPath = await _absolutePathFor(previewPath);
+        try {
+          thumbBytes = await VideoThumbnail.thumbnailData(
+            video: absPath,
+            imageFormat: ImageFormat.JPEG,
+            quality: 70,
+            timeMs: 500,
+          );
+        } catch (_) {
+          thumbBytes = null;
+        }
       }
+
+      final effectivePath = previewPath ?? clip.filePath;
 
       items.add(
         ClipItem(
-          clip: clip,
+          clip: clip.copyWith(filePath: effectivePath),
           tags: tagsByClip[clip.id] ?? const [],
           segments: segments,
           thumbnail: thumbBytes,
@@ -1066,42 +1034,64 @@ class MediaService {
   }
 
   Future<String> _ensurePlayableClipFile(Clip clip) async {
-    final absPath = await _absolutePathFor(clip.filePath);
-    final file = File(absPath);
-    if (await file.exists() && await file.length() > 0) {
-      return absPath;
+    if (clip.storageMode == 'local') {
+      final sourcePath = clip.sourceFilePath ?? clip.filePath;
+      final absPath = await _absolutePathFor(sourcePath);
+      final file = File(absPath);
+      if (await file.exists() && await file.length() > 0) {
+        return absPath;
+      }
+      throw StateError('로컬 파일을 찾을 수 없습니다.');
     }
 
-    if (clip.storageMode == 'server') {
-      await _restoreServerClipFile(clip, file);
-      return absPath;
+    final sourceRef = await _requireCurrentClipSourceRef(clip);
+    final cacheEntry = await _getClipCacheEntryForSourceRef(sourceRef);
+    if (cacheEntry != null) {
+      final absPath = await _absolutePathFor(cacheEntry.filePath);
+      final file = File(absPath);
+      if (await file.exists() && await file.length() > 0) {
+        return absPath;
+      }
     }
 
-    if (clip.storageMode.startsWith('cloud:')) {
-      await _restoreCloudClipFile(clip, file);
-      return absPath;
+    final relativePath = await _defaultCachePathForClip(
+      clipId: clip.id,
+      remoteDocId: sourceRef.remoteDocId,
+      extensionHint: sourceRef.provider == _providerGoogleDrive
+          ? p.extension(sourceRef.storagePath ?? sourceRef.remoteFileId ?? '')
+          : p.extension(sourceRef.storagePath ?? ''),
+    );
+    final absPath = await _absolutePathFor(relativePath);
+    final destination = File(absPath);
+
+    if (sourceRef.provider == _providerServer) {
+      await _restoreServerClipFile(sourceRef, destination);
+    } else if (sourceRef.provider == _providerGoogleDrive) {
+      await _restoreCloudClipFile(sourceRef, destination);
+    } else {
+      throw StateError('원격 저장 방식이 올바르지 않습니다.');
     }
 
-    throw StateError('로컬 파일을 찾을 수 없습니다.');
+    await _upsertClipCacheEntry(
+      clipId: clip.id,
+      provider: sourceRef.provider,
+      ownerScope: sourceRef.ownerScope,
+      ownerKey: sourceRef.ownerKey,
+      filePath: relativePath,
+      storageBytes: clip.storageBytes,
+    );
+    return absPath;
   }
 
-  Future<void> _restoreServerClipFile(Clip clip, File destination) async {
-    final remoteDoc = await _readLibraryClipDoc(
-      uid: fb.FirebaseAuth.instance.currentUser?.uid ?? '',
-      clipId: clip.id,
-      preferredDocId: clip.remoteId,
-    );
-    final remoteData = remoteDoc?.data();
-    if (remoteData == null) {
-      throw StateError('서버 메타데이터를 찾을 수 없습니다.');
-    }
-
-    final storagePath = remoteData['storagePath'] as String?;
-    final downloadUrl = remoteData['downloadUrl'] as String?;
-    final ref = storagePath != null && storagePath.isNotEmpty
-        ? FirebaseStorage.instance.ref(storagePath)
-        : (downloadUrl != null && downloadUrl.isNotEmpty
-            ? FirebaseStorage.instance.refFromURL(downloadUrl)
+  Future<void> _restoreServerClipFile(
+    ClipSourceRef sourceRef,
+    File destination,
+  ) async {
+    final ref = sourceRef.storagePath != null &&
+            sourceRef.storagePath!.isNotEmpty
+        ? FirebaseStorage.instance.ref(sourceRef.storagePath!)
+        : (sourceRef.downloadUrl != null && sourceRef.downloadUrl!.isNotEmpty
+            ? FirebaseStorage.instance.refFromURL(sourceRef.downloadUrl!)
             : null);
     if (ref == null) {
       throw StateError('서버 파일 경로를 찾을 수 없습니다.');
@@ -1111,26 +1101,365 @@ class MediaService {
     await ref.writeToFile(destination);
   }
 
-  Future<void> _restoreCloudClipFile(Clip clip, File destination) async {
-    final remoteDoc = await _readLibraryClipDoc(
-      uid: fb.FirebaseAuth.instance.currentUser?.uid ?? '',
-      clipId: clip.id,
-      preferredDocId: clip.remoteId,
-    );
-    final remoteData = remoteDoc?.data();
-    if (remoteData == null) {
+  Future<void> _restoreCloudClipFile(
+    ClipSourceRef sourceRef,
+    File destination,
+  ) async {
+    final remoteFileId = sourceRef.remoteFileId;
+    if (remoteFileId == null || remoteFileId.isEmpty) {
       throw StateError('클라우드 원본 정보를 찾을 수 없습니다.');
     }
 
-    final remoteFileId = remoteData['remoteFileId'] as String?;
-    if (remoteFileId == null || remoteFileId.isEmpty) {
-      throw StateError('서버 원본 정보를 찾을 수 없습니다.');
-    }
-
+    await destination.parent.create(recursive: true);
     await _googleDriveStorageService.downloadClipFile(
       fileId: remoteFileId,
       destination: destination,
     );
+  }
+
+  Future<void> _deleteRemoteLinkSource(ClipSourceRef sourceRef) async {
+    if (sourceRef.provider == _providerServer) {
+      await _deleteRemoteStorageObject(
+        storagePath: sourceRef.storagePath,
+        downloadUrl: sourceRef.downloadUrl,
+      );
+      return;
+    }
+
+    if (sourceRef.provider == _providerGoogleDrive) {
+      final remoteFileId = sourceRef.remoteFileId;
+      if (remoteFileId == null || remoteFileId.isEmpty) return;
+      await _googleDriveStorageService.deleteFile(remoteFileId);
+    }
+  }
+
+  Future<String> _resolveUploadSourcePath(Clip clip) async {
+    if (clip.storageMode == 'local') {
+      final sourcePath = clip.sourceFilePath ?? clip.filePath;
+      final absPath = await _absolutePathFor(sourcePath);
+      final file = File(absPath);
+      if (!await file.exists()) {
+        throw StateError('로컬 원본 파일을 찾을 수 없습니다.');
+      }
+      return sourcePath;
+    }
+
+    final cacheEntry = await _getCurrentClipCacheEntry(clip);
+    if (cacheEntry != null) {
+      final absPath = await _absolutePathFor(cacheEntry.filePath);
+      final file = File(absPath);
+      if (await file.exists() && await file.length() > 0) {
+        return cacheEntry.filePath;
+      }
+    }
+
+    await _ensurePlayableClipFile(clip);
+    final refreshed = await _getCurrentClipCacheEntry(clip);
+    if (refreshed == null) {
+      throw StateError('업로드할 재생 캐시를 준비하지 못했습니다.');
+    }
+    return refreshed.filePath;
+  }
+
+  Future<String> _ensureLocalSourcePath({
+    required Clip target,
+    required ClipSourceRef sourceRef,
+  }) async {
+    final existingSource = target.sourceFilePath;
+    if (existingSource != null && existingSource.isNotEmpty) {
+      final absPath = await _absolutePathFor(existingSource);
+      final file = File(absPath);
+      if (await file.exists() && await file.length() > 0) {
+        return existingSource;
+      }
+    }
+
+    final cacheEntry = await _getClipCacheEntryForSourceRef(sourceRef);
+    if (cacheEntry != null) {
+      final absPath = await _absolutePathFor(cacheEntry.filePath);
+      final file = File(absPath);
+      if (await file.exists() && await file.length() > 0) {
+        return cacheEntry.filePath;
+      }
+    }
+
+    final sourcePath = await _defaultSourcePathForClip(
+      clipId: target.id,
+      title: target.title,
+      remoteDocId: sourceRef.remoteDocId,
+      extensionHint: p.extension(
+        sourceRef.storagePath ??
+            sourceRef.remoteFileId ??
+            sourceRef.downloadUrl ??
+            '',
+      ),
+    );
+    final absPath = await _absolutePathFor(sourcePath);
+    final destination = File(absPath);
+    if (sourceRef.provider == _providerServer) {
+      await _restoreServerClipFile(sourceRef, destination);
+    } else {
+      await _restoreCloudClipFile(sourceRef, destination);
+    }
+    return sourcePath;
+  }
+
+  Future<String?> _resolvePreviewPath(Clip clip) async {
+    if (clip.storageMode == 'local') {
+      final sourcePath = clip.sourceFilePath ?? clip.filePath;
+      if (sourcePath.isEmpty) return null;
+      final absPath = await _absolutePathFor(sourcePath);
+      final file = File(absPath);
+      return await file.exists() && await file.length() > 0 ? sourcePath : null;
+    }
+
+    final cacheEntry = await _getCurrentClipCacheEntry(clip);
+    if (cacheEntry == null) return null;
+
+    final absPath = await _absolutePathFor(cacheEntry.filePath);
+    final file = File(absPath);
+    return await file.exists() && await file.length() > 0
+        ? cacheEntry.filePath
+        : null;
+  }
+
+  Future<List<Clip>> _visibleClipsByStorageMode(String storageMode) async {
+    final clips = await _visibleClips();
+    return clips.where((clip) => clip.storageMode == storageMode).toList()
+      ..sort((a, b) => b.id.compareTo(a.id));
+  }
+
+  Future<List<Clip>> _visibleRemoteClips() async {
+    final clips = await _visibleClips();
+    return clips.where((clip) => clip.storageMode != 'local').toList();
+  }
+
+  Future<bool> _isClipVisible(Clip clip) async {
+    if (clip.ownerScope == _ownerScopeDevice) return true;
+    if (clip.ownerScope == _ownerScopeAppAccount) {
+      final accountId = _currentAccountId;
+      return accountId != null && clip.ownerKey == accountId;
+    }
+    if (clip.ownerScope == _ownerScopeCloudAccount) {
+      final accountKey = await _googleDriveStorageService.currentAccountKey();
+      return accountKey != null && clip.ownerKey == accountKey;
+    }
+    return false;
+  }
+
+  Future<List<Clip>> _visibleClips() async {
+    final rows = await db.select(db.clips).get();
+    final visible = <Clip>[];
+    for (final clip in rows) {
+      if (await _isClipVisible(clip)) {
+        visible.add(clip);
+      }
+    }
+    return visible;
+  }
+
+  Future<List<ClipCacheEntry>> _currentCacheEntries() async {
+    final entries = await db.select(db.clipCacheEntries).get();
+    final appAccountId = _currentAccountId;
+    final googleAccountKey =
+        await _googleDriveStorageService.currentAccountKey();
+
+    return entries.where((entry) {
+      if (entry.ownerScope == _ownerScopeAppAccount) {
+        return appAccountId != null && entry.ownerKey == appAccountId;
+      }
+      if (entry.ownerScope == _ownerScopeCloudAccount) {
+        return googleAccountKey != null && entry.ownerKey == googleAccountKey;
+      }
+      return false;
+    }).toList();
+  }
+
+  String _providerForStorageMode(String storageMode) {
+    return switch (storageMode) {
+      'server' => _providerServer,
+      'gdrive' => _providerGoogleDrive,
+      _ => throw StateError('원격 저장 방식이 올바르지 않습니다.'),
+    };
+  }
+
+  String _ownerScopeForProvider(String provider) {
+    return switch (provider) {
+      _providerServer => _ownerScopeAppAccount,
+      _providerGoogleDrive => _ownerScopeCloudAccount,
+      _ => throw StateError('원격 저장 제공자가 올바르지 않습니다.'),
+    };
+  }
+
+  Future<String?> _currentOwnerKeyForProvider(String provider) async {
+    return switch (provider) {
+      _providerServer => _currentAccountId,
+      _providerGoogleDrive => _googleDriveStorageService.currentAccountKey(),
+      _ => null,
+    };
+  }
+
+  Future<Set<int>> _visibleCollectionIds() async {
+    final clips = await _visibleClips();
+    return clips
+        .where((clip) => clip.collectionId != null)
+        .map((clip) => clip.collectionId!)
+        .toSet();
+  }
+
+  Future<ClipSourceRef?> _getClipSourceRef({
+    required int clipId,
+    required String provider,
+    required String ownerScope,
+    required String ownerKey,
+  }) {
+    return (db.select(db.clipSourceRefs)
+          ..where(
+            (c) =>
+                c.clipId.equals(clipId) &
+                c.provider.equals(provider) &
+                c.ownerScope.equals(ownerScope) &
+                c.ownerKey.equals(ownerKey),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  Future<ClipSourceRef> _requireCurrentClipSourceRef(Clip clip) async {
+    final ref = await _getCurrentClipSourceRef(clip);
+    if (ref == null) {
+      throw StateError('현재 소유자의 원격 원본 정보를 찾을 수 없습니다.');
+    }
+    return ref;
+  }
+
+  Future<ClipSourceRef?> _getCurrentClipSourceRef(Clip clip) async {
+    if (clip.storageMode == 'local') return null;
+    final provider = _providerForStorageMode(clip.storageMode);
+    final ownerScope = _ownerScopeForProvider(provider);
+    final ownerKey = await _currentOwnerKeyForProvider(provider);
+    if (ownerKey == null || ownerKey.isEmpty) return null;
+    return _getClipSourceRef(
+      clipId: clip.id,
+      provider: provider,
+      ownerScope: ownerScope,
+      ownerKey: ownerKey,
+    );
+  }
+
+  Future<ClipCacheEntry?> _getCurrentClipCacheEntry(Clip clip) async {
+    final sourceRef = await _getCurrentClipSourceRef(clip);
+    if (sourceRef == null) return null;
+    return _getClipCacheEntryForSourceRef(sourceRef);
+  }
+
+  Future<ClipCacheEntry?> _getClipCacheEntryForSourceRef(
+    ClipSourceRef sourceRef,
+  ) {
+    return _getClipCacheEntry(
+      clipId: sourceRef.clipId,
+      provider: sourceRef.provider,
+      ownerScope: sourceRef.ownerScope,
+      ownerKey: sourceRef.ownerKey,
+    );
+  }
+
+  Future<ClipCacheEntry?> _getClipCacheEntry({
+    required int clipId,
+    required String provider,
+    required String ownerScope,
+    required String ownerKey,
+  }) async {
+    return (db.select(db.clipCacheEntries)
+          ..where(
+            (c) =>
+                c.clipId.equals(clipId) &
+                c.provider.equals(provider) &
+                c.ownerScope.equals(ownerScope) &
+                c.ownerKey.equals(ownerKey),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  Future<void> _upsertClipSourceRef({
+    required int clipId,
+    required String provider,
+    required String ownerScope,
+    required String ownerKey,
+    required String remoteDocId,
+    String? storagePath,
+    String? downloadUrl,
+    String? remoteFileId,
+    String? cloudFolderId,
+    String? metadataPath,
+    required DateTime lastSyncedAt,
+  }) async {
+    await db.into(db.clipSourceRefs).insertOnConflictUpdate(
+          ClipSourceRefsCompanion.insert(
+            clipId: clipId,
+            provider: provider,
+            ownerScope: ownerScope,
+            ownerKey: ownerKey,
+            remoteDocId: remoteDocId,
+            storagePath: Value(storagePath),
+            downloadUrl: Value(downloadUrl),
+            remoteFileId: Value(remoteFileId),
+            cloudFolderId: Value(cloudFolderId),
+            metadataPath: Value(metadataPath),
+            lastSyncedAt: Value(lastSyncedAt),
+          ),
+        );
+  }
+
+  Future<void> _upsertClipCacheEntry({
+    required int clipId,
+    required String provider,
+    required String ownerScope,
+    required String ownerKey,
+    required String filePath,
+    required int storageBytes,
+  }) async {
+    await db.into(db.clipCacheEntries).insertOnConflictUpdate(
+          ClipCacheEntriesCompanion.insert(
+            clipId: clipId,
+            provider: provider,
+            ownerScope: ownerScope,
+            ownerKey: ownerKey,
+            filePath: filePath,
+            storageBytes: Value(storageBytes),
+            cachedAt: Value(DateTime.now()),
+            lastAccessedAt: Value(DateTime.now()),
+          ),
+        );
+  }
+
+  Future<String> _defaultCachePathForClip({
+    required int clipId,
+    required String remoteDocId,
+    String? extensionHint,
+  }) async {
+    final ext = _normalizedVideoExtension(extensionHint);
+    return 'media/cache/$remoteDocId/clip_$clipId$ext';
+  }
+
+  Future<String> _defaultSourcePathForClip({
+    required int clipId,
+    required String title,
+    required String remoteDocId,
+    String? extensionHint,
+  }) async {
+    final ext = _normalizedVideoExtension(extensionHint);
+    final safeTitle = title.trim().isEmpty
+        ? 'clip_$clipId'
+        : title.replaceAll(RegExp(r'[^A-Za-z0-9가-힣._-]+'), '_');
+    return 'media/local/${safeTitle}_$remoteDocId$ext';
+  }
+
+  String _normalizedVideoExtension(String? extensionHint) {
+    final raw = (extensionHint ?? '').trim();
+    if (raw.isEmpty) return '.mp4';
+    return raw.startsWith('.') ? raw : '.$raw';
   }
 
   CollectionReference<Map<String, dynamic>> _libraryClipsRef(String uid) {
@@ -1149,40 +1478,13 @@ class MediaService {
     return _libraryClipsRef(uid).doc(docId);
   }
 
-  String _remoteDocIdForClip(Clip clip) {
-    final existing = clip.remoteId;
-    if (existing != null && existing.isNotEmpty) {
-      return existing;
-    }
-    return const Uuid().v4();
+  Future<void> _deleteLibraryClipDoc(String uid, String docId) async {
+    if (uid.isEmpty || docId.isEmpty) return;
+    await _libraryClipDocRef(uid, docId).delete();
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>?> _readLibraryClipDoc({
-    required String uid,
-    required int clipId,
-    String? preferredDocId,
-  }) async {
-    if (uid.isEmpty) return null;
-
-    final ref = _libraryClipsRef(uid);
-    final candidates = <String>[
-      if (preferredDocId != null && preferredDocId.isNotEmpty) preferredDocId,
-    ];
-
-    for (final docId in candidates) {
-      final snap = await ref.doc(docId).get();
-      if (snap.exists) return snap;
-    }
-
-    final legacy = await ref.where('localId', isEqualTo: clipId).get();
-    if (legacy.docs.isEmpty) return null;
-
-    legacy.docs.sort((a, b) {
-      final aTime = _timestampMillis(a.data()['updatedAt']);
-      final bTime = _timestampMillis(b.data()['updatedAt']);
-      return bTime.compareTo(aTime);
-    });
-    return legacy.docs.first;
+  String _remoteDocIdForClip() {
+    return const Uuid().v4();
   }
 
   Future<void> _cleanupLegacyLibraryClipDocs({
@@ -1198,10 +1500,5 @@ class MediaService {
       if (doc.id == keepDocId) continue;
       await doc.reference.delete();
     }
-  }
-
-  int _timestampMillis(Object? value) {
-    if (value is Timestamp) return value.millisecondsSinceEpoch;
-    return 0;
   }
 }

@@ -10,7 +10,7 @@ Future<String?> showStorageTransferSheet(
 }) {
   final cs = Theme.of(context).colorScheme;
   var selectedMode = initialMode;
-  if (!hasGoogleDriveLinked && selectedMode == 'cloud:gdrive') {
+  if (!hasGoogleDriveLinked && selectedMode == 'gdrive') {
     selectedMode = 'server';
   }
 
@@ -65,10 +65,10 @@ Future<String?> showStorageTransferSheet(
                 subtitle:
                     hasGoogleDriveLinked ? '내 Drive로 옮깁니다.' : '연동 후 사용할 수 있어요.',
                 icon: Icons.cloud_upload_rounded,
-                selected: selectedMode == 'cloud:gdrive',
+                selected: selectedMode == 'gdrive',
                 enabled: hasGoogleDriveLinked,
                 onTap: hasGoogleDriveLinked
-                    ? () => setSheetState(() => selectedMode = 'cloud:gdrive')
+                    ? () => setSheetState(() => selectedMode = 'gdrive')
                     : null,
               ),
               const SizedBox(height: 12),
