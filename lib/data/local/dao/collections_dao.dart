@@ -23,7 +23,8 @@ class CollectionsDao extends DatabaseAccessor<AppDatabase>
     final existing = await (select(collections)
           ..where(
             (c) => c.name.equals(name) & c.storageMode.equals(storageMode),
-          ))
+          )
+          ..limit(1))
         .getSingleOrNull();
     if (existing != null) return existing;
     final id = await into(collections).insert(
