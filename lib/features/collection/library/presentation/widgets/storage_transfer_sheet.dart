@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 Future<String?> showStorageTransferSheet(
@@ -6,12 +7,13 @@ Future<String?> showStorageTransferSheet(
   required String title,
   required String subtitle,
   required bool hasGoogleDriveLinked,
-  String initialMode = 'server',
+  String initialMode = ClipStorageConstants.storageModeServer,
 }) {
   final cs = Theme.of(context).colorScheme;
   var selectedMode = initialMode;
-  if (!hasGoogleDriveLinked && selectedMode == 'gdrive') {
-    selectedMode = 'server';
+  if (!hasGoogleDriveLinked &&
+      selectedMode == ClipStorageConstants.storageModeGoogleDrive) {
+    selectedMode = ClipStorageConstants.storageModeServer;
   }
 
   return showModalBottomSheet<String>(
@@ -50,25 +52,30 @@ Future<String?> showStorageTransferSheet(
                 title: '로컬',
                 subtitle: '이 기기 안에 남겨둡니다.',
                 icon: Icons.phone_android_rounded,
-                selected: selectedMode == 'local',
-                onTap: () => setSheetState(() => selectedMode = 'local'),
+                selected: selectedMode == ClipStorageConstants.storageModeLocal,
+                onTap: () => setSheetState(
+                    () => selectedMode = ClipStorageConstants.storageModeLocal),
               ),
               _StoragePickTile(
                 title: '서버',
                 subtitle: '서버 저장으로 옮깁니다.',
                 icon: Icons.cloud_queue_rounded,
-                selected: selectedMode == 'server',
-                onTap: () => setSheetState(() => selectedMode = 'server'),
+                selected:
+                    selectedMode == ClipStorageConstants.storageModeServer,
+                onTap: () => setSheetState(
+                    () => selectedMode = ClipStorageConstants.storageModeServer),
               ),
               _StoragePickTile(
                 title: 'Google Drive',
                 subtitle:
                     hasGoogleDriveLinked ? '내 Drive로 옮깁니다.' : '연동 후 사용할 수 있어요.',
                 icon: Icons.cloud_upload_rounded,
-                selected: selectedMode == 'gdrive',
+                selected:
+                    selectedMode == ClipStorageConstants.storageModeGoogleDrive,
                 enabled: hasGoogleDriveLinked,
                 onTap: hasGoogleDriveLinked
-                    ? () => setSheetState(() => selectedMode = 'gdrive')
+                    ? () => setSheetState(() => selectedMode =
+                        ClipStorageConstants.storageModeGoogleDrive)
                     : null,
               ),
               const SizedBox(height: 12),

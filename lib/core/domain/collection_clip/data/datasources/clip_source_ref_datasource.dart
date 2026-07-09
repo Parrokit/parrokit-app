@@ -280,12 +280,16 @@ class ClipSourceRefDatasource {
         .go();
   }
 
+  /// 현재 계정 소유이면서, 실제로 살아있는(=visibleRemoteClips에 존재하는)
+  /// 클립에 연결된 캐시 로우만 반환합니다. 클립 삭제/이관 과정에서 미처
+  /// 정리되지 못한 고아 캐시 로우가 저장공간 사용량 표시를 실제 캐시
+  /// 목록과 다르게 부풀리는 것을 막기 위한 필터입니다.
   Future<List<ClipCacheEntry>> currentCacheEntries() async {
     final entries = await db.select(db.clipCacheEntries).get();
     final appAccountId = _currentAccountId;
     final googleAccountKey = await googleDriveStorageService.currentAccountKey();
 
-    return entries.where((entry) {
+    final ownerMatched = entries.where((entry) {
       if (entry.ownerScope == ClipStorageConstants.ownerScopeAppAccount) {
         return appAccountId != null && entry.ownerKey == appAccountId;
       }
@@ -294,6 +298,13 @@ class ClipSourceRefDatasource {
       }
       return false;
     }).toList();
+    if (ownerMatched.isEmpty) return ownerMatched;
+
+    final liveClipIds =
+        (await visibleRemoteClips()).map((clip) => clip.id).toSet();
+    return ownerMatched
+        .where((entry) => liveClipIds.contains(entry.clipId))
+        .toList();
   }
 
   /// 서버(Firebase Storage)/Google Drive에 올라간 원본·썸네일 파일과 metadata.json을

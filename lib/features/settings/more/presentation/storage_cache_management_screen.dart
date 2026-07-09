@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/data/models/clip_item.dart';
@@ -73,15 +74,19 @@ class _StorageCacheManagementScreenState
   }
 
   String _storageLabel(String storageMode) {
-    if (storageMode == 'server') return '서버';
-    if (storageMode == 'gdrive') return 'Google Drive';
+    if (storageMode == ClipStorageConstants.storageModeServer) return '서버';
+    if (storageMode == ClipStorageConstants.storageModeGoogleDrive) {
+      return 'Google Drive';
+    }
     return '원격';
   }
 
   Color _storageColor(BuildContext context, String storageMode) {
     final cs = Theme.of(context).colorScheme;
-    if (storageMode == 'server') return cs.secondary;
-    if (storageMode == 'gdrive') return cs.tertiary;
+    if (storageMode == ClipStorageConstants.storageModeServer) return cs.secondary;
+    if (storageMode == ClipStorageConstants.storageModeGoogleDrive) {
+      return cs.tertiary;
+    }
     return cs.primary;
   }
 

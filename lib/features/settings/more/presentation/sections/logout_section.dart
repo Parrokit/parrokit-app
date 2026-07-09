@@ -48,7 +48,12 @@ class LogoutSection extends StatelessWidget {
       // 3. 실제 인증 로그아웃 처리
       await userProvider.signOut();
 
-      // 4. 이전 계정 세션에서 멈춰있을 수 있는 선택/진행 상태 초기화
+      // 4. 이전 계정 기준으로 남아있는 저장공간 사용량 숫자 갱신
+      // (refreshStorageUsage는 자체적으로 notifyListeners를 호출하지 않으므로
+      // resetTransientUiState보다 먼저 실행해 한 번의 갱신으로 반영합니다)
+      await clipProvider.refreshStorageUsage();
+
+      // 5. 이전 계정 세션에서 멈춰있을 수 있는 선택/진행 상태 초기화
       clipProvider.resetTransientUiState();
 
       if (context.mounted) {

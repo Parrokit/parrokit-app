@@ -19,6 +19,7 @@ import '../../../../data/models/clip_item.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/infrastructure/services/cloud/google_drive_storage_service.dart';
 import 'package:parrokit/core/infrastructure/services/firebase/collection_sync_service.dart';
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/remote_doc_id_resolver.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_source_ref_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_thumbnail_datasource.dart';
@@ -615,13 +616,13 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
       var progress = 0;
       for (final clipId in clipIds) {
         switch (target) {
-          case 'local':
+          case ClipStorageConstants.storageModeLocal:
             await moveClipToLocal(clipId);
             break;
-          case 'server':
+          case ClipStorageConstants.storageModeServer:
             await moveClipToServer(clipId);
             break;
-          case 'gdrive':
+          case ClipStorageConstants.storageModeGoogleDrive:
             await moveClipToGoogleDrive(clipId);
             break;
         }
@@ -928,13 +929,15 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
           .get();
 
       String resolvedPath = c.filePath;
-      if (c.storageMode == 'local') {
+      if (c.storageMode == ClipStorageConstants.storageModeLocal) {
         resolvedPath = c.sourceFilePath ?? c.filePath;
       } else if (currentAccountId != null) {
         // gdrive 클립의 캐시 엔트리는 ownerScope='cloud_account'로 저장되므로
         // storageMode에 맞춰 분기해야 한다. (server -> app_account)
         final cacheOwnerScope =
-            c.storageMode == 'gdrive' ? 'cloud_account' : 'app_account';
+            c.storageMode == ClipStorageConstants.storageModeGoogleDrive
+                ? ClipStorageConstants.ownerScopeCloudAccount
+                : ClipStorageConstants.ownerScopeAppAccount;
         final cacheEntry = await (db.select(db.clipCacheEntries)
               ..where((entry) =>
                   entry.clipId.equals(c.id) &

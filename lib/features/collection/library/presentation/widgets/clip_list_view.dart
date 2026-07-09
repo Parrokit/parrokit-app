@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/data/models/clip_item.dart';
@@ -40,9 +41,11 @@ class ClipListView extends StatelessWidget {
   }
 
   String? _storageLabel(String storageMode) {
-    if (storageMode == 'local') return '로컬';
-    if (storageMode == 'server') return '서버';
-    if (storageMode == 'gdrive') return '클라우드 · Google Drive';
+    if (storageMode == ClipStorageConstants.storageModeLocal) return '로컬';
+    if (storageMode == ClipStorageConstants.storageModeServer) return '서버';
+    if (storageMode == ClipStorageConstants.storageModeGoogleDrive) {
+      return '클라우드 · Google Drive';
+    }
 
     return null;
   }
@@ -55,18 +58,22 @@ class ClipListView extends StatelessWidget {
 
     if (label == null) return null;
 
-    final isCloud = storageMode == 'gdrive';
+    final isCloud = storageMode == ClipStorageConstants.storageModeGoogleDrive;
 
     final background = switch (storageMode) {
-      'local' => cs.secondaryContainer.withValues(alpha: 0.55),
-      'server' => cs.tertiaryContainer.withValues(alpha: 0.55),
+      ClipStorageConstants.storageModeLocal =>
+        cs.secondaryContainer.withValues(alpha: 0.55),
+      ClipStorageConstants.storageModeServer =>
+        cs.tertiaryContainer.withValues(alpha: 0.55),
       _ when isCloud => cs.primaryContainer.withValues(alpha: 0.55),
       _ => cs.secondaryContainer.withValues(alpha: 0.55),
     };
 
     final foreground = switch (storageMode) {
-      'local' => cs.onSecondaryContainer.withValues(alpha: 0.9),
-      'server' => cs.onTertiaryContainer.withValues(alpha: 0.9),
+      ClipStorageConstants.storageModeLocal =>
+        cs.onSecondaryContainer.withValues(alpha: 0.9),
+      ClipStorageConstants.storageModeServer =>
+        cs.onTertiaryContainer.withValues(alpha: 0.9),
       _ when isCloud => cs.onPrimaryContainer.withValues(alpha: 0.9),
       _ => cs.onSecondaryContainer.withValues(alpha: 0.9),
     };
@@ -141,26 +148,29 @@ class ClipListView extends StatelessWidget {
     ).then((target) async {
       if (!context.mounted || target == null) return;
       final success = switch (target) {
-        'local' => await _moveToLocal(provider, item),
-        'server' => await _moveToServer(provider, item),
-        'gdrive' => await _moveToGoogleDrive(provider, item),
+        ClipStorageConstants.storageModeLocal =>
+          await _moveToLocal(provider, item),
+        ClipStorageConstants.storageModeServer =>
+          await _moveToServer(provider, item),
+        ClipStorageConstants.storageModeGoogleDrive =>
+          await _moveToGoogleDrive(provider, item),
         _ => false,
       };
 
       if (success) {
         onApplied();
-        if (target == 'server') {
+        if (target == ClipStorageConstants.storageModeServer) {
           showToast('서버에 저장했어요.');
-        } else if (target == 'local') {
+        } else if (target == ClipStorageConstants.storageModeLocal) {
           showToast('로컬로 옮겼어요.');
-        } else if (target == 'gdrive') {
+        } else if (target == ClipStorageConstants.storageModeGoogleDrive) {
           showToast('Google Drive에 저장했어요.');
         }
-      } else if (target == 'server') {
+      } else if (target == ClipStorageConstants.storageModeServer) {
         showToast('서버 저장에 실패했어요.');
-      } else if (target == 'local') {
+      } else if (target == ClipStorageConstants.storageModeLocal) {
         showToast('로컬 전환에 실패했어요.');
-      } else if (target == 'gdrive') {
+      } else if (target == ClipStorageConstants.storageModeGoogleDrive) {
         showToast('Google Drive 저장에 실패했어요.');
       }
     });

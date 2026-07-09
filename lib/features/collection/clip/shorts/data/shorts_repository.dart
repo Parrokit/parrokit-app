@@ -15,6 +15,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/data/local/app_database.dart'; // Import AppDatabase and Tag
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:path_provider/path_provider.dart';
@@ -44,10 +45,11 @@ class ShortsRepository {
     // 1. 랜덤 클립 조회
     final clips = await (pdb.select(pdb.clips)
           ..where((c) =>
-              c.ownerScope.equals('device') |
+              c.ownerScope.equals(ClipStorageConstants.ownerScopeDevice) |
               (currentAccountId == null
                   ? const Constant(false)
-                  : (c.ownerScope.equals('app_account') &
+                  : (c.ownerScope
+                          .equals(ClipStorageConstants.ownerScopeAppAccount) &
                       c.ownerKey.equals(currentAccountId))))
           ..orderBy([
             (c) => OrderingTerm(expression: const CustomExpression('RANDOM()'))
@@ -82,14 +84,18 @@ class ShortsRepository {
 
     for (final c in clips) {
       String previewPath = c.filePath;
-      if (c.storageMode == 'local') {
+      if (c.storageMode == ClipStorageConstants.storageModeLocal) {
         previewPath = c.sourceFilePath ?? c.filePath;
       } else if (currentAccountId != null) {
+        final cacheOwnerScope =
+            c.storageMode == ClipStorageConstants.storageModeGoogleDrive
+                ? ClipStorageConstants.ownerScopeCloudAccount
+                : ClipStorageConstants.ownerScopeAppAccount;
         final cacheEntry = await (pdb.select(pdb.clipCacheEntries)
               ..where((entry) =>
                   entry.clipId.equals(c.id) &
                   entry.provider.equals(c.storageMode) &
-                  entry.ownerScope.equals('app_account') &
+                  entry.ownerScope.equals(cacheOwnerScope) &
                   entry.ownerKey.equals(currentAccountId))
               ..limit(1))
             .getSingleOrNull();
