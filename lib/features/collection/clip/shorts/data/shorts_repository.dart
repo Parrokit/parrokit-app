@@ -11,6 +11,8 @@
 //
 // ============================================================================
 
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:parrokit/data/local/app_database.dart'; // Import AppDatabase and Tag
@@ -114,7 +116,21 @@ class ShortsRepository {
           .get();
 
       Uint8List? thumbBytes;
-      if (absPath.isNotEmpty) {
+      final thumbnailPath = c.thumbnailFilePath;
+      if (thumbnailPath != null && thumbnailPath.isNotEmpty) {
+        final thumbnailAbsPath = thumbnailPath.startsWith('/')
+            ? thumbnailPath
+            : '$docsPath/$thumbnailPath';
+        try {
+          final thumbnailFile = File(thumbnailAbsPath);
+          if (await thumbnailFile.exists()) {
+            thumbBytes = await thumbnailFile.readAsBytes();
+          }
+        } catch (_) {
+          thumbBytes = null;
+        }
+      }
+      if (thumbBytes == null && absPath.isNotEmpty) {
         try {
           thumbBytes = await VideoThumbnail.thumbnailData(
             video: absPath,

@@ -11,16 +11,30 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:path_provider/path_provider.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../../data/local/app_database.dart';
 import 'package:drift/drift.dart';
 import '../../../data/models/clip_view.dart';
 import '../../../../data/models/clip_item.dart';
 
 import 'package:parrokit/core/shared/utils/app_logger.dart';
-import 'package:parrokit/core/infrastructure/services/media_service.dart';
+import 'package:parrokit/core/infrastructure/services/cloud/google_drive_storage_service.dart';
 import 'package:parrokit/core/infrastructure/services/firebase/collection_sync_service.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/remote_doc_id_resolver.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_source_ref_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_thumbnail_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_file_sync_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_item_query_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_detail_query_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_firestore_metadata_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_cloud_metadata_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/repositories/clip_repository_impl.dart';
+import 'package:parrokit/core/domain/collection_clip/data/repositories/clip_migration_repository_impl.dart';
+import 'package:parrokit/core/domain/collection_clip/data/repositories/group_repository_impl.dart';
+import 'package:parrokit/core/domain/collection_clip/data/repositories/collection_repository_impl.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_repository.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_migration_repository.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/group_repository.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/collection_repository.dart';
 import 'mixins/clip_tag_mixin.dart';
 import 'mixins/clip_action_mixin.dart';
 
@@ -29,14 +43,70 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   @override
   final AppDatabase db;
-  late final MediaService _service;
+  late final ClipRepository _clipRepository;
+  late final ClipMigrationRepository _clipMigrationRepository;
+  late final GroupRepository _groupRepository;
+  late final CollectionRepository _collectionRepository;
   late final CollectionSyncService _collectionSyncService;
 
   @override
-  MediaService get service => _service;
+  ClipRepository get service => _clipRepository;
+
+  @override
+  ClipMigrationRepository get migrationService => _clipMigrationRepository;
 
   ClipProvider(this.db) {
-    _service = MediaService(db);
+    // datasource들은 계정 상태(GoogleSignIn 등)를 공유해야 하므로 단일
+    // 인스턴스를 만들어 두 Repository(Clip/ClipMigration)에 함께 주입합니다.
+    final googleDriveStorageService = GoogleDriveStorageService();
+    final sourceRefDatasource =
+        ClipSourceRefDatasource(db, googleDriveStorageService);
+    final thumbnailDatasource = ClipThumbnailDatasource(
+      db,
+      sourceRefDatasource,
+      googleDriveStorageService,
+    );
+    final fileSyncDatasource = ClipFileSyncDatasource(
+      db,
+      sourceRefDatasource,
+      googleDriveStorageService,
+    );
+    final itemQueryDatasource = ClipItemQueryDatasource(
+      db,
+      sourceRefDatasource,
+      thumbnailDatasource,
+    );
+    final remoteDocIdResolver = RemoteDocIdResolver();
+    final detailQueryDatasource = ClipDetailQueryDatasource(db);
+    final firestoreMetadataDatasource =
+        ClipFirestoreMetadataDatasource(db, remoteDocIdResolver);
+    final cloudMetadataDatasource = ClipCloudMetadataDatasource(
+      db,
+      remoteDocIdResolver,
+      detailQueryDatasource,
+    );
+
+    _clipRepository = ClipRepositoryImpl(
+      db: db,
+      sourceRefDatasource: sourceRefDatasource,
+      thumbnailDatasource: thumbnailDatasource,
+      fileSyncDatasource: fileSyncDatasource,
+      itemQueryDatasource: itemQueryDatasource,
+      firestoreMetadataDatasource: firestoreMetadataDatasource,
+    );
+    _clipMigrationRepository = ClipMigrationRepositoryImpl(
+      db: db,
+      sourceRefDatasource: sourceRefDatasource,
+      thumbnailDatasource: thumbnailDatasource,
+      fileSyncDatasource: fileSyncDatasource,
+      firestoreMetadataDatasource: firestoreMetadataDatasource,
+      cloudMetadataDatasource: cloudMetadataDatasource,
+      detailQueryDatasource: detailQueryDatasource,
+      remoteDocIdResolver: remoteDocIdResolver,
+      googleDriveStorageService: googleDriveStorageService,
+    );
+    _groupRepository = GroupRepositoryImpl(db);
+    _collectionRepository = CollectionRepositoryImpl(db, _clipRepository);
     _collectionSyncService = CollectionSyncService(database: db);
   }
 
@@ -93,11 +163,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   // ─────────────────────────────────────────────────────────────────
 
   Future<ClipView?> fetchClipById(int clipId) async {
-    return _service.fetchClipById(clipId);
+    return _clipRepository.fetchClipById(clipId);
   }
 
   Future<void> adoptLegacyStorageOwnership(String uid) async {
-    await _service.adoptLegacyStorageOwnershipIfNeeded(uid);
+    await _clipRepository.adoptLegacyStorageOwnershipIfNeeded(uid);
     if (selectedCollectionId != null) {
       await selectCollection(selectedCollectionId);
       return;
@@ -112,11 +182,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   Future<List<ClipItem>> fetchClipItemsByStorageMode(
     String storageMode,
   ) async {
-    return _service.fetchClipItemsByStorageMode(storageMode);
+    return _clipRepository.fetchClipItemsByStorageMode(storageMode);
   }
 
   Future<List<ClipItem>> fetchCachedRemoteClipItems() {
-    return _service.fetchCachedRemoteClipItems();
+    return _clipRepository.fetchCachedRemoteClipItems();
   }
 
   Future<void> refreshServerStorageUsage() async {
@@ -125,16 +195,16 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   @override
   Future<void> refreshStorageUsage() async {
-    serverStorageUsedBytes = await _service.getServerStorageUsedBytes();
-    localStorageUsedBytes = await _service.getLocalStorageUsedBytes();
-    cloudStorageUsedBytes = await _service.getCloudStorageUsedBytes();
+    serverStorageUsedBytes = await _clipMigrationRepository.getServerStorageUsedBytes();
+    localStorageUsedBytes = await _clipMigrationRepository.getLocalStorageUsedBytes();
+    cloudStorageUsedBytes = await _clipMigrationRepository.getCloudStorageUsedBytes();
     cachedRemoteStorageUsedBytes =
-        await _service.getCachedRemoteStorageUsedBytes();
-    cachedRemoteClipCount = await _service.getCachedRemoteClipCount();
-    hasGoogleDriveLinked = await _service.hasGoogleDriveLinked();
+        await _clipMigrationRepository.getCachedRemoteStorageUsedBytes();
+    cachedRemoteClipCount = await _clipMigrationRepository.getCachedRemoteClipCount();
+    hasGoogleDriveLinked = await _clipMigrationRepository.hasGoogleDriveLinked();
 
     try {
-      final quota = await _service.getGoogleDriveStorageQuota();
+      final quota = await _clipMigrationRepository.getGoogleDriveStorageQuota();
       googleDriveUsedBytes = quota?.usedBytes ?? 0;
       cloudStorageQuotaBytes = quota?.limitBytes;
     } catch (_) {
@@ -271,7 +341,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     );
 
     try {
-      await _service.moveClipToServer(
+      await _clipMigrationRepository.moveClipToServer(
         clipId,
         onProgress: (current, total, message) {
           _setServerUploadState(
@@ -323,7 +393,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     );
 
     try {
-      await _service.moveClipToGoogleDrive(
+      await _clipMigrationRepository.moveClipToGoogleDrive(
         clipId,
         onProgress: (current, total, message) {
           _setCloudUploadState(
@@ -372,7 +442,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     );
 
     try {
-      await _service.connectGoogleDrive();
+      await _clipMigrationRepository.connectGoogleDrive();
       await refreshStorageUsage();
       _setGoogleDriveLinkState(
         isRunning: false,
@@ -407,7 +477,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     );
 
     try {
-      await _service.disconnectGoogleDriveAfterLocalMove(
+      await _clipMigrationRepository.disconnectGoogleDriveAfterLocalMove(
         onProgress: (current, total, message) {
           _setGoogleDriveLinkState(
             isRunning: true,
@@ -541,7 +611,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   /// 모든 그룹 로드.
   @override
   Future<void> loadGroups() async {
-    groups = await _service.getAllGroups();
+    groups = await _groupRepository.getAllGroups();
     closeCollectionMenu();
 
     // 초기화
@@ -567,11 +637,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     tagsByClip = {};
 
     if (id == null) {
-      collections = await _service.getVisibleCollectionsForGroup(null);
+      collections = await _collectionRepository.getVisibleCollectionsForGroup(null);
     } else if (id == -1) {
-      collections = await _service.getVisibleCollectionsForGroup(-1);
+      collections = await _collectionRepository.getVisibleCollectionsForGroup(-1);
     } else {
-      collections = await _service.getVisibleCollectionsForGroup(id);
+      collections = await _collectionRepository.getVisibleCollectionsForGroup(id);
     }
 
     await refreshStorageUsage();
@@ -580,13 +650,13 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   /// 새 그룹 생성 후 목록 갱신.
   Future<void> createGroup(String name) async {
-    await _service.createGroup(name);
+    await _groupRepository.createGroup(name);
     await loadGroups();
   }
 
   /// 그룹 삭제 후 목록 갱신.
   Future<void> deleteGroupById(int id) async {
-    await _service.deleteGroupById(id);
+    await _groupRepository.deleteGroupById(id);
     if (selectedGroupId == id) {
       selectedGroupId = null;
     }
@@ -596,7 +666,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   /// 모든 컬렉션 로드 (호환성 또는 필요 시 사용).
   @override
   Future<void> loadCollections() async {
-    collections = await _service.getAllVisibleCollections();
+    collections = await _collectionRepository.getAllVisibleCollections();
     await refreshStorageUsage();
     notifyListeners();
   }
@@ -610,9 +680,9 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     tagsByClip = {};
 
     if (id == null) {
-      clips = await _service.getVisibleClipsForCollection(null);
+      clips = await _clipRepository.getVisibleClipsForCollection(null);
     } else {
-      clips = await _service.getVisibleClipsForCollection(id);
+      clips = await _clipRepository.getVisibleClipsForCollection(id);
     }
 
     await _buildClipItems();
@@ -622,7 +692,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   /// 컬렉션 내 클립 수 조회.
   Future<int> countClipsInCollection(int collectionId) async {
-    return _service.countVisibleClipsInCollection(collectionId);
+    return _clipRepository.countVisibleClipsInCollection(collectionId);
   }
 
   /// 이름 중복 검사 (그룹 및 콜렉션 전체)
@@ -824,16 +894,19 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
             ..orderBy([(s) => OrderingTerm.asc(s.startMs)]))
           .get();
 
-      Uint8List? thumbBytes;
       String resolvedPath = c.filePath;
       if (c.storageMode == 'local') {
         resolvedPath = c.sourceFilePath ?? c.filePath;
       } else if (currentAccountId != null) {
+        // gdrive 클립의 캐시 엔트리는 ownerScope='cloud_account'로 저장되므로
+        // storageMode에 맞춰 분기해야 한다. (server -> app_account)
+        final cacheOwnerScope =
+            c.storageMode == 'gdrive' ? 'cloud_account' : 'app_account';
         final cacheEntry = await (db.select(db.clipCacheEntries)
               ..where((entry) =>
                   entry.clipId.equals(c.id) &
                   entry.provider.equals(c.storageMode) &
-                  entry.ownerScope.equals('app_account') &
+                  entry.ownerScope.equals(cacheOwnerScope) &
                   entry.ownerKey.equals(currentAccountId))
               ..limit(1))
             .getSingleOrNull();
@@ -842,22 +915,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
         }
       }
 
-      if (resolvedPath.isNotEmpty) {
-        final dir = await getApplicationDocumentsDirectory();
-        final absPath = resolvedPath.startsWith('/')
-            ? resolvedPath
-            : '${dir.path}/$resolvedPath';
-        try {
-          thumbBytes = await VideoThumbnail.thumbnailData(
-            video: absPath,
-            imageFormat: ImageFormat.JPEG,
-            quality: 70,
-            timeMs: 500,
-          );
-        } catch (_) {
-          thumbBytes = null;
-        }
-      }
+      // 썸네일은 항상 ClipService의 복구 로직을 사용한다.
+      // (clip.thumbnailFilePath 로컬 캐시 -> 없으면 server/gdrive 원격 썸네일 다운로드)
+      // 여기서 직접 VideoThumbnail로 재생성을 시도하면 gdrive처럼 로컬에
+      // 원본 영상이 없는 클립은 썸네일을 영영 못 불러오는 문제가 재발한다.
+      final thumbBytes = await _clipRepository.loadThumbnailBytes(c);
       clipItems.add(
         ClipItem(
           clip: c.copyWith(filePath: resolvedPath),
@@ -871,7 +933,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   /// 모든 콜렉션 조회 (관리 모달용)
   Future<List<Collection>> fetchAllCollections() async {
-    return _service.getAllVisibleCollections();
+    return _collectionRepository.getAllVisibleCollections();
   }
 
   /// 콜렉션의 매핑된 그룹 ID 목록 조회

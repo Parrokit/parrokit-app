@@ -16,6 +16,7 @@ Future<void> migrateV2ToV3(Migrator m, AppDatabase db) async {
   await m.createTable(db.clipCacheEntries);
 
   await m.addColumn(db.clips, db.clips.sourceFilePath);
+  await m.addColumn(db.clips, db.clips.thumbnailFilePath);
   await m.addColumn(db.clips, db.clips.storageMode);
   await m.addColumn(db.clips, db.clips.storageBytes);
   await m.addColumn(db.clips, db.clips.ownerScope);

@@ -149,28 +149,19 @@ class GoogleDriveStorageService {
     required String ownerScope,
     GoogleDriveProgressCallback? onProgress,
   }) async {
-    AppLogger.i(
-        '[GoogleDrive][Upload] connect-start file=${_maskFileName(fileName)}');
     final account = await connect();
     if (account == null) {
       throw StateError('Google Drive 연결이 필요합니다.');
     }
-    AppLogger.i(
-      '[GoogleDrive][Upload] connect-done account=${_maskAccount(account)}',
-    );
 
-    AppLogger.d('[GoogleDrive][Upload] auth-start');
     final headers = await _authorizationHeaders(account);
     final accountKey = _accountKey(account);
-    AppLogger.d('[GoogleDrive][Upload] auth-done');
-    AppLogger.d('[GoogleDrive][Upload] folder-ensure-start');
     final folderSegments = _folderSegmentsForStoragePath(storagePath);
     final folderId = await _ensureFolderPath(
       account,
       headers,
       folderSegments,
     );
-    AppLogger.d('[GoogleDrive][Upload] folder-ensure-done folderId=$folderId');
     onProgress?.call(0, 0, 'Google Drive 연결 확인 중');
 
     final uploadUri = Uri.https(
@@ -206,12 +197,10 @@ class GoogleDriveStorageService {
     final client = HttpClient();
     try {
       AppLogger.i(
-        '[GoogleDrive][Upload] start file=${_maskFileName(fileName)} folderId=$folderId',
+        '[GoogleDrive][Upload] start file=${_maskFileName(fileName)} bytes=$totalBytes',
       );
       onProgress?.call(0, totalBytes, 'Google Drive에 저장하는 중');
-      AppLogger.d('[GoogleDrive][Upload] request-open-start');
       final request = await client.postUrl(uploadUri);
-      AppLogger.d('[GoogleDrive][Upload] request-open-done');
       headers.forEach((key, value) {
         request.headers.set(key, value);
       });
@@ -219,7 +208,6 @@ class GoogleDriveStorageService {
         HttpHeaders.contentTypeHeader,
         'multipart/related; boundary="$boundary"',
       );
-      AppLogger.d('[GoogleDrive][Upload] request-body-write-start');
       request.add(_utf8Bytes('--$boundary\r\n'));
       request.add(
         _utf8Bytes('Content-Type: application/json; charset=UTF-8\r\n\r\n'),
@@ -227,33 +215,14 @@ class GoogleDriveStorageService {
       request.add(_utf8Bytes('${jsonEncode(metadata)}\r\n'));
       request.add(_utf8Bytes('--$boundary\r\n'));
       request.add(_utf8Bytes('Content-Type: $mimeType\r\n\r\n'));
-      AppLogger.d(
-        '[GoogleDrive][Upload] file-stream-start totalBytes=$totalBytes',
-      );
       var sentBytes = 0;
-      var lastLoggedPercent = -1;
       await for (final chunk in file.openRead()) {
         request.add(chunk);
         sentBytes += chunk.length;
-        final percent =
-            totalBytes == 0 ? 100 : ((sentBytes / totalBytes) * 100).floor();
-        if (percent != lastLoggedPercent && percent % 10 == 0) {
-          lastLoggedPercent = percent;
-          AppLogger.d(
-            '[GoogleDrive][Upload] file-stream-progress sent=$sentBytes total=$totalBytes percent=$percent',
-          );
-        }
         onProgress?.call(sentBytes, totalBytes, 'Google Drive에 올리는 중');
       }
-      AppLogger.d(
-        '[GoogleDrive][Upload] file-stream-done sentBytes=$sentBytes',
-      );
       request.add(_utf8Bytes('\r\n--$boundary--'));
-      AppLogger.d('[GoogleDrive][Upload] request-close-start');
       final response = await request.close();
-      AppLogger.d(
-        '[GoogleDrive][Upload] request-close-done status=${response.statusCode}',
-      );
       final responseBody = await utf8.decodeStream(response);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw StateError(
@@ -277,7 +246,7 @@ class GoogleDriveStorageService {
 
       onProgress?.call(1, 1, 'Google Drive 저장 완료');
       AppLogger.i(
-        '[GoogleDrive][Upload] success fileId=${result.fileId} folderId=$folderId',
+        '[GoogleDrive][Upload] success file=${_maskFileName(fileName)} fileId=${result.fileId} bytes=$sentBytes',
       );
       return result;
     } finally {
@@ -290,20 +259,15 @@ class GoogleDriveStorageService {
     required File destination,
     GoogleDriveProgressCallback? onProgress,
   }) async {
-    AppLogger.i('[GoogleDrive][Download] connect-start fileId=$fileId');
     final account = await connect();
     if (account == null) {
       throw StateError('Google Drive 연결이 필요합니다.');
     }
-    AppLogger.i(
-      '[GoogleDrive][Download] connect-done account=${_maskAccount(account)}',
-    );
 
-    AppLogger.d('[GoogleDrive][Download] auth-start');
     final headers = await _authorizationHeaders(account);
-    AppLogger.d('[GoogleDrive][Download] auth-done');
     final client = http.Client();
     try {
+      AppLogger.i('[GoogleDrive][Download] start fileId=$fileId');
       final downloadUri = Uri.https(
         'www.googleapis.com',
         '/drive/v3/files/$fileId',
@@ -329,6 +293,9 @@ class GoogleDriveStorageService {
         await sink.close();
       }
       onProgress?.call(1, 1, 'Google Drive 다운로드 완료');
+      AppLogger.i(
+        '[GoogleDrive][Download] success fileId=$fileId path=${destination.path}',
+      );
       return destination;
     } finally {
       client.close();
@@ -396,18 +363,12 @@ class GoogleDriveStorageService {
   }
 
   Future<void> deleteFile(String fileId) async {
-    AppLogger.i('[GoogleDrive][Delete] connect-start fileId=$fileId');
     final account = await connect();
     if (account == null) {
       throw StateError('Google Drive 연결이 필요합니다.');
     }
-    AppLogger.i(
-      '[GoogleDrive][Delete] connect-done account=${_maskAccount(account)}',
-    );
 
-    AppLogger.d('[GoogleDrive][Delete] auth-start');
     final headers = await _authorizationHeaders(account);
-    AppLogger.d('[GoogleDrive][Delete] auth-done');
     final client = http.Client();
     try {
       final deleteUri = Uri.https(
@@ -430,6 +391,7 @@ class GoogleDriveStorageService {
           'Google Drive 삭제 실패: ${response.statusCode} $body',
         );
       }
+      AppLogger.i('[GoogleDrive][Delete] success fileId=$fileId');
     } finally {
       client.close();
     }
@@ -464,17 +426,12 @@ class GoogleDriveStorageService {
   }
 
   Future<Map<String, dynamic>?> fetchFileMetadata(String fileId) async {
-    AppLogger.d('[GoogleDrive][Meta] connect-start fileId=$fileId');
     final account = await connect();
     if (account == null) {
       throw StateError('Google Drive 연결이 필요합니다.');
     }
-    AppLogger.d(
-        '[GoogleDrive][Meta] connect-done account=${_maskAccount(account)}');
 
-    AppLogger.d('[GoogleDrive][Meta] auth-start');
     final headers = await _authorizationHeaders(account);
-    AppLogger.d('[GoogleDrive][Meta] auth-done');
     final client = http.Client();
     try {
       final uri = Uri.https(
@@ -540,9 +497,6 @@ class GoogleDriveStorageService {
     final cacheKey = '${_folderCacheKeyPrefix}_${_accountKey(account)}_root';
     final cachedFolderId = prefs.getString(cacheKey);
     if (cachedFolderId != null && cachedFolderId.isNotEmpty) {
-      AppLogger.d(
-        '[GoogleDrive][Folder] cache-hit account=${_maskAccount(account)} folderId=$cachedFolderId',
-      );
       final metadata = await fetchFileMetadata(cachedFolderId);
       if (metadata != null &&
           metadata['mimeType'] == 'application/vnd.google-apps.folder' &&
@@ -575,9 +529,6 @@ class GoogleDriveStorageService {
         '${_folderCacheKeyPrefix}_${_accountKey(account)}_${folderPath.join('__')}';
     final cachedFolderId = prefs.getString(cacheKey);
     if (cachedFolderId != null && cachedFolderId.isNotEmpty) {
-      AppLogger.d(
-        '[GoogleDrive][Folder] cache-hit account=${_maskAccount(account)} folderId=$cachedFolderId',
-      );
       final metadata = await fetchFileMetadata(cachedFolderId);
       if (metadata != null &&
           metadata['mimeType'] == 'application/vnd.google-apps.folder' &&
@@ -612,17 +563,11 @@ class GoogleDriveStorageService {
       headers: headers,
     );
     if (existing != null) {
-      AppLogger.d(
-        '[GoogleDrive][Folder] reuse account=${_maskAccount(account)} path=${folderPath.join('/')} folderId=$existing',
-      );
       return existing;
     }
 
     final client = http.Client();
     try {
-      AppLogger.d(
-        '[GoogleDrive][Folder] create-start account=${_maskAccount(account)} path=${folderPath.join('/')}',
-      );
       final createUri = Uri.https(
         'www.googleapis.com',
         '/drive/v3/files',

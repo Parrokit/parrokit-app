@@ -10,6 +10,9 @@ class ClipSourceRefs extends Table {
   TextColumn get remoteDocId => text()();
   TextColumn get storagePath => text().nullable()();
   TextColumn get downloadUrl => text().nullable()();
+  TextColumn get thumbnailStoragePath => text().nullable()();
+  TextColumn get thumbnailDownloadUrl => text().nullable()();
+  TextColumn get thumbnailRemoteFileId => text().nullable()();
   TextColumn get remoteFileId => text().nullable()();
   TextColumn get cloudFolderId => text().nullable()();
   TextColumn get metadataPath => text().nullable()();

@@ -12,11 +12,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 import '../../../../../data/local/app_database.dart';
-import '../../../infrastructure/services/media_service.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_repository.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_migration_repository.dart';
 
 mixin ClipActionMixin on ChangeNotifier {
   AppDatabase get db;
-  MediaService get service;
+  ClipRepository get service;
+  ClipMigrationRepository get migrationService;
 
   // Navigation / Refresh required methods
   int? get selectedGroupId;
@@ -114,7 +116,7 @@ mixin ClipActionMixin on ChangeNotifier {
 
   Future<bool> moveClipToServer(int clipId) async {
     try {
-      await service.moveClipToServer(clipId);
+      await migrationService.moveClipToServer(clipId);
       await refreshStorageUsage();
       notifyListeners();
       return true;
@@ -130,7 +132,7 @@ mixin ClipActionMixin on ChangeNotifier {
 
   Future<bool> moveClipToGoogleDrive(int clipId) async {
     try {
-      await service.moveClipToGoogleDrive(clipId);
+      await migrationService.moveClipToGoogleDrive(clipId);
       await refreshStorageUsage();
       notifyListeners();
       return true;
@@ -146,7 +148,7 @@ mixin ClipActionMixin on ChangeNotifier {
 
   Future<bool> moveClipToLocal(int clipId) async {
     try {
-      await service.moveClipToLocal(clipId);
+      await migrationService.moveClipToLocal(clipId);
       await refreshStorageUsage();
       notifyListeners();
       return true;
@@ -162,7 +164,7 @@ mixin ClipActionMixin on ChangeNotifier {
 
   Future<bool> clearRemoteClipCache(int clipId) async {
     try {
-      final success = await service.clearRemoteClipCache(clipId);
+      final success = await migrationService.clearRemoteClipCache(clipId);
       await refreshStorageUsage();
       notifyListeners();
       return success;

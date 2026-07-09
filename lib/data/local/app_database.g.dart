@@ -396,6 +396,12 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
   late final GeneratedColumn<String> sourceFilePath = GeneratedColumn<String>(
       'source_file_path', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _thumbnailFilePathMeta =
+      const VerificationMeta('thumbnailFilePath');
+  @override
+  late final GeneratedColumn<String> thumbnailFilePath =
+      GeneratedColumn<String>('thumbnail_file_path', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _ownerScopeMeta =
       const VerificationMeta('ownerScope');
   @override
@@ -439,6 +445,7 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
         title,
         filePath,
         sourceFilePath,
+        thumbnailFilePath,
         ownerScope,
         ownerKey,
         storageMode,
@@ -481,6 +488,12 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
           _sourceFilePathMeta,
           sourceFilePath.isAcceptableOrUnknown(
               data['source_file_path']!, _sourceFilePathMeta));
+    }
+    if (data.containsKey('thumbnail_file_path')) {
+      context.handle(
+          _thumbnailFilePathMeta,
+          thumbnailFilePath.isAcceptableOrUnknown(
+              data['thumbnail_file_path']!, _thumbnailFilePathMeta));
     }
     if (data.containsKey('owner_scope')) {
       context.handle(
@@ -531,6 +544,8 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, Clip> {
           .read(DriftSqlType.string, data['${effectivePrefix}file_path'])!,
       sourceFilePath: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}source_file_path']),
+      thumbnailFilePath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}thumbnail_file_path']),
       ownerScope: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}owner_scope'])!,
       ownerKey: attachedDatabase.typeMapping
@@ -556,6 +571,7 @@ class Clip extends DataClass implements Insertable<Clip> {
   final String title;
   final String filePath;
   final String? sourceFilePath;
+  final String? thumbnailFilePath;
   final String ownerScope;
   final String? ownerKey;
   final String storageMode;
@@ -567,6 +583,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       required this.title,
       required this.filePath,
       this.sourceFilePath,
+      this.thumbnailFilePath,
       required this.ownerScope,
       this.ownerKey,
       required this.storageMode,
@@ -583,6 +600,9 @@ class Clip extends DataClass implements Insertable<Clip> {
     map['file_path'] = Variable<String>(filePath);
     if (!nullToAbsent || sourceFilePath != null) {
       map['source_file_path'] = Variable<String>(sourceFilePath);
+    }
+    if (!nullToAbsent || thumbnailFilePath != null) {
+      map['thumbnail_file_path'] = Variable<String>(thumbnailFilePath);
     }
     map['owner_scope'] = Variable<String>(ownerScope);
     if (!nullToAbsent || ownerKey != null) {
@@ -605,6 +625,9 @@ class Clip extends DataClass implements Insertable<Clip> {
       sourceFilePath: sourceFilePath == null && nullToAbsent
           ? const Value.absent()
           : Value(sourceFilePath),
+      thumbnailFilePath: thumbnailFilePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailFilePath),
       ownerScope: Value(ownerScope),
       ownerKey: ownerKey == null && nullToAbsent
           ? const Value.absent()
@@ -624,6 +647,8 @@ class Clip extends DataClass implements Insertable<Clip> {
       title: serializer.fromJson<String>(json['title']),
       filePath: serializer.fromJson<String>(json['filePath']),
       sourceFilePath: serializer.fromJson<String?>(json['sourceFilePath']),
+      thumbnailFilePath:
+          serializer.fromJson<String?>(json['thumbnailFilePath']),
       ownerScope: serializer.fromJson<String>(json['ownerScope']),
       ownerKey: serializer.fromJson<String?>(json['ownerKey']),
       storageMode: serializer.fromJson<String>(json['storageMode']),
@@ -640,6 +665,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       'title': serializer.toJson<String>(title),
       'filePath': serializer.toJson<String>(filePath),
       'sourceFilePath': serializer.toJson<String?>(sourceFilePath),
+      'thumbnailFilePath': serializer.toJson<String?>(thumbnailFilePath),
       'ownerScope': serializer.toJson<String>(ownerScope),
       'ownerKey': serializer.toJson<String?>(ownerKey),
       'storageMode': serializer.toJson<String>(storageMode),
@@ -654,6 +680,7 @@ class Clip extends DataClass implements Insertable<Clip> {
           String? title,
           String? filePath,
           Value<String?> sourceFilePath = const Value.absent(),
+          Value<String?> thumbnailFilePath = const Value.absent(),
           String? ownerScope,
           Value<String?> ownerKey = const Value.absent(),
           String? storageMode,
@@ -667,6 +694,9 @@ class Clip extends DataClass implements Insertable<Clip> {
         filePath: filePath ?? this.filePath,
         sourceFilePath:
             sourceFilePath.present ? sourceFilePath.value : this.sourceFilePath,
+        thumbnailFilePath: thumbnailFilePath.present
+            ? thumbnailFilePath.value
+            : this.thumbnailFilePath,
         ownerScope: ownerScope ?? this.ownerScope,
         ownerKey: ownerKey.present ? ownerKey.value : this.ownerKey,
         storageMode: storageMode ?? this.storageMode,
@@ -684,6 +714,9 @@ class Clip extends DataClass implements Insertable<Clip> {
       sourceFilePath: data.sourceFilePath.present
           ? data.sourceFilePath.value
           : this.sourceFilePath,
+      thumbnailFilePath: data.thumbnailFilePath.present
+          ? data.thumbnailFilePath.value
+          : this.thumbnailFilePath,
       ownerScope:
           data.ownerScope.present ? data.ownerScope.value : this.ownerScope,
       ownerKey: data.ownerKey.present ? data.ownerKey.value : this.ownerKey,
@@ -705,6 +738,7 @@ class Clip extends DataClass implements Insertable<Clip> {
           ..write('title: $title, ')
           ..write('filePath: $filePath, ')
           ..write('sourceFilePath: $sourceFilePath, ')
+          ..write('thumbnailFilePath: $thumbnailFilePath, ')
           ..write('ownerScope: $ownerScope, ')
           ..write('ownerKey: $ownerKey, ')
           ..write('storageMode: $storageMode, ')
@@ -721,6 +755,7 @@ class Clip extends DataClass implements Insertable<Clip> {
       title,
       filePath,
       sourceFilePath,
+      thumbnailFilePath,
       ownerScope,
       ownerKey,
       storageMode,
@@ -735,6 +770,7 @@ class Clip extends DataClass implements Insertable<Clip> {
           other.title == this.title &&
           other.filePath == this.filePath &&
           other.sourceFilePath == this.sourceFilePath &&
+          other.thumbnailFilePath == this.thumbnailFilePath &&
           other.ownerScope == this.ownerScope &&
           other.ownerKey == this.ownerKey &&
           other.storageMode == this.storageMode &&
@@ -748,6 +784,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
   final Value<String> title;
   final Value<String> filePath;
   final Value<String?> sourceFilePath;
+  final Value<String?> thumbnailFilePath;
   final Value<String> ownerScope;
   final Value<String?> ownerKey;
   final Value<String> storageMode;
@@ -759,6 +796,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     this.title = const Value.absent(),
     this.filePath = const Value.absent(),
     this.sourceFilePath = const Value.absent(),
+    this.thumbnailFilePath = const Value.absent(),
     this.ownerScope = const Value.absent(),
     this.ownerKey = const Value.absent(),
     this.storageMode = const Value.absent(),
@@ -771,6 +809,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     required String title,
     required String filePath,
     this.sourceFilePath = const Value.absent(),
+    this.thumbnailFilePath = const Value.absent(),
     this.ownerScope = const Value.absent(),
     this.ownerKey = const Value.absent(),
     this.storageMode = const Value.absent(),
@@ -785,6 +824,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     Expression<String>? title,
     Expression<String>? filePath,
     Expression<String>? sourceFilePath,
+    Expression<String>? thumbnailFilePath,
     Expression<String>? ownerScope,
     Expression<String>? ownerKey,
     Expression<String>? storageMode,
@@ -797,6 +837,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       if (title != null) 'title': title,
       if (filePath != null) 'file_path': filePath,
       if (sourceFilePath != null) 'source_file_path': sourceFilePath,
+      if (thumbnailFilePath != null) 'thumbnail_file_path': thumbnailFilePath,
       if (ownerScope != null) 'owner_scope': ownerScope,
       if (ownerKey != null) 'owner_key': ownerKey,
       if (storageMode != null) 'storage_mode': storageMode,
@@ -811,6 +852,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       Value<String>? title,
       Value<String>? filePath,
       Value<String?>? sourceFilePath,
+      Value<String?>? thumbnailFilePath,
       Value<String>? ownerScope,
       Value<String?>? ownerKey,
       Value<String>? storageMode,
@@ -822,6 +864,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
       title: title ?? this.title,
       filePath: filePath ?? this.filePath,
       sourceFilePath: sourceFilePath ?? this.sourceFilePath,
+      thumbnailFilePath: thumbnailFilePath ?? this.thumbnailFilePath,
       ownerScope: ownerScope ?? this.ownerScope,
       ownerKey: ownerKey ?? this.ownerKey,
       storageMode: storageMode ?? this.storageMode,
@@ -847,6 +890,9 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
     }
     if (sourceFilePath.present) {
       map['source_file_path'] = Variable<String>(sourceFilePath.value);
+    }
+    if (thumbnailFilePath.present) {
+      map['thumbnail_file_path'] = Variable<String>(thumbnailFilePath.value);
     }
     if (ownerScope.present) {
       map['owner_scope'] = Variable<String>(ownerScope.value);
@@ -874,6 +920,7 @@ class ClipsCompanion extends UpdateCompanion<Clip> {
           ..write('title: $title, ')
           ..write('filePath: $filePath, ')
           ..write('sourceFilePath: $sourceFilePath, ')
+          ..write('thumbnailFilePath: $thumbnailFilePath, ')
           ..write('ownerScope: $ownerScope, ')
           ..write('ownerKey: $ownerKey, ')
           ..write('storageMode: $storageMode, ')
@@ -2060,6 +2107,24 @@ class $ClipSourceRefsTable extends ClipSourceRefs
   late final GeneratedColumn<String> downloadUrl = GeneratedColumn<String>(
       'download_url', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _thumbnailStoragePathMeta =
+      const VerificationMeta('thumbnailStoragePath');
+  @override
+  late final GeneratedColumn<String> thumbnailStoragePath =
+      GeneratedColumn<String>('thumbnail_storage_path', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _thumbnailDownloadUrlMeta =
+      const VerificationMeta('thumbnailDownloadUrl');
+  @override
+  late final GeneratedColumn<String> thumbnailDownloadUrl =
+      GeneratedColumn<String>('thumbnail_download_url', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _thumbnailRemoteFileIdMeta =
+      const VerificationMeta('thumbnailRemoteFileId');
+  @override
+  late final GeneratedColumn<String> thumbnailRemoteFileId =
+      GeneratedColumn<String>('thumbnail_remote_file_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _remoteFileIdMeta =
       const VerificationMeta('remoteFileId');
   @override
@@ -2093,6 +2158,9 @@ class $ClipSourceRefsTable extends ClipSourceRefs
         remoteDocId,
         storagePath,
         downloadUrl,
+        thumbnailStoragePath,
+        thumbnailDownloadUrl,
+        thumbnailRemoteFileId,
         remoteFileId,
         cloudFolderId,
         metadataPath,
@@ -2154,6 +2222,24 @@ class $ClipSourceRefsTable extends ClipSourceRefs
           downloadUrl.isAcceptableOrUnknown(
               data['download_url']!, _downloadUrlMeta));
     }
+    if (data.containsKey('thumbnail_storage_path')) {
+      context.handle(
+          _thumbnailStoragePathMeta,
+          thumbnailStoragePath.isAcceptableOrUnknown(
+              data['thumbnail_storage_path']!, _thumbnailStoragePathMeta));
+    }
+    if (data.containsKey('thumbnail_download_url')) {
+      context.handle(
+          _thumbnailDownloadUrlMeta,
+          thumbnailDownloadUrl.isAcceptableOrUnknown(
+              data['thumbnail_download_url']!, _thumbnailDownloadUrlMeta));
+    }
+    if (data.containsKey('thumbnail_remote_file_id')) {
+      context.handle(
+          _thumbnailRemoteFileIdMeta,
+          thumbnailRemoteFileId.isAcceptableOrUnknown(
+              data['thumbnail_remote_file_id']!, _thumbnailRemoteFileIdMeta));
+    }
     if (data.containsKey('remote_file_id')) {
       context.handle(
           _remoteFileIdMeta,
@@ -2202,6 +2288,15 @@ class $ClipSourceRefsTable extends ClipSourceRefs
           .read(DriftSqlType.string, data['${effectivePrefix}storage_path']),
       downloadUrl: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}download_url']),
+      thumbnailStoragePath: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}thumbnail_storage_path']),
+      thumbnailDownloadUrl: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}thumbnail_download_url']),
+      thumbnailRemoteFileId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}thumbnail_remote_file_id']),
       remoteFileId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}remote_file_id']),
       cloudFolderId: attachedDatabase.typeMapping
@@ -2227,6 +2322,9 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
   final String remoteDocId;
   final String? storagePath;
   final String? downloadUrl;
+  final String? thumbnailStoragePath;
+  final String? thumbnailDownloadUrl;
+  final String? thumbnailRemoteFileId;
   final String? remoteFileId;
   final String? cloudFolderId;
   final String? metadataPath;
@@ -2239,6 +2337,9 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
       required this.remoteDocId,
       this.storagePath,
       this.downloadUrl,
+      this.thumbnailStoragePath,
+      this.thumbnailDownloadUrl,
+      this.thumbnailRemoteFileId,
       this.remoteFileId,
       this.cloudFolderId,
       this.metadataPath,
@@ -2256,6 +2357,15 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
     }
     if (!nullToAbsent || downloadUrl != null) {
       map['download_url'] = Variable<String>(downloadUrl);
+    }
+    if (!nullToAbsent || thumbnailStoragePath != null) {
+      map['thumbnail_storage_path'] = Variable<String>(thumbnailStoragePath);
+    }
+    if (!nullToAbsent || thumbnailDownloadUrl != null) {
+      map['thumbnail_download_url'] = Variable<String>(thumbnailDownloadUrl);
+    }
+    if (!nullToAbsent || thumbnailRemoteFileId != null) {
+      map['thumbnail_remote_file_id'] = Variable<String>(thumbnailRemoteFileId);
     }
     if (!nullToAbsent || remoteFileId != null) {
       map['remote_file_id'] = Variable<String>(remoteFileId);
@@ -2285,6 +2395,15 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
       downloadUrl: downloadUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(downloadUrl),
+      thumbnailStoragePath: thumbnailStoragePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailStoragePath),
+      thumbnailDownloadUrl: thumbnailDownloadUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailDownloadUrl),
+      thumbnailRemoteFileId: thumbnailRemoteFileId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailRemoteFileId),
       remoteFileId: remoteFileId == null && nullToAbsent
           ? const Value.absent()
           : Value(remoteFileId),
@@ -2311,6 +2430,12 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
       remoteDocId: serializer.fromJson<String>(json['remoteDocId']),
       storagePath: serializer.fromJson<String?>(json['storagePath']),
       downloadUrl: serializer.fromJson<String?>(json['downloadUrl']),
+      thumbnailStoragePath:
+          serializer.fromJson<String?>(json['thumbnailStoragePath']),
+      thumbnailDownloadUrl:
+          serializer.fromJson<String?>(json['thumbnailDownloadUrl']),
+      thumbnailRemoteFileId:
+          serializer.fromJson<String?>(json['thumbnailRemoteFileId']),
       remoteFileId: serializer.fromJson<String?>(json['remoteFileId']),
       cloudFolderId: serializer.fromJson<String?>(json['cloudFolderId']),
       metadataPath: serializer.fromJson<String?>(json['metadataPath']),
@@ -2328,6 +2453,10 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
       'remoteDocId': serializer.toJson<String>(remoteDocId),
       'storagePath': serializer.toJson<String?>(storagePath),
       'downloadUrl': serializer.toJson<String?>(downloadUrl),
+      'thumbnailStoragePath': serializer.toJson<String?>(thumbnailStoragePath),
+      'thumbnailDownloadUrl': serializer.toJson<String?>(thumbnailDownloadUrl),
+      'thumbnailRemoteFileId':
+          serializer.toJson<String?>(thumbnailRemoteFileId),
       'remoteFileId': serializer.toJson<String?>(remoteFileId),
       'cloudFolderId': serializer.toJson<String?>(cloudFolderId),
       'metadataPath': serializer.toJson<String?>(metadataPath),
@@ -2343,6 +2472,9 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
           String? remoteDocId,
           Value<String?> storagePath = const Value.absent(),
           Value<String?> downloadUrl = const Value.absent(),
+          Value<String?> thumbnailStoragePath = const Value.absent(),
+          Value<String?> thumbnailDownloadUrl = const Value.absent(),
+          Value<String?> thumbnailRemoteFileId = const Value.absent(),
           Value<String?> remoteFileId = const Value.absent(),
           Value<String?> cloudFolderId = const Value.absent(),
           Value<String?> metadataPath = const Value.absent(),
@@ -2355,6 +2487,15 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
         remoteDocId: remoteDocId ?? this.remoteDocId,
         storagePath: storagePath.present ? storagePath.value : this.storagePath,
         downloadUrl: downloadUrl.present ? downloadUrl.value : this.downloadUrl,
+        thumbnailStoragePath: thumbnailStoragePath.present
+            ? thumbnailStoragePath.value
+            : this.thumbnailStoragePath,
+        thumbnailDownloadUrl: thumbnailDownloadUrl.present
+            ? thumbnailDownloadUrl.value
+            : this.thumbnailDownloadUrl,
+        thumbnailRemoteFileId: thumbnailRemoteFileId.present
+            ? thumbnailRemoteFileId.value
+            : this.thumbnailRemoteFileId,
         remoteFileId:
             remoteFileId.present ? remoteFileId.value : this.remoteFileId,
         cloudFolderId:
@@ -2377,6 +2518,15 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
           data.storagePath.present ? data.storagePath.value : this.storagePath,
       downloadUrl:
           data.downloadUrl.present ? data.downloadUrl.value : this.downloadUrl,
+      thumbnailStoragePath: data.thumbnailStoragePath.present
+          ? data.thumbnailStoragePath.value
+          : this.thumbnailStoragePath,
+      thumbnailDownloadUrl: data.thumbnailDownloadUrl.present
+          ? data.thumbnailDownloadUrl.value
+          : this.thumbnailDownloadUrl,
+      thumbnailRemoteFileId: data.thumbnailRemoteFileId.present
+          ? data.thumbnailRemoteFileId.value
+          : this.thumbnailRemoteFileId,
       remoteFileId: data.remoteFileId.present
           ? data.remoteFileId.value
           : this.remoteFileId,
@@ -2402,6 +2552,9 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
           ..write('remoteDocId: $remoteDocId, ')
           ..write('storagePath: $storagePath, ')
           ..write('downloadUrl: $downloadUrl, ')
+          ..write('thumbnailStoragePath: $thumbnailStoragePath, ')
+          ..write('thumbnailDownloadUrl: $thumbnailDownloadUrl, ')
+          ..write('thumbnailRemoteFileId: $thumbnailRemoteFileId, ')
           ..write('remoteFileId: $remoteFileId, ')
           ..write('cloudFolderId: $cloudFolderId, ')
           ..write('metadataPath: $metadataPath, ')
@@ -2419,6 +2572,9 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
       remoteDocId,
       storagePath,
       downloadUrl,
+      thumbnailStoragePath,
+      thumbnailDownloadUrl,
+      thumbnailRemoteFileId,
       remoteFileId,
       cloudFolderId,
       metadataPath,
@@ -2434,6 +2590,9 @@ class ClipSourceRef extends DataClass implements Insertable<ClipSourceRef> {
           other.remoteDocId == this.remoteDocId &&
           other.storagePath == this.storagePath &&
           other.downloadUrl == this.downloadUrl &&
+          other.thumbnailStoragePath == this.thumbnailStoragePath &&
+          other.thumbnailDownloadUrl == this.thumbnailDownloadUrl &&
+          other.thumbnailRemoteFileId == this.thumbnailRemoteFileId &&
           other.remoteFileId == this.remoteFileId &&
           other.cloudFolderId == this.cloudFolderId &&
           other.metadataPath == this.metadataPath &&
@@ -2448,6 +2607,9 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
   final Value<String> remoteDocId;
   final Value<String?> storagePath;
   final Value<String?> downloadUrl;
+  final Value<String?> thumbnailStoragePath;
+  final Value<String?> thumbnailDownloadUrl;
+  final Value<String?> thumbnailRemoteFileId;
   final Value<String?> remoteFileId;
   final Value<String?> cloudFolderId;
   final Value<String?> metadataPath;
@@ -2461,6 +2623,9 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
     this.remoteDocId = const Value.absent(),
     this.storagePath = const Value.absent(),
     this.downloadUrl = const Value.absent(),
+    this.thumbnailStoragePath = const Value.absent(),
+    this.thumbnailDownloadUrl = const Value.absent(),
+    this.thumbnailRemoteFileId = const Value.absent(),
     this.remoteFileId = const Value.absent(),
     this.cloudFolderId = const Value.absent(),
     this.metadataPath = const Value.absent(),
@@ -2475,6 +2640,9 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
     required String remoteDocId,
     this.storagePath = const Value.absent(),
     this.downloadUrl = const Value.absent(),
+    this.thumbnailStoragePath = const Value.absent(),
+    this.thumbnailDownloadUrl = const Value.absent(),
+    this.thumbnailRemoteFileId = const Value.absent(),
     this.remoteFileId = const Value.absent(),
     this.cloudFolderId = const Value.absent(),
     this.metadataPath = const Value.absent(),
@@ -2493,6 +2661,9 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
     Expression<String>? remoteDocId,
     Expression<String>? storagePath,
     Expression<String>? downloadUrl,
+    Expression<String>? thumbnailStoragePath,
+    Expression<String>? thumbnailDownloadUrl,
+    Expression<String>? thumbnailRemoteFileId,
     Expression<String>? remoteFileId,
     Expression<String>? cloudFolderId,
     Expression<String>? metadataPath,
@@ -2507,6 +2678,12 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
       if (remoteDocId != null) 'remote_doc_id': remoteDocId,
       if (storagePath != null) 'storage_path': storagePath,
       if (downloadUrl != null) 'download_url': downloadUrl,
+      if (thumbnailStoragePath != null)
+        'thumbnail_storage_path': thumbnailStoragePath,
+      if (thumbnailDownloadUrl != null)
+        'thumbnail_download_url': thumbnailDownloadUrl,
+      if (thumbnailRemoteFileId != null)
+        'thumbnail_remote_file_id': thumbnailRemoteFileId,
       if (remoteFileId != null) 'remote_file_id': remoteFileId,
       if (cloudFolderId != null) 'cloud_folder_id': cloudFolderId,
       if (metadataPath != null) 'metadata_path': metadataPath,
@@ -2523,6 +2700,9 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
       Value<String>? remoteDocId,
       Value<String?>? storagePath,
       Value<String?>? downloadUrl,
+      Value<String?>? thumbnailStoragePath,
+      Value<String?>? thumbnailDownloadUrl,
+      Value<String?>? thumbnailRemoteFileId,
       Value<String?>? remoteFileId,
       Value<String?>? cloudFolderId,
       Value<String?>? metadataPath,
@@ -2536,6 +2716,10 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
       remoteDocId: remoteDocId ?? this.remoteDocId,
       storagePath: storagePath ?? this.storagePath,
       downloadUrl: downloadUrl ?? this.downloadUrl,
+      thumbnailStoragePath: thumbnailStoragePath ?? this.thumbnailStoragePath,
+      thumbnailDownloadUrl: thumbnailDownloadUrl ?? this.thumbnailDownloadUrl,
+      thumbnailRemoteFileId:
+          thumbnailRemoteFileId ?? this.thumbnailRemoteFileId,
       remoteFileId: remoteFileId ?? this.remoteFileId,
       cloudFolderId: cloudFolderId ?? this.cloudFolderId,
       metadataPath: metadataPath ?? this.metadataPath,
@@ -2568,6 +2752,18 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
     if (downloadUrl.present) {
       map['download_url'] = Variable<String>(downloadUrl.value);
     }
+    if (thumbnailStoragePath.present) {
+      map['thumbnail_storage_path'] =
+          Variable<String>(thumbnailStoragePath.value);
+    }
+    if (thumbnailDownloadUrl.present) {
+      map['thumbnail_download_url'] =
+          Variable<String>(thumbnailDownloadUrl.value);
+    }
+    if (thumbnailRemoteFileId.present) {
+      map['thumbnail_remote_file_id'] =
+          Variable<String>(thumbnailRemoteFileId.value);
+    }
     if (remoteFileId.present) {
       map['remote_file_id'] = Variable<String>(remoteFileId.value);
     }
@@ -2596,6 +2792,9 @@ class ClipSourceRefsCompanion extends UpdateCompanion<ClipSourceRef> {
           ..write('remoteDocId: $remoteDocId, ')
           ..write('storagePath: $storagePath, ')
           ..write('downloadUrl: $downloadUrl, ')
+          ..write('thumbnailStoragePath: $thumbnailStoragePath, ')
+          ..write('thumbnailDownloadUrl: $thumbnailDownloadUrl, ')
+          ..write('thumbnailRemoteFileId: $thumbnailRemoteFileId, ')
           ..write('remoteFileId: $remoteFileId, ')
           ..write('cloudFolderId: $cloudFolderId, ')
           ..write('metadataPath: $metadataPath, ')
@@ -3606,6 +3805,7 @@ typedef $$ClipsTableCreateCompanionBuilder = ClipsCompanion Function({
   required String title,
   required String filePath,
   Value<String?> sourceFilePath,
+  Value<String?> thumbnailFilePath,
   Value<String> ownerScope,
   Value<String?> ownerKey,
   Value<String> storageMode,
@@ -3618,6 +3818,7 @@ typedef $$ClipsTableUpdateCompanionBuilder = ClipsCompanion Function({
   Value<String> title,
   Value<String> filePath,
   Value<String?> sourceFilePath,
+  Value<String?> thumbnailFilePath,
   Value<String> ownerScope,
   Value<String?> ownerKey,
   Value<String> storageMode,
@@ -3741,6 +3942,10 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
 
   ColumnFilters<String> get sourceFilePath => $composableBuilder(
       column: $table.sourceFilePath,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get thumbnailFilePath => $composableBuilder(
+      column: $table.thumbnailFilePath,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get ownerScope => $composableBuilder(
@@ -3906,6 +4111,10 @@ class $$ClipsTableOrderingComposer
       column: $table.sourceFilePath,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get thumbnailFilePath => $composableBuilder(
+      column: $table.thumbnailFilePath,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get ownerScope => $composableBuilder(
       column: $table.ownerScope, builder: (column) => ColumnOrderings(column));
 
@@ -3963,6 +4172,9 @@ class $$ClipsTableAnnotationComposer
 
   GeneratedColumn<String> get sourceFilePath => $composableBuilder(
       column: $table.sourceFilePath, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbnailFilePath => $composableBuilder(
+      column: $table.thumbnailFilePath, builder: (column) => column);
 
   GeneratedColumn<String> get ownerScope => $composableBuilder(
       column: $table.ownerScope, builder: (column) => column);
@@ -4139,6 +4351,7 @@ class $$ClipsTableTableManager extends RootTableManager<
             Value<String> title = const Value.absent(),
             Value<String> filePath = const Value.absent(),
             Value<String?> sourceFilePath = const Value.absent(),
+            Value<String?> thumbnailFilePath = const Value.absent(),
             Value<String> ownerScope = const Value.absent(),
             Value<String?> ownerKey = const Value.absent(),
             Value<String> storageMode = const Value.absent(),
@@ -4151,6 +4364,7 @@ class $$ClipsTableTableManager extends RootTableManager<
             title: title,
             filePath: filePath,
             sourceFilePath: sourceFilePath,
+            thumbnailFilePath: thumbnailFilePath,
             ownerScope: ownerScope,
             ownerKey: ownerKey,
             storageMode: storageMode,
@@ -4163,6 +4377,7 @@ class $$ClipsTableTableManager extends RootTableManager<
             required String title,
             required String filePath,
             Value<String?> sourceFilePath = const Value.absent(),
+            Value<String?> thumbnailFilePath = const Value.absent(),
             Value<String> ownerScope = const Value.absent(),
             Value<String?> ownerKey = const Value.absent(),
             Value<String> storageMode = const Value.absent(),
@@ -4175,6 +4390,7 @@ class $$ClipsTableTableManager extends RootTableManager<
             title: title,
             filePath: filePath,
             sourceFilePath: sourceFilePath,
+            thumbnailFilePath: thumbnailFilePath,
             ownerScope: ownerScope,
             ownerKey: ownerKey,
             storageMode: storageMode,
@@ -5642,6 +5858,9 @@ typedef $$ClipSourceRefsTableCreateCompanionBuilder = ClipSourceRefsCompanion
   required String remoteDocId,
   Value<String?> storagePath,
   Value<String?> downloadUrl,
+  Value<String?> thumbnailStoragePath,
+  Value<String?> thumbnailDownloadUrl,
+  Value<String?> thumbnailRemoteFileId,
   Value<String?> remoteFileId,
   Value<String?> cloudFolderId,
   Value<String?> metadataPath,
@@ -5657,6 +5876,9 @@ typedef $$ClipSourceRefsTableUpdateCompanionBuilder = ClipSourceRefsCompanion
   Value<String> remoteDocId,
   Value<String?> storagePath,
   Value<String?> downloadUrl,
+  Value<String?> thumbnailStoragePath,
+  Value<String?> thumbnailDownloadUrl,
+  Value<String?> thumbnailRemoteFileId,
   Value<String?> remoteFileId,
   Value<String?> cloudFolderId,
   Value<String?> metadataPath,
@@ -5710,6 +5932,18 @@ class $$ClipSourceRefsTableFilterComposer
 
   ColumnFilters<String> get downloadUrl => $composableBuilder(
       column: $table.downloadUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get thumbnailStoragePath => $composableBuilder(
+      column: $table.thumbnailStoragePath,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get thumbnailDownloadUrl => $composableBuilder(
+      column: $table.thumbnailDownloadUrl,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get thumbnailRemoteFileId => $composableBuilder(
+      column: $table.thumbnailRemoteFileId,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get remoteFileId => $composableBuilder(
       column: $table.remoteFileId, builder: (column) => ColumnFilters(column));
@@ -5770,6 +6004,18 @@ class $$ClipSourceRefsTableOrderingComposer
 
   ColumnOrderings<String> get downloadUrl => $composableBuilder(
       column: $table.downloadUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get thumbnailStoragePath => $composableBuilder(
+      column: $table.thumbnailStoragePath,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get thumbnailDownloadUrl => $composableBuilder(
+      column: $table.thumbnailDownloadUrl,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get thumbnailRemoteFileId => $composableBuilder(
+      column: $table.thumbnailRemoteFileId,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get remoteFileId => $composableBuilder(
       column: $table.remoteFileId,
@@ -5835,6 +6081,15 @@ class $$ClipSourceRefsTableAnnotationComposer
   GeneratedColumn<String> get downloadUrl => $composableBuilder(
       column: $table.downloadUrl, builder: (column) => column);
 
+  GeneratedColumn<String> get thumbnailStoragePath => $composableBuilder(
+      column: $table.thumbnailStoragePath, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbnailDownloadUrl => $composableBuilder(
+      column: $table.thumbnailDownloadUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbnailRemoteFileId => $composableBuilder(
+      column: $table.thumbnailRemoteFileId, builder: (column) => column);
+
   GeneratedColumn<String> get remoteFileId => $composableBuilder(
       column: $table.remoteFileId, builder: (column) => column);
 
@@ -5899,6 +6154,9 @@ class $$ClipSourceRefsTableTableManager extends RootTableManager<
             Value<String> remoteDocId = const Value.absent(),
             Value<String?> storagePath = const Value.absent(),
             Value<String?> downloadUrl = const Value.absent(),
+            Value<String?> thumbnailStoragePath = const Value.absent(),
+            Value<String?> thumbnailDownloadUrl = const Value.absent(),
+            Value<String?> thumbnailRemoteFileId = const Value.absent(),
             Value<String?> remoteFileId = const Value.absent(),
             Value<String?> cloudFolderId = const Value.absent(),
             Value<String?> metadataPath = const Value.absent(),
@@ -5913,6 +6171,9 @@ class $$ClipSourceRefsTableTableManager extends RootTableManager<
             remoteDocId: remoteDocId,
             storagePath: storagePath,
             downloadUrl: downloadUrl,
+            thumbnailStoragePath: thumbnailStoragePath,
+            thumbnailDownloadUrl: thumbnailDownloadUrl,
+            thumbnailRemoteFileId: thumbnailRemoteFileId,
             remoteFileId: remoteFileId,
             cloudFolderId: cloudFolderId,
             metadataPath: metadataPath,
@@ -5927,6 +6188,9 @@ class $$ClipSourceRefsTableTableManager extends RootTableManager<
             required String remoteDocId,
             Value<String?> storagePath = const Value.absent(),
             Value<String?> downloadUrl = const Value.absent(),
+            Value<String?> thumbnailStoragePath = const Value.absent(),
+            Value<String?> thumbnailDownloadUrl = const Value.absent(),
+            Value<String?> thumbnailRemoteFileId = const Value.absent(),
             Value<String?> remoteFileId = const Value.absent(),
             Value<String?> cloudFolderId = const Value.absent(),
             Value<String?> metadataPath = const Value.absent(),
@@ -5941,6 +6205,9 @@ class $$ClipSourceRefsTableTableManager extends RootTableManager<
             remoteDocId: remoteDocId,
             storagePath: storagePath,
             downloadUrl: downloadUrl,
+            thumbnailStoragePath: thumbnailStoragePath,
+            thumbnailDownloadUrl: thumbnailDownloadUrl,
+            thumbnailRemoteFileId: thumbnailRemoteFileId,
             remoteFileId: remoteFileId,
             cloudFolderId: cloudFolderId,
             metadataPath: metadataPath,

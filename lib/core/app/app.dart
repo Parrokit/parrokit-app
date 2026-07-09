@@ -14,7 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
-import 'package:parrokit/core/shared/utils/has_internet.dart';
 import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/core/state/provider/theme_provider.dart';
@@ -32,7 +31,7 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  String? _backfillAttemptedUid;
+  String? _legacyAdoptionAttemptedUid;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +40,7 @@ class _AppState extends State<App> {
     final userProvider = context.watch<UserProvider>();
     final clipProvider = context.watch<ClipProvider>();
 
-    _scheduleCollectionBackfillIfNeeded(
+    _scheduleLegacyAdoptionIfNeeded(
       context,
       userProvider: userProvider,
       clipProvider: clipProvider,
@@ -130,63 +129,38 @@ class _AppState extends State<App> {
     );
   }
 
-  void _scheduleCollectionBackfillIfNeeded(
+  void _scheduleLegacyAdoptionIfNeeded(
     BuildContext context, {
     required UserProvider userProvider,
     required ClipProvider clipProvider,
   }) {
     final user = userProvider.currentUser;
     if (user == null || !userProvider.isLoggedIn) {
-      AppLogger.d(
-        '[Collection][Backfill] skip login state uid=${_maskUid(user?.id)} loggedIn=${userProvider.isLoggedIn}',
-      );
-      _backfillAttemptedUid = null;
+      _legacyAdoptionAttemptedUid = null;
       return;
     }
 
-    if (_backfillAttemptedUid == user.id ||
-        clipProvider.isCollectionBackfilling) {
-      AppLogger.d(
-        '[Collection][Backfill] skip duplicate-or-running uid=${_maskUid(user.id)} attempted=${_maskUid(_backfillAttemptedUid)} running=${clipProvider.isCollectionBackfilling}',
-      );
+    if (_legacyAdoptionAttemptedUid == user.id) {
       return;
     }
 
-    _backfillAttemptedUid = user.id;
-    AppLogger.i(
-      '[Collection][Backfill] schedule uid=${_maskUid(user.id)}',
-    );
+    _legacyAdoptionAttemptedUid = user.id;
     final userProviderRef = context.read<UserProvider>();
     final clipProviderRef = context.read<ClipProvider>();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       if (userProviderRef.currentUser?.id != user.id) {
-        AppLogger.d(
-          '[Collection][Backfill] abort user-changed uid=${_maskUid(user.id)} current=${_maskUid(userProviderRef.currentUser?.id)}',
-        );
-        return;
-      }
-      if (!await hasInternet()) {
-        AppLogger.w(
-          '[Collection][Backfill] abort no-internet uid=${_maskUid(user.id)}',
-        );
-        _backfillAttemptedUid = null;
         return;
       }
 
       try {
-        AppLogger.i(
-          '[Collection][Backfill] start uid=${_maskUid(user.id)}',
-        );
-        await clipProviderRef.syncCollectionDataToServer(user.id, force: true);
-        AppLogger.i(
-          '[Collection][Backfill] success uid=${_maskUid(user.id)}',
-        );
-      } catch (_) {
+        await clipProviderRef.adoptLegacyStorageOwnership(user.id);
+      } catch (e, st) {
         AppLogger.e(
-          '[Collection][Backfill] failed uid=${_maskUid(user.id)}',
+          '[Collection][LegacyAdoption] failed uid=${_maskUid(user.id)}',
+          error: e,
+          stackTrace: st,
         );
-        // provider가 에러 상태를 보관한다.
       }
     });
   }
