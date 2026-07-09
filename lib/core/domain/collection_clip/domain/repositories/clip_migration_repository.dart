@@ -37,6 +37,10 @@ abstract class ClipMigrationRepository {
 
   Future<bool> clearRemoteClipCache(int clipId);
 
+  /// 현재 로그인된 계정(app_account) 소유의 원격 클립 로컬 캐시를 전부 정리합니다.
+  /// 로그아웃 시 호출합니다.
+  Future<void> clearCachedFilesForCurrentAccount();
+
   Future<int> getServerStorageUsedBytes();
 
   Future<int> getLocalStorageUsedBytes();

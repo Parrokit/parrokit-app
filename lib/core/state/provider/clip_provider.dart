@@ -532,6 +532,38 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     notifyListeners();
   }
 
+  /// 계정 전환(로그아웃) 시 이전 세션에서 멈춰있을 수 있는 선택/진행 상태를
+  /// 강제로 초기화합니다. 특정 작업이 완료 신호 없이 끊기면(네트워크 끊김 등)
+  /// 선택 모드나 전체 화면 오버레이가 남아 다음 계정 세션까지 화면이
+  /// 반응하지 않는 것처럼 보일 수 있어, 로그아웃 시점에 안전하게 리셋합니다.
+  void resetTransientUiState() {
+    _isCollectionMenuOpen = false;
+    _selectedClipIds.clear();
+    _isStorageTransferRunning = false;
+    _storageTransferProgress = 0;
+    _storageTransferTotal = 0;
+    _storageTransferMessage = '';
+    _isCollectionBackfilling = false;
+    _collectionBackfillProgress = 0;
+    _collectionBackfillTotal = 0;
+    _collectionBackfillMessage = '';
+    _collectionBackfillError = null;
+    _isServerUploadRunning = false;
+    _serverUploadProgress = 0;
+    _serverUploadTotal = 0;
+    _serverUploadMessage = '';
+    _serverUploadError = null;
+    _isCloudUploadRunning = false;
+    _cloudUploadProgress = 0;
+    _cloudUploadTotal = 0;
+    _cloudUploadMessage = '';
+    _cloudUploadError = null;
+    _isGoogleDriveLinking = false;
+    _googleDriveLinkMessage = '';
+    _googleDriveLinkError = null;
+    notifyListeners();
+  }
+
   void toggleClipSelection(int clipId) {
     if (_selectedClipIds.contains(clipId)) {
       _selectedClipIds.remove(clipId);
@@ -605,6 +637,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
       }
     } finally {
       endStorageTransfer();
+      closeCollectionMenu();
     }
   }
 

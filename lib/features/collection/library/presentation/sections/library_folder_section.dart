@@ -569,12 +569,17 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
         setState(() => _deleteMode = true);
       } else if (value == 'manage') {
         final clipProvider = context.read<ClipProvider>();
+        final cs = Theme.of(context).colorScheme;
         showModalBottomSheet(
           context: context,
           useRootNavigator: true,
           isScrollControlled: true,
-          backgroundColor: Colors.transparent,
+          backgroundColor: cs.surface,
           barrierColor: Colors.black.withValues(alpha: 0.42),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          clipBehavior: Clip.antiAlias,
           builder: (_) => GroupCollectionManagerModal(
             initialGroupId: clipProvider.selectedGroupId == -1
                 ? null

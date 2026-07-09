@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/app/router/app_routes.dart';
 import 'package:parrokit/features/community/shell/presentation/providers/community_provider.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
@@ -35,14 +36,21 @@ class LogoutSection extends StatelessWidget {
 
     final userProvider = context.read<UserProvider>();
     final communityProvider = context.read<CommunityProvider>();
-    
+    final clipProvider = context.read<ClipProvider>();
+
     try {
       // 1. 커뮤니티 전역 상태(글 목록, 스크랩, 조회수 등) 초기화
       communityProvider.clear();
-      
-      // 2. 실제 인증 로그아웃 처리
+
+      // 2. 계정 소유 원격 클립 로컬 캐시 정리 (signOut 전에 uid가 필요)
+      await clipProvider.migrationService.clearCachedFilesForCurrentAccount();
+
+      // 3. 실제 인증 로그아웃 처리
       await userProvider.signOut();
-      
+
+      // 4. 이전 계정 세션에서 멈춰있을 수 있는 선택/진행 상태 초기화
+      clipProvider.resetTransientUiState();
+
       if (context.mounted) {
         showToast('로그아웃되었습니다.');
         context.go('${AppRoutes.authPath}/${AppRoutes.signInPath}');

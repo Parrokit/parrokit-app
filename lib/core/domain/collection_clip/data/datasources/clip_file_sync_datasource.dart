@@ -198,6 +198,39 @@ class ClipFileSyncDatasource {
     return true;
   }
 
+  /// [ownerScope]+[ownerKey]로 스코프된 원격 클립의 로컬 캐시 파일과
+  /// [ClipCacheEntries] 로우를 전부 정리합니다. 계정 로그아웃, Google Drive
+  /// 연동 해제 시 해당 계정 소유 캐시만 지우는 용도입니다.
+  Future<void> clearCacheForOwner({
+    required String ownerScope,
+    required String ownerKey,
+  }) async {
+    final entries = await (db.select(db.clipCacheEntries)
+          ..where(
+            (c) => c.ownerScope.equals(ownerScope) & c.ownerKey.equals(ownerKey),
+          ))
+        .get();
+    if (entries.isEmpty) return;
+
+    for (final entry in entries) {
+      final absPath = await ClipPathUtils.absolutePathFor(entry.filePath);
+      final file = File(absPath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+
+    await (db.delete(db.clipCacheEntries)
+          ..where(
+            (c) => c.ownerScope.equals(ownerScope) & c.ownerKey.equals(ownerKey),
+          ))
+        .go();
+
+    AppLogger.i(
+      '[Clip][Cache] clear-cache-for-owner success ownerScope=$ownerScope count=${entries.length}',
+    );
+  }
+
   Future<void> _restoreServerClipFile(
     ClipSourceRef sourceRef,
     File destination,

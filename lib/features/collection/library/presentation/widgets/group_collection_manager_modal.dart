@@ -91,6 +91,7 @@ class _GroupCollectionManagerModalState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('그룹 매핑이 저장되었습니다.')),
       );
+      Navigator.of(context).pop();
     }
   }
 

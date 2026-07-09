@@ -556,6 +556,16 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
   }
 
   @override
+  Future<void> clearCachedFilesForCurrentAccount() async {
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await fileSyncDatasource.clearCacheForOwner(
+      ownerScope: ClipStorageConstants.ownerScopeAppAccount,
+      ownerKey: user.uid,
+    );
+  }
+
+  @override
   Future<int> getServerStorageUsedBytes() async {
     final rows = await sourceRefDatasource
         .visibleClipsByStorageMode(ClipStorageConstants.storageModeServer);
@@ -632,6 +642,13 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
     void Function(int current, int total, String message)? onProgress,
   }) async {
     await _moveAllGoogleDriveClipsToLocal(onProgress: onProgress);
+    final accountKey = await googleDriveStorageService.currentAccountKey();
+    if (accountKey != null) {
+      await fileSyncDatasource.clearCacheForOwner(
+        ownerScope: ClipStorageConstants.ownerScopeCloudAccount,
+        ownerKey: accountKey,
+      );
+    }
     await googleDriveStorageService.disconnect();
   }
 
