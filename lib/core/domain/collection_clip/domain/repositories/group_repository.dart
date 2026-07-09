@@ -12,9 +12,9 @@
 import 'package:parrokit/data/local/app_database.dart';
 
 abstract class GroupRepository {
-  Future<List<Group>> getAllGroups();
+  Future<List<Group>> getAllGroups(String storageMode);
 
-  Future<void> createGroup(String name);
+  Future<void> createGroup(String name, String storageMode);
 
   Future<void> deleteGroupById(int id);
 }

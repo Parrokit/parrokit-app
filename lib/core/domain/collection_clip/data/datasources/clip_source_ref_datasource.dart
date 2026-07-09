@@ -48,15 +48,26 @@ class ClipSourceRefDatasource {
     return false;
   }
 
+  /// 클립 하나하나마다 [isClipVisible]을 호출하면 gdrive 계정 조회
+  /// (`signInSilently`)가 클립 수만큼 반복 실행되어 클립이 많을 때 눈에
+  /// 띄게 느려집니다. 계정 정보를 한 번만 조회해 재사용합니다.
   Future<List<Clip>> visibleClips() async {
     final rows = await db.select(db.clips).get();
-    final visible = <Clip>[];
-    for (final clip in rows) {
-      if (await isClipVisible(clip)) {
-        visible.add(clip);
+    final appAccountId = _currentAccountId;
+    final googleAccountKey = await googleDriveStorageService.currentAccountKey();
+
+    return rows.where((clip) {
+      if (clip.ownerScope == ClipStorageConstants.ownerScopeDevice) {
+        return true;
       }
-    }
-    return visible;
+      if (clip.ownerScope == ClipStorageConstants.ownerScopeAppAccount) {
+        return appAccountId != null && clip.ownerKey == appAccountId;
+      }
+      if (clip.ownerScope == ClipStorageConstants.ownerScopeCloudAccount) {
+        return googleAccountKey != null && clip.ownerKey == googleAccountKey;
+      }
+      return false;
+    }).toList();
   }
 
   Future<List<Clip>> visibleClipsByStorageMode(String storageMode) async {
@@ -74,10 +85,14 @@ class ClipSourceRefDatasource {
 
   /// 현재 보이는(가시성 필터를 통과한) 클립들이 속한 컬렉션 id 집합.
   /// CollectionRepository가 "보이는 컬렉션 목록"을 계산할 때 사용합니다.
-  Future<Set<int>> visibleCollectionIds() async {
+  /// [storageMode]로 한 번 더 필터링해서, 다른 저장위치 탭의 클립이 속한
+  /// 콜렉션 id가 섞여 들어오지 않도록 합니다.
+  Future<Set<int>> visibleCollectionIds(String storageMode) async {
     final clips = await visibleClips();
     return clips
-        .where((clip) => clip.collectionId != null)
+        .where(
+          (clip) => clip.collectionId != null && clip.storageMode == storageMode,
+        )
         .map((clip) => clip.collectionId!)
         .toSet();
   }

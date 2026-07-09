@@ -17,6 +17,7 @@ import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/app/router/app_router.dart';
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/core/state/provider/clip_provider.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/folder_grid.dart';
@@ -40,7 +41,6 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   bool _deleteMode = false;
   bool _isGridView = true;
   bool _isFabExtended = true;
-  bool _isStorageExpanded = false;
 
   void _toggleDeleteMode() => setState(() => _deleteMode = !_deleteMode);
   void _toggleViewMode() => setState(() => _isGridView = !_isGridView);
@@ -132,52 +132,16 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     );
   }
 
-  Widget _buildStorageToggle(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-      child: Material(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => setState(() => _isStorageExpanded = !_isStorageExpanded),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Icon(Icons.tune_rounded, size: 18, color: cs.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '저장 용량',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: cs.onSurface,
-                        ),
-                  ),
-                ),
-                Text(
-                  _isStorageExpanded ? '접기' : '펼치기',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  _isStorageExpanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  color: cs.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  /// 현재 활성 저장위치 탭에 해당하는 사용량 카드 하나만 보여줍니다.
+  /// (탭이 저장위치별로 분리된 이상, 3개를 한꺼번에 보여주는 건 중복입니다)
+  Widget _buildActiveStorageSummary(BuildContext context, String storageMode) {
+    return switch (storageMode) {
+      ClipStorageConstants.storageModeServer =>
+        _buildServerStorageProgress(context),
+      ClipStorageConstants.storageModeGoogleDrive =>
+        _buildCloudStorageSummary(context),
+      _ => _buildLocalStorageSummary(context),
+    };
   }
 
   Widget _buildUsageCard(
@@ -912,12 +876,7 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                 },
               ),
 
-              _buildStorageToggle(context),
-              if (_isStorageExpanded) ...[
-                _buildLocalStorageSummary(context),
-                _buildServerStorageProgress(context),
-                _buildCloudStorageSummary(context),
-              ],
+              _buildActiveStorageSummary(context, clipProvider.activeStorageMode),
 
               // 삭제 모드 배너
               if (_deleteMode && !isAtClipList)

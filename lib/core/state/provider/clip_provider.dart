@@ -9,6 +9,8 @@
 // Core > State > Provider
 // ============================================================================
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import '../../../data/local/app_database.dart';
@@ -18,12 +20,12 @@ import '../../../../data/models/clip_item.dart';
 
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/infrastructure/services/cloud/google_drive_storage_service.dart';
-import 'package:parrokit/core/infrastructure/services/firebase/collection_sync_service.dart';
 import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/remote_doc_id_resolver.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_source_ref_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_thumbnail_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_file_sync_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/collection_group_mirror_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_item_query_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_detail_query_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_firestore_metadata_datasource.dart';
@@ -48,7 +50,6 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   late final ClipMigrationRepository _clipMigrationRepository;
   late final GroupRepository _groupRepository;
   late final CollectionRepository _collectionRepository;
-  late final CollectionSyncService _collectionSyncService;
 
   @override
   ClipRepository get service => _clipRepository;
@@ -72,6 +73,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
       sourceRefDatasource,
       googleDriveStorageService,
     );
+    final collectionGroupMirrorDatasource = CollectionGroupMirrorDatasource(db);
     final itemQueryDatasource = ClipItemQueryDatasource(
       db,
       sourceRefDatasource,
@@ -79,11 +81,9 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     );
     final remoteDocIdResolver = RemoteDocIdResolver();
     final detailQueryDatasource = ClipDetailQueryDatasource(db);
-    final firestoreMetadataDatasource =
-        ClipFirestoreMetadataDatasource(db, remoteDocIdResolver);
+    final firestoreMetadataDatasource = ClipFirestoreMetadataDatasource(db);
     final cloudMetadataDatasource = ClipCloudMetadataDatasource(
       db,
-      remoteDocIdResolver,
       detailQueryDatasource,
     );
 
@@ -100,6 +100,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
       sourceRefDatasource: sourceRefDatasource,
       thumbnailDatasource: thumbnailDatasource,
       fileSyncDatasource: fileSyncDatasource,
+      collectionGroupMirrorDatasource: collectionGroupMirrorDatasource,
       firestoreMetadataDatasource: firestoreMetadataDatasource,
       cloudMetadataDatasource: cloudMetadataDatasource,
       detailQueryDatasource: detailQueryDatasource,
@@ -108,12 +109,16 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     );
     _groupRepository = GroupRepositoryImpl(db);
     _collectionRepository = CollectionRepositoryImpl(db, _clipRepository);
-    _collectionSyncService = CollectionSyncService(database: db);
   }
 
   // ─────────────────────────────────────────────────────────────────
   // State
   // ─────────────────────────────────────────────────────────────────
+
+  /// 현재 활성화된 저장위치 탭 (로컬/서버/클라우드). 그룹/컬렉션 목록 조회는
+  /// 전부 이 값을 기준으로 스코프됩니다.
+  String _activeStorageMode = ClipStorageConstants.storageModeLocal;
+  String get activeStorageMode => _activeStorageMode;
 
   List<Group> groups = [];
   @override
@@ -136,11 +141,6 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   bool hasGoogleDriveLinked = false;
   bool _isCollectionMenuOpen = false;
   final Set<int> _selectedClipIds = <int>{};
-  bool _isCollectionBackfilling = false;
-  int _collectionBackfillProgress = 0;
-  int _collectionBackfillTotal = 0;
-  String _collectionBackfillMessage = '';
-  String? _collectionBackfillError;
   bool _isServerUploadRunning = false;
   int _serverUploadProgress = 0;
   int _serverUploadTotal = 0;
@@ -165,19 +165,6 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   Future<ClipView?> fetchClipById(int clipId) async {
     return _clipRepository.fetchClipById(clipId);
-  }
-
-  Future<void> adoptLegacyStorageOwnership(String uid) async {
-    await _clipRepository.adoptLegacyStorageOwnershipIfNeeded(uid);
-    if (selectedCollectionId != null) {
-      await selectCollection(selectedCollectionId);
-      return;
-    }
-    if (selectedGroupId != null) {
-      await selectGroup(selectedGroupId);
-      return;
-    }
-    await loadGroups();
   }
 
   Future<List<ClipItem>> fetchClipItemsByStorageMode(
@@ -214,13 +201,18 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
   }
 
-  bool get isCollectionBackfilling => _isCollectionBackfilling;
-  int get collectionBackfillProgress => _collectionBackfillProgress;
-  int get collectionBackfillTotal => _collectionBackfillTotal;
-  String get collectionBackfillMessage => _collectionBackfillMessage;
-  String? get collectionBackfillError => _collectionBackfillError;
-  bool get shouldShowCollectionBackfillBanner =>
-      _isCollectionBackfilling || _collectionBackfillError != null;
+  /// [refreshStorageUsage]는 Google Drive 연동 여부/용량 조회 등 네트워크
+  /// 호출을 포함해 느릴 수 있습니다. 그룹/컬렉션 선택처럼 즉시 반응해야
+  /// 하는 화면 전환에서 이 값을 기다리면 탭할 때마다 버벅이므로, 화면
+  /// 전환은 먼저 반영하고 저장공간 숫자는 백그라운드에서 뒤늦게 갱신합니다.
+  void _refreshStorageUsageInBackground() {
+    unawaited(
+      refreshStorageUsage().then((_) => notifyListeners()).catchError((e, st) {
+        AppLogger.w('[Clip][Storage] background-refresh failed', error: e);
+      }),
+    );
+  }
+
   bool get isServerUploadRunning => _isServerUploadRunning;
   int get serverUploadProgress => _serverUploadProgress;
   int get serverUploadTotal => _serverUploadTotal;
@@ -254,79 +246,6 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
       _selectedClipIds.add(item.clip.id);
     }
     notifyListeners();
-  }
-
-  /// 현재 로그인 유저의 collection 메타데이터를 Firestore로 동기화합니다.
-  Future<void> syncCollectionDataToServer(
-    String uid, {
-    bool force = false,
-  }) async {
-    if (_isCollectionBackfilling) return;
-
-    AppLogger.d(
-      '[Collection][Backfill] check uid=${_maskUid(uid)} force=$force',
-    );
-    try {
-      final shouldRun =
-          force || await _collectionSyncService.needsInitialBackfill(uid);
-      if (!shouldRun) {
-        AppLogger.i(
-          '[Collection][Backfill] skip no-pending uid=${_maskUid(uid)}',
-        );
-        return;
-      }
-
-      _setCollectionBackfillState(
-        isBackfilling: true,
-        progress: 0,
-        total: 0,
-        message: 'collection 백필 준비 중',
-        error: null,
-      );
-      AppLogger.i(
-        '[Collection][Backfill] running uid=${_maskUid(uid)}',
-      );
-
-      await _collectionSyncService.syncCollectionData(
-        uid: uid,
-        force: force,
-        onProgress: (current, total, message) {
-          _setCollectionBackfillState(
-            isBackfilling: true,
-            progress: current,
-            total: total,
-            message: message,
-            error: null,
-          );
-        },
-      );
-      AppLogger.i(
-        '[Collection][Backfill] complete uid=${_maskUid(uid)}',
-      );
-      _setCollectionBackfillState(
-        isBackfilling: false,
-        progress: _collectionBackfillTotal == 0 ? 0 : _collectionBackfillTotal,
-        total: _collectionBackfillTotal,
-        message: 'collection 백필 완료',
-        error: null,
-      );
-    } catch (e, st) {
-      AppLogger.e(
-        '[Collection][Backfill] error uid=${_maskUid(uid)}',
-        error: e,
-        stackTrace: st,
-      );
-      _setCollectionBackfillState(
-        isBackfilling: false,
-        progress: _collectionBackfillProgress,
-        total: _collectionBackfillTotal,
-        message: 'collection 백필 실패',
-        error: e.toString(),
-      );
-      rethrow;
-    } finally {
-      notifyListeners();
-    }
   }
 
   @override
@@ -544,11 +463,6 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     _storageTransferProgress = 0;
     _storageTransferTotal = 0;
     _storageTransferMessage = '';
-    _isCollectionBackfilling = false;
-    _collectionBackfillProgress = 0;
-    _collectionBackfillTotal = 0;
-    _collectionBackfillMessage = '';
-    _collectionBackfillError = null;
     _isServerUploadRunning = false;
     _serverUploadProgress = 0;
     _serverUploadTotal = 0;
@@ -642,10 +556,18 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
   }
 
-  /// 모든 그룹 로드.
+  /// 활성 저장위치 탭을 바꾸고 그 탭의 그룹 목록을 새로 불러옵니다.
+  /// 화면 진입 시 초기 로드에도 쓰이므로, 값이 같아 보여도 항상 다시
+  /// 불러옵니다 (탭 재탭 방지는 호출부에서 처리).
+  Future<void> setActiveStorageMode(String storageMode) async {
+    _activeStorageMode = storageMode;
+    await loadGroups();
+  }
+
+  /// 모든 그룹 로드 (현재 활성 저장위치 탭 기준).
   @override
   Future<void> loadGroups() async {
-    groups = await _groupRepository.getAllGroups();
+    groups = await _groupRepository.getAllGroups(_activeStorageMode);
     closeCollectionMenu();
 
     // 초기화
@@ -655,8 +577,8 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     clips = [];
     clipItems = [];
     tagsByClip = {};
-    await refreshStorageUsage();
     notifyListeners();
+    _refreshStorageUsageInBackground();
   }
 
   /// 그룹 선택. 그룹에 속한 컬렉션 목록을 불러옵니다.
@@ -671,20 +593,23 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     tagsByClip = {};
 
     if (id == null) {
-      collections = await _collectionRepository.getVisibleCollectionsForGroup(null);
+      collections = await _collectionRepository.getVisibleCollectionsForGroup(
+          null, _activeStorageMode);
     } else if (id == -1) {
-      collections = await _collectionRepository.getVisibleCollectionsForGroup(-1);
+      collections = await _collectionRepository.getVisibleCollectionsForGroup(
+          -1, _activeStorageMode);
     } else {
-      collections = await _collectionRepository.getVisibleCollectionsForGroup(id);
+      collections = await _collectionRepository.getVisibleCollectionsForGroup(
+          id, _activeStorageMode);
     }
 
-    await refreshStorageUsage();
     notifyListeners();
+    _refreshStorageUsageInBackground();
   }
 
   /// 새 그룹 생성 후 목록 갱신.
   Future<void> createGroup(String name) async {
-    await _groupRepository.createGroup(name);
+    await _groupRepository.createGroup(name, _activeStorageMode);
     await loadGroups();
   }
 
@@ -700,9 +625,10 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   /// 모든 컬렉션 로드 (호환성 또는 필요 시 사용).
   @override
   Future<void> loadCollections() async {
-    collections = await _collectionRepository.getAllVisibleCollections();
-    await refreshStorageUsage();
+    collections =
+        await _collectionRepository.getAllVisibleCollections(_activeStorageMode);
     notifyListeners();
+    _refreshStorageUsageInBackground();
   }
 
   /// 컬렉션 선택 (null이면 컬렉션 없는 클립 표시).
@@ -720,8 +646,8 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
 
     await _buildClipItems();
-    await refreshStorageUsage();
     notifyListeners();
+    _refreshStorageUsageInBackground();
   }
 
   /// 컬렉션 내 클립 수 조회.
@@ -729,15 +655,16 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     return _clipRepository.countVisibleClipsInCollection(collectionId);
   }
 
-  /// 이름 중복 검사 (그룹 및 콜렉션 전체)
-  Future<bool> isNameExists(String name) async {
+  /// 이름 중복 검사 (같은 저장위치 탭의 그룹+콜렉션 안에서만 유일하면 됨).
+  Future<bool> isNameExists(String name, {String? storageMode}) async {
+    final mode = storageMode ?? _activeStorageMode;
     final groupMatch = await (db.select(db.groups)
-          ..where((g) => g.name.equals(name)))
+          ..where((g) => g.name.equals(name) & g.storageMode.equals(mode)))
         .getSingleOrNull();
     if (groupMatch != null) return true;
 
     final collectionMatch = await (db.select(db.collections)
-          ..where((c) => c.name.equals(name)))
+          ..where((c) => c.name.equals(name) & c.storageMode.equals(mode)))
         .getSingleOrNull();
     return collectionMatch != null;
   }
@@ -745,7 +672,10 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   /// 새 컬렉션 생성 후 목록 갱신.
   Future<void> createCollection(String name) async {
     final collectionId = await db.into(db.collections).insert(
-          CollectionsCompanion.insert(name: name),
+          CollectionsCompanion.insert(
+            name: name,
+            storageMode: Value(_activeStorageMode),
+          ),
         );
 
     if (selectedGroupId != null && selectedGroupId != -1) {
@@ -778,35 +708,6 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     clipItems = [];
     tagsByClip = {};
     loadGroups();
-  }
-
-  void _setCollectionBackfillState({
-    required bool isBackfilling,
-    required int progress,
-    required int total,
-    required String message,
-    required String? error,
-  }) {
-    final wasBackfilling = _isCollectionBackfilling;
-    _isCollectionBackfilling = isBackfilling;
-    _collectionBackfillProgress = progress;
-    _collectionBackfillTotal = total;
-    _collectionBackfillMessage = message;
-    _collectionBackfillError = error;
-    if (isBackfilling && !wasBackfilling) {
-      AppLogger.d(
-        '[Collection][Backfill] state=loading progress=$progress total=$total message=$message',
-      );
-    } else if (!isBackfilling && error == null) {
-      AppLogger.d(
-        '[Collection][Backfill] state=success progress=$progress total=$total message=$message',
-      );
-    } else if (!isBackfilling && error != null) {
-      AppLogger.w(
-        '[Collection][Backfill] state=failed progress=$progress total=$total message=$message error=$error',
-      );
-    }
-    notifyListeners();
   }
 
   void _setServerUploadState({
@@ -891,11 +792,6 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     notifyListeners();
   }
 
-  String _maskUid(String uid) {
-    if (uid.length <= 4) return '****';
-    return '***${uid.substring(uid.length - 4)}';
-  }
-
   // ─────────────────────────────────────────────────────────────────
   // Internal helpers
   // ─────────────────────────────────────────────────────────────────
@@ -967,9 +863,9 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     }
   }
 
-  /// 모든 콜렉션 조회 (관리 모달용)
+  /// 모든 콜렉션 조회 (관리 모달용, 현재 활성 저장위치 탭 기준)
   Future<List<Collection>> fetchAllCollections() async {
-    return _collectionRepository.getAllVisibleCollections();
+    return _collectionRepository.getAllVisibleCollections(_activeStorageMode);
   }
 
   /// 콜렉션의 매핑된 그룹 ID 목록 조회

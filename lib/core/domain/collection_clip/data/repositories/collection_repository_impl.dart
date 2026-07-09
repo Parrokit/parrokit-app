@@ -24,8 +24,12 @@ class CollectionRepositoryImpl implements CollectionRepository {
   CollectionRepositoryImpl(this.db, this.clipRepository);
 
   @override
-  Future<List<Collection>> getVisibleCollectionsForGroup(int? groupId) async {
-    final visibleCollectionIds = await clipRepository.getVisibleCollectionIds();
+  Future<List<Collection>> getVisibleCollectionsForGroup(
+    int? groupId,
+    String storageMode,
+  ) async {
+    final visibleCollectionIds =
+        await clipRepository.getVisibleCollectionIds(storageMode);
     if (visibleCollectionIds.isEmpty) return const [];
 
     List<Collection> rows;
@@ -66,8 +70,9 @@ class CollectionRepositoryImpl implements CollectionRepository {
   }
 
   @override
-  Future<List<Collection>> getAllVisibleCollections() async {
-    final visibleCollectionIds = await clipRepository.getVisibleCollectionIds();
+  Future<List<Collection>> getAllVisibleCollections(String storageMode) async {
+    final visibleCollectionIds =
+        await clipRepository.getVisibleCollectionIds(storageMode);
     if (visibleCollectionIds.isEmpty) return const [];
     final rows = await (db.select(db.collections)
           ..where((c) => c.id.isIn(visibleCollectionIds))

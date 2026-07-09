@@ -22,8 +22,16 @@ class $GroupsTable extends Groups with TableInfo<$GroupsTable, Group> {
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _storageModeMeta =
+      const VerificationMeta('storageMode');
   @override
-  List<GeneratedColumn> get $columns => [id, name];
+  late final GeneratedColumn<String> storageMode = GeneratedColumn<String>(
+      'storage_mode', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('local'));
+  @override
+  List<GeneratedColumn> get $columns => [id, name, storageMode];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -43,6 +51,12 @@ class $GroupsTable extends Groups with TableInfo<$GroupsTable, Group> {
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('storage_mode')) {
+      context.handle(
+          _storageModeMeta,
+          storageMode.isAcceptableOrUnknown(
+              data['storage_mode']!, _storageModeMeta));
+    }
     return context;
   }
 
@@ -56,6 +70,8 @@ class $GroupsTable extends Groups with TableInfo<$GroupsTable, Group> {
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      storageMode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}storage_mode'])!,
     );
   }
 
@@ -68,12 +84,15 @@ class $GroupsTable extends Groups with TableInfo<$GroupsTable, Group> {
 class Group extends DataClass implements Insertable<Group> {
   final int id;
   final String name;
-  const Group({required this.id, required this.name});
+  final String storageMode;
+  const Group(
+      {required this.id, required this.name, required this.storageMode});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    map['storage_mode'] = Variable<String>(storageMode);
     return map;
   }
 
@@ -81,6 +100,7 @@ class Group extends DataClass implements Insertable<Group> {
     return GroupsCompanion(
       id: Value(id),
       name: Value(name),
+      storageMode: Value(storageMode),
     );
   }
 
@@ -90,6 +110,7 @@ class Group extends DataClass implements Insertable<Group> {
     return Group(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      storageMode: serializer.fromJson<String>(json['storageMode']),
     );
   }
   @override
@@ -98,17 +119,21 @@ class Group extends DataClass implements Insertable<Group> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'storageMode': serializer.toJson<String>(storageMode),
     };
   }
 
-  Group copyWith({int? id, String? name}) => Group(
+  Group copyWith({int? id, String? name, String? storageMode}) => Group(
         id: id ?? this.id,
         name: name ?? this.name,
+        storageMode: storageMode ?? this.storageMode,
       );
   Group copyWithCompanion(GroupsCompanion data) {
     return Group(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      storageMode:
+          data.storageMode.present ? data.storageMode.value : this.storageMode,
     );
   }
 
@@ -116,44 +141,55 @@ class Group extends DataClass implements Insertable<Group> {
   String toString() {
     return (StringBuffer('Group(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('storageMode: $storageMode')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name);
+  int get hashCode => Object.hash(id, name, storageMode);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Group && other.id == this.id && other.name == this.name);
+      (other is Group &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.storageMode == this.storageMode);
 }
 
 class GroupsCompanion extends UpdateCompanion<Group> {
   final Value<int> id;
   final Value<String> name;
+  final Value<String> storageMode;
   const GroupsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.storageMode = const Value.absent(),
   });
   GroupsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.storageMode = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Group> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<String>? storageMode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (storageMode != null) 'storage_mode': storageMode,
     });
   }
 
-  GroupsCompanion copyWith({Value<int>? id, Value<String>? name}) {
+  GroupsCompanion copyWith(
+      {Value<int>? id, Value<String>? name, Value<String>? storageMode}) {
     return GroupsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      storageMode: storageMode ?? this.storageMode,
     );
   }
 
@@ -166,6 +202,9 @@ class GroupsCompanion extends UpdateCompanion<Group> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (storageMode.present) {
+      map['storage_mode'] = Variable<String>(storageMode.value);
+    }
     return map;
   }
 
@@ -173,7 +212,8 @@ class GroupsCompanion extends UpdateCompanion<Group> {
   String toString() {
     return (StringBuffer('GroupsCompanion(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('storageMode: $storageMode')
           ..write(')'))
         .toString();
   }
@@ -199,8 +239,16 @@ class $CollectionsTable extends Collections
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _storageModeMeta =
+      const VerificationMeta('storageMode');
   @override
-  List<GeneratedColumn> get $columns => [id, name];
+  late final GeneratedColumn<String> storageMode = GeneratedColumn<String>(
+      'storage_mode', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('local'));
+  @override
+  List<GeneratedColumn> get $columns => [id, name, storageMode];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -220,6 +268,12 @@ class $CollectionsTable extends Collections
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('storage_mode')) {
+      context.handle(
+          _storageModeMeta,
+          storageMode.isAcceptableOrUnknown(
+              data['storage_mode']!, _storageModeMeta));
+    }
     return context;
   }
 
@@ -233,6 +287,8 @@ class $CollectionsTable extends Collections
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      storageMode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}storage_mode'])!,
     );
   }
 
@@ -245,12 +301,15 @@ class $CollectionsTable extends Collections
 class Collection extends DataClass implements Insertable<Collection> {
   final int id;
   final String name;
-  const Collection({required this.id, required this.name});
+  final String storageMode;
+  const Collection(
+      {required this.id, required this.name, required this.storageMode});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    map['storage_mode'] = Variable<String>(storageMode);
     return map;
   }
 
@@ -258,6 +317,7 @@ class Collection extends DataClass implements Insertable<Collection> {
     return CollectionsCompanion(
       id: Value(id),
       name: Value(name),
+      storageMode: Value(storageMode),
     );
   }
 
@@ -267,6 +327,7 @@ class Collection extends DataClass implements Insertable<Collection> {
     return Collection(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      storageMode: serializer.fromJson<String>(json['storageMode']),
     );
   }
   @override
@@ -275,17 +336,22 @@ class Collection extends DataClass implements Insertable<Collection> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'storageMode': serializer.toJson<String>(storageMode),
     };
   }
 
-  Collection copyWith({int? id, String? name}) => Collection(
+  Collection copyWith({int? id, String? name, String? storageMode}) =>
+      Collection(
         id: id ?? this.id,
         name: name ?? this.name,
+        storageMode: storageMode ?? this.storageMode,
       );
   Collection copyWithCompanion(CollectionsCompanion data) {
     return Collection(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      storageMode:
+          data.storageMode.present ? data.storageMode.value : this.storageMode,
     );
   }
 
@@ -293,44 +359,55 @@ class Collection extends DataClass implements Insertable<Collection> {
   String toString() {
     return (StringBuffer('Collection(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('storageMode: $storageMode')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name);
+  int get hashCode => Object.hash(id, name, storageMode);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Collection && other.id == this.id && other.name == this.name);
+      (other is Collection &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.storageMode == this.storageMode);
 }
 
 class CollectionsCompanion extends UpdateCompanion<Collection> {
   final Value<int> id;
   final Value<String> name;
+  final Value<String> storageMode;
   const CollectionsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.storageMode = const Value.absent(),
   });
   CollectionsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.storageMode = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Collection> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<String>? storageMode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (storageMode != null) 'storage_mode': storageMode,
     });
   }
 
-  CollectionsCompanion copyWith({Value<int>? id, Value<String>? name}) {
+  CollectionsCompanion copyWith(
+      {Value<int>? id, Value<String>? name, Value<String>? storageMode}) {
     return CollectionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      storageMode: storageMode ?? this.storageMode,
     );
   }
 
@@ -343,6 +420,9 @@ class CollectionsCompanion extends UpdateCompanion<Collection> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (storageMode.present) {
+      map['storage_mode'] = Variable<String>(storageMode.value);
+    }
     return map;
   }
 
@@ -350,7 +430,8 @@ class CollectionsCompanion extends UpdateCompanion<Collection> {
   String toString() {
     return (StringBuffer('CollectionsCompanion(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('storageMode: $storageMode')
           ..write(')'))
         .toString();
   }
@@ -3318,10 +3399,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$GroupsTableCreateCompanionBuilder = GroupsCompanion Function({
   Value<int> id,
   required String name,
+  Value<String> storageMode,
 });
 typedef $$GroupsTableUpdateCompanionBuilder = GroupsCompanion Function({
   Value<int> id,
   Value<String> name,
+  Value<String> storageMode,
 });
 
 final class $$GroupsTableReferences
@@ -3361,6 +3444,9 @@ class $$GroupsTableFilterComposer
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => ColumnFilters(column));
+
   Expression<bool> groupCollectionsRefs(
       Expression<bool> Function($$GroupCollectionsTableFilterComposer f) f) {
     final $$GroupCollectionsTableFilterComposer composer = $composerBuilder(
@@ -3397,6 +3483,9 @@ class $$GroupsTableOrderingComposer
 
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => ColumnOrderings(column));
 }
 
 class $$GroupsTableAnnotationComposer
@@ -3413,6 +3502,9 @@ class $$GroupsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => column);
 
   Expression<T> groupCollectionsRefs<T extends Object>(
       Expression<T> Function($$GroupCollectionsTableAnnotationComposer a) f) {
@@ -3461,18 +3553,22 @@ class $$GroupsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String> storageMode = const Value.absent(),
           }) =>
               GroupsCompanion(
             id: id,
             name: name,
+            storageMode: storageMode,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
+            Value<String> storageMode = const Value.absent(),
           }) =>
               GroupsCompanion.insert(
             id: id,
             name: name,
+            storageMode: storageMode,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
@@ -3523,11 +3619,13 @@ typedef $$CollectionsTableCreateCompanionBuilder = CollectionsCompanion
     Function({
   Value<int> id,
   required String name,
+  Value<String> storageMode,
 });
 typedef $$CollectionsTableUpdateCompanionBuilder = CollectionsCompanion
     Function({
   Value<int> id,
   Value<String> name,
+  Value<String> storageMode,
 });
 
 final class $$CollectionsTableReferences
@@ -3581,6 +3679,9 @@ class $$CollectionsTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => ColumnFilters(column));
 
   Expression<bool> clipsRefs(
       Expression<bool> Function($$ClipsTableFilterComposer f) f) {
@@ -3639,6 +3740,9 @@ class $$CollectionsTableOrderingComposer
 
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => ColumnOrderings(column));
 }
 
 class $$CollectionsTableAnnotationComposer
@@ -3655,6 +3759,9 @@ class $$CollectionsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get storageMode => $composableBuilder(
+      column: $table.storageMode, builder: (column) => column);
 
   Expression<T> clipsRefs<T extends Object>(
       Expression<T> Function($$ClipsTableAnnotationComposer a) f) {
@@ -3724,18 +3831,22 @@ class $$CollectionsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String> storageMode = const Value.absent(),
           }) =>
               CollectionsCompanion(
             id: id,
             name: name,
+            storageMode: storageMode,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
+            Value<String> storageMode = const Value.absent(),
           }) =>
               CollectionsCompanion.insert(
             id: id,
             name: name,
+            storageMode: storageMode,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (

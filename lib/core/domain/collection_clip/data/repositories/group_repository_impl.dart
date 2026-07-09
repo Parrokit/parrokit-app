@@ -19,13 +19,14 @@ class GroupRepositoryImpl implements GroupRepository {
   GroupRepositoryImpl(this.db);
 
   @override
-  Future<List<Group>> getAllGroups() async {
-    final allGroups = await db.groupsDao.getAllGroups();
+  Future<List<Group>> getAllGroups(String storageMode) async {
+    final allGroups = await db.groupsDao.getAllGroups(storageMode);
     return allGroups.toList()..sort((a, b) => a.name.compareTo(b.name));
   }
 
   @override
-  Future<void> createGroup(String name) => db.groupsDao.insertGroup(name);
+  Future<void> createGroup(String name, String storageMode) =>
+      db.groupsDao.insertGroup(name, storageMode);
 
   @override
   Future<void> deleteGroupById(int id) async {

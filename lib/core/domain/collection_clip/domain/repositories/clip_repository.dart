@@ -18,8 +18,6 @@ import 'package:parrokit/data/models/clip_item.dart';
 import 'package:parrokit/data/models/clip_view.dart';
 
 abstract class ClipRepository {
-  Future<void> adoptLegacyStorageOwnershipIfNeeded(String accountId);
-
   /// Clip ID로 단일 클립 정보(세그먼트 포함) 조회.
   Future<ClipView?> fetchClipById(int clipId);
 
@@ -55,7 +53,7 @@ abstract class ClipRepository {
   Future<int> countVisibleClipsInCollection(int collectionId);
 
   /// 현재 보이는 클립들이 속한 컬렉션 id 집합 (CollectionRepository가 사용).
-  Future<Set<int>> getVisibleCollectionIds();
+  Future<Set<int>> getVisibleCollectionIds(String storageMode);
 
   Future<List<ClipItem>> fetchClipItemsByStorageMode(String storageMode);
 

@@ -328,6 +328,7 @@ ShellRoute get _shellRoute => ShellRoute(
                     state.uri.queryParameters['collectionId'] ?? ''),
                 initialTab:
                     int.tryParse(state.uri.queryParameters['tab'] ?? ''),
+                initialStorageMode: state.uri.queryParameters['storage'],
               ),
             ),
           ],

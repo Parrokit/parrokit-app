@@ -30,6 +30,7 @@ import 'package:parrokit/core/domain/collection_clip/data/utils/clip_path_utils.
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_source_ref_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_thumbnail_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_file_sync_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/collection_group_mirror_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_firestore_metadata_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_cloud_metadata_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_detail_query_datasource.dart';
@@ -41,6 +42,7 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
   final ClipSourceRefDatasource sourceRefDatasource;
   final ClipThumbnailDatasource thumbnailDatasource;
   final ClipFileSyncDatasource fileSyncDatasource;
+  final CollectionGroupMirrorDatasource collectionGroupMirrorDatasource;
   final ClipFirestoreMetadataDatasource firestoreMetadataDatasource;
   final ClipCloudMetadataDatasource cloudMetadataDatasource;
   final ClipDetailQueryDatasource detailQueryDatasource;
@@ -52,6 +54,7 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
     required this.sourceRefDatasource,
     required this.thumbnailDatasource,
     required this.fileSyncDatasource,
+    required this.collectionGroupMirrorDatasource,
     required this.firestoreMetadataDatasource,
     required this.cloudMetadataDatasource,
     required this.detailQueryDatasource,
@@ -200,11 +203,6 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
       }
 
       final now = DateTime.now();
-      final collectionRemoteId =
-          await firestoreMetadataDatasource.upsertServerCollectionMetadata(
-        uid: user.uid,
-        collectionId: target.collectionId,
-      );
       final segments = await detailQueryDatasource.segmentsForClip(clipId);
       final tagNames = await detailQueryDatasource.tagNamesForClip(clipId);
 
@@ -217,7 +215,6 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
       );
       await docRef.set({
         'localId': target.id,
-        'collectionLocalId': target.collectionId,
         'title': target.title,
         'storageMode': ClipStorageConstants.storageModeServer,
         'provider': ClipStorageConstants.providerServer,
@@ -232,7 +229,6 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
             thumbnailUploadResult?.storagePath ?? FieldValue.delete(),
         'thumbnailDownloadUrl':
             thumbnailUploadResult?.downloadUrl ?? FieldValue.delete(),
-        'collectionRemoteId': collectionRemoteId ?? FieldValue.delete(),
         'segments': segments
             .map(
               (segment) => {
@@ -272,8 +268,16 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
         storageBytes: fileSize,
       );
 
+      final oldCollectionId = target.collectionId;
+      final newCollectionId = await collectionGroupMirrorDatasource
+          .mirrorCollectionForClip(
+        currentCollectionId: oldCollectionId,
+        destinationStorageMode: ClipStorageConstants.storageModeServer,
+      );
+
       await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
         ClipsCompanion(
+          collectionId: Value(newCollectionId),
           filePath: const Value(''),
           sourceFilePath: const Value.absent(),
           ownerScope: const Value(ClipStorageConstants.ownerScopeAppAccount),
@@ -283,6 +287,9 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
           thumbnailFilePath: Value(thumbnailPath),
         ),
       );
+      if (oldCollectionId != null && oldCollectionId != newCollectionId) {
+        await db.collectionsDao.pruneIfEmpty(oldCollectionId);
+      }
 
       await _cleanupPreviousRemoteSource(
         clipId: clipId,
@@ -450,8 +457,16 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
       filePath: sourcePath,
       storageBytes: fileSize,
     );
+    final oldCollectionId = target.collectionId;
+    final newCollectionId =
+        await collectionGroupMirrorDatasource.mirrorCollectionForClip(
+      currentCollectionId: oldCollectionId,
+      destinationStorageMode: ClipStorageConstants.storageModeGoogleDrive,
+    );
+
     await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
       ClipsCompanion(
+        collectionId: Value(newCollectionId),
         filePath: const Value(''),
         sourceFilePath: const Value.absent(),
         ownerScope: const Value(ClipStorageConstants.ownerScopeCloudAccount),
@@ -461,6 +476,9 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
         thumbnailFilePath: Value(thumbnailPath),
       ),
     );
+    if (oldCollectionId != null && oldCollectionId != newCollectionId) {
+      await db.collectionsDao.pruneIfEmpty(oldCollectionId);
+    }
 
     await _cleanupPreviousRemoteSource(
       clipId: clipId,
@@ -530,10 +548,18 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
       );
     }
 
+    final oldCollectionId = target.collectionId;
+    final newCollectionId =
+        await collectionGroupMirrorDatasource.mirrorCollectionForClip(
+      currentCollectionId: oldCollectionId,
+      destinationStorageMode: ClipStorageConstants.storageModeLocal,
+    );
+
     await db.transaction(() async {
       await sourceRefDatasource.deleteAllRemoteRowsForClip(clipId);
       await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
         ClipsCompanion(
+          collectionId: Value(newCollectionId),
           filePath: Value(sourcePath),
           sourceFilePath: Value(sourcePath),
           ownerScope: const Value(ClipStorageConstants.ownerScopeDevice),
@@ -544,6 +570,9 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
         ),
       );
     });
+    if (oldCollectionId != null && oldCollectionId != newCollectionId) {
+      await db.collectionsDao.pruneIfEmpty(oldCollectionId);
+    }
 
     AppLogger.i(
       '[Clip][Storage] move-to-local success clipId=$clipId remoteId=${sourceRef.remoteDocId}',

@@ -14,7 +14,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/data/models/clip_item.dart';
@@ -29,9 +28,6 @@ import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_fires
 import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_repository.dart';
 
 class ClipRepositoryImpl implements ClipRepository {
-  static const String _legacyAdoptedPrefsPrefix =
-      'library.legacy_storage_adopted';
-
   final AppDatabase db;
   final ClipSourceRefDatasource sourceRefDatasource;
   final ClipThumbnailDatasource thumbnailDatasource;
@@ -47,15 +43,6 @@ class ClipRepositoryImpl implements ClipRepository {
     required this.itemQueryDatasource,
     required this.firestoreMetadataDatasource,
   });
-
-  @override
-  Future<void> adoptLegacyStorageOwnershipIfNeeded(String accountId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final prefKey = '$_legacyAdoptedPrefsPrefix.$accountId';
-    if (prefs.getBool(prefKey) != true) {
-      await prefs.setBool(prefKey, true);
-    }
-  }
 
   @override
   Future<List<Clip>> getVisibleClipsForCollection(int? collectionId) async {
@@ -75,8 +62,8 @@ class ClipRepositoryImpl implements ClipRepository {
   }
 
   @override
-  Future<Set<int>> getVisibleCollectionIds() {
-    return sourceRefDatasource.visibleCollectionIds();
+  Future<Set<int>> getVisibleCollectionIds(String storageMode) {
+    return sourceRefDatasource.visibleCollectionIds(storageMode);
   }
 
   @override
@@ -183,10 +170,13 @@ class ClipRepositoryImpl implements ClipRepository {
   }) async {
     final storageBytes = await ClipPathUtils.fileSizeFor(filePath);
     await db.transaction(() async {
-      // 컬렉션 선택적 생성
+      // 컬렉션 선택적 생성 (신규 클립은 항상 local로 시작하므로 local 스코프)
       int? collectionId;
       if (collectionName != null && collectionName.trim().isNotEmpty) {
-        final col = await db.collectionsDao.findOrCreate(collectionName.trim());
+        final col = await db.collectionsDao.findOrCreate(
+          collectionName.trim(),
+          ClipStorageConstants.storageModeLocal,
+        );
         collectionId = col.id;
       }
 
@@ -254,10 +244,11 @@ class ClipRepositoryImpl implements ClipRepository {
     final oldCollectionId = prevClip.collectionId;
 
     await db.transaction(() async {
-      // 새 컬렉션 결정
+      // 새 컬렉션 결정 (클립의 현재 storageMode에 맞는 콜렉션으로 스코프)
       int? newCollectionId;
       if (collectionName != null && collectionName.trim().isNotEmpty) {
-        final col = await db.collectionsDao.findOrCreate(collectionName.trim());
+        final col = await db.collectionsDao
+            .findOrCreate(collectionName.trim(), prevClip.storageMode);
         newCollectionId = col.id;
       }
       final thumbnailPath = await thumbnailDatasource.ensureThumbnailFile(

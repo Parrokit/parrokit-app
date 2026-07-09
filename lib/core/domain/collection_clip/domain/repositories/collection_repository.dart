@@ -12,7 +12,10 @@
 import 'package:parrokit/data/local/app_database.dart';
 
 abstract class CollectionRepository {
-  Future<List<Collection>> getVisibleCollectionsForGroup(int? groupId);
+  Future<List<Collection>> getVisibleCollectionsForGroup(
+    int? groupId,
+    String storageMode,
+  );
 
-  Future<List<Collection>> getAllVisibleCollections();
+  Future<List<Collection>> getAllVisibleCollections(String storageMode);
 }
