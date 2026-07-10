@@ -76,12 +76,15 @@ List<SingleChildWidget> buildProviders({
     // ─────────────────────────────────────────────────────────────────
     // 기능별 Provider들
     // ─────────────────────────────────────────────────────────────────
-    ChangeNotifierProvider<ClipActivityProvider>(
-      lazy: false,
-      create: (c) => ClipActivityProvider(c.read<AppDatabase>()),
-    ),
     ChangeNotifierProvider<ClipProvider>(
       create: (c) => ClipProvider(c.read<AppDatabase>()),
+    ),
+    ChangeNotifierProvider<ClipActivityProvider>(
+      lazy: false,
+      create: (c) => ClipActivityProvider(
+        c.read<AppDatabase>(),
+        c.read<ClipProvider>().service,
+      ),
     ),
     ChangeNotifierProvider<ShortsProvider>(
       create: (c) => ShortsProvider(
