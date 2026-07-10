@@ -11,7 +11,11 @@
 //
 // ============================================================================
 
+import 'dart:io';
+
 import 'package:drift/drift.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/data/local/app_database.dart'; // Import AppDatabase and Tag
 import 'package:parrokit/data/models/clip_item.dart';
 import 'package:path_provider/path_provider.dart';
@@ -36,8 +40,17 @@ class ShortsRepository {
   /// 3. **세그먼트 로드**: 각 클립의 자막 구간([Segment]) 데이터를 로드합니다.
   /// 4. **썸네일 생성**: 비디오 파일 경로를 확인하고, 미리보기용 썸네일 이미지를 생성합니다.
   Future<List<ClipItem>> getRandomClips({required int limit}) async {
+    final currentAccountId = fb.FirebaseAuth.instance.currentUser?.uid;
+
     // 1. 랜덤 클립 조회
     final clips = await (pdb.select(pdb.clips)
+          ..where((c) =>
+              c.ownerScope.equals(ClipStorageConstants.ownerScopeDevice) |
+              (currentAccountId == null
+                  ? const Constant(false)
+                  : (c.ownerScope
+                          .equals(ClipStorageConstants.ownerScopeAppAccount) &
+                      c.ownerKey.equals(currentAccountId))))
           ..orderBy([
             (c) => OrderingTerm(expression: const CustomExpression('RANDOM()'))
           ])
@@ -70,10 +83,38 @@ class ShortsRepository {
     final docsPath = docsDir.path;
 
     for (final c in clips) {
-      final absPath =
-          c.filePath.startsWith('/') ? c.filePath : '$docsPath/${c.filePath}';
+      String previewPath = c.filePath;
+      if (c.storageMode == ClipStorageConstants.storageModeLocal) {
+        previewPath = c.sourceFilePath ?? c.filePath;
+      } else if (currentAccountId != null) {
+        final cacheOwnerScope =
+            c.storageMode == ClipStorageConstants.storageModeGoogleDrive
+                ? ClipStorageConstants.ownerScopeCloudAccount
+                : ClipStorageConstants.ownerScopeAppAccount;
+        final cacheEntry = await (pdb.select(pdb.clipCacheEntries)
+              ..where((entry) =>
+                  entry.clipId.equals(c.id) &
+                  entry.provider.equals(c.storageMode) &
+                  entry.ownerScope.equals(cacheOwnerScope) &
+                  entry.ownerKey.equals(currentAccountId))
+              ..limit(1))
+            .getSingleOrNull();
+        if (cacheEntry != null) {
+          previewPath = cacheEntry.filePath;
+        } else {
+          previewPath = '';
+        }
+      } else {
+        previewPath = '';
+      }
 
-      final clipWithAbs = c.copyWith(filePath: absPath);
+      final absPath = previewPath.isEmpty
+          ? ''
+          : (previewPath.startsWith('/')
+              ? previewPath
+              : '$docsPath/$previewPath');
+
+      final clipWithAbs = c.copyWith(filePath: previewPath);
 
       final segments = await (pdb.select(pdb.segments)
             ..where((s) => s.clipId.equals(c.id))
@@ -81,15 +122,31 @@ class ShortsRepository {
           .get();
 
       Uint8List? thumbBytes;
-      try {
-        thumbBytes = await VideoThumbnail.thumbnailData(
-          video: absPath,
-          imageFormat: ImageFormat.JPEG,
-          quality: 70,
-          timeMs: 500,
-        );
-      } catch (_) {
-        // 썸네일 생성 실패 시 무시 (기본 아이콘 등 처리)
+      final thumbnailPath = c.thumbnailFilePath;
+      if (thumbnailPath != null && thumbnailPath.isNotEmpty) {
+        final thumbnailAbsPath = thumbnailPath.startsWith('/')
+            ? thumbnailPath
+            : '$docsPath/$thumbnailPath';
+        try {
+          final thumbnailFile = File(thumbnailAbsPath);
+          if (await thumbnailFile.exists()) {
+            thumbBytes = await thumbnailFile.readAsBytes();
+          }
+        } catch (_) {
+          thumbBytes = null;
+        }
+      }
+      if (thumbBytes == null && absPath.isNotEmpty) {
+        try {
+          thumbBytes = await VideoThumbnail.thumbnailData(
+            video: absPath,
+            imageFormat: ImageFormat.JPEG,
+            quality: 70,
+            timeMs: 500,
+          );
+        } catch (_) {
+          // 썸네일 생성 실패 시 무시 (기본 아이콘 등 처리)
+        }
       }
 
       result.add(ClipItem(

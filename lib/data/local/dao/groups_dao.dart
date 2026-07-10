@@ -8,11 +8,13 @@ part 'groups_dao.g.dart';
 class GroupsDao extends DatabaseAccessor<AppDatabase> with _$GroupsDaoMixin {
   GroupsDao(super.db);
 
-  Future<List<Group>> getAllGroups() =>
-      (select(groups)..orderBy([(g) => OrderingTerm.asc(g.name)])).get();
+  Future<List<Group>> getAllGroups(String storageMode) => (select(groups)
+        ..where((g) => g.storageMode.equals(storageMode))
+        ..orderBy([(g) => OrderingTerm.asc(g.name)]))
+      .get();
 
-  Future<int> insertGroup(String name) =>
-      into(groups).insert(GroupsCompanion.insert(name: name));
+  Future<int> insertGroup(String name, String storageMode) => into(groups)
+      .insert(GroupsCompanion.insert(name: name, storageMode: Value(storageMode)));
 
   Future<void> deleteGroupById(int id) =>
       (delete(groups)..where((g) => g.id.equals(id))).go();

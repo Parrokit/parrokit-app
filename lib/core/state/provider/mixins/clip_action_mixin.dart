@@ -10,12 +10,15 @@
 // ============================================================================
 
 import 'package:flutter/foundation.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
 import '../../../../../data/local/app_database.dart';
-import '../../../infrastructure/services/media_service.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_repository.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_migration_repository.dart';
 
 mixin ClipActionMixin on ChangeNotifier {
   AppDatabase get db;
-  MediaService get service;
+  ClipRepository get service;
+  ClipMigrationRepository get migrationService;
 
   // Navigation / Refresh required methods
   int? get selectedGroupId;
@@ -25,6 +28,7 @@ mixin ClipActionMixin on ChangeNotifier {
   Future<void> selectCollection(int? id);
   Future<void> loadGroups();
   Future<void> loadCollections();
+  Future<void> refreshStorageUsage();
 
   // ─────────────────────────────────────────────────────────────────
   // Actions
@@ -82,6 +86,8 @@ mixin ClipActionMixin on ChangeNotifier {
       segments: segments,
       tags: tags,
     );
+    await refreshStorageUsage();
+    notifyListeners();
   }
 
   Future<void> updateClip({
@@ -92,6 +98,7 @@ mixin ClipActionMixin on ChangeNotifier {
     required int durationMs,
     required List<Segment> segments,
     required List<String>? tags,
+    String? storageMode,
   }) async {
     await service.updateMedia(
       clipId: clipId,
@@ -101,6 +108,73 @@ mixin ClipActionMixin on ChangeNotifier {
       durationMs: durationMs,
       segments: segments,
       tags: tags,
+      storageMode: storageMode,
     );
+    await refreshStorageUsage();
+    notifyListeners();
+  }
+
+  Future<bool> moveClipToServer(int clipId) async {
+    try {
+      await migrationService.moveClipToServer(clipId);
+      await refreshStorageUsage();
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] move-to-server failed clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> moveClipToGoogleDrive(int clipId) async {
+    try {
+      await migrationService.moveClipToGoogleDrive(clipId);
+      await refreshStorageUsage();
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] move-to-gdrive failed clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> moveClipToLocal(int clipId) async {
+    try {
+      await migrationService.moveClipToLocal(clipId);
+      await refreshStorageUsage();
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Storage] move-to-local failed clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> clearRemoteClipCache(int clipId) async {
+    try {
+      final success = await migrationService.clearRemoteClipCache(clipId);
+      await refreshStorageUsage();
+      notifyListeners();
+      return success;
+    } catch (e, st) {
+      AppLogger.e(
+        '[Clip][Cache] clear-cache failed clipId=$clipId',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
   }
 }

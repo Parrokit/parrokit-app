@@ -1,6 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppConfig {
+  static const int _defaultLocalKeepSpaceBytes = 1024 * 1024 * 1024;
+
   /// 플레이어
   static bool segmentLoop = false; // 구간 재생
   static bool repeatAll = false; // 반복 재생(전체)
@@ -10,6 +12,9 @@ class AppConfig {
   /// 쇼츠
   static bool autoNext = true; // 자동 넘기기
   static bool shortsShowSubtitles = true; // 자막 표시(쇼츠)
+
+  /// 저장 공간
+  static int localKeepSpaceBytes = _defaultLocalKeepSpaceBytes;
 
   /// 앱 테마는 프로바이더 관리
   static Future<void> loadFromPrefs() async {
@@ -22,6 +27,8 @@ class AppConfig {
 
     autoNext = p.getBool('autoNext') ?? true;
     shortsShowSubtitles = p.getBool('shortsShowSubtitles') ?? true;
+    localKeepSpaceBytes =
+        p.getInt('localKeepSpaceBytes') ?? _defaultLocalKeepSpaceBytes;
   }
 
   static Future<void> saveToPrefs() async {
@@ -34,5 +41,6 @@ class AppConfig {
 
     await p.setBool('autoNext', autoNext);
     await p.setBool('shortsShowSubtitles', shortsShowSubtitles);
+    await p.setInt('localKeepSpaceBytes', localKeepSpaceBytes);
   }
 }

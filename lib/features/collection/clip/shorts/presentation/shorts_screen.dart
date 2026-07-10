@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 
 import 'package:parrokit/core/app/config/app_config.dart';
 import 'package:parrokit/core/app/router/app_router.dart';
@@ -135,12 +136,9 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                     _maybeShowAdOnAdvance(context, _currentIndex, i);
                   }
 
-                  // 1. 다음 배치 미리 로드 (Ex. 8번째 쯤 왔을 때)
-                  // 현재 10개만 있고, i가 8이면(9번째) → loadMore() 호출 → 20개 됨
-                  final total = shorts.shorts.length;
-                  if (i >= total - 2 && !shorts.loading) {
-                    context.read<ShortsProvider>().loadMore();
-                  }
+                  unawaited(
+                    context.read<ShortsProvider>().prefetchNextBatch(i),
+                  );
 
                   // 2. 10번째(인덱스 10) 이상으로 넘어갔을 때 → Cycle Refresh
                   // 0~9(10개)가 지나고 10(11번째, 다음 배치의 첫 번째)에 도달하면
@@ -171,6 +169,7 @@ class _ShortsScreenScreenState extends State<ShortsScreen> {
                   return ShortsPage(
                     key: ValueKey(item.clip.id),
                     isActive: index == _currentIndex,
+                    clipId: item.clip.id,
                     filePath: item.clip.filePath,
                     durationMs: item.clip.durationMs,
                     autoNextEnabled: shorts.autoNext,

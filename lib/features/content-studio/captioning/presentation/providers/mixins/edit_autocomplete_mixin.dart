@@ -11,6 +11,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/core/shared/utils/show_toast.dart';
 import 'package:parrokit/data/local/dao/collections_dao.dart';
 
@@ -29,9 +30,11 @@ mixin EditAutocompleteMixin on ChangeNotifier {
   // ─────────────────────────────────────────────────────────────────
 
   /// DB에 저장된 모든 컬렉션 이름 목록을 로드합니다. (자동완성용)
+  /// 클립 생성/편집은 항상 로컬 클립을 다루므로 로컬 콜렉션 이름만 로드합니다.
   Future<void> loadCollectionNames() async {
     try {
-      final names = await collectionsDao.fetchAllNames();
+      final names = await collectionsDao
+          .fetchAllNames(ClipStorageConstants.storageModeLocal);
       allCollectionNames = names;
       notifyListeners();
     } catch (e) {

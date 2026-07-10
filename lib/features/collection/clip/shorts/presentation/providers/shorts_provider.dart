@@ -10,9 +10,12 @@
 //
 // ============================================================================
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:parrokit/features/collection/clip/shorts/data/shorts_repository.dart';
 import 'package:parrokit/data/models/clip_item.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 
 /// [역할]
 /// 쇼츠(Shorts) 화면의 UI 상태 및 데이터 로딩 관리.
@@ -22,8 +25,9 @@ import 'package:parrokit/data/models/clip_item.dart';
 /// - 무한 스크롤(LoadMore) / 새로고침 관리
 class ShortsProvider extends ChangeNotifier {
   final ShortsRepository _repository;
+  final ClipProvider _clipProvider;
 
-  ShortsProvider(this._repository);
+  ShortsProvider(this._repository, this._clipProvider);
 
   // ─────────────────────────────────────────────────────────────────
   // State
@@ -42,6 +46,11 @@ class ShortsProvider extends ChangeNotifier {
 
   /// 데이터 로딩 중 여부
   bool get loading => _loading;
+
+  bool _warmupRunning = false;
+  int _warmupGeneration = 0;
+  int _lastPrefetchWindow = -1;
+  final List<int> _warmupQueue = [];
 
   /// 한 번에 로드할 클립 개수 (배치 크기)
   static const int pageSize = 10;
@@ -67,6 +76,7 @@ class ShortsProvider extends ChangeNotifier {
   /// 새로운 랜덤 클립을 [limit]만큼 로드하여 채웁니다.
   /// 화면 진입 시 한 번 호출됩니다.
   Future<void> loadInitial() async {
+    _resetWarmupState();
     _shorts.clear();
     await _loadRandomClips(limit: pageSize);
   }
@@ -76,6 +86,7 @@ class ShortsProvider extends ChangeNotifier {
   /// 사용자가 당겨서 새로고침(Pull-to-refresh)을 수행할 때 사용됩니다.
   /// [loadInitial]과 유사하게 목록을 비우고 다시 로드합니다.
   Future<void> refresh() async {
+    _resetWarmupState();
     _shorts.clear();
     await _loadRandomClips(limit: pageSize);
   }
@@ -88,6 +99,18 @@ class ShortsProvider extends ChangeNotifier {
     await _loadRandomClips(limit: pageSize);
   }
 
+  /// 현재 쇼츠 배치의 6번째 진입 시 다음 10개를 미리 불러옵니다.
+  Future<void> prefetchNextBatch(int currentIndex) async {
+    if (currentIndex < 0) return;
+    if (currentIndex % pageSize != 5) return;
+
+    final windowIndex = currentIndex ~/ pageSize;
+    if (_lastPrefetchWindow == windowIndex) return;
+    _lastPrefetchWindow = windowIndex;
+
+    await loadMore();
+  }
+
   /// [ShortsRepository]를 통해 랜덤 클립을 로드하여 목록에 추가
   Future<void> _loadRandomClips({required int limit}) async {
     if (_loading) return;
@@ -98,6 +121,7 @@ class ShortsProvider extends ChangeNotifier {
 
       if (newClips.isNotEmpty) {
         _shorts.addAll(newClips);
+        _enqueueWarmup(newClips);
       }
     } finally {
       _loading = false;
@@ -113,5 +137,41 @@ class ShortsProvider extends ChangeNotifier {
     if (count <= 0 || count > _shorts.length) return;
     _shorts.removeRange(0, count);
     notifyListeners();
+  }
+
+  void _resetWarmupState() {
+    _warmupGeneration++;
+    _warmupQueue.clear();
+    _warmupRunning = false;
+    _lastPrefetchWindow = -1;
+  }
+
+  void _enqueueWarmup(List<ClipItem> items) {
+    final queuedIds = _warmupQueue.toSet();
+    for (final item in items) {
+      if (queuedIds.add(item.clip.id)) {
+        _warmupQueue.add(item.clip.id);
+      }
+    }
+    unawaited(_drainWarmupQueue(_warmupGeneration));
+  }
+
+  Future<void> _drainWarmupQueue(int generation) async {
+    if (_warmupRunning) return;
+    _warmupRunning = true;
+    try {
+      while (_warmupQueue.isNotEmpty) {
+        if (generation != _warmupGeneration) return;
+
+        final clipId = _warmupQueue.removeAt(0);
+        try {
+          await _clipProvider.fetchClipById(clipId);
+        } catch (_) {
+          // 원격 캐시 실패는 쇼츠 진입을 막지 않음
+        }
+      }
+    } finally {
+      _warmupRunning = false;
+    }
   }
 }

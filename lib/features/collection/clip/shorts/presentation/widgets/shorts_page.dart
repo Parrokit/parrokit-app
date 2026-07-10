@@ -13,9 +13,11 @@
 import 'dart:io' show File;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:parrokit/data/local/app_database.dart'; // Segment 타입 사용
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/features/collection/clip/shorts/presentation/widgets/video_layer_placeholder.dart';
 import 'package:parrokit/features/collection/clip/shorts/presentation/sections/shorts_page_subtitle_section.dart';
 import 'package:parrokit/features/collection/clip/shorts/presentation/sections/shorts_page_control_section.dart';
@@ -36,6 +38,7 @@ enum FitMode { cover, contain }
 class ShortsPage extends StatefulWidget {
   const ShortsPage({
     super.key,
+    required this.clipId,
     required this.filePath, // 절대 경로
     required this.durationMs, // 영상 길이 (ms)
     required this.segments, // 자막 데이터 목록
@@ -49,6 +52,9 @@ class ShortsPage extends StatefulWidget {
 
   /// 자동 넘김 활성화 여부. true일 경우 영상 종료 시 [onEnded] 호출.
   final bool autoNextEnabled;
+
+  /// 비디오 파일의 절대 경로.
+  final int clipId;
 
   /// 비디오 파일의 절대 경로.
   final String filePath;
@@ -88,6 +94,7 @@ class _ShortsPageState extends State<ShortsPage>
   bool _init = false;
   String? _error;
   bool _active = true;
+  String? _resolvedPath;
 
   /// 동시에 여러 초기화가 겹칠 때를 막는 토큰 (세대 구분)
   int _loadGen = 0;
@@ -176,7 +183,10 @@ class _ShortsPageState extends State<ShortsPage>
   Future<void> _initVideo() async {
     final myGen = ++_loadGen;
     try {
-      final c = VideoPlayerController.file(File(widget.filePath));
+      final sourcePath = await _resolveSourcePath();
+      if (myGen != _loadGen) return;
+
+      final c = VideoPlayerController.file(File(sourcePath));
       await c.initialize();
 
       if (myGen != _loadGen) {
@@ -214,8 +224,34 @@ class _ShortsPageState extends State<ShortsPage>
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = '영상을 준비하지 못했어요.');
+      setState(() => _error = '영상을 다시 불러오지 못했어요.');
     }
+  }
+
+  Future<String> _resolveSourcePath() async {
+    final clipProvider = context.read<ClipProvider>();
+    final current = _resolvedPath;
+    if (current != null) {
+      final currentFile = File(current);
+      if (await currentFile.exists() && await currentFile.length() > 0) {
+        return current;
+      }
+    }
+
+    final directFile = File(widget.filePath);
+    if (await directFile.exists() && await directFile.length() > 0) {
+      _resolvedPath = widget.filePath;
+      return widget.filePath;
+    }
+
+    final payload = await clipProvider.fetchClipById(widget.clipId);
+    final resolved = payload?.clip.filePath;
+    if (resolved == null || resolved.isEmpty) {
+      throw StateError('재생할 파일을 찾을 수 없습니다.');
+    }
+
+    _resolvedPath = resolved;
+    return resolved;
   }
 
   @override

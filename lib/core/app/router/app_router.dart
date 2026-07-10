@@ -35,6 +35,7 @@ import 'package:parrokit/features/collection/clip/shorts/presentation/shorts_scr
 import 'package:parrokit/features/collection/library/presentation/library_screen.dart';
 import 'package:parrokit/features/collection/shell/presentation/collection_shell_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/more_screen.dart';
+import 'package:parrokit/features/settings/more/presentation/storage_cache_management_screen.dart';
 import 'package:parrokit/features/settings/more/presentation/profile_edit_screen.dart';
 import 'package:parrokit/features/home/recent/presentation/recent_screen.dart';
 import 'package:parrokit/features/content-studio/captioning/presentation/screens/captioning_screen.dart';
@@ -157,6 +158,15 @@ GoRouter buildAppRouter({
           }
           return BoardViewScreen(postId: postId);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.storageCacheManagementPath,
+        name: AppRoutes.storageCacheManagement,
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          name: AppRoutes.storageCacheManagement,
+          child: StorageCacheManagementScreen(),
+        ),
       ),
 
       // ─────────────────────────────────────────────────────────────────
@@ -318,6 +328,7 @@ ShellRoute get _shellRoute => ShellRoute(
                     state.uri.queryParameters['collectionId'] ?? ''),
                 initialTab:
                     int.tryParse(state.uri.queryParameters['tab'] ?? ''),
+                initialStorageMode: state.uri.queryParameters['storage'],
               ),
             ),
           ],

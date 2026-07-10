@@ -23,6 +23,7 @@ abstract class AppRoutes {
   static const collectionClip = 'collection_clip';
   static const more = 'more';
   static const profileEdit = 'profile_edit';
+  static const storageCacheManagement = 'storage_cache_management';
   static const clips = 'clips';
   static const recom = 'recom';
   static const recomResult = 'recom_result';
@@ -76,6 +77,7 @@ abstract class AppRoutes {
   static const collectionClipPath = 'clip';
   static const morePath = '/more';
   static const profileEditPath = 'profile_edit';
+  static const storageCacheManagementPath = '/storage-cache-management';
   static const clipsPath = '/clips';
   static const recentsPath = '/recents';
   static const clipsCreatePath = 'create';
@@ -105,6 +107,7 @@ abstract class AppRoutes {
   static String communityVoteViewPathOf(String voteId) =>
       '/community/vote/$voteId';
 
-  static String communityActivityPathOf({required String boardType, required String activityType}) =>
+  static String communityActivityPathOf(
+          {required String boardType, required String activityType}) =>
       '/community/activity?boardType=$boardType&activityType=$activityType';
 }

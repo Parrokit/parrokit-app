@@ -32,6 +32,41 @@ service cloud.firestore {
       match /notifications/{notificationId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // 콘텐츠 namespace
+      match /namespaces/{namespaceId} {
+        match /groups/{groupId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+
+        match /groupCollections/{linkId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+
+        match /collections/{collectionId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+
+        match /clips/{clipId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
+      // 동기화 상태 namespace
+      match /namespaces/{namespaceId}/meta/{metaId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // legacy path - 점진적 전환용
+      match /syncMeta/{metaId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /collections/{collectionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /clips/{clipId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // 디바이스 토큰 관리

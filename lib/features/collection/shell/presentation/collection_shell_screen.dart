@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:parrokit/features/collection/library/presentation/library_screen.dart';
 
 /// 콜렉션 메인 탭바 쉘 화면
@@ -17,10 +19,21 @@ class _CollectionShellScreenState extends State<CollectionShellScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_handleTabChanged);
+  }
+
+  void _handleTabChanged() {
+    if (!mounted) return;
+    setState(() {});
+
+    if (_tabController.index != 0) {
+      context.read<ClipProvider>().closeCollectionMenu();
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -28,6 +41,14 @@ class _CollectionShellScreenState extends State<CollectionShellScreen>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final clipProvider = context.watch<ClipProvider>();
+    final isClipTab = _tabController.index == 0;
+    final isSelectionMode = clipProvider.isCollectionMenuOpen && isClipTab;
+    final visibleClipIds =
+        clipProvider.clipItems.map((item) => item.clip.id).toSet();
+    final selectedClipIds = clipProvider.selectedClipIds;
+    final isAllSelected = visibleClipIds.isNotEmpty &&
+        visibleClipIds.length == selectedClipIds.length;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -38,36 +59,46 @@ class _CollectionShellScreenState extends State<CollectionShellScreen>
         ),
         centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () {},
-          ),
+          if (isSelectionMode)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton(
+                onPressed: visibleClipIds.isEmpty
+                    ? null
+                    : () {
+                        if (isAllSelected) {
+                          clipProvider.clearClipSelection();
+                        } else {
+                          clipProvider.selectAllVisibleClips();
+                        }
+                      },
+                child: Text(isAllSelected ? '전체 해제' : '전체 선택'),
+              ),
+            ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          labelColor: colorScheme.onSurface,
-          labelStyle:
-              const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          unselectedLabelColor: colorScheme.onSurfaceVariant,
-          unselectedLabelStyle:
-              const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          indicatorColor: colorScheme.onSurface,
-          indicatorSize: TabBarIndicatorSize.label,
-          dividerColor: Colors.transparent,
-          padding: EdgeInsets.zero,
-          labelPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-          tabs: const [
-            Tab(text: '클립'),
-            Tab(text: '문장'),
-            Tab(text: '단어'),
-          ],
-        ),
+        bottom: isSelectionMode
+            ? null
+            : TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                labelColor: colorScheme.onSurface,
+                labelStyle:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                unselectedLabelColor: colorScheme.onSurfaceVariant,
+                unselectedLabelStyle:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                indicatorColor: colorScheme.onSurface,
+                indicatorSize: TabBarIndicatorSize.label,
+                dividerColor: Colors.transparent,
+                padding: EdgeInsets.zero,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                tabs: const [
+                  Tab(text: '클립'),
+                  Tab(text: '문장'),
+                  Tab(text: '단어'),
+                ],
+              ),
       ),
       body: TabBarView(
         controller: _tabController,

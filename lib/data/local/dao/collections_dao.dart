@@ -18,20 +18,26 @@ class CollectionsDao extends DatabaseAccessor<AppDatabase>
   Future<List<Collection>> fetchAll() => select(collections).get();
   Stream<List<Collection>> watchAll() => select(collections).watch();
 
-  // Find or create collection by name
-  Future<Collection> findOrCreate(String name) async {
+  // Find or create collection by (name, storageMode)
+  Future<Collection> findOrCreate(String name, String storageMode) async {
     final existing = await (select(collections)
-          ..where((c) => c.name.equals(name)))
+          ..where(
+            (c) => c.name.equals(name) & c.storageMode.equals(storageMode),
+          )
+          ..limit(1))
         .getSingleOrNull();
     if (existing != null) return existing;
-    final id = await into(collections)
-        .insert(CollectionsCompanion.insert(name: name));
-    return Collection(id: id, name: name);
+    final id = await into(collections).insert(
+      CollectionsCompanion.insert(name: name, storageMode: Value(storageMode)),
+    );
+    return (select(collections)..where((c) => c.id.equals(id))).getSingle();
   }
 
-  // All collection names (for autocomplete)
-  Future<List<String>> fetchAllNames() async {
-    final rows = await select(collections).get();
+  // Collection names for a given storageMode (for autocomplete)
+  Future<List<String>> fetchAllNames(String storageMode) async {
+    final rows = await (select(collections)
+          ..where((c) => c.storageMode.equals(storageMode)))
+        .get();
     return rows.map((c) => c.name).toList();
   }
 

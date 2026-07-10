@@ -2,10 +2,12 @@
 
 // lib/data/local/app_database.dart
 import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
 import 'tables/collections.dart';
 import 'tables/clips.dart';
 import 'tables/segments.dart';
@@ -14,6 +16,8 @@ import 'tables/clip_tags.dart';
 import 'tables/recent_clip_views.dart';
 import 'tables/groups.dart';
 import 'tables/group_collections.dart';
+import 'tables/clip_source_refs.dart';
+import 'tables/clip_cache_entries.dart';
 
 import 'dao/collections_dao.dart';
 import 'dao/groups_dao.dart';
@@ -31,6 +35,8 @@ part 'app_database.g.dart';
     ClipTags,
     RecentClipViews,
     GroupCollections,
+    ClipSourceRefs,
+    ClipCacheEntries,
   ],
   daos: [
     GroupsDao,
