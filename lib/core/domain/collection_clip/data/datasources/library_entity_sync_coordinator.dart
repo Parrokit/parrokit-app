@@ -42,9 +42,12 @@ class LibraryEntitySyncCoordinator {
   // Create
   // ─────────────────────────────────────────────────────────────────
 
+  /// 원격 업로드를 먼저 끝내고 나서 로컬에 insert합니다. 순서를 반대로
+  /// 하면(로컬 먼저) 업로드가 끝나기 전 짧은 사이에 동시에 도는 pull의
+  /// reconcile 로직이 "아직 원격에 안 보이는 방금 만든 그룹"을 "원격에서
+  /// 지워짐"으로 오인해서 지워버리는 레이스가 생깁니다.
   Future<Group> createGroup(String name, String storageMode) async {
     final remoteId = _needsRemoteId(storageMode) ? remoteDocIdResolver.newClipDocId() : null;
-    final id = await db.groupsDao.insertGroup(name, storageMode, remoteId: remoteId);
     if (remoteId != null) {
       await _upsertRemoteEntity(
         storageMode: storageMode,
@@ -53,22 +56,17 @@ class LibraryEntitySyncCoordinator {
         fields: {'name': name},
       );
     }
-    return (await db.groupsDao.findById(id))!;
+    final id = await db.groupsDao.insertGroup(name, storageMode, remoteId: remoteId);
+    return Group(id: id, name: name, storageMode: storageMode, remoteId: remoteId);
   }
 
+  /// createGroup과 같은 이유로 원격 업로드를 먼저 끝내고 로컬에 insert합니다.
   Future<Collection> createCollection(
     String name,
     String storageMode, {
     List<int> groupIds = const [],
   }) async {
     final remoteId = _needsRemoteId(storageMode) ? remoteDocIdResolver.newClipDocId() : null;
-    final id = await db.into(db.collections).insert(
-          CollectionsCompanion.insert(
-            name: name,
-            storageMode: Value(storageMode),
-            remoteId: Value(remoteId),
-          ),
-        );
     if (remoteId != null) {
       final groupRemoteIds = await _remoteIdsForGroups(groupIds);
       await _upsertRemoteEntity(
@@ -81,7 +79,14 @@ class LibraryEntitySyncCoordinator {
         },
       );
     }
-    return (await db.collectionsDao.findById(id))!;
+    final id = await db.into(db.collections).insert(
+          CollectionsCompanion.insert(
+            name: name,
+            storageMode: Value(storageMode),
+            remoteId: Value(remoteId),
+          ),
+        );
+    return Collection(id: id, name: name, storageMode: storageMode, remoteId: remoteId);
   }
 
   // ─────────────────────────────────────────────────────────────────

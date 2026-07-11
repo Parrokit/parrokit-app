@@ -587,58 +587,13 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   }
 
   Future<void> _showCreateGroupDialog(BuildContext context) async {
-    final ctl = TextEditingController();
     final clipProvider = context.read<ClipProvider>();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('그룹 추가'),
-        content: TextField(
-          controller: ctl,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: '그룹 이름'),
-          onSubmitted: (_) async {
-            final name = ctl.text.trim();
-            if (name.isNotEmpty) {
-              final exists = await clipProvider.isNameExists(name);
-              if (exists) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
-                  );
-                }
-                return;
-              }
-              await clipProvider.createGroup(name);
-            }
-            if (ctx.mounted) Navigator.pop(ctx);
-          },
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
-          TextButton(
-            onPressed: () async {
-              final name = ctl.text.trim();
-              if (name.isNotEmpty) {
-                final exists = await clipProvider.isNameExists(name);
-                if (exists) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                          content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
-                    );
-                  }
-                  return;
-                }
-                await clipProvider.createGroup(name);
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('추가'),
-          ),
-        ],
-      ),
+    await _showNameEntryDialog(
+      context,
+      title: '그룹 추가',
+      hint: '그룹 이름',
+      submitLabel: '추가',
+      onSubmit: (name) => clipProvider.createGroup(name),
     );
   }
 
@@ -647,42 +602,14 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     int groupId,
     String currentName,
   ) async {
-    final ctl = TextEditingController(text: currentName);
     final clipProvider = context.read<ClipProvider>();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('그룹 이름 변경'),
-        content: TextField(
-          controller: ctl,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: '그룹 이름'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
-          TextButton(
-            onPressed: () async {
-              final name = ctl.text.trim();
-              if (name.isNotEmpty && name != currentName) {
-                final exists = await clipProvider.isNameExists(name);
-                if (exists) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                          content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
-                    );
-                  }
-                  return;
-                }
-                await clipProvider.renameGroup(groupId, name);
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('변경'),
-          ),
-        ],
-      ),
+    await _showNameEntryDialog(
+      context,
+      title: '그룹 이름 변경',
+      hint: '그룹 이름',
+      submitLabel: '변경',
+      initialText: currentName,
+      onSubmit: (name) => clipProvider.renameGroup(groupId, name),
     );
   }
 
@@ -691,41 +618,95 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     int collectionId,
     String currentName,
   ) async {
-    final ctl = TextEditingController(text: currentName);
     final clipProvider = context.read<ClipProvider>();
+    await _showNameEntryDialog(
+      context,
+      title: '컬렉션 이름 변경',
+      hint: '컬렉션 이름',
+      submitLabel: '변경',
+      initialText: currentName,
+      onSubmit: (name) => clipProvider.renameCollection(collectionId, name),
+    );
+  }
+
+  /// 그룹/콜렉션 생성·이름변경 다이얼로그 공용 헬퍼.
+  ///
+  /// 서버/클라우드 탭에서는 [onSubmit] 안에서 원격 업로드 네트워크 호출이
+  /// 일어나 즉시 끝나지 않으므로, 제출 중에는 버튼을 비활성화하고 로딩
+  /// 표시를 보여줘서 사용자가 다시 눌러 중복 제출하는 걸 막습니다.
+  Future<void> _showNameEntryDialog(
+    BuildContext context, {
+    required String title,
+    required String hint,
+    required String submitLabel,
+    String initialText = '',
+    required Future<void> Function(String name) onSubmit,
+  }) async {
+    final ctl = TextEditingController(text: initialText);
+    final clipProvider = context.read<ClipProvider>();
+    var submitting = false;
+
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('컬렉션 이름 변경'),
-        content: TextField(
-          controller: ctl,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: '컬렉션 이름'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
-          TextButton(
-            onPressed: () async {
-              final name = ctl.text.trim();
-              if (name.isNotEmpty && name != currentName) {
-                final exists = await clipProvider.isNameExists(name);
-                if (exists) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                          content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
-                    );
-                  }
-                  return;
-                }
-                await clipProvider.renameCollection(collectionId, name);
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          Future<void> handleSubmit() async {
+            if (submitting) return;
+            final name = ctl.text.trim();
+            if (name.isEmpty || name == initialText) {
+              Navigator.pop(ctx);
+              return;
+            }
+            final exists = await clipProvider.isNameExists(name);
+            if (exists) {
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                );
               }
+              return;
+            }
+            setState(() => submitting = true);
+            try {
+              await onSubmit(name);
               if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('변경'),
-          ),
-        ],
+            } catch (_) {
+              if (ctx.mounted) {
+                setState(() => submitting = false);
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('처리 중 오류가 발생했습니다. 다시 시도해주세요.')),
+                );
+              }
+            }
+          }
+
+          return AlertDialog(
+            title: Text(title),
+            content: TextField(
+              controller: ctl,
+              autofocus: true,
+              enabled: !submitting,
+              decoration: InputDecoration(hintText: hint),
+              onSubmitted: (_) => handleSubmit(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: submitting ? null : () => Navigator.pop(ctx),
+                child: const Text('취소'),
+              ),
+              TextButton(
+                onPressed: submitting ? null : handleSubmit,
+                child: submitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(submitLabel),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -769,58 +750,13 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
   }
 
   Future<void> _showCreateCollectionDialog(BuildContext context) async {
-    final ctl = TextEditingController();
     final clipProvider = context.read<ClipProvider>();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('컬렉션 추가'),
-        content: TextField(
-          controller: ctl,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: '컬렉션 이름'),
-          onSubmitted: (_) async {
-            final name = ctl.text.trim();
-            if (name.isNotEmpty) {
-              final exists = await clipProvider.isNameExists(name);
-              if (exists) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
-                  );
-                }
-                return;
-              }
-              await clipProvider.createCollection(name);
-            }
-            if (ctx.mounted) Navigator.pop(ctx);
-          },
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
-          TextButton(
-            onPressed: () async {
-              final name = ctl.text.trim();
-              if (name.isNotEmpty) {
-                final exists = await clipProvider.isNameExists(name);
-                if (exists) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      const SnackBar(
-                          content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
-                    );
-                  }
-                  return;
-                }
-                await clipProvider.createCollection(name);
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('추가'),
-          ),
-        ],
-      ),
+    await _showNameEntryDialog(
+      context,
+      title: '컬렉션 추가',
+      hint: '컬렉션 이름',
+      submitLabel: '추가',
+      onSubmit: (name) => clipProvider.createCollection(name),
     );
   }
 
