@@ -49,7 +49,7 @@ class ShortsProvider extends ChangeNotifier {
 
   bool _warmupRunning = false;
   int _warmupGeneration = 0;
-  int _lastPrefetchWindow = -1;
+  int _lastPrefetchAtLength = -1;
   final List<int> _warmupQueue = [];
 
   /// 한 번에 로드할 클립 개수 (배치 크기)
@@ -99,14 +99,17 @@ class ShortsProvider extends ChangeNotifier {
     await _loadRandomClips(limit: pageSize);
   }
 
-  /// 현재 쇼츠 배치의 6번째 진입 시 다음 10개를 미리 불러옵니다.
+  /// 현재 로드된 목록의 끝에서 5개 이내로 들어오면 다음 배치를 미리
+  /// 불러옵니다. 절대 인덱스(예: 5, 15, 25...)가 아니라 "현재 길이 기준
+  /// 상대 위치"로 판단합니다 — 클립이 6개 미만이면 PageView의 itemCount가
+  /// 그보다 작아서 절대 인덱스 5에 아예 도달할 수 없고, 그러면 다음 배치를
+  /// 영영 불러오지 못해 클립 10개 이하일 때의 랜덤 반복 재생이 멈춥니다.
   Future<void> prefetchNextBatch(int currentIndex) async {
     if (currentIndex < 0) return;
-    if (currentIndex % pageSize != 5) return;
-
-    final windowIndex = currentIndex ~/ pageSize;
-    if (_lastPrefetchWindow == windowIndex) return;
-    _lastPrefetchWindow = windowIndex;
+    final total = _shorts.length;
+    if (total == 0 || currentIndex < total - 5) return;
+    if (_lastPrefetchAtLength == total) return;
+    _lastPrefetchAtLength = total;
 
     await loadMore();
   }
@@ -143,7 +146,7 @@ class ShortsProvider extends ChangeNotifier {
     _warmupGeneration++;
     _warmupQueue.clear();
     _warmupRunning = false;
-    _lastPrefetchWindow = -1;
+    _lastPrefetchAtLength = -1;
   }
 
   void _enqueueWarmup(List<ClipItem> items) {

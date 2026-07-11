@@ -13,12 +13,14 @@
 // ============================================================================
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 
 import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/core/shared/utils/app_logger.dart';
 import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
+import 'package:parrokit/core/domain/collection_clip/data/utils/clip_path_utils.dart';
 import 'package:parrokit/core/infrastructure/services/cloud/google_drive_storage_service.dart';
 import 'clip_firestore_metadata_datasource.dart';
 import 'clip_source_ref_datasource.dart';
@@ -170,8 +172,89 @@ class ClipRemoteLibrarySyncDatasource {
       pulledCount++;
     }
 
+    // Drive에서 직접(앱 밖에서) 지운 클립은 이 기기에 남아있는 로컬 행을
+    // 그대로 캐시로 보여주게 되므로, 더 이상 존재하지 않는 폴더를 가진
+    // 로컬 클립을 찾아서 함께 정리한다. clipFolders가 비어 있으면
+    // listClipFolders()가 계정 미연결/네트워크 오류로 조용히 빈 목록을
+    // 반환한 경우와 구분할 수 없으므로, 안전을 위해 이번엔 정리를
+    // 건너뛴다(잘못된 대량 삭제보다 다음 새로고침으로 미루는 게 낫다).
+    if (clipFolders.isNotEmpty) {
+      final remoteFolderIds = clipFolders.map((f) => f.$1).toSet();
+      pulledCount += await _pruneLocalClipsGoneFromCloud(
+        accountKey: accountKey,
+        remoteFolderIds: remoteFolderIds,
+      );
+    }
+
     AppLogger.i('[Clip][RemoteSync] cloud-pull done pulled=$pulledCount');
     return pulledCount;
+  }
+
+  /// [accountKey] 소유의 gdrive 클립 중, 이번에 조회한 Drive 폴더 목록에
+  /// 더 이상 없는 것을 찾아 로컬에서 정리합니다(캐시 파일 포함). 정리한
+  /// 클립 개수를 반환합니다.
+  Future<int> _pruneLocalClipsGoneFromCloud({
+    required String accountKey,
+    required Set<String> remoteFolderIds,
+  }) async {
+    final localRefs = await (db.select(db.clipSourceRefs)
+          ..where(
+            (r) =>
+                r.provider.equals(ClipStorageConstants.providerGoogleDrive) &
+                r.ownerKey.equals(accountKey),
+          ))
+        .get();
+
+    var removedCount = 0;
+    for (final ref in localRefs) {
+      if (remoteFolderIds.contains(ref.remoteDocId)) continue;
+      AppLogger.i(
+        '[Clip][RemoteSync] cloud-pull remote-gone clipId=${ref.clipId} remoteDocId=${ref.remoteDocId}',
+      );
+      final removed = await _deleteLocalClip(ref.clipId);
+      if (removed) removedCount++;
+    }
+    return removedCount;
+  }
+
+  /// 원격에 이미 없는 클립의 로컬 흔적(DB 행, 캐시 파일)만 정리합니다.
+  /// 원격 삭제는 시도하지 않습니다 — 애초에 원격에 없어서 호출된 경로라
+  /// deleteFile을 다시 불러도 404만 돌아옵니다.
+  Future<bool> _deleteLocalClip(int clipId) async {
+    final target = await (db.select(db.clips)
+          ..where((c) => c.id.equals(clipId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (target == null) return false;
+
+    final oldCollectionId = target.collectionId;
+    final cacheEntries = await (db.select(db.clipCacheEntries)
+          ..where((c) => c.clipId.equals(clipId)))
+        .get();
+
+    await db.transaction(() async {
+      await (db.delete(db.clipCacheEntries)..where((c) => c.clipId.equals(clipId)))
+          .go();
+      await (db.delete(db.clipSourceRefs)..where((c) => c.clipId.equals(clipId)))
+          .go();
+      await (db.delete(db.segments)..where((s) => s.clipId.equals(clipId))).go();
+      await (db.delete(db.clipTags)..where((ct) => ct.clipId.equals(clipId))).go();
+      await (db.delete(db.clips)..where((c) => c.id.equals(clipId))).go();
+    });
+
+    if (oldCollectionId != null) {
+      await db.collectionsDao.pruneIfEmpty(oldCollectionId);
+    }
+
+    for (final cacheEntry in cacheEntries) {
+      try {
+        final abs = await ClipPathUtils.absolutePathFor(cacheEntry.filePath);
+        final file = File(abs);
+        if (await file.exists()) await file.delete();
+      } catch (_) {}
+    }
+
+    return true;
   }
 
   /// 이 기기에 이미 있는 클립이면 그 clipId를, 없으면 null을 반환합니다.
