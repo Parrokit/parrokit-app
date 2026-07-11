@@ -25,6 +25,7 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/shared/widgets/expandable_action_fab.dart';
+import 'package:parrokit/core/shared/widgets/shell_fab_padding.dart';
 
 import 'sections/header_section.dart';
 import 'sections/hero_section.dart';
@@ -97,7 +98,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     // 테마 색상
     final bg = isDark ? AppColors.surfaceDark : AppColors.surfaceContainer;
@@ -108,11 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: bg,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      // 바깥 AppShell의 bottomNavigationBar가 extendBody 때문에 body에
-      // 자동 반영되지 않으므로, 그 높이(kBottomNavigationBarHeight)만큼만
-      // 직접 띄워서 네비바 바로 위에 붙입니다.
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: kBottomNavigationBarHeight + bottomInset),
+      floatingActionButton: ShellFabPadding(
         child: ExpandableActionFab(
           isExtended: _isContentStudioExtended,
           icon: Icons.auto_awesome_rounded,
