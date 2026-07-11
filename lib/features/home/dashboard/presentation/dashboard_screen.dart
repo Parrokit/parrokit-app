@@ -97,7 +97,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     // 테마 색상
     final bg = isDark ? AppColors.surfaceDark : AppColors.surfaceContainer;
@@ -108,11 +107,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: bg,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 72 + bottomInset),
-        child: DashboardContentStudioTab(
-          isExtended: _isContentStudioExtended,
-        ),
+      floatingActionButton: DashboardContentStudioTab(
+        isExtended: _isContentStudioExtended,
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
