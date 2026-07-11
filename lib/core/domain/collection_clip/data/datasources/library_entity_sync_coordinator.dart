@@ -176,6 +176,82 @@ class LibraryEntitySyncCoordinator {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // Reconcile (원격이 source of truth — 원격에서 지워진 그룹/콜렉션은
+  // 로컬에서도 지운다). 클립 pull이 먼저 끝나서 참조하는 클립이 정리된
+  // 뒤에 호출해야 한다 — 콜렉션/그룹을 클립이 아직 참조 중이면 FK 제약
+  // 때문에 삭제할 수 없어서, 그런 경우는 건드리지 않고 다음 정리 때
+  // 다시 시도한다.
+  // ─────────────────────────────────────────────────────────────────
+
+  /// 반환값은 이번에 정리된(삭제된) 그룹/콜렉션 개수입니다.
+  Future<int> reconcileServerAfterClips(String uid) async {
+    final groupDocs = await remoteSyncDatasource.listServerEntities(uid: uid, kind: _kindGroups);
+    final collectionDocs =
+        await remoteSyncDatasource.listServerEntities(uid: uid, kind: _kindCollections);
+    return _reconcileGoneEntities(
+      storageMode: ClipStorageConstants.storageModeServer,
+      remoteGroupIds: groupDocs.map((e) => e.key).toSet(),
+      remoteCollectionIds: collectionDocs.map((e) => e.key).toSet(),
+    );
+  }
+
+  Future<int> reconcileCloudAfterClips() async {
+    final groupEntities = await remoteSyncDatasource.listCloudEntities(_kindGroups);
+    final collectionEntities = await remoteSyncDatasource.listCloudEntities(_kindCollections);
+    return _reconcileGoneEntities(
+      storageMode: ClipStorageConstants.storageModeGoogleDrive,
+      remoteGroupIds: groupEntities.keys.toSet(),
+      remoteCollectionIds: collectionEntities.keys.toSet(),
+    );
+  }
+
+  Future<int> _reconcileGoneEntities({
+    required String storageMode,
+    required Set<String> remoteGroupIds,
+    required Set<String> remoteCollectionIds,
+  }) async {
+    var removedCount = 0;
+
+    final localCollections = await (db.select(db.collections)
+          ..where(
+            (c) => c.storageMode.equals(storageMode) & c.remoteId.isNotNull(),
+          ))
+        .get();
+    for (final collection in localCollections) {
+      final remoteId = collection.remoteId;
+      if (remoteId == null || remoteCollectionIds.contains(remoteId)) continue;
+      final stillHasClips = await (db.select(db.clips)
+            ..where((c) => c.collectionId.equals(collection.id))
+            ..limit(1))
+          .getSingleOrNull();
+      if (stillHasClips != null) continue;
+      await (db.delete(db.groupCollections)
+            ..where((gc) => gc.collectionId.equals(collection.id)))
+          .go();
+      await (db.delete(db.collections)..where((c) => c.id.equals(collection.id)))
+          .go();
+      removedCount++;
+    }
+
+    final localGroups = await (db.select(db.groups)
+          ..where((g) => g.storageMode.equals(storageMode) & g.remoteId.isNotNull()))
+        .get();
+    for (final group in localGroups) {
+      final remoteId = group.remoteId;
+      if (remoteId == null || remoteGroupIds.contains(remoteId)) continue;
+      final stillHasCollections = await (db.select(db.groupCollections)
+            ..where((gc) => gc.groupId.equals(group.id))
+            ..limit(1))
+          .getSingleOrNull();
+      if (stillHasCollections != null) continue;
+      await (db.delete(db.groups)..where((g) => g.id.equals(group.id))).go();
+      removedCount++;
+    }
+
+    return removedCount;
+  }
+
   Future<int> _pullGroupsAndCollections({
     required String storageMode,
     required Map<String, Map<String, dynamic>> groupEntities,

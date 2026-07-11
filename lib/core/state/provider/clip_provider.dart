@@ -591,28 +591,38 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
 
   /// 다른 기기에서 서버로 옮긴 클립을 이 기기로 받아옵니다. 로그인 직후와
   /// 서버 탭의 pull-to-refresh에서 호출합니다. 서버 탭이 활성 상태면 목록도
-  /// 새로고침합니다. 클립이 없는 빈 그룹/콜렉션도 클립보다 먼저 당겨와야
-  /// 클립의 collectionRemoteId 매칭이 가능하므로 순서대로 실행합니다.
+  /// 새로고침합니다. 서버가 source of truth이므로 순서대로: (1) 빈 그룹/
+  /// 콜렉션도 먼저 당겨와서 클립의 collectionRemoteId 매칭이 가능하게 하고,
+  /// (2) 클립을 당겨오면서 원격에서 지워진 클립은 로컬에서도 정리하고,
+  /// (3) 클립 정리가 끝난 뒤 이제 비어버린 그룹/콜렉션 중 원격에도 없는
+  /// 것을 정리합니다 (클립이 남아있는 동안은 FK 때문에 못 지우므로 순서가
+  /// 중요합니다).
   Future<int> pullRemoteServerClips() => _pullRemoteClips(
         pull: () async {
           final libraryCount = await _clipMigrationRepository
               .pullServerLibraryStructureForCurrentAccount();
           final clipCount =
               await _clipMigrationRepository.pullServerClipsForCurrentAccount();
-          return libraryCount + clipCount;
+          final reconcileCount = await _clipMigrationRepository
+              .reconcileServerLibraryStructureForCurrentAccount();
+          return libraryCount + clipCount + reconcileCount;
         },
         matchingStorageMode: ClipStorageConstants.storageModeServer,
       );
 
   /// 다른 기기에서 Google Drive로 옮긴 클립을 이 기기로 받아옵니다. 로그인
-  /// 직후와 클라우드 탭의 pull-to-refresh에서 호출합니다.
+  /// 직후와 클라우드 탭의 pull-to-refresh에서 호출합니다. Drive가 source
+  /// of truth이므로 클립·그룹·콜렉션 모두 원격에 없으면 로컬에서도
+  /// 정리합니다 (순서는 서버 pull과 동일).
   Future<int> pullRemoteCloudClips() => _pullRemoteClips(
         pull: () async {
           final libraryCount = await _clipMigrationRepository
               .pullCloudLibraryStructureForCurrentAccount();
           final clipCount =
               await _clipMigrationRepository.pullCloudClipsForCurrentAccount();
-          return libraryCount + clipCount;
+          final reconcileCount = await _clipMigrationRepository
+              .reconcileCloudLibraryStructureForCurrentAccount();
+          return libraryCount + clipCount + reconcileCount;
         },
         matchingStorageMode: ClipStorageConstants.storageModeGoogleDrive,
       );

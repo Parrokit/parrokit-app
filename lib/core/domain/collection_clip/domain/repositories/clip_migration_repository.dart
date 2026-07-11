@@ -57,6 +57,15 @@ abstract class ClipMigrationRepository {
   /// 것을 받아옵니다. 새로 생긴 개수를 반환합니다.
   Future<int> pullCloudLibraryStructureForCurrentAccount();
 
+  /// 서버가 source of truth — 원격에서 지워진(더 이상 클립도 없는) 그룹/
+  /// 콜렉션을 로컬에서도 정리합니다. 클립 pull이 끝난 뒤에 호출해야
+  /// 합니다. 정리된 개수를 반환합니다.
+  Future<int> reconcileServerLibraryStructureForCurrentAccount();
+
+  /// 클라우드가 source of truth — 원격에서 지워진 그룹/콜렉션을 로컬에서도
+  /// 정리합니다. 클립 pull이 끝난 뒤에 호출해야 합니다.
+  Future<int> reconcileCloudLibraryStructureForCurrentAccount();
+
   Future<int> getServerStorageUsedBytes();
 
   Future<int> getLocalStorageUsedBytes();

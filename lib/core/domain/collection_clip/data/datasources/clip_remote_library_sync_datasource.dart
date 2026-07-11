@@ -172,19 +172,13 @@ class ClipRemoteLibrarySyncDatasource {
       pulledCount++;
     }
 
-    // Drive에서 직접(앱 밖에서) 지운 클립은 이 기기에 남아있는 로컬 행을
-    // 그대로 캐시로 보여주게 되므로, 더 이상 존재하지 않는 폴더를 가진
-    // 로컬 클립을 찾아서 함께 정리한다. clipFolders가 비어 있으면
-    // listClipFolders()가 계정 미연결/네트워크 오류로 조용히 빈 목록을
-    // 반환한 경우와 구분할 수 없으므로, 안전을 위해 이번엔 정리를
-    // 건너뛴다(잘못된 대량 삭제보다 다음 새로고침으로 미루는 게 낫다).
-    if (clipFolders.isNotEmpty) {
-      final remoteFolderIds = clipFolders.map((f) => f.$1).toSet();
-      pulledCount += await _pruneLocalClipsGoneFromCloud(
-        accountKey: accountKey,
-        remoteFolderIds: remoteFolderIds,
-      );
-    }
+    // Drive가 source of truth. 이번에 조회한 폴더 목록에 없는 로컬 gdrive
+    // 클립은 Drive에서 직접(앱 밖에서) 지워진 것이므로 그대로 정리한다.
+    final remoteFolderIds = clipFolders.map((f) => f.$1).toSet();
+    pulledCount += await _pruneLocalClipsGoneFromCloud(
+      accountKey: accountKey,
+      remoteFolderIds: remoteFolderIds,
+    );
 
     AppLogger.i('[Clip][RemoteSync] cloud-pull done pulled=$pulledCount');
     return pulledCount;

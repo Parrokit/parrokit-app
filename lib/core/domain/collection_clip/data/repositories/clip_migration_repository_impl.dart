@@ -647,6 +647,20 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
   }
 
   @override
+  Future<int> reconcileServerLibraryStructureForCurrentAccount() async {
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user == null) return 0;
+    return libraryEntitySyncCoordinator.reconcileServerAfterClips(user.uid);
+  }
+
+  @override
+  Future<int> reconcileCloudLibraryStructureForCurrentAccount() async {
+    final accountKey = await googleDriveStorageService.currentAccountKey();
+    if (accountKey == null) return 0;
+    return libraryEntitySyncCoordinator.reconcileCloudAfterClips();
+  }
+
+  @override
   Future<int> getServerStorageUsedBytes() async {
     final rows = await sourceRefDatasource
         .visibleClipsByStorageMode(ClipStorageConstants.storageModeServer);
