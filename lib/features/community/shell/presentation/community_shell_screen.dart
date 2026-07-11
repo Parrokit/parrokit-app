@@ -75,64 +75,62 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            NestedScrollView(
-              controller: _outerScrollController,
-              floatHeaderSlivers: true,
-              headerSliverBuilder: (context, innerBoxIsScrolled) {
-                return [
-                  SliverPersistentHeader(
-                    floating: true,
-                    delegate: CommunityHeaderDelegate(
-                      titleWidget: _buildTitleBar(context),
-                      zone1Widget: _buildTabBar(context),
-                      zone2Widget: _buildFilterSection(),
-                    ),
-                  ),
-                ];
-              },
-              body: TabBarView(
-                controller: _tabController,
-                physics: _headerVisible
-                    ? const AlwaysScrollableScrollPhysics()
-                    : const NeverScrollableScrollPhysics(),
-                children: [
-                  BoardScreen(selectedFilter: _selectedBoardFilter),
-                  QuestionScreen(selectedFilter: _selectedQuestionFilter),
-                  VoteScreen(
-                    selectedFilter: _normalizedVoteFilter(_selectedVoteFilter),
-                    swipeEnabled: !_headerVisible,
-                  ),
-                ],
-              ),
-            ),
-            // 대시보드·콜렉션 화면과 같은 방식(Positioned)으로 배치해서
-            // 화면끼리 FAB 높이가 어긋나지 않게 합니다.
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: ExpandableActionFab(
-                isExtended: _isFabExtended,
-                icon: Icons.add,
-                label: '글쓰기',
-                onTap: () => showCommunityWriteBottomSheet(context),
-                backgroundColor: AppColors.communityBoardAccent,
-                foregroundColor: colorScheme.onPrimary,
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withValues(alpha: 0.22),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-                iconSize: 24,
-              ),
+      // Scaffold.floatingActionButton은 body와 별개 레이어라서 스크롤뷰의
+      // 오버스크롤 효과와 겹치는 문제 자체가 생기지 않습니다. 대시보드와
+      // 동일하게 세이프에어리어(bottomInset)만큼만 띄웁니다.
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: ExpandableActionFab(
+          isExtended: _isFabExtended,
+          icon: Icons.add,
+          label: '글쓰기',
+          onTap: () => showCommunityWriteBottomSheet(context),
+          backgroundColor: AppColors.communityBoardAccent,
+          foregroundColor: colorScheme.onPrimary,
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.22),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
           ],
+          iconSize: 24,
+        ),
+      ),
+      body: SafeArea(
+        child: NestedScrollView(
+          controller: _outerScrollController,
+          floatHeaderSlivers: true,
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverPersistentHeader(
+                floating: true,
+                delegate: CommunityHeaderDelegate(
+                  titleWidget: _buildTitleBar(context),
+                  zone1Widget: _buildTabBar(context),
+                  zone2Widget: _buildFilterSection(),
+                ),
+              ),
+            ];
+          },
+          body: TabBarView(
+            controller: _tabController,
+            physics: _headerVisible
+                ? const AlwaysScrollableScrollPhysics()
+                : const NeverScrollableScrollPhysics(),
+            children: [
+              BoardScreen(selectedFilter: _selectedBoardFilter),
+              QuestionScreen(selectedFilter: _selectedQuestionFilter),
+              VoteScreen(
+                selectedFilter: _normalizedVoteFilter(_selectedVoteFilter),
+                swipeEnabled: !_headerVisible,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -104,105 +104,96 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Provider 구독
     final ui = context.watch<ClipActivityProvider>();
 
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: bg,
-      // top은 헤더 섹션 안의 SafeArea(bottom: false)가 이미 처리하므로
-      // 여기서 또 적용하면 상단 여백이 중복됩니다. bottom만 여기서
-      // 담당해서, 아래 Positioned(bottom: 16) FAB가 하단 세이프에어리어
-      // (홈 인디케이터 등) 위로 기준점이 밀리게 합니다 — 콜렉션/커뮤니티
-      // 화면과 동일하게 맞추기 위함입니다.
-      body: SafeArea(
-        top: false,
-        child: Stack(
-          children: [
-            RefreshIndicator(
-              onRefresh: _onRefresh,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 112),
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  slivers: [
-                    // ───────────────────────────────────────────────────
-                    // 헤더 섹션 (로고 + 클립 수)
-                    // ───────────────────────────────────────────────────
-                    SliverToBoxAdapter(
-                      child: SafeArea(
-                        bottom: false,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                          child: const HeaderSection(),
-                        ),
-                      ),
-                    ),
-
-                    // ───────────────────────────────────────────────────
-                    // 히어로 카드 섹션
-                    // ───────────────────────────────────────────────────
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                        child: HeroSection(
-                          heroClip: ui.heroClip,
-                          loading: ui.loadingHero,
-                          onTap: () => _navigateToHeroClip(ui.heroClip),
-                        ),
-                      ),
-                    ),
-
-                    // ───────────────────────────────────────────────────
-                    // 이어보기 섹션
-                    // ───────────────────────────────────────────────────
-                    SliverToBoxAdapter(
-                      child: ContinueWatchingSection(
-                        items: ui.recent6,
-                        onTapItem: (clipId) => context.pushNamed(
-                          AppRoutes.clipsPlay,
-                          queryParameters: {'clipId': clipId.toString()},
-                        ),
-                        onTapMore: () => context.push(AppRoutes.recentsPath),
-                        onTapLibrary: () =>
-                            context.goNamed(AppRoutes.collection),
-                      ),
-                    ),
-
-                    // ───────────────────────────────────────────────────
-                    // 모음집 섹션
-                    // ───────────────────────────────────────────────────
-                    SliverToBoxAdapter(
-                      child: CollectionsSection(collections: ui.collections),
-                    ),
-
-                    // ───────────────────────────────────────────────────
-                    // 랜덤 자막 섹션
-                    // ───────────────────────────────────────────────────
-                    RandomSubtitleSection(
-                      segments: ui.randomSegments,
-                      loading: ui.loadingRandom,
-                    ),
-
-                    // 하단 여백
-                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                  ],
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      // Scaffold.floatingActionButton은 body와 별개 레이어라서 스크롤뷰의
+      // 오버스크롤 효과와 겹치는 문제 자체가 생기지 않습니다. AppShell(바깥
+      // Scaffold)의 bottomNavigationBar는 extendBody 때문에 이 안쪽
+      // Scaffold에 자동 반영되지 않으므로, 그 높이만큼만 직접 띄웁니다.
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: ExpandableActionFab(
+          isExtended: _isContentStudioExtended,
+          icon: Icons.auto_awesome_rounded,
+          label: '콘텐츠 제작',
+          onTap: () => context.go(AppRoutes.contentStudioBridgePath),
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.primary,
+          border: Border.all(color: AppColors.dividerSubtle),
+          iconSize: 19,
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 112),
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // ─────────────────────────────────────────────────────────
+              // 헤더 섹션 (로고 + 클립 수)
+              // ─────────────────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    child: const HeaderSection(),
+                  ),
                 ),
               ),
-            ),
-            // 콜렉션 화면과 같은 방식(Positioned)으로 배치해서 화면끼리
-            // FAB 높이가 어긋나지 않게 합니다.
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: ExpandableActionFab(
-                isExtended: _isContentStudioExtended,
-                icon: Icons.auto_awesome_rounded,
-                label: '콘텐츠 제작',
-                onTap: () => context.go(AppRoutes.contentStudioBridgePath),
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.primary,
-                border: Border.all(color: AppColors.dividerSubtle),
-                iconSize: 19,
+
+              // ─────────────────────────────────────────────────────────
+              // 히어로 카드 섹션
+              // ─────────────────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: HeroSection(
+                    heroClip: ui.heroClip,
+                    loading: ui.loadingHero,
+                    onTap: () => _navigateToHeroClip(ui.heroClip),
+                  ),
+                ),
               ),
-            ),
-          ],
+
+              // ─────────────────────────────────────────────────────────
+              // 이어보기 섹션
+              // ─────────────────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: ContinueWatchingSection(
+                  items: ui.recent6,
+                  onTapItem: (clipId) => context.pushNamed(
+                    AppRoutes.clipsPlay,
+                    queryParameters: {'clipId': clipId.toString()},
+                  ),
+                  onTapMore: () => context.push(AppRoutes.recentsPath),
+                  onTapLibrary: () => context.goNamed(AppRoutes.collection),
+                ),
+              ),
+
+              // ─────────────────────────────────────────────────────────
+              // 모음집 섹션
+              // ─────────────────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: CollectionsSection(collections: ui.collections),
+              ),
+
+              // ─────────────────────────────────────────────────────────
+              // 랜덤 자막 섹션
+              // ─────────────────────────────────────────────────────────
+              RandomSubtitleSection(
+                segments: ui.randomSegments,
+                loading: ui.loadingRandom,
+              ),
+
+              // 하단 여백
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+          ),
         ),
       ),
     );
