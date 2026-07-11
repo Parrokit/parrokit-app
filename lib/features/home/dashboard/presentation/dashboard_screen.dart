@@ -25,7 +25,6 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/shared/widgets/expandable_action_fab.dart';
-import 'package:parrokit/core/shared/widgets/shell_fab_padding.dart';
 
 import 'sections/header_section.dart';
 import 'sections/hero_section.dart';
@@ -107,88 +106,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: ShellFabPadding(
-        child: ExpandableActionFab(
-          isExtended: _isContentStudioExtended,
-          icon: Icons.auto_awesome_rounded,
-          label: '콘텐츠 제작',
-          onTap: () => context.go(AppRoutes.contentStudioBridgePath),
-          backgroundColor: Colors.white,
-          foregroundColor: AppColors.primary,
-          border: Border.all(color: AppColors.dividerSubtle),
-          iconSize: 19,
-        ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 112),
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              // ─────────────────────────────────────────────────────────
-              // 헤더 섹션 (로고 + 클립 수)
-              // ─────────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: const HeaderSection(),
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 112),
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  // ─────────────────────────────────────────────────────
+                  // 헤더 섹션 (로고 + 클립 수)
+                  // ─────────────────────────────────────────────────────
+                  SliverToBoxAdapter(
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                        child: const HeaderSection(),
+                      ),
+                    ),
                   ),
-                ),
-              ),
 
-              // ─────────────────────────────────────────────────────────
-              // 히어로 카드 섹션
-              // ─────────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: HeroSection(
-                    heroClip: ui.heroClip,
-                    loading: ui.loadingHero,
-                    onTap: () => _navigateToHeroClip(ui.heroClip),
+                  // ─────────────────────────────────────────────────────
+                  // 히어로 카드 섹션
+                  // ─────────────────────────────────────────────────────
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      child: HeroSection(
+                        heroClip: ui.heroClip,
+                        loading: ui.loadingHero,
+                        onTap: () => _navigateToHeroClip(ui.heroClip),
+                      ),
+                    ),
                   ),
-                ),
-              ),
 
-              // ─────────────────────────────────────────────────────────
-              // 이어보기 섹션
-              // ─────────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: ContinueWatchingSection(
-                  items: ui.recent6,
-                  onTapItem: (clipId) => context.pushNamed(
-                    AppRoutes.clipsPlay,
-                    queryParameters: {'clipId': clipId.toString()},
+                  // ─────────────────────────────────────────────────────
+                  // 이어보기 섹션
+                  // ─────────────────────────────────────────────────────
+                  SliverToBoxAdapter(
+                    child: ContinueWatchingSection(
+                      items: ui.recent6,
+                      onTapItem: (clipId) => context.pushNamed(
+                        AppRoutes.clipsPlay,
+                        queryParameters: {'clipId': clipId.toString()},
+                      ),
+                      onTapMore: () => context.push(AppRoutes.recentsPath),
+                      onTapLibrary: () => context.goNamed(AppRoutes.collection),
+                    ),
                   ),
-                  onTapMore: () => context.push(AppRoutes.recentsPath),
-                  onTapLibrary: () => context.goNamed(AppRoutes.collection),
-                ),
-              ),
 
-              // ─────────────────────────────────────────────────────────
-              // 모음집 섹션
-              // ─────────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: CollectionsSection(collections: ui.collections),
-              ),
+                  // ─────────────────────────────────────────────────────
+                  // 모음집 섹션
+                  // ─────────────────────────────────────────────────────
+                  SliverToBoxAdapter(
+                    child: CollectionsSection(collections: ui.collections),
+                  ),
 
-              // ─────────────────────────────────────────────────────────
-              // 랜덤 자막 섹션
-              // ─────────────────────────────────────────────────────────
-              RandomSubtitleSection(
-                segments: ui.randomSegments,
-                loading: ui.loadingRandom,
-              ),
+                  // ─────────────────────────────────────────────────────
+                  // 랜덤 자막 섹션
+                  // ─────────────────────────────────────────────────────
+                  RandomSubtitleSection(
+                    segments: ui.randomSegments,
+                    loading: ui.loadingRandom,
+                  ),
 
-              // 하단 여백
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            ],
+                  // 하단 여백
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                ],
+              ),
+            ),
           ),
-        ),
+          // 콜렉션 화면과 같은 방식(Positioned)으로 배치해서 화면끼리
+          // FAB 높이가 어긋나지 않게 합니다.
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: ExpandableActionFab(
+              isExtended: _isContentStudioExtended,
+              icon: Icons.auto_awesome_rounded,
+              label: '콘텐츠 제작',
+              onTap: () => context.go(AppRoutes.contentStudioBridgePath),
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              border: Border.all(color: AppColors.dividerSubtle),
+              iconSize: 19,
+            ),
+          ),
+        ],
       ),
     );
   }

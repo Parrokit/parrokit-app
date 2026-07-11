@@ -12,7 +12,6 @@ import 'package:parrokit/features/community/shell/presentation/sections/communit
 import 'package:parrokit/features/community/shell/presentation/widgets/community_header_delegate.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/widgets/expandable_action_fab.dart';
-import 'package:parrokit/core/shared/widgets/shell_fab_padding.dart';
 
 class CommunityShellScreen extends StatefulWidget {
   const CommunityShellScreen({super.key});
@@ -79,53 +78,61 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
-        child: NestedScrollView(
-          controller: _outerScrollController,
-          floatHeaderSlivers: true,
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverPersistentHeader(
-                floating: true,
-                delegate: CommunityHeaderDelegate(
-                  titleWidget: _buildTitleBar(context),
-                  zone1Widget: _buildTabBar(context),
-                  zone2Widget: _buildFilterSection(),
-                ),
+        child: Stack(
+          children: [
+            NestedScrollView(
+              controller: _outerScrollController,
+              floatHeaderSlivers: true,
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  SliverPersistentHeader(
+                    floating: true,
+                    delegate: CommunityHeaderDelegate(
+                      titleWidget: _buildTitleBar(context),
+                      zone1Widget: _buildTabBar(context),
+                      zone2Widget: _buildFilterSection(),
+                    ),
+                  ),
+                ];
+              },
+              body: TabBarView(
+                controller: _tabController,
+                physics: _headerVisible
+                    ? const AlwaysScrollableScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
+                children: [
+                  BoardScreen(selectedFilter: _selectedBoardFilter),
+                  QuestionScreen(selectedFilter: _selectedQuestionFilter),
+                  VoteScreen(
+                    selectedFilter: _normalizedVoteFilter(_selectedVoteFilter),
+                    swipeEnabled: !_headerVisible,
+                  ),
+                ],
               ),
-            ];
-          },
-          body: TabBarView(
-            controller: _tabController,
-            physics: _headerVisible
-                ? const AlwaysScrollableScrollPhysics()
-                : const NeverScrollableScrollPhysics(),
-            children: [
-              BoardScreen(selectedFilter: _selectedBoardFilter),
-              QuestionScreen(selectedFilter: _selectedQuestionFilter),
-              VoteScreen(
-                selectedFilter: _normalizedVoteFilter(_selectedVoteFilter),
-                swipeEnabled: !_headerVisible,
+            ),
+            // 대시보드·콜렉션 화면과 같은 방식(Positioned)으로 배치해서
+            // 화면끼리 FAB 높이가 어긋나지 않게 합니다.
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: ExpandableActionFab(
+                isExtended: _isFabExtended,
+                icon: Icons.add,
+                label: '글쓰기',
+                onTap: () => showCommunityWriteBottomSheet(context),
+                backgroundColor: AppColors.communityBoardAccent,
+                foregroundColor: colorScheme.onPrimary,
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.shadow.withValues(alpha: 0.22),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+                iconSize: 24,
               ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: ShellFabPadding(
-        child: ExpandableActionFab(
-          isExtended: _isFabExtended,
-          icon: Icons.add,
-          label: '글쓰기',
-          onTap: () => showCommunityWriteBottomSheet(context),
-          backgroundColor: AppColors.communityBoardAccent,
-          foregroundColor: colorScheme.onPrimary,
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.22),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
             ),
           ],
-          iconSize: 24,
         ),
       ),
     );
