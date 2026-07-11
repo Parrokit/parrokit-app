@@ -133,7 +133,7 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
       libraryEntitySyncCoordinator: _libraryEntitySyncCoordinator,
     );
     _groupRepository = GroupRepositoryImpl(db);
-    _collectionRepository = CollectionRepositoryImpl(db, _clipRepository);
+    _collectionRepository = CollectionRepositoryImpl(db);
   }
 
   // ─────────────────────────────────────────────────────────────────

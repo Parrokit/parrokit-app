@@ -52,9 +52,6 @@ abstract class ClipRepository {
 
   Future<int> countVisibleClipsInCollection(int collectionId);
 
-  /// 현재 보이는 클립들이 속한 컬렉션 id 집합 (CollectionRepository가 사용).
-  Future<Set<int>> getVisibleCollectionIds(String storageMode);
-
   Future<List<ClipItem>> fetchClipItemsByStorageMode(String storageMode);
 
   Future<List<ClipItem>> fetchCachedRemoteClipItems();

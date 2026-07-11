@@ -62,11 +62,6 @@ class ClipRepositoryImpl implements ClipRepository {
   }
 
   @override
-  Future<Set<int>> getVisibleCollectionIds(String storageMode) {
-    return sourceRefDatasource.visibleCollectionIds(storageMode);
-  }
-
-  @override
   Future<ClipView?> fetchClipById(int clipId) async {
     final clip = await (db.select(db.clips)
           ..where((c) => c.id.equals(clipId))

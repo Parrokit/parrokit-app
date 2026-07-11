@@ -83,20 +83,6 @@ class ClipSourceRefDatasource {
         .toList();
   }
 
-  /// 현재 보이는(가시성 필터를 통과한) 클립들이 속한 컬렉션 id 집합.
-  /// CollectionRepository가 "보이는 컬렉션 목록"을 계산할 때 사용합니다.
-  /// [storageMode]로 한 번 더 필터링해서, 다른 저장위치 탭의 클립이 속한
-  /// 콜렉션 id가 섞여 들어오지 않도록 합니다.
-  Future<Set<int>> visibleCollectionIds(String storageMode) async {
-    final clips = await visibleClips();
-    return clips
-        .where(
-          (clip) => clip.collectionId != null && clip.storageMode == storageMode,
-        )
-        .map((clip) => clip.collectionId!)
-        .toSet();
-  }
-
   String providerForStorageMode(String storageMode) {
     return switch (storageMode) {
       ClipStorageConstants.storageModeServer =>
