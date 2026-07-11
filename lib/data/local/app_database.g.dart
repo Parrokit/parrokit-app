@@ -30,8 +30,14 @@ class $GroupsTable extends Groups with TableInfo<$GroupsTable, Group> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('local'));
+  static const VerificationMeta _remoteIdMeta =
+      const VerificationMeta('remoteId');
   @override
-  List<GeneratedColumn> get $columns => [id, name, storageMode];
+  late final GeneratedColumn<String> remoteId = GeneratedColumn<String>(
+      'remote_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [id, name, storageMode, remoteId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -57,6 +63,10 @@ class $GroupsTable extends Groups with TableInfo<$GroupsTable, Group> {
           storageMode.isAcceptableOrUnknown(
               data['storage_mode']!, _storageModeMeta));
     }
+    if (data.containsKey('remote_id')) {
+      context.handle(_remoteIdMeta,
+          remoteId.isAcceptableOrUnknown(data['remote_id']!, _remoteIdMeta));
+    }
     return context;
   }
 
@@ -72,6 +82,8 @@ class $GroupsTable extends Groups with TableInfo<$GroupsTable, Group> {
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       storageMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}storage_mode'])!,
+      remoteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}remote_id']),
     );
   }
 
@@ -85,14 +97,21 @@ class Group extends DataClass implements Insertable<Group> {
   final int id;
   final String name;
   final String storageMode;
+  final String? remoteId;
   const Group(
-      {required this.id, required this.name, required this.storageMode});
+      {required this.id,
+      required this.name,
+      required this.storageMode,
+      this.remoteId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
     map['storage_mode'] = Variable<String>(storageMode);
+    if (!nullToAbsent || remoteId != null) {
+      map['remote_id'] = Variable<String>(remoteId);
+    }
     return map;
   }
 
@@ -101,6 +120,9 @@ class Group extends DataClass implements Insertable<Group> {
       id: Value(id),
       name: Value(name),
       storageMode: Value(storageMode),
+      remoteId: remoteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteId),
     );
   }
 
@@ -111,6 +133,7 @@ class Group extends DataClass implements Insertable<Group> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       storageMode: serializer.fromJson<String>(json['storageMode']),
+      remoteId: serializer.fromJson<String?>(json['remoteId']),
     );
   }
   @override
@@ -120,13 +143,20 @@ class Group extends DataClass implements Insertable<Group> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'storageMode': serializer.toJson<String>(storageMode),
+      'remoteId': serializer.toJson<String?>(remoteId),
     };
   }
 
-  Group copyWith({int? id, String? name, String? storageMode}) => Group(
+  Group copyWith(
+          {int? id,
+          String? name,
+          String? storageMode,
+          Value<String?> remoteId = const Value.absent()}) =>
+      Group(
         id: id ?? this.id,
         name: name ?? this.name,
         storageMode: storageMode ?? this.storageMode,
+        remoteId: remoteId.present ? remoteId.value : this.remoteId,
       );
   Group copyWithCompanion(GroupsCompanion data) {
     return Group(
@@ -134,6 +164,7 @@ class Group extends DataClass implements Insertable<Group> {
       name: data.name.present ? data.name.value : this.name,
       storageMode:
           data.storageMode.present ? data.storageMode.value : this.storageMode,
+      remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
     );
   }
 
@@ -142,54 +173,65 @@ class Group extends DataClass implements Insertable<Group> {
     return (StringBuffer('Group(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('storageMode: $storageMode')
+          ..write('storageMode: $storageMode, ')
+          ..write('remoteId: $remoteId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, storageMode);
+  int get hashCode => Object.hash(id, name, storageMode, remoteId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Group &&
           other.id == this.id &&
           other.name == this.name &&
-          other.storageMode == this.storageMode);
+          other.storageMode == this.storageMode &&
+          other.remoteId == this.remoteId);
 }
 
 class GroupsCompanion extends UpdateCompanion<Group> {
   final Value<int> id;
   final Value<String> name;
   final Value<String> storageMode;
+  final Value<String?> remoteId;
   const GroupsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.storageMode = const Value.absent(),
+    this.remoteId = const Value.absent(),
   });
   GroupsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
     this.storageMode = const Value.absent(),
+    this.remoteId = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Group> custom({
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? storageMode,
+    Expression<String>? remoteId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (storageMode != null) 'storage_mode': storageMode,
+      if (remoteId != null) 'remote_id': remoteId,
     });
   }
 
   GroupsCompanion copyWith(
-      {Value<int>? id, Value<String>? name, Value<String>? storageMode}) {
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String>? storageMode,
+      Value<String?>? remoteId}) {
     return GroupsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       storageMode: storageMode ?? this.storageMode,
+      remoteId: remoteId ?? this.remoteId,
     );
   }
 
@@ -205,6 +247,9 @@ class GroupsCompanion extends UpdateCompanion<Group> {
     if (storageMode.present) {
       map['storage_mode'] = Variable<String>(storageMode.value);
     }
+    if (remoteId.present) {
+      map['remote_id'] = Variable<String>(remoteId.value);
+    }
     return map;
   }
 
@@ -213,7 +258,8 @@ class GroupsCompanion extends UpdateCompanion<Group> {
     return (StringBuffer('GroupsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('storageMode: $storageMode')
+          ..write('storageMode: $storageMode, ')
+          ..write('remoteId: $remoteId')
           ..write(')'))
         .toString();
   }
@@ -247,8 +293,14 @@ class $CollectionsTable extends Collections
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('local'));
+  static const VerificationMeta _remoteIdMeta =
+      const VerificationMeta('remoteId');
   @override
-  List<GeneratedColumn> get $columns => [id, name, storageMode];
+  late final GeneratedColumn<String> remoteId = GeneratedColumn<String>(
+      'remote_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [id, name, storageMode, remoteId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -274,6 +326,10 @@ class $CollectionsTable extends Collections
           storageMode.isAcceptableOrUnknown(
               data['storage_mode']!, _storageModeMeta));
     }
+    if (data.containsKey('remote_id')) {
+      context.handle(_remoteIdMeta,
+          remoteId.isAcceptableOrUnknown(data['remote_id']!, _remoteIdMeta));
+    }
     return context;
   }
 
@@ -289,6 +345,8 @@ class $CollectionsTable extends Collections
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       storageMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}storage_mode'])!,
+      remoteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}remote_id']),
     );
   }
 
@@ -302,14 +360,21 @@ class Collection extends DataClass implements Insertable<Collection> {
   final int id;
   final String name;
   final String storageMode;
+  final String? remoteId;
   const Collection(
-      {required this.id, required this.name, required this.storageMode});
+      {required this.id,
+      required this.name,
+      required this.storageMode,
+      this.remoteId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
     map['storage_mode'] = Variable<String>(storageMode);
+    if (!nullToAbsent || remoteId != null) {
+      map['remote_id'] = Variable<String>(remoteId);
+    }
     return map;
   }
 
@@ -318,6 +383,9 @@ class Collection extends DataClass implements Insertable<Collection> {
       id: Value(id),
       name: Value(name),
       storageMode: Value(storageMode),
+      remoteId: remoteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteId),
     );
   }
 
@@ -328,6 +396,7 @@ class Collection extends DataClass implements Insertable<Collection> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       storageMode: serializer.fromJson<String>(json['storageMode']),
+      remoteId: serializer.fromJson<String?>(json['remoteId']),
     );
   }
   @override
@@ -337,14 +406,20 @@ class Collection extends DataClass implements Insertable<Collection> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'storageMode': serializer.toJson<String>(storageMode),
+      'remoteId': serializer.toJson<String?>(remoteId),
     };
   }
 
-  Collection copyWith({int? id, String? name, String? storageMode}) =>
+  Collection copyWith(
+          {int? id,
+          String? name,
+          String? storageMode,
+          Value<String?> remoteId = const Value.absent()}) =>
       Collection(
         id: id ?? this.id,
         name: name ?? this.name,
         storageMode: storageMode ?? this.storageMode,
+        remoteId: remoteId.present ? remoteId.value : this.remoteId,
       );
   Collection copyWithCompanion(CollectionsCompanion data) {
     return Collection(
@@ -352,6 +427,7 @@ class Collection extends DataClass implements Insertable<Collection> {
       name: data.name.present ? data.name.value : this.name,
       storageMode:
           data.storageMode.present ? data.storageMode.value : this.storageMode,
+      remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
     );
   }
 
@@ -360,54 +436,65 @@ class Collection extends DataClass implements Insertable<Collection> {
     return (StringBuffer('Collection(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('storageMode: $storageMode')
+          ..write('storageMode: $storageMode, ')
+          ..write('remoteId: $remoteId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, storageMode);
+  int get hashCode => Object.hash(id, name, storageMode, remoteId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Collection &&
           other.id == this.id &&
           other.name == this.name &&
-          other.storageMode == this.storageMode);
+          other.storageMode == this.storageMode &&
+          other.remoteId == this.remoteId);
 }
 
 class CollectionsCompanion extends UpdateCompanion<Collection> {
   final Value<int> id;
   final Value<String> name;
   final Value<String> storageMode;
+  final Value<String?> remoteId;
   const CollectionsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.storageMode = const Value.absent(),
+    this.remoteId = const Value.absent(),
   });
   CollectionsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
     this.storageMode = const Value.absent(),
+    this.remoteId = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Collection> custom({
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? storageMode,
+    Expression<String>? remoteId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (storageMode != null) 'storage_mode': storageMode,
+      if (remoteId != null) 'remote_id': remoteId,
     });
   }
 
   CollectionsCompanion copyWith(
-      {Value<int>? id, Value<String>? name, Value<String>? storageMode}) {
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String>? storageMode,
+      Value<String?>? remoteId}) {
     return CollectionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       storageMode: storageMode ?? this.storageMode,
+      remoteId: remoteId ?? this.remoteId,
     );
   }
 
@@ -423,6 +510,9 @@ class CollectionsCompanion extends UpdateCompanion<Collection> {
     if (storageMode.present) {
       map['storage_mode'] = Variable<String>(storageMode.value);
     }
+    if (remoteId.present) {
+      map['remote_id'] = Variable<String>(remoteId.value);
+    }
     return map;
   }
 
@@ -431,7 +521,8 @@ class CollectionsCompanion extends UpdateCompanion<Collection> {
     return (StringBuffer('CollectionsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('storageMode: $storageMode')
+          ..write('storageMode: $storageMode, ')
+          ..write('remoteId: $remoteId')
           ..write(')'))
         .toString();
   }
@@ -3400,11 +3491,13 @@ typedef $$GroupsTableCreateCompanionBuilder = GroupsCompanion Function({
   Value<int> id,
   required String name,
   Value<String> storageMode,
+  Value<String?> remoteId,
 });
 typedef $$GroupsTableUpdateCompanionBuilder = GroupsCompanion Function({
   Value<int> id,
   Value<String> name,
   Value<String> storageMode,
+  Value<String?> remoteId,
 });
 
 final class $$GroupsTableReferences
@@ -3447,6 +3540,9 @@ class $$GroupsTableFilterComposer
   ColumnFilters<String> get storageMode => $composableBuilder(
       column: $table.storageMode, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnFilters(column));
+
   Expression<bool> groupCollectionsRefs(
       Expression<bool> Function($$GroupCollectionsTableFilterComposer f) f) {
     final $$GroupCollectionsTableFilterComposer composer = $composerBuilder(
@@ -3486,6 +3582,9 @@ class $$GroupsTableOrderingComposer
 
   ColumnOrderings<String> get storageMode => $composableBuilder(
       column: $table.storageMode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnOrderings(column));
 }
 
 class $$GroupsTableAnnotationComposer
@@ -3505,6 +3604,9 @@ class $$GroupsTableAnnotationComposer
 
   GeneratedColumn<String> get storageMode => $composableBuilder(
       column: $table.storageMode, builder: (column) => column);
+
+  GeneratedColumn<String> get remoteId =>
+      $composableBuilder(column: $table.remoteId, builder: (column) => column);
 
   Expression<T> groupCollectionsRefs<T extends Object>(
       Expression<T> Function($$GroupCollectionsTableAnnotationComposer a) f) {
@@ -3554,21 +3656,25 @@ class $$GroupsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<String> storageMode = const Value.absent(),
+            Value<String?> remoteId = const Value.absent(),
           }) =>
               GroupsCompanion(
             id: id,
             name: name,
             storageMode: storageMode,
+            remoteId: remoteId,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
             Value<String> storageMode = const Value.absent(),
+            Value<String?> remoteId = const Value.absent(),
           }) =>
               GroupsCompanion.insert(
             id: id,
             name: name,
             storageMode: storageMode,
+            remoteId: remoteId,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
@@ -3620,12 +3726,14 @@ typedef $$CollectionsTableCreateCompanionBuilder = CollectionsCompanion
   Value<int> id,
   required String name,
   Value<String> storageMode,
+  Value<String?> remoteId,
 });
 typedef $$CollectionsTableUpdateCompanionBuilder = CollectionsCompanion
     Function({
   Value<int> id,
   Value<String> name,
   Value<String> storageMode,
+  Value<String?> remoteId,
 });
 
 final class $$CollectionsTableReferences
@@ -3682,6 +3790,9 @@ class $$CollectionsTableFilterComposer
 
   ColumnFilters<String> get storageMode => $composableBuilder(
       column: $table.storageMode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnFilters(column));
 
   Expression<bool> clipsRefs(
       Expression<bool> Function($$ClipsTableFilterComposer f) f) {
@@ -3743,6 +3854,9 @@ class $$CollectionsTableOrderingComposer
 
   ColumnOrderings<String> get storageMode => $composableBuilder(
       column: $table.storageMode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnOrderings(column));
 }
 
 class $$CollectionsTableAnnotationComposer
@@ -3762,6 +3876,9 @@ class $$CollectionsTableAnnotationComposer
 
   GeneratedColumn<String> get storageMode => $composableBuilder(
       column: $table.storageMode, builder: (column) => column);
+
+  GeneratedColumn<String> get remoteId =>
+      $composableBuilder(column: $table.remoteId, builder: (column) => column);
 
   Expression<T> clipsRefs<T extends Object>(
       Expression<T> Function($$ClipsTableAnnotationComposer a) f) {
@@ -3832,21 +3949,25 @@ class $$CollectionsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<String> storageMode = const Value.absent(),
+            Value<String?> remoteId = const Value.absent(),
           }) =>
               CollectionsCompanion(
             id: id,
             name: name,
             storageMode: storageMode,
+            remoteId: remoteId,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
             Value<String> storageMode = const Value.absent(),
+            Value<String?> remoteId = const Value.absent(),
           }) =>
               CollectionsCompanion.insert(
             id: id,
             name: name,
             storageMode: storageMode,
+            remoteId: remoteId,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (

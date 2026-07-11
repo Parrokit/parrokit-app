@@ -642,6 +642,94 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
     );
   }
 
+  Future<void> _showRenameGroupDialog(
+    BuildContext context,
+    int groupId,
+    String currentName,
+  ) async {
+    final ctl = TextEditingController(text: currentName);
+    final clipProvider = context.read<ClipProvider>();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('그룹 이름 변경'),
+        content: TextField(
+          controller: ctl,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '그룹 이름'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+          TextButton(
+            onPressed: () async {
+              final name = ctl.text.trim();
+              if (name.isNotEmpty && name != currentName) {
+                final exists = await clipProvider.isNameExists(name);
+                if (exists) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                          content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                    );
+                  }
+                  return;
+                }
+                await clipProvider.renameGroup(groupId, name);
+              }
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('변경'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showRenameCollectionDialog(
+    BuildContext context,
+    int collectionId,
+    String currentName,
+  ) async {
+    final ctl = TextEditingController(text: currentName);
+    final clipProvider = context.read<ClipProvider>();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('컬렉션 이름 변경'),
+        content: TextField(
+          controller: ctl,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '컬렉션 이름'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+          TextButton(
+            onPressed: () async {
+              final name = ctl.text.trim();
+              if (name.isNotEmpty && name != currentName) {
+                final exists = await clipProvider.isNameExists(name);
+                if (exists) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(
+                          content: Text('이미 같은 이름의 그룹이나 컬렉션이 존재합니다.')),
+                    );
+                  }
+                  return;
+                }
+                await clipProvider.renameCollection(collectionId, name);
+              }
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('변경'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showDeleteCollectionDialog(
     BuildContext context,
     int collectionId,
@@ -945,6 +1033,11 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                             clipProvider.selectGroup(grp.id);
                           }
                         },
+                        onLongPress: (idx) {
+                          if (idx == 0) return;
+                          final grp = clipProvider.groups[idx - 1];
+                          _showRenameGroupDialog(context, grp.id, grp.name);
+                        },
                       );
                     }
 
@@ -967,6 +1060,10 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
                           } else {
                             clipProvider.selectCollection(col.id);
                           }
+                        },
+                        onLongPress: (idx) {
+                          final col = clipProvider.collections[idx];
+                          _showRenameCollectionDialog(context, col.id, col.name);
                         },
                       );
                     }

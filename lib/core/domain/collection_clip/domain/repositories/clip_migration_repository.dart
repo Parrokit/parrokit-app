@@ -41,6 +41,22 @@ abstract class ClipMigrationRepository {
   /// 로그아웃 시 호출합니다.
   Future<void> clearCachedFilesForCurrentAccount();
 
+  /// 다른 기기에서 서버로 옮긴 클립 중 이 기기에 없는 것을 받아옵니다.
+  /// 새로 반영된 클립 개수를 반환합니다.
+  Future<int> pullServerClipsForCurrentAccount();
+
+  /// 다른 기기에서 Google Drive로 옮긴 클립 중 이 기기에 없는 것을
+  /// 받아옵니다. 새로 반영된 클립 개수를 반환합니다.
+  Future<int> pullCloudClipsForCurrentAccount();
+
+  /// 다른 기기가 서버에 독립적으로 만든 그룹/콜렉션(클립이 없어도) 중 이
+  /// 기기에 없는 것을 받아옵니다. 새로 생긴 개수를 반환합니다.
+  Future<int> pullServerLibraryStructureForCurrentAccount();
+
+  /// 다른 기기가 클라우드에 독립적으로 만든 그룹/콜렉션 중 이 기기에 없는
+  /// 것을 받아옵니다. 새로 생긴 개수를 반환합니다.
+  Future<int> pullCloudLibraryStructureForCurrentAccount();
+
   Future<int> getServerStorageUsedBytes();
 
   Future<int> getLocalStorageUsedBytes();

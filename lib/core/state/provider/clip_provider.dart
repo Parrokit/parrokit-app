@@ -26,10 +26,13 @@ import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_sourc
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_thumbnail_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_file_sync_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/collection_group_mirror_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_remote_library_sync_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_item_query_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_detail_query_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_firestore_metadata_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_cloud_metadata_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/library_entity_remote_sync_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/library_entity_sync_coordinator.dart';
 import 'package:parrokit/core/domain/collection_clip/data/repositories/clip_repository_impl.dart';
 import 'package:parrokit/core/domain/collection_clip/data/repositories/clip_migration_repository_impl.dart';
 import 'package:parrokit/core/domain/collection_clip/data/repositories/group_repository_impl.dart';
@@ -50,6 +53,11 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
   late final ClipMigrationRepository _clipMigrationRepository;
   late final GroupRepository _groupRepository;
   late final CollectionRepository _collectionRepository;
+  late final LibraryEntitySyncCoordinator _libraryEntitySyncCoordinator;
+
+  @override
+  LibraryEntitySyncCoordinator get libraryEntitySyncCoordinator =>
+      _libraryEntitySyncCoordinator;
 
   @override
   ClipRepository get service => _clipRepository;
@@ -82,9 +90,24 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     final remoteDocIdResolver = RemoteDocIdResolver();
     final detailQueryDatasource = ClipDetailQueryDatasource(db);
     final firestoreMetadataDatasource = ClipFirestoreMetadataDatasource(db);
+    final remoteLibrarySyncDatasource = ClipRemoteLibrarySyncDatasource(
+      db,
+      firestoreMetadataDatasource,
+      sourceRefDatasource,
+      googleDriveStorageService,
+    );
     final cloudMetadataDatasource = ClipCloudMetadataDatasource(
       db,
       detailQueryDatasource,
+    );
+    final libraryEntityRemoteSyncDatasource = LibraryEntityRemoteSyncDatasource(
+      firestoreMetadataDatasource,
+      googleDriveStorageService,
+    );
+    _libraryEntitySyncCoordinator = LibraryEntitySyncCoordinator(
+      db,
+      libraryEntityRemoteSyncDatasource,
+      remoteDocIdResolver,
     );
 
     _clipRepository = ClipRepositoryImpl(
@@ -101,11 +124,13 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
       thumbnailDatasource: thumbnailDatasource,
       fileSyncDatasource: fileSyncDatasource,
       collectionGroupMirrorDatasource: collectionGroupMirrorDatasource,
+      remoteLibrarySyncDatasource: remoteLibrarySyncDatasource,
       firestoreMetadataDatasource: firestoreMetadataDatasource,
       cloudMetadataDatasource: cloudMetadataDatasource,
       detailQueryDatasource: detailQueryDatasource,
       remoteDocIdResolver: remoteDocIdResolver,
       googleDriveStorageService: googleDriveStorageService,
+      libraryEntitySyncCoordinator: _libraryEntitySyncCoordinator,
     );
     _groupRepository = GroupRepositoryImpl(db);
     _collectionRepository = CollectionRepositoryImpl(db, _clipRepository);
@@ -564,6 +589,55 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     await loadGroups();
   }
 
+  /// 다른 기기에서 서버로 옮긴 클립을 이 기기로 받아옵니다. 로그인 직후와
+  /// 서버 탭의 pull-to-refresh에서 호출합니다. 서버 탭이 활성 상태면 목록도
+  /// 새로고침합니다. 클립이 없는 빈 그룹/콜렉션도 클립보다 먼저 당겨와야
+  /// 클립의 collectionRemoteId 매칭이 가능하므로 순서대로 실행합니다.
+  Future<int> pullRemoteServerClips() => _pullRemoteClips(
+        pull: () async {
+          final libraryCount = await _clipMigrationRepository
+              .pullServerLibraryStructureForCurrentAccount();
+          final clipCount =
+              await _clipMigrationRepository.pullServerClipsForCurrentAccount();
+          return libraryCount + clipCount;
+        },
+        matchingStorageMode: ClipStorageConstants.storageModeServer,
+      );
+
+  /// 다른 기기에서 Google Drive로 옮긴 클립을 이 기기로 받아옵니다. 로그인
+  /// 직후와 클라우드 탭의 pull-to-refresh에서 호출합니다.
+  Future<int> pullRemoteCloudClips() => _pullRemoteClips(
+        pull: () async {
+          final libraryCount = await _clipMigrationRepository
+              .pullCloudLibraryStructureForCurrentAccount();
+          final clipCount =
+              await _clipMigrationRepository.pullCloudClipsForCurrentAccount();
+          return libraryCount + clipCount;
+        },
+        matchingStorageMode: ClipStorageConstants.storageModeGoogleDrive,
+      );
+
+  /// 로그인 직후 자동 pull과 사용자의 수동 pull-to-refresh가 겹치면, 서로
+  /// 모르는 채로 같은 remoteDocId를 동시에 로컬에 두 번 만들 수 있습니다.
+  /// 저장위치별로 한 번에 하나만 돌게 막습니다.
+  final Set<String> _activePulls = {};
+
+  Future<int> _pullRemoteClips({
+    required Future<int> Function() pull,
+    required String matchingStorageMode,
+  }) async {
+    if (!_activePulls.add(matchingStorageMode)) return 0;
+    try {
+      final pulledCount = await pull();
+      if (pulledCount > 0 && _activeStorageMode == matchingStorageMode) {
+        await loadGroups();
+      }
+      return pulledCount;
+    } finally {
+      _activePulls.remove(matchingStorageMode);
+    }
+  }
+
   /// 모든 그룹 로드 (현재 활성 저장위치 탭 기준).
   @override
   Future<void> loadGroups() async {
@@ -607,14 +681,21 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     _refreshStorageUsageInBackground();
   }
 
-  /// 새 그룹 생성 후 목록 갱신.
+  /// 새 그룹 생성 후 목록 갱신. 서버/클라우드 탭이면 원격에도 독립 저장.
   Future<void> createGroup(String name) async {
-    await _groupRepository.createGroup(name, _activeStorageMode);
+    await _libraryEntitySyncCoordinator.createGroup(name, _activeStorageMode);
     await loadGroups();
   }
 
-  /// 그룹 삭제 후 목록 갱신.
+  /// 그룹 이름 변경 후 목록 갱신. 원격에 동기화된 그룹이면 원격도 갱신.
+  Future<void> renameGroup(int id, String name) async {
+    await _libraryEntitySyncCoordinator.renameGroup(id, name);
+    await loadGroups();
+  }
+
+  /// 그룹 삭제 후 목록 갱신. 원격에 동기화된 그룹이면 원격도 함께 삭제.
   Future<void> deleteGroupById(int id) async {
+    await _libraryEntitySyncCoordinator.deleteGroup(id);
     await _groupRepository.deleteGroupById(id);
     if (selectedGroupId == id) {
       selectedGroupId = null;
@@ -669,23 +750,31 @@ class ClipProvider extends ChangeNotifier with ClipTagMixin, ClipActionMixin {
     return collectionMatch != null;
   }
 
-  /// 새 컬렉션 생성 후 목록 갱신.
+  /// 새 컬렉션 생성 후 목록 갱신. 서버/클라우드 탭이면 원격에도 독립 저장.
   Future<void> createCollection(String name) async {
-    final collectionId = await db.into(db.collections).insert(
-          CollectionsCompanion.insert(
-            name: name,
-            storageMode: Value(_activeStorageMode),
-          ),
-        );
+    final groupIds = selectedGroupId != null && selectedGroupId != -1
+        ? [selectedGroupId!]
+        : const <int>[];
+    final collection = await _libraryEntitySyncCoordinator.createCollection(
+      name,
+      _activeStorageMode,
+      groupIds: groupIds,
+    );
 
-    if (selectedGroupId != null && selectedGroupId != -1) {
+    if (groupIds.isNotEmpty) {
       await db.into(db.groupCollections).insert(
             GroupCollectionsCompanion.insert(
-                groupId: selectedGroupId!, collectionId: collectionId),
+                groupId: groupIds.first, collectionId: collection.id),
           );
     }
 
     await selectGroup(selectedGroupId); // 현재 그룹의 콜렉션 다시 불러오기
+  }
+
+  /// 콜렉션 이름 변경 후 목록 갱신. 원격에 동기화된 콜렉션이면 원격도 갱신.
+  Future<void> renameCollection(int id, String name) async {
+    await _libraryEntitySyncCoordinator.renameCollection(id, name);
+    await selectGroup(selectedGroupId);
   }
 
   /// 그룹으로 돌아감 (선택한 컬렉션 해제)

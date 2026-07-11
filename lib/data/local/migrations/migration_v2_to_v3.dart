@@ -6,10 +6,10 @@ import 'package:path_provider/path_provider.dart';
 import '../app_database.dart';
 
 /// Schema Version 2 -> 3 마이그레이션
-/// - Groups 테이블 생성 (storageMode 포함)
+/// - Groups 테이블 생성 (storageMode, remoteId 포함)
 /// - 다대다 매핑을 위한 GroupCollections 테이블 생성
 /// - clip 원본/캐시 스키마 생성
-/// - Collections에 storageMode 컬럼 추가
+/// - Collections에 storageMode, remoteId 컬럼 추가
 /// - 기존에 로컬/서버/gdrive 클립이 섞여 있던 콜렉션을 storageMode별로 분리
 ///   (같은 이름의 콜렉션/그룹을 목적지 storageMode에서 찾거나 새로 만들고,
 ///   그 모드의 클립들을 재배정)
@@ -19,6 +19,7 @@ Future<void> migrateV2ToV3(Migrator m, AppDatabase db) async {
   await m.createTable(db.clipSourceRefs);
   await m.createTable(db.clipCacheEntries);
   await m.addColumn(db.collections, db.collections.storageMode);
+  await m.addColumn(db.collections, db.collections.remoteId);
 
   await m.addColumn(db.clips, db.clips.sourceFilePath);
   await m.addColumn(db.clips, db.clips.thumbnailFilePath);

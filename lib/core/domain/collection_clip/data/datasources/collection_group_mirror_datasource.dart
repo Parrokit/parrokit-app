@@ -3,15 +3,15 @@
 // ============================================================================
 //
 // [역할]
-// 클립이 다른 저장위치로 이동할 때, 속해있던 콜렉션/그룹을 목적지
-// 저장위치에도 이름 기준으로 자동 매칭/생성하는 datasource. 목적지에
-// 같은 이름의 콜렉션/그룹이 있으면 재사용하고, 없으면 새로 만듭니다.
+// 클립이 다른 저장위치로 이동할 때, 속해있던 콜렉션을 목적지 저장위치에도
+// 이름 기준으로 자동 매칭/생성하는 datasource. 목적지에 같은 이름의
+// 콜렉션이 있으면 재사용하고, 없으면 새로 만듭니다. 그룹은 저장위치별로
+// 완전히 독립된 개념이라 이동을 따라가지 않습니다 — 목적지 탭에서 새로
+// 그룹에 넣어야 합니다.
 //
 // [레이어]
 // Core > Collection Media > Data > Datasources
 // ============================================================================
-
-import 'package:drift/drift.dart';
 
 import 'package:parrokit/data/local/app_database.dart';
 
@@ -40,41 +40,6 @@ class CollectionGroupMirrorDatasource {
       source.name,
       destinationStorageMode,
     );
-
-    final groupLinks = await (db.select(db.groupCollections)
-          ..where((gc) => gc.collectionId.equals(currentCollectionId)))
-        .get();
-    for (final link in groupLinks) {
-      final sourceGroup = await (db.select(db.groups)
-            ..where((g) => g.id.equals(link.groupId))
-            ..limit(1))
-          .getSingleOrNull();
-      if (sourceGroup == null) continue;
-
-      final destGroupId =
-          await _findOrCreateGroup(sourceGroup.name, destinationStorageMode);
-      await db.into(db.groupCollections).insert(
-            GroupCollectionsCompanion.insert(
-              groupId: destGroupId,
-              collectionId: destCollection.id,
-            ),
-            mode: InsertMode.insertOrIgnore,
-          );
-    }
-
     return destCollection.id;
-  }
-
-  Future<int> _findOrCreateGroup(String name, String storageMode) async {
-    final existing = await (db.select(db.groups)
-          ..where(
-            (g) => g.name.equals(name) & g.storageMode.equals(storageMode),
-          )
-          ..limit(1))
-        .getSingleOrNull();
-    if (existing != null) return existing.id;
-    return db.into(db.groups).insert(
-          GroupsCompanion.insert(name: name, storageMode: Value(storageMode)),
-        );
   }
 }

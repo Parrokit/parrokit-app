@@ -116,6 +116,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
     context.read<TagFilterProvider>().clearTags();
   }
 
+  /// 현재 저장위치 탭에 맞는 pull sync를 실행합니다. 로컬 탭은 당길 게
+  /// 없으므로 build()에서 애초에 RefreshIndicator를 안 붙입니다.
+  Future<void> _onRefreshRemoteClips() async {
+    final clipProvider = context.read<ClipProvider>();
+    if (_storageMode == ClipStorageConstants.storageModeServer) {
+      await clipProvider.pullRemoteServerClips();
+    } else if (_storageMode == ClipStorageConstants.storageModeGoogleDrive) {
+      await clipProvider.pullRemoteCloudClips();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -144,7 +155,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ],
             Expanded(
               child: tab == LibraryTab.folder
-                  ? const LibraryFolderSection()
+                  ? (_storageMode == ClipStorageConstants.storageModeLocal
+                      ? const LibraryFolderSection()
+                      : RefreshIndicator(
+                          onRefresh: _onRefreshRemoteClips,
+                          child: const LibraryFolderSection(),
+                        ))
                   : LibraryTagSection(
                       allTags: clipProvider.distinctTags,
                       selectedTags: tagProv.activeTagNames.toSet(),

@@ -8,6 +8,7 @@ class FolderGrid extends StatelessWidget {
     required this.sectionTitle,
     required this.items,
     required this.onTap,
+    this.onLongPress,
     this.deleteMode = false,
     this.isGridView = true,
     this.onToggleView,
@@ -17,6 +18,7 @@ class FolderGrid extends StatelessWidget {
   final String sectionTitle;
   final List<String> items;
   final ValueChanged<int> onTap;
+  final ValueChanged<int>? onLongPress;
   final bool deleteMode;
   final bool isGridView;
   final VoidCallback? onToggleView;
@@ -102,6 +104,7 @@ class FolderGrid extends StatelessWidget {
     return FolderCard(
       name: items[i],
       onTap: () => onTap(i),
+      onLongPress: (onLongPress == null || isSpecial) ? null : () => onLongPress!(i),
       deleteMode: deleteMode && !isSpecial,
       isGridView: isGridView,
       isSpecial: isSpecial,

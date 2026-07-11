@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/core/state/provider/theme_provider.dart';
+import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/core/shared/theme/app_theme.dart';
 
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -29,11 +30,34 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
+  String? _remoteClipsSyncedUid;
+
+  /// 로그인(계정 전환 포함) 직후 1회, 서버/클라우드로 옮겨진 클립 중 이
+  /// 기기에 없는 것을 받아옵니다. 클라우드는 연동돼 있지 않으면 조용히
+  /// 아무것도 하지 않습니다.
+  void _syncRemoteClipsOnLoginIfNeeded(UserProvider userProvider) {
+    final uid = userProvider.isLoggedIn ? userProvider.currentUser?.id : null;
+    if (uid == null) {
+      _remoteClipsSyncedUid = null;
+      return;
+    }
+    if (_remoteClipsSyncedUid == uid) return;
+    _remoteClipsSyncedUid = uid;
+
+    final clipProvider = context.read<ClipProvider>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      clipProvider.pullRemoteServerClips();
+      clipProvider.pullRemoteCloudClips();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
-
+    final userProvider = context.watch<UserProvider>();
     final clipProvider = context.watch<ClipProvider>();
+
+    _syncRemoteClipsOnLoginIfNeeded(userProvider);
 
     return MaterialApp.router(
       title: 'Parrokit',

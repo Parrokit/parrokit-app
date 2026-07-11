@@ -5,4 +5,5 @@ class Collections extends Table {
   TextColumn get name => text()();
   TextColumn get storageMode =>
       text().withDefault(const Constant('local'))();
+  TextColumn get remoteId => text().nullable()();
 }

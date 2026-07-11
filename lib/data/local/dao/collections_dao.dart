@@ -19,7 +19,11 @@ class CollectionsDao extends DatabaseAccessor<AppDatabase>
   Stream<List<Collection>> watchAll() => select(collections).watch();
 
   // Find or create collection by (name, storageMode)
-  Future<Collection> findOrCreate(String name, String storageMode) async {
+  Future<Collection> findOrCreate(
+    String name,
+    String storageMode, {
+    String? remoteId,
+  }) async {
     final existing = await (select(collections)
           ..where(
             (c) => c.name.equals(name) & c.storageMode.equals(storageMode),
@@ -28,10 +32,40 @@ class CollectionsDao extends DatabaseAccessor<AppDatabase>
         .getSingleOrNull();
     if (existing != null) return existing;
     final id = await into(collections).insert(
-      CollectionsCompanion.insert(name: name, storageMode: Value(storageMode)),
+      CollectionsCompanion.insert(
+        name: name,
+        storageMode: Value(storageMode),
+        remoteId: Value(remoteId),
+      ),
     );
     return (select(collections)..where((c) => c.id.equals(id))).getSingle();
   }
+
+  Future<Collection?> findById(int id) => (select(collections)
+        ..where((c) => c.id.equals(id))
+        ..limit(1))
+      .getSingleOrNull();
+
+  Future<Collection?> findByRemoteId(String remoteId) => (select(collections)
+        ..where((c) => c.remoteId.equals(remoteId))
+        ..limit(1))
+      .getSingleOrNull();
+
+  Future<Collection?> findByNameAndStorageMode(String name, String storageMode) =>
+      (select(collections)
+            ..where(
+              (c) => c.name.equals(name) & c.storageMode.equals(storageMode),
+            )
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<void> updateName(int id, String name) =>
+      (update(collections)..where((c) => c.id.equals(id)))
+          .write(CollectionsCompanion(name: Value(name)));
+
+  Future<void> updateRemoteId(int id, String? remoteId) =>
+      (update(collections)..where((c) => c.id.equals(id)))
+          .write(CollectionsCompanion(remoteId: Value(remoteId)));
 
   // Collection names for a given storageMode (for autocomplete)
   Future<List<String>> fetchAllNames(String storageMode) async {

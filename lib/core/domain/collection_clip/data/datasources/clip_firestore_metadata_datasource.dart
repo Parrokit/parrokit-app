@@ -19,13 +19,22 @@ class ClipFirestoreMetadataDatasource {
 
   ClipFirestoreMetadataDatasource(this.db);
 
-  CollectionReference<Map<String, dynamic>> libraryClipsRef(String uid) {
+  /// `users/{uid}/namespaces/library/{kind}` 컬렉션 레퍼런스. 클립뿐 아니라
+  /// groups/collections 등 라이브러리 하위 컬렉션 전반에서 재사용합니다.
+  CollectionReference<Map<String, dynamic>> libraryCollectionRef(
+    String uid,
+    String kind,
+  ) {
     return FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .collection('namespaces')
         .doc('library')
-        .collection('clips');
+        .collection(kind);
+  }
+
+  CollectionReference<Map<String, dynamic>> libraryClipsRef(String uid) {
+    return libraryCollectionRef(uid, 'clips');
   }
 
   DocumentReference<Map<String, dynamic>> libraryClipDocRef(

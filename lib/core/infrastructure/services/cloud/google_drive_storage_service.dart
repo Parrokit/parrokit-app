@@ -397,32 +397,136 @@ class GoogleDriveStorageService {
     }
   }
 
-  Future<void> deleteFileNamedInFolder({
-    required String folderId,
-    required String fileName,
-  }) async {
-    AppLogger.i(
-      '[GoogleDrive][Delete] named-file-start folderId=$folderId file=$fileName',
-    );
+  /// Parrokit/clips/ 아래의 클립 폴더 목록을 (remoteDocId, folderId) 쌍으로
+  /// 반환합니다. 각 폴더 이름이 곧 그 클립의 remoteDocId입니다.
+  Future<List<(String, String)>> listClipFolders() async {
     final account = await connect();
     if (account == null) {
-      throw StateError('Google Drive 연결이 필요합니다.');
+      AppLogger.w('[GoogleDrive][List] clip-folders no-account');
+      return const [];
     }
 
     final headers = await _authorizationHeaders(account);
-    final fileId = await _findFileByName(
-      parentId: folderId,
-      fileName: fileName,
-      headers: headers,
+    final clipsFolderId = await _ensureFolderPath(account, headers, const ['clips']);
+    final result = await _listChildFolders(parentId: clipsFolderId, headers: headers);
+    AppLogger.i(
+      '[GoogleDrive][List] clip-folders account=${_maskAccount(account)} '
+      'clipsFolderId=$clipsFolderId count=${result.length}',
     );
-    if (fileId == null || fileId.isEmpty) {
-      AppLogger.w(
-        '[GoogleDrive][Delete] named-file-not-found folderId=$folderId file=$fileName',
-      );
-      return;
-    }
+    return result;
+  }
 
-    await deleteFile(fileId);
+  /// Parrokit/[folderSegments] 경로 바로 아래 파일들을 이름→fileId 맵으로
+  /// 반환합니다. `listClipFolders`가 클립 하위 "폴더" 목록을 보는 것과 달리,
+  /// 이건 groups/collections처럼 flat하게 저장된 "파일" 목록을 볼 때 씁니다.
+  Future<Map<String, String>> listFilesInFolderPath(
+    List<String> folderSegments,
+  ) async {
+    final account = await connect();
+    if (account == null) return const {};
+
+    final headers = await _authorizationHeaders(account);
+    final folderId = await _ensureFolderPath(account, headers, folderSegments);
+    return listFilesInFolder(folderId);
+  }
+
+  /// [folderId] 폴더 바로 아래 파일들을 이름→fileId 맵으로 반환합니다.
+  Future<Map<String, String>> listFilesInFolder(String folderId) async {
+    final account = await connect();
+    if (account == null) return const {};
+
+    final headers = await _authorizationHeaders(account);
+    final client = http.Client();
+    try {
+      final query = "trashed = false and '$folderId' in parents";
+      final uri = Uri.https('www.googleapis.com', '/drive/v3/files').replace(
+        queryParameters: {
+          'q': query,
+          'fields': 'files(id,name)',
+          'pageSize': '100',
+        },
+      );
+      final response = await client.get(uri, headers: headers);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        AppLogger.w(
+          '[GoogleDrive][List] files-in-folder failed folderId=$folderId '
+          'status=${response.statusCode} body=${response.body}',
+        );
+        return const {};
+      }
+      final files = _asMap(response.body)['files'];
+      if (files is! List) return const {};
+      final map = {
+        for (final f in files.whereType<Map<String, dynamic>>())
+          if (f['name'] is String && f['id'] is String)
+            f['name'] as String: f['id'] as String,
+      };
+      AppLogger.d(
+        '[GoogleDrive][List] files-in-folder folderId=$folderId names=${map.keys.toList()}',
+      );
+      return map;
+    } finally {
+      client.close();
+    }
+  }
+
+  /// 파일 ID의 내용을 텍스트로 내려받습니다 (metadata.json 같은 작은 파일용).
+  Future<String?> downloadFileContent(String fileId) async {
+    final account = await connect();
+    if (account == null) return null;
+
+    final headers = await _authorizationHeaders(account);
+    final client = http.Client();
+    try {
+      final uri = Uri.https(
+        'www.googleapis.com',
+        '/drive/v3/files/$fileId',
+        const {'alt': 'media'},
+      );
+      final response = await client.get(uri, headers: headers);
+      if (response.statusCode < 200 || response.statusCode >= 300) return null;
+      return response.body;
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<List<(String, String)>> _listChildFolders({
+    required String parentId,
+    required Map<String, String> headers,
+  }) async {
+    final client = http.Client();
+    try {
+      final query = [
+        "mimeType = 'application/vnd.google-apps.folder'",
+        "trashed = false",
+        "'$parentId' in parents",
+      ].join(' and ');
+      final uri = Uri.https('www.googleapis.com', '/drive/v3/files').replace(
+        queryParameters: {
+          'q': query,
+          'fields': 'files(id,name)',
+          'pageSize': '1000',
+        },
+      );
+      final response = await client.get(uri, headers: headers);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        AppLogger.w(
+          '[GoogleDrive][List] child-folders failed parentId=$parentId '
+          'status=${response.statusCode} body=${response.body}',
+        );
+        return const [];
+      }
+      final files = _asMap(response.body)['files'];
+      if (files is! List) return const [];
+      return files
+          .whereType<Map<String, dynamic>>()
+          .where((f) => f['name'] is String && f['id'] is String)
+          .map((f) => (f['name'] as String, f['id'] as String))
+          .toList();
+    } finally {
+      client.close();
+    }
   }
 
   Future<Map<String, dynamic>?> fetchFileMetadata(String fileId) async {

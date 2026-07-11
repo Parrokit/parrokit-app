@@ -14,11 +14,13 @@ import 'package:parrokit/core/shared/utils/app_logger.dart';
 import '../../../../../data/local/app_database.dart';
 import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_repository.dart';
 import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_migration_repository.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/library_entity_sync_coordinator.dart';
 
 mixin ClipActionMixin on ChangeNotifier {
   AppDatabase get db;
   ClipRepository get service;
   ClipMigrationRepository get migrationService;
+  LibraryEntitySyncCoordinator get libraryEntitySyncCoordinator;
 
   // Navigation / Refresh required methods
   int? get selectedGroupId;
@@ -63,6 +65,7 @@ mixin ClipActionMixin on ChangeNotifier {
       await service.deleteClipById(clip.id);
     }
 
+    await libraryEntitySyncCoordinator.deleteCollection(collectionId);
     await (db.delete(db.collections)..where((c) => c.id.equals(collectionId)))
         .go();
 

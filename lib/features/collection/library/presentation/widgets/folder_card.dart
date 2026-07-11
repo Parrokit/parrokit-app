@@ -8,6 +8,7 @@ class FolderCard extends StatelessWidget {
     super.key,
     required this.name,
     required this.onTap,
+    this.onLongPress,
     this.deleteMode = false,
     this.isGridView = true,
     this.isAddCard = false,
@@ -16,6 +17,7 @@ class FolderCard extends StatelessWidget {
 
   final String name;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final bool deleteMode;
   final bool isGridView;
   final bool isAddCard;
@@ -63,6 +65,7 @@ class FolderCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
+      onLongPress: (deleteMode || isAddCard) ? null : onLongPress,
       child: Container(
         decoration: BoxDecoration(
           color: bgColor,

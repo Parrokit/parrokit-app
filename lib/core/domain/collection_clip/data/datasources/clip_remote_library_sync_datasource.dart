@@ -1,0 +1,314 @@
+// ============================================================================
+// lib/core/collection_media/data/datasources/clip_remote_library_sync_datasource.dart
+// ============================================================================
+//
+// [역할]
+// 계정의 서버(Firestore)/클라우드(Google Drive) 클립 목록을 조회해서, 이
+// 기기 로컬 DB에 아직 없는 클립을 찾아 로컬에 반영(pull sync)하는
+// datasource. 다른 기기에서 서버/클라우드로 옮긴 클립을 이 기기에서도
+// 보이게 하기 위한 용도입니다.
+//
+// [레이어]
+// Core > Collection Media > Data > Datasources
+// ============================================================================
+
+import 'dart:convert';
+
+import 'package:drift/drift.dart';
+
+import 'package:parrokit/data/local/app_database.dart';
+import 'package:parrokit/core/shared/utils/app_logger.dart';
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
+import 'package:parrokit/core/infrastructure/services/cloud/google_drive_storage_service.dart';
+import 'clip_firestore_metadata_datasource.dart';
+import 'clip_source_ref_datasource.dart';
+
+class ClipRemoteLibrarySyncDatasource {
+  final AppDatabase db;
+  final ClipFirestoreMetadataDatasource firestoreMetadataDatasource;
+  final ClipSourceRefDatasource sourceRefDatasource;
+  final GoogleDriveStorageService googleDriveStorageService;
+
+  ClipRemoteLibrarySyncDatasource(
+    this.db,
+    this.firestoreMetadataDatasource,
+    this.sourceRefDatasource,
+    this.googleDriveStorageService,
+  );
+
+  /// [uid] 계정의 서버 클립 중 이 기기에 없는 것을 로컬로 받아옵니다.
+  /// 새로 반영된 클립 개수를 반환합니다.
+  Future<int> pullServerClips(String uid) async {
+    final snapshot = await firestoreMetadataDatasource.libraryClipsRef(uid).get();
+    AppLogger.i(
+      '[Clip][RemoteSync] server-pull start uid=$uid docs=${snapshot.docs.length}',
+    );
+    var pulledCount = 0;
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final remoteDocId = data['remoteDocId'] as String? ?? doc.id;
+      final existingClipId = await _findLocalClipId(
+        provider: ClipStorageConstants.providerServer,
+        ownerKey: uid,
+        remoteDocId: remoteDocId,
+      );
+      if (existingClipId != null) {
+        final backfilled = await _backfillUncategorizedIfNeeded(
+          existingClipId,
+          ClipStorageConstants.storageModeServer,
+        );
+        if (backfilled) pulledCount++;
+        continue;
+      }
+
+      final clipId = await _insertClipRow(
+        data: data,
+        storageMode: ClipStorageConstants.storageModeServer,
+        ownerScope: ClipStorageConstants.ownerScopeAppAccount,
+        ownerKey: uid,
+      );
+      await sourceRefDatasource.upsertClipSourceRef(
+        clipId: clipId,
+        provider: ClipStorageConstants.providerServer,
+        ownerScope: ClipStorageConstants.ownerScopeAppAccount,
+        ownerKey: uid,
+        remoteDocId: remoteDocId,
+        storagePath: data['storagePath'] as String?,
+        downloadUrl: data['downloadUrl'] as String?,
+        thumbnailStoragePath: data['thumbnailStoragePath'] as String?,
+        thumbnailDownloadUrl: data['thumbnailDownloadUrl'] as String?,
+        lastSyncedAt: DateTime.now(),
+      );
+      await _insertSegments(clipId, data['segments']);
+      await _insertTags(clipId, data['tags']);
+      pulledCount++;
+    }
+
+    AppLogger.i('[Clip][RemoteSync] server-pull done pulled=$pulledCount');
+    return pulledCount;
+  }
+
+  /// [accountKey](gdrive 계정) 소유 클립 중 이 기기에 없는 것을 로컬로
+  /// 받아옵니다. 새로 반영된 클립 개수를 반환합니다.
+  Future<int> pullCloudClips(String accountKey) async {
+    final clipFolders = await googleDriveStorageService.listClipFolders();
+    AppLogger.i(
+      '[Clip][RemoteSync] cloud-pull start accountKey=$accountKey folders=${clipFolders.length}',
+    );
+    var pulledCount = 0;
+
+    for (final (remoteDocId, folderId) in clipFolders) {
+      final existingClipId = await _findLocalClipId(
+        provider: ClipStorageConstants.providerGoogleDrive,
+        ownerKey: accountKey,
+        remoteDocId: remoteDocId,
+      );
+      if (existingClipId != null) {
+        AppLogger.d('[Clip][RemoteSync] cloud-pull skip-existing remoteDocId=$remoteDocId');
+        final backfilled = await _backfillUncategorizedIfNeeded(
+          existingClipId,
+          ClipStorageConstants.storageModeGoogleDrive,
+        );
+        if (backfilled) pulledCount++;
+        continue;
+      }
+
+      final files = await googleDriveStorageService.listFilesInFolder(folderId);
+      final metadataFileId = files['metadata.json'];
+      if (metadataFileId == null) {
+        AppLogger.w(
+          '[Clip][RemoteSync] cloud-pull skip-no-metadata remoteDocId=$remoteDocId files=${files.keys.toList()}',
+        );
+        continue;
+      }
+      final data = await _downloadJsonMap(metadataFileId);
+      if (data == null) {
+        AppLogger.w(
+          '[Clip][RemoteSync] cloud-pull skip-bad-metadata remoteDocId=$remoteDocId',
+        );
+        continue;
+      }
+
+      // metadata.json은 있지만 실제 영상 파일이 없는 폴더는, 예전에 이동/
+      // 삭제 중 일부 파일만 지워지고 남은 고아 폴더다. 이런 폴더까지
+      // 클립으로 만들면 같은 클립이 두 개로 보이는 원인이 되므로, 건너뛰고
+      // 폴더 자체를 정리한다.
+      final videoFileName = _fileNameFromPath(data['storagePath'] as String?);
+      final videoFileId = videoFileName == null ? null : files[videoFileName];
+      if (videoFileId == null) {
+        AppLogger.w(
+          '[Clip][RemoteSync] cloud-pull skip-orphan-no-video remoteDocId=$remoteDocId files=${files.keys.toList()}',
+        );
+        await googleDriveStorageService.deleteFile(folderId);
+        continue;
+      }
+
+      final clipId = await _insertClipRow(
+        data: data,
+        storageMode: ClipStorageConstants.storageModeGoogleDrive,
+        ownerScope: ClipStorageConstants.ownerScopeCloudAccount,
+        ownerKey: accountKey,
+      );
+      await sourceRefDatasource.upsertClipSourceRef(
+        clipId: clipId,
+        provider: ClipStorageConstants.providerGoogleDrive,
+        ownerScope: ClipStorageConstants.ownerScopeCloudAccount,
+        ownerKey: accountKey,
+        remoteDocId: remoteDocId,
+        storagePath: data['storagePath'] as String?,
+        remoteFileId: videoFileId,
+        thumbnailStoragePath: data['thumbnailStoragePath'] as String?,
+        thumbnailRemoteFileId:
+            files[_fileNameFromPath(data['thumbnailStoragePath'] as String?)],
+        cloudFolderId: folderId,
+        metadataPath: 'clips/$remoteDocId/metadata.json',
+        lastSyncedAt: DateTime.now(),
+      );
+      await _insertSegments(clipId, data['segments']);
+      await _insertTags(clipId, data['tags']);
+      pulledCount++;
+    }
+
+    AppLogger.i('[Clip][RemoteSync] cloud-pull done pulled=$pulledCount');
+    return pulledCount;
+  }
+
+  /// 이 기기에 이미 있는 클립이면 그 clipId를, 없으면 null을 반환합니다.
+  Future<int?> _findLocalClipId({
+    required String provider,
+    required String ownerKey,
+    required String remoteDocId,
+  }) async {
+    final existing = await (db.select(db.clipSourceRefs)
+          ..where(
+            (r) =>
+                r.remoteDocId.equals(remoteDocId) &
+                r.provider.equals(provider) &
+                r.ownerKey.equals(ownerKey),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+    return existing?.clipId;
+  }
+
+  /// 예전 버전에서 콜렉션 정보 없이 당겨온 클립(collectionId=null)을
+  /// "미분류" 콜렉션으로 채워 넣습니다. 실제로 채워 넣었으면 true를
+  /// 반환합니다.
+  Future<bool> _backfillUncategorizedIfNeeded(int clipId, String storageMode) async {
+    final clip = await (db.select(db.clips)
+          ..where((c) => c.id.equals(clipId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (clip == null || clip.collectionId != null) return false;
+
+    final collectionId = await _resolveCollectionId(null, storageMode);
+    await (db.update(db.clips)..where((c) => c.id.equals(clipId))).write(
+      ClipsCompanion(collectionId: Value(collectionId)),
+    );
+    return true;
+  }
+
+  Future<int> _insertClipRow({
+    required Map<String, dynamic> data,
+    required String storageMode,
+    required String ownerScope,
+    required String ownerKey,
+  }) async {
+    final collectionId = await _resolveCollectionId(
+      data['collectionName'] as String?,
+      storageMode,
+      collectionRemoteId: data['collectionRemoteId'] as String?,
+    );
+
+    return db.into(db.clips).insert(
+          ClipsCompanion.insert(
+            collectionId: Value(collectionId),
+            title: (data['title'] as String?) ?? '제목 없음',
+            filePath: '',
+            durationMs: (data['durationMs'] as num?)?.toInt() ?? 0,
+            storageBytes: Value((data['storageBytes'] as num?)?.toInt() ?? 0),
+            ownerScope: Value(ownerScope),
+            ownerKey: Value(ownerKey),
+            storageMode: Value(storageMode),
+          ),
+        );
+  }
+
+  /// 콜렉션 없이 당겨온 클립은 폴더 화면에서 도달할 방법이 없으므로,
+  /// 이름이 없으면 "미분류" 콜렉션으로 대신 묶습니다.
+  static const _uncategorizedCollectionName = '미분류';
+
+  Future<int> _resolveCollectionId(
+    String? collectionName,
+    String storageMode, {
+    String? collectionRemoteId,
+  }) async {
+    if (collectionRemoteId != null && collectionRemoteId.isNotEmpty) {
+      final byRemoteId = await db.collectionsDao.findByRemoteId(collectionRemoteId);
+      if (byRemoteId != null) return byRemoteId.id;
+    }
+    final name = collectionName != null && collectionName.trim().isNotEmpty
+        ? collectionName.trim()
+        : _uncategorizedCollectionName;
+    final collection = await db.collectionsDao.findOrCreate(
+      name,
+      storageMode,
+      remoteId: collectionRemoteId,
+    );
+    return collection.id;
+  }
+
+  Future<Map<String, dynamic>?> _downloadJsonMap(String fileId) async {
+    final content = await googleDriveStorageService.downloadFileContent(fileId);
+    if (content == null) return null;
+    try {
+      final decoded = jsonDecode(content);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _fileNameFromPath(String? path) {
+    if (path == null || path.isEmpty) return null;
+    final segments = path.split('/');
+    return segments.isEmpty ? null : segments.last;
+  }
+
+  Future<void> _insertSegments(int clipId, Object? rawSegments) async {
+    if (rawSegments is! List) return;
+    for (final raw in rawSegments) {
+      if (raw is! Map) continue;
+      await db.into(db.segments).insert(
+            SegmentsCompanion.insert(
+              clipId: clipId,
+              startMs: (raw['startMs'] as num?)?.toInt() ?? 0,
+              endMs: (raw['endMs'] as num?)?.toInt() ?? 0,
+              original: (raw['original'] as String?) ?? '',
+              pron: (raw['pron'] as String?) ?? '',
+              trans: (raw['trans'] as String?) ?? '',
+            ),
+          );
+    }
+  }
+
+  Future<void> _insertTags(int clipId, Object? rawTags) async {
+    if (rawTags is! List) return;
+    for (final raw in rawTags) {
+      if (raw is! String || raw.isEmpty) continue;
+      final tagId = await _ensureTag(raw);
+      await db.into(db.clipTags).insert(
+            ClipTagsCompanion.insert(clipId: clipId, tagId: tagId),
+            mode: InsertMode.insertOrIgnore,
+          );
+    }
+  }
+
+  Future<int> _ensureTag(String name) async {
+    final found =
+        await (db.select(db.tags)..where((t) => t.name.equals(name))).getSingleOrNull();
+    if (found != null) return found.id;
+    return db.into(db.tags).insert(TagsCompanion.insert(name: name));
+  }
+}

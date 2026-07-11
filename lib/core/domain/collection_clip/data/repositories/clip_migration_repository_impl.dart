@@ -31,10 +31,12 @@ import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_sourc
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_thumbnail_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_file_sync_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/collection_group_mirror_datasource.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_remote_library_sync_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_firestore_metadata_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_cloud_metadata_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/clip_detail_query_datasource.dart';
 import 'package:parrokit/core/domain/collection_clip/data/datasources/remote_doc_id_resolver.dart';
+import 'package:parrokit/core/domain/collection_clip/data/datasources/library_entity_sync_coordinator.dart';
 import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_migration_repository.dart';
 
 class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
@@ -43,11 +45,13 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
   final ClipThumbnailDatasource thumbnailDatasource;
   final ClipFileSyncDatasource fileSyncDatasource;
   final CollectionGroupMirrorDatasource collectionGroupMirrorDatasource;
+  final ClipRemoteLibrarySyncDatasource remoteLibrarySyncDatasource;
   final ClipFirestoreMetadataDatasource firestoreMetadataDatasource;
   final ClipCloudMetadataDatasource cloudMetadataDatasource;
   final ClipDetailQueryDatasource detailQueryDatasource;
   final RemoteDocIdResolver remoteDocIdResolver;
   final GoogleDriveStorageService googleDriveStorageService;
+  final LibraryEntitySyncCoordinator libraryEntitySyncCoordinator;
 
   ClipMigrationRepositoryImpl({
     required this.db,
@@ -55,11 +59,13 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
     required this.thumbnailDatasource,
     required this.fileSyncDatasource,
     required this.collectionGroupMirrorDatasource,
+    required this.remoteLibrarySyncDatasource,
     required this.firestoreMetadataDatasource,
     required this.cloudMetadataDatasource,
     required this.detailQueryDatasource,
     required this.remoteDocIdResolver,
     required this.googleDriveStorageService,
+    required this.libraryEntitySyncCoordinator,
   });
 
   @override
@@ -205,6 +211,14 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
       final now = DateTime.now();
       final segments = await detailQueryDatasource.segmentsForClip(clipId);
       final tagNames = await detailQueryDatasource.tagNamesForClip(clipId);
+      final collection = target.collectionId == null
+          ? null
+          : await (db.select(db.collections)
+                ..where((c) => c.id.equals(target.collectionId!))
+                ..limit(1))
+              .getSingleOrNull();
+      final groupNames =
+          await cloudMetadataDatasource.groupNamesForCollection(target.collectionId);
 
       final docRef =
           firestoreMetadataDatasource.libraryClipDocRef(user.uid, remoteDocId);
@@ -229,6 +243,16 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
             thumbnailUploadResult?.storagePath ?? FieldValue.delete(),
         'thumbnailDownloadUrl':
             thumbnailUploadResult?.downloadUrl ?? FieldValue.delete(),
+        // 다른 기기에서 pull sync로 받아올 때 콜렉션에 자동으로 넣어주기
+        // 위한 최소 정보. collectionRemoteId가 있으면 정확히 매칭되고,
+        // 없으면 collectionName으로 폴백한다.
+        'collectionName': collection?.name ?? FieldValue.delete(),
+        'collectionRemoteId': collection?.remoteId ?? FieldValue.delete(),
+        // 참고용 정보일 뿐 pull sync에서 자동으로 적용하지 않는다 — 그룹은
+        // 저장위치별로 독립된 개념이라 이동/당겨오기 시 그대로 따라가지
+        // 않는다.
+        'groupNames':
+            groupNames.isNotEmpty ? groupNames : FieldValue.delete(),
         'segments': segments
             .map(
               (segment) => {
@@ -592,6 +616,34 @@ class ClipMigrationRepositoryImpl implements ClipMigrationRepository {
       ownerScope: ClipStorageConstants.ownerScopeAppAccount,
       ownerKey: user.uid,
     );
+  }
+
+  @override
+  Future<int> pullServerClipsForCurrentAccount() async {
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user == null) return 0;
+    return remoteLibrarySyncDatasource.pullServerClips(user.uid);
+  }
+
+  @override
+  Future<int> pullCloudClipsForCurrentAccount() async {
+    final accountKey = await googleDriveStorageService.currentAccountKey();
+    if (accountKey == null) return 0;
+    return remoteLibrarySyncDatasource.pullCloudClips(accountKey);
+  }
+
+  @override
+  Future<int> pullServerLibraryStructureForCurrentAccount() async {
+    final user = fb.FirebaseAuth.instance.currentUser;
+    if (user == null) return 0;
+    return libraryEntitySyncCoordinator.pullServer(user.uid);
+  }
+
+  @override
+  Future<int> pullCloudLibraryStructureForCurrentAccount() async {
+    final accountKey = await googleDriveStorageService.currentAccountKey();
+    if (accountKey == null) return 0;
+    return libraryEntitySyncCoordinator.pullCloud();
   }
 
   @override

@@ -338,6 +338,16 @@ class ClipSourceRefDatasource {
     }
 
     if (sourceRef.provider == ClipStorageConstants.providerGoogleDrive) {
+      final folderId = sourceRef.cloudFolderId;
+      if (folderId != null && folderId.isNotEmpty) {
+        // 폴더를 통째로 지우면 그 안의 video/thumbnail/metadata.json이 한
+        // 번의 호출로 함께 삭제된다. 이전에는 파일을 하나씩 따로 지웠는데,
+        // 중간 호출 하나가 실패하면 metadata.json이 남은 빈 폴더가 Drive에
+        // 남고, pull sync가 이를 별개의 클립으로 다시 주워와 중복이
+        // 생기는 원인이 됐다.
+        await googleDriveStorageService.deleteFile(folderId);
+        return;
+      }
       final remoteFileId = sourceRef.remoteFileId;
       if (remoteFileId != null && remoteFileId.isNotEmpty) {
         await googleDriveStorageService.deleteFile(remoteFileId);
@@ -345,13 +355,6 @@ class ClipSourceRefDatasource {
       final thumbnailRemoteFileId = sourceRef.thumbnailRemoteFileId;
       if (thumbnailRemoteFileId != null && thumbnailRemoteFileId.isNotEmpty) {
         await googleDriveStorageService.deleteFile(thumbnailRemoteFileId);
-      }
-      final folderId = sourceRef.cloudFolderId;
-      if (folderId != null && folderId.isNotEmpty) {
-        await googleDriveStorageService.deleteFileNamedInFolder(
-          folderId: folderId,
-          fileName: 'metadata.json',
-        );
       }
     }
   }
