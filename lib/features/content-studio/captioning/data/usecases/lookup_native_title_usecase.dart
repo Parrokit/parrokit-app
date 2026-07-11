@@ -10,7 +10,7 @@
 // Data Layer > UseCases
 // ============================================================================
 
-import 'package:parrokit/features/content-studio/captioning/domain/native_title_result.dart';
+import 'package:parrokit/features/content-studio/captioning/domain/models/native_title_result.dart';
 
 import '../services/native_title_service.dart';
 

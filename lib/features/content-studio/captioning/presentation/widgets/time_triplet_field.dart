@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:parrokit/core/shared/theme/app_radius.dart';
 
 class TimeTripletField extends StatefulWidget {
   const TimeTripletField({
@@ -124,7 +123,8 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
     }
   }
 
-  InputDecoration _dec(String label, String hint, ColorScheme cs) => InputDecoration(
+  InputDecoration _dec(String label, String hint, ColorScheme cs) =>
+      InputDecoration(
         isDense: true,
         labelText: widget.compact ? null : label,
         hintText: widget.compact ? label : hint,
@@ -170,9 +170,9 @@ class _TimeTripletFieldState extends State<TimeTripletField> {
         textInputAction: TextInputAction.next,
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+          fontWeight: FontWeight.w700,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
     );
   }

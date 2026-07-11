@@ -376,6 +376,16 @@ class MockCommunityRepository extends _i1.Mock
         ),
         returnValue: _i5.Future<Map<String, int>>.value(<String, int>{}),
       ) as _i5.Future<Map<String, int>>);
+
+  @override
+  _i5.Future<List<String>> getVotedPostIds(String? userId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getVotedPostIds,
+          [userId],
+        ),
+        returnValue: _i5.Future<List<String>>.value(<String>[]),
+      ) as _i5.Future<List<String>>);
 }
 
 /// A class which mocks [CommunityImageService].

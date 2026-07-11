@@ -1,5 +1,5 @@
 // ============================================================================
-// lib/features/_content/editor/presentation/sections/sections.dart
+// lib/features/content-studio/captioning/presentation/sections/sections.dart
 // ============================================================================
 //
 // [역할]

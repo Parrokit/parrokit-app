@@ -16,16 +16,16 @@
 import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:parrokit/data/local/app_database.dart';
+import 'package:parrokit/core/domain/collection_clip/domain/repositories/clip_repository.dart';
 
 /// 클립 활동 관련 상태 관리 Provider.
 class ClipActivityProvider extends ChangeNotifier {
   final AppDatabase db;
+  final ClipRepository clipRepository;
 
-  ClipActivityProvider(this.db) {
+  ClipActivityProvider(this.db, this.clipRepository) {
     _initWatchers();
   }
 
@@ -117,14 +117,6 @@ class ClipActivityProvider extends ChangeNotifier {
   StreamSubscription<List<QueryRow>>? _recentsSub;
 
   final _thumbCache = <int, Uint8List?>{};
-  String? _docRoot;
-
-  Future<String> _ensureDocRoot() async {
-    if (_docRoot != null) return _docRoot!;
-    final dir = await getApplicationDocumentsDirectory();
-    _docRoot = dir.path;
-    return _docRoot!;
-  }
 
   void _initWatchers() {
     // 1) clipCount 자동 갱신
@@ -174,7 +166,6 @@ ORDER BY col.name;
 SELECT
   rc.clip_id    AS clipId,
   c.title       AS clipTitle,
-  c.file_path   AS filePath,
   col.name      AS collectionName
 FROM recent_clip_views rc
 JOIN clips c ON c.id = rc.clip_id
@@ -198,29 +189,16 @@ LIMIT 6;
     if (_buildingRecents) return;
     _buildingRecents = true;
     try {
-      final root = await _ensureDocRoot();
       final result = <(int, Uint8List?, String?, String?)>[];
 
       for (final row in rows) {
         final clipId = (row.data['clipId'] as int?) ?? 0;
         final clipTitle = row.data['clipTitle'] as String?;
-        final filePath = (row.data['filePath'] as String?) ?? '';
         final collectionName = row.data['collectionName'] as String?;
 
         Uint8List? thumb = _thumbCache[clipId];
         if (thumb == null) {
-          final absPath = '$root/$filePath';
-          try {
-            thumb = await VideoThumbnail.thumbnailData(
-              video: absPath,
-              imageFormat: ImageFormat.JPEG,
-              maxWidth: 512,
-              quality: 75,
-              timeMs: 1000,
-            );
-          } catch (_) {
-            thumb = null;
-          }
+          thumb = await _loadThumbnailFor(clipId);
           _thumbCache[clipId] = thumb;
         }
 
@@ -233,6 +211,18 @@ LIMIT 6;
     } finally {
       _buildingRecents = false;
     }
+  }
+
+  /// clip.thumbnailFilePath(로컬 캐시) -> 원격(server/gdrive) 순으로 썸네일을
+  /// 복구합니다. VideoThumbnail을 직접 호출하지 않고 항상 이 경로를 통해서만
+  /// 썸네일을 가져와야, 서버/클라우드로 이동된 클립도 썸네일이 정상 표시됩니다.
+  Future<Uint8List?> _loadThumbnailFor(int clipId) async {
+    final clip = await (db.select(db.clips)
+          ..where((c) => c.id.equals(clipId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (clip == null) return null;
+    return clipRepository.loadThumbnailBytes(clip);
   }
 
   /// 랜덤 세그먼트 가져오기
@@ -336,7 +326,6 @@ LIMIT 6;
     SELECT
       rc.clip_id    AS clipId,
       c.title       AS clipTitle,
-      c.file_path   AS filePath,
       col.name      AS collectionName
     FROM recent_clip_views rc
     JOIN clips c ON c.id = rc.clip_id
@@ -354,31 +343,18 @@ LIMIT 6;
 
     if (rows.isEmpty) return const [];
 
-    final root = await _ensureDocRoot();
     final result = <(int, Uint8List?, String?, String?)>[];
 
     for (final row in rows) {
       final clipId = (row.data['clipId'] as int?) ?? 0;
       final clipTitle = row.data['clipTitle'] as String?;
-      final filePath = (row.data['filePath'] as String?) ?? '';
       final collectionName = row.data['collectionName'] as String?;
 
       Uint8List? thumb;
       if (!refreshThumb && _thumbCache.containsKey(clipId)) {
         thumb = _thumbCache[clipId];
       } else {
-        final absPath = filePath.startsWith('/') ? filePath : '$root/$filePath';
-        try {
-          thumb = await VideoThumbnail.thumbnailData(
-            video: absPath,
-            imageFormat: ImageFormat.JPEG,
-            maxWidth: 512,
-            quality: 75,
-            timeMs: 1000,
-          );
-        } catch (_) {
-          thumb = null;
-        }
+        thumb = await _loadThumbnailFor(clipId);
         _thumbCache[clipId] = thumb;
       }
 

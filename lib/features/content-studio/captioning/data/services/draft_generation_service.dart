@@ -11,10 +11,10 @@
 
 import 'dart:convert';
 
-import '../../domain/clip_form_data.dart';
+import '../../domain/models/clip_form_data.dart';
+import '../../domain/utils/timecode_service.dart';
 import '../ports/llm_port.dart';
 import '../prompts/prompt_loader.dart';
-import 'time_code_service.dart';
 import '../usecases/transcribe_usecase.dart';
 
 /// 초안 생성 결과.
@@ -28,8 +28,18 @@ class DraftResult {
   });
 }
 
+/// STT + 번역 초안 생성 서비스 공통 인터페이스.
+abstract class CaptionDraftGenerator {
+  Future<DraftResult> generate({
+    required String filePath,
+    required int durationMs,
+    String language = 'ja',
+    void Function(int current, int total, String message)? onProgress,
+  });
+}
+
 /// STT + LLM 초안 생성 서비스.
-class DraftGenerationService {
+class DraftGenerationService implements CaptionDraftGenerator {
   final TranscribeUseCase transcribe;
   final LLMPort llm;
   final TimecodeService _timecode = TimecodeService();
@@ -41,6 +51,7 @@ class DraftGenerationService {
 
   /// 영상 파일에서 STT를 수행하고 번역/발음 초안을 생성합니다.
   /// [onProgress]는 (current, total, message) 형태로 진행 상황을 전달합니다.
+  @override
   Future<DraftResult> generate({
     required String filePath,
     required int durationMs,
@@ -136,7 +147,8 @@ class DraftGenerationService {
     return ((seconds + 29) ~/ 30);
   }
 
-  List<SegmentInput> _normalizeSegments(List<SegmentInput> segments, int durationMs) {
+  List<SegmentInput> _normalizeSegments(
+      List<SegmentInput> segments, int durationMs) {
     final indexed = <({int startMs, int endMs, SegmentInput segment})>[];
 
     for (final segment in segments) {

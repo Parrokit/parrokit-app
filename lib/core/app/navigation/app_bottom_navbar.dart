@@ -37,7 +37,7 @@ class AppBottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
         BottomNavigationBarItem(
             icon: Icon(Icons.slow_motion_video), label: '쇼츠'),
-        BottomNavigationBarItem(icon: Icon(Icons.bookmarks), label: '라이브러리'),
+        BottomNavigationBarItem(icon: Icon(Icons.bookmarks), label: '콜렉션'),
         BottomNavigationBarItem(icon: Icon(Icons.more_horiz), label: '더보기'),
       ],
     );

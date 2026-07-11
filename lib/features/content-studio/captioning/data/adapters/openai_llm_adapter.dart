@@ -19,6 +19,7 @@ import 'package:http/http.dart' as http;
 // relative
 import '../constants/openai_constants.dart';
 import '../ports/llm_port.dart';
+import 'openai_api_exception.dart';
 
 /// OpenAI LLM 어댑터.
 ///
@@ -72,7 +73,11 @@ class OpenAILlmAdapter implements LLMPort {
         .timeout(timeout ?? const Duration(seconds: 240));
 
     if (resp.statusCode != 200) {
-      throw Exception('LLM 호출 실패(${resp.statusCode}): ${resp.body}');
+      throw OpenAIApiException.fromResponse(
+        statusCode: resp.statusCode,
+        body: resp.body,
+        fallbackAction: '번역',
+      );
     }
 
     // 응답 파싱

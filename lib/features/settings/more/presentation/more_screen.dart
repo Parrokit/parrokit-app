@@ -30,7 +30,9 @@ import 'sections/logout_section.dart';
 import 'sections/delete_account_section.dart';
 import 'sections/info_section.dart';
 import 'sections/player_settings_section.dart';
+import 'sections/remote_storage_section.dart';
 import 'sections/shorts_settings_section.dart';
+import 'sections/storage_section.dart';
 
 /// 설정/더보기 화면.
 class MoreScreen extends StatelessWidget {
@@ -81,6 +83,14 @@ class MoreScreen extends StatelessWidget {
 
             // 백업
             const BackupSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
+
+            // 저장 공간
+            const StorageSection(),
+            const SizedBox(height: AppSpacing.sectionGap),
+
+            // 원격 저장소
+            const RemoteStorageSection(),
             const SizedBox(height: AppSpacing.sectionGap),
 
             // 캐시 관리

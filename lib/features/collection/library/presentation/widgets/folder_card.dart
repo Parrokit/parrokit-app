@@ -8,51 +8,109 @@ class FolderCard extends StatelessWidget {
     super.key,
     required this.name,
     required this.onTap,
+    this.onLongPress,
     this.deleteMode = false,
+    this.isGridView = true,
+    this.isAddCard = false,
+    this.isSpecial = false,
   });
 
   final String name;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final bool deleteMode;
+  final bool isGridView;
+  final bool isAddCard;
+  final bool isSpecial;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    
+    // 상태별 색상
+    final Color? iconColor = isAddCard 
+        ? cs.primary 
+        : (deleteMode ? cs.error : null);
+    final Color? textColor = isAddCard 
+        ? cs.primary 
+        : (deleteMode ? cs.error : null);
+    final Color borderColor = isAddCard
+        ? cs.primary.withValues(alpha: 0.5)
+        : (deleteMode ? cs.error : cs.outlineVariant);
+    final double borderWidth = (deleteMode || isAddCard) ? 1.2 : 0.8;
+    final Color bgColor = deleteMode
+        ? cs.errorContainer.withValues(alpha: 0.3)
+        : (isAddCard ? cs.primaryContainer.withValues(alpha: 0.1) : cs.surface);
+    final IconData iconData = isAddCard
+        ? Icons.add_rounded
+        : (deleteMode ? Icons.delete_outline_rounded : (isSpecial ? Icons.auto_awesome_mosaic_rounded : Icons.folder_rounded));
+
+    Widget iconWidget = Icon(
+      iconData,
+      size: 28,
+      color: (isSpecial && !deleteMode) ? Colors.white : iconColor,
+    );
+
+    if (isSpecial && !deleteMode) {
+      iconWidget = ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          colors: [Colors.deepPurpleAccent, Colors.blueAccent],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(bounds),
+        child: iconWidget,
+      );
+    }
+
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
+      onLongPress: (deleteMode || isAddCard) ? null : onLongPress,
       child: Container(
         decoration: BoxDecoration(
-          color: deleteMode
-              ? cs.errorContainer.withValues(alpha: 0.3)
-              : cs.surface,
+          color: bgColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: deleteMode ? cs.error : cs.outlineVariant,
-            width: deleteMode ? 1.2 : 0.8,
+            color: borderColor,
+            width: borderWidth,
           ),
         ),
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              deleteMode ? Icons.delete_outline_rounded : Icons.folder_rounded,
-              size: 28,
-              color: deleteMode ? cs.error : null,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: deleteMode ? cs.error : null,
+        child: isGridView
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  iconWidget,
+                  const SizedBox(height: 8),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                        ),
                   ),
-            ),
-          ],
-        ),
+                ],
+              )
+            : Row(
+                children: [
+                  const SizedBox(width: 8),
+                  iconWidget,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:parrokit/core/shared/utils/app_logger.dart';
+import '../../domain/models/video_generation_models.dart';
 import '../../domain/repositories/video_generation_repository.dart';
 import '../data_sources/video_remote_data_source.dart';
 
@@ -13,10 +14,11 @@ class VideoGenerationRepositoryImpl implements VideoGenerationRepository {
     required String scenePrompt,
     required String ratio,
     int duration = 5,
-    String model = 'veo3.1-lite',
+    String model = veo31LiteModelId,
     bool debug = false,
   }) async {
-    AppLogger.i('[VideoRepository][Generate] start ratio=$ratio duration=$duration model=$model debug=$debug');
+    AppLogger.i(
+        '[VideoRepository][Generate] start ratio=$ratio duration=$duration model=$model debug=$debug');
     try {
       final result = await remoteDataSource.generateVideo(
         dialogue: dialogue,
@@ -29,20 +31,38 @@ class VideoGenerationRepositoryImpl implements VideoGenerationRepository {
       AppLogger.i('[VideoRepository][Generate] success');
       return result;
     } catch (e, stack) {
-      AppLogger.e('[VideoRepository][Generate] error reason=$e', error: e, stackTrace: stack);
+      AppLogger.e('[VideoRepository][Generate] error reason=$e',
+          error: e, stackTrace: stack);
       rethrow;
     }
   }
 
   @override
   Future<Map<String, dynamic>> checkVideoOperation(String operationName) async {
-    AppLogger.i('[VideoRepository][CheckOperation] start operationName=$operationName');
+    AppLogger.i(
+        '[VideoRepository][CheckOperation] start operationName=$operationName');
     try {
       final result = await remoteDataSource.checkVideoOperation(operationName);
       AppLogger.i('[VideoRepository][CheckOperation] success');
       return result;
     } catch (e, stack) {
-      AppLogger.e('[VideoRepository][CheckOperation] error reason=$e', error: e, stackTrace: stack);
+      AppLogger.e('[VideoRepository][CheckOperation] error reason=$e',
+          error: e, stackTrace: stack);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<VideoGenerationRecord>> listRecentVideoGenerations() async {
+    AppLogger.i('[VideoRepository][ListRecent] start');
+    try {
+      final result = await remoteDataSource.listRecentVideoGenerations();
+      AppLogger.i(
+          '[VideoRepository][ListRecent] success count=${result.length}');
+      return result;
+    } catch (e, stack) {
+      AppLogger.e('[VideoRepository][ListRecent] error reason=$e',
+          error: e, stackTrace: stack);
       rethrow;
     }
   }

@@ -27,6 +27,7 @@ import 'package:parrokit/core/shared/utils/app_logger.dart';
 // relative
 import '../constants/openai_constants.dart';
 import '../ports/asr_port.dart';
+import 'openai_api_exception.dart';
 
 /// OpenAI ASR 어댑터 공통 베이스.
 abstract class OpenAIAsrBase implements ASRPort {
@@ -150,7 +151,11 @@ abstract class OpenAIAsrBase implements ASRPort {
     final res = await http.Response.fromStream(streamed);
 
     if (res.statusCode != 200) {
-      throw Exception('ASR 실패(${res.statusCode}): ${res.body}');
+      throw OpenAIApiException.fromResponse(
+        statusCode: res.statusCode,
+        body: res.body,
+        fallbackAction: '음성 인식',
+      );
     }
 
     final map = jsonDecode(res.body) as Map<String, dynamic>;

@@ -21,14 +21,14 @@ import 'package:video_player/video_player.dart';
 
 import '../widgets/file_hero_card.dart';
 import '../widgets/stt_confirm_dialog.dart';
-import '../captioning_view_model.dart';
+import '../providers/captioning_provider.dart';
 import 'segments_section.dart';
 
 /// 파일 선택 섹션.
 class FileSection extends StatefulWidget {
   const FileSection({super.key, required this.vm});
 
-  final CaptioningViewModel vm;
+  final CaptioningProvider vm;
 
   @override
   State<FileSection> createState() => _FileSectionState();
@@ -87,11 +87,12 @@ class _FileSectionState extends State<FileSection> {
       await c.initialize();
       await c.seekTo(Duration.zero);
       widget.vm.durationCtl.text = c.value.duration.inMilliseconds.toString();
-      
+
       c.addListener(() {
         if (!mounted) return;
         final v = c.value;
-        final done = v.isInitialized && !v.isPlaying && v.position >= v.duration;
+        final done =
+            v.isInitialized && !v.isPlaying && v.position >= v.duration;
         if (done) setState(() {});
       });
 

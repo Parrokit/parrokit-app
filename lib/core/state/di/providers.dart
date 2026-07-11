@@ -16,12 +16,12 @@ import 'package:provider/single_child_widget.dart';
 import 'package:parrokit/data/local/app_database.dart';
 import 'package:parrokit/core/state/provider/theme_provider.dart';
 import 'package:parrokit/core/state/provider/iap_provider.dart';
-import 'package:parrokit/features/content/shorts/presentation/providers/ad_provider.dart';
+import 'package:parrokit/features/collection/clip/shorts/presentation/providers/ad_provider.dart';
 import 'package:parrokit/core/state/provider/user_provider.dart';
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
-import 'package:parrokit/features/content/shorts/presentation/providers/shorts_provider.dart';
-import 'package:parrokit/features/content/shorts/data/shorts_repository.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
+import 'package:parrokit/features/collection/clip/shorts/presentation/providers/shorts_provider.dart';
+import 'package:parrokit/features/collection/clip/shorts/data/shorts_repository.dart';
 import 'package:parrokit/features/collection/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/features/community/block/data/repositories/block_repository_impl.dart';
 import 'package:parrokit/features/community/block/presentation/providers/block_provider.dart';
@@ -76,15 +76,21 @@ List<SingleChildWidget> buildProviders({
     // ─────────────────────────────────────────────────────────────────
     // 기능별 Provider들
     // ─────────────────────────────────────────────────────────────────
+    ChangeNotifierProvider<ClipProvider>(
+      create: (c) => ClipProvider(c.read<AppDatabase>()),
+    ),
     ChangeNotifierProvider<ClipActivityProvider>(
       lazy: false,
-      create: (c) => ClipActivityProvider(c.read<AppDatabase>()),
-    ),
-    ChangeNotifierProvider<MediaProvider>(
-      create: (c) => MediaProvider(c.read<AppDatabase>()),
+      create: (c) => ClipActivityProvider(
+        c.read<AppDatabase>(),
+        c.read<ClipProvider>().service,
+      ),
     ),
     ChangeNotifierProvider<ShortsProvider>(
-      create: (c) => ShortsProvider(ShortsRepository(c.read<AppDatabase>())),
+      create: (c) => ShortsProvider(
+        ShortsRepository(c.read<AppDatabase>()),
+        c.read<ClipProvider>(),
+      ),
     ),
     ChangeNotifierProvider<TagFilterProvider>(
       create: (c) => TagFilterProvider(c.read<AppDatabase>()),

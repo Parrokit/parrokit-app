@@ -1,3 +1,4 @@
+import '../models/video_generation_models.dart';
 import '../repositories/video_generation_repository.dart';
 import '../validators/video_validator.dart';
 
@@ -11,10 +12,11 @@ class GenerateVideoUseCase {
     required String scenePrompt,
     required String ratio,
     int duration = 5,
-    String model = 'veo3.1-lite',
+    String model = veo31LiteModelId,
     bool debug = false,
   }) async {
-    VideoValidator.validatePrompts(dialogue: dialogue, scenePrompt: scenePrompt);
+    VideoValidator.validatePrompts(
+        dialogue: dialogue, scenePrompt: scenePrompt);
     // TODO: 패롯(재화) 잔액 검증 로직 추가 (NFR-VID-09)
     return repository.generateVideo(
       dialogue: dialogue,

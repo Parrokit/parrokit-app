@@ -8,11 +8,13 @@ import 'typing_indicator.dart';
 import 'model_selector_sheet.dart';
 import 'routing_bottom_sheet.dart';
 import 'script_recommendation_sheet.dart';
+import 'video_prompt_recommendation_sheet.dart';
 
 Future<void> showChatBotSheet(
   BuildContext context, {
   void Function(int tabIndex, Map<String, dynamic>? actionData)?
       onTriggerAction,
+  String? initialMessage,
 }) async {
   final chatBotProvider = Provider.of<ChatBotProvider>(context, listen: false);
   final mediaQuery = MediaQuery.of(context);
@@ -29,6 +31,7 @@ Future<void> showChatBotSheet(
       return ChangeNotifierProvider.value(
         value: chatBotProvider,
         child: _ChatBotSheet(
+          initialMessage: initialMessage,
           onTriggerAction: onTriggerAction,
           statusBarHeight: statusBarHeight,
         ),
@@ -39,10 +42,12 @@ Future<void> showChatBotSheet(
 
 class _ChatBotSheet extends StatefulWidget {
   const _ChatBotSheet({
+    this.initialMessage,
     this.onTriggerAction,
     required this.statusBarHeight,
   });
 
+  final String? initialMessage;
   final void Function(int tabIndex, Map<String, dynamic>? actionData)?
       onTriggerAction;
   final double statusBarHeight;
@@ -60,6 +65,13 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final initialMessage = widget.initialMessage?.trim();
+      if (!mounted || initialMessage == null || initialMessage.isEmpty) {
+        return;
+      }
+      context.read<ChatBotProvider>().sendMessage(initialMessage);
+    });
   }
 
   void _onTextChanged() {
@@ -111,12 +123,32 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
 
     if (provider.pendingScriptRecommendations != null) {
       final scripts = provider.pendingScriptRecommendations!;
-      debugPrint('[Chatbot][UI] Detected pendingScriptRecommendations in build');
+      debugPrint(
+          '[Chatbot][UI] Detected pendingScriptRecommendations in build');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && provider.pendingScriptRecommendations != null) {
-          debugPrint('[Chatbot][UI] Triggering showScriptRecommendationSheet...');
+          debugPrint(
+              '[Chatbot][UI] Triggering showScriptRecommendationSheet...');
           provider.consumeScriptRecommendation();
-          showScriptRecommendationSheet(context, scripts, widget.onTriggerAction);
+          showScriptRecommendationSheet(
+              context, scripts, widget.onTriggerAction);
+        }
+      });
+    }
+
+    if (provider.pendingVideoRecommendations != null) {
+      final recommendations = provider.pendingVideoRecommendations!;
+      debugPrint('[Chatbot][UI] Detected pendingVideoRecommendations in build');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && provider.pendingVideoRecommendations != null) {
+          debugPrint(
+              '[Chatbot][UI] Triggering showVideoPromptRecommendationSheet...');
+          provider.consumeVideoRecommendations();
+          showVideoPromptRecommendationSheet(
+            context,
+            recommendations: recommendations,
+            onTriggerAction: widget.onTriggerAction,
+          );
         }
       });
     }
@@ -343,288 +375,289 @@ class _ChatBotSheetState extends State<_ChatBotSheet> {
                   _focusNode.requestFocus();
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.surfaceContainerHighDark
-                      : AppColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  decoration: BoxDecoration(
                     color: isDark
-                        ? AppColors.dividerSubtleDark
-                        : AppColors.dividerSubtle,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
+                        ? AppColors.surfaceContainerHighDark
+                        : AppColors.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.dividerSubtleDark
+                          : AppColors.dividerSubtle,
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    PopupMenuButton<String>(
-                      constraints: const BoxConstraints(
-                        minWidth: 180,
-                        maxWidth: 240,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black
+                            .withValues(alpha: isDark ? 0.15 : 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
-                      icon: Icon(
-                        Icons.menu_rounded,
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondary,
-                      ),
-                      offset: const Offset(12, -210),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(
-                          color: isDark
-                              ? AppColors.dividerDark
-                              : AppColors.divider,
-                          width: 1, // 테두리 두께
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      PopupMenuButton<String>(
+                        constraints: const BoxConstraints(
+                          minWidth: 180,
+                          maxWidth: 240,
                         ),
-                      ),
-                      onSelected: (value) {
-                        if (value == 'reset') {
-                          provider.resetChatbot();
-                        } else if (value == 'mode_general') {
-                          provider.updateChatbotMode('general');
-                        } else if (value == 'mode_tts') {
-                          provider.updateChatbotMode('tts');
-                        } else if (value == 'mode_video') {
-                          provider.updateChatbotMode('video');
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem<String>(
-                          value: 'reset',
-                          height: 38,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.delete_outline_rounded,
-                                size: 18,
-                                color: isDark
-                                    ? AppColors.textPrimaryDark
-                                    : AppColors.textPrimary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '대화 초기화',
-                                style: theme.textTheme.bodyMedium?.copyWith(
+                        icon: Icon(
+                          Icons.menu_rounded,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary,
+                        ),
+                        offset: const Offset(12, -210),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(
+                            color: isDark
+                                ? AppColors.dividerDark
+                                : AppColors.divider,
+                            width: 1, // 테두리 두께
+                          ),
+                        ),
+                        onSelected: (value) {
+                          if (value == 'reset') {
+                            provider.resetChatbot();
+                          } else if (value == 'mode_general') {
+                            provider.updateChatbotMode('general');
+                          } else if (value == 'mode_tts') {
+                            provider.updateChatbotMode('tts');
+                          } else if (value == 'mode_video') {
+                            provider.updateChatbotMode('video');
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem<String>(
+                            value: 'reset',
+                            height: 38,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 18,
                                   color: isDark
                                       ? AppColors.textPrimaryDark
                                       : AppColors.textPrimary,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(
-                          height: 1,
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'mode_general',
-                          height: 38,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: Center(
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF8B5CF6), // 퍼플
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '일반 안내 모드',
+                                const SizedBox(width: 8),
+                                Text(
+                                  '대화 초기화',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: isDark
                                         ? AppColors.textPrimaryDark
                                         : AppColors.textPrimary,
                                   ),
                                 ),
-                              ),
-                              if (provider.chatbotMode == 'general')
-                                const Icon(
-                                  Icons.check_rounded,
-                                  size: 16,
-                                  color: Color(0xFF8B5CF6),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'mode_tts',
-                          height: 38,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: Center(
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFEC4899), // 핑크
-                                      shape: BoxShape.circle,
+                          const PopupMenuDivider(
+                            height: 1,
+                          ),
+                          PopupMenuItem<String>(
+                            value: 'mode_general',
+                            height: 38,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: Center(
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF8B5CF6), // 퍼플
+                                        shape: BoxShape.circle,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'TTS 전문가 모드',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: isDark
-                                        ? AppColors.textPrimaryDark
-                                        : AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              if (provider.chatbotMode == 'tts')
-                                const Icon(
-                                  Icons.check_rounded,
-                                  size: 16,
-                                  color: Color(0xFFEC4899),
-                                ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'mode_video',
-                          height: 38,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: Center(
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF3B82F6), // 블루
-                                      shape: BoxShape.circle,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '일반 안내 모드',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: isDark
+                                          ? AppColors.textPrimaryDark
+                                          : AppColors.textPrimary,
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '비디오 전문가 모드',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: isDark
-                                        ? AppColors.textPrimaryDark
-                                        : AppColors.textPrimary,
+                                if (provider.chatbotMode == 'general')
+                                  const Icon(
+                                    Icons.check_rounded,
+                                    size: 16,
+                                    color: Color(0xFF8B5CF6),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem<String>(
+                            value: 'mode_tts',
+                            height: 38,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: Center(
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFEC4899), // 핑크
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              if (provider.chatbotMode == 'video')
-                                const Icon(
-                                  Icons.check_rounded,
-                                  size: 16,
-                                  color: Color(0xFF3B82F6),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'TTS 전문가 모드',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: isDark
+                                          ? AppColors.textPrimaryDark
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
                                 ),
-                            ],
+                                if (provider.chatbotMode == 'tts')
+                                  const Icon(
+                                    Icons.check_rounded,
+                                    size: 16,
+                                    color: Color(0xFFEC4899),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _textController,
-                        focusNode: _focusNode,
-                        style: theme.textTheme.bodyMedium,
-                        decoration: InputDecoration(
-                          hintText: 'TTS나 비디오 생성 요청을 입력하세요...',
-                          hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark
-                                ? AppColors.textTertiaryDark
-                                : AppColors.textTertiary,
+                          PopupMenuItem<String>(
+                            value: 'mode_video',
+                            height: 38,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: Center(
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF3B82F6), // 블루
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '비디오 전문가 모드',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: isDark
+                                          ? AppColors.textPrimaryDark
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                if (provider.chatbotMode == 'video')
+                                  const Icon(
+                                    Icons.check_rounded,
+                                    size: 16,
+                                    color: Color(0xFF3B82F6),
+                                  ),
+                              ],
+                            ),
                           ),
-                          border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          filled: false,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                        ),
-                        onSubmitted: (_) => _handleSend(),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOutCubic,
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        gradient: _hasText
-                            ? const LinearGradient(
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.secondary
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              )
-                            : null,
-                        color: _hasText
-                            ? null
-                            : (isDark
-                                ? AppColors.surfaceContainerDark
-                                : AppColors.surface),
-                        shape: BoxShape.circle,
-                        border: _hasText
-                            ? null
-                            : Border.all(
-                                color: isDark
-                                    ? AppColors.dividerSubtleDark
-                                    : AppColors.dividerSubtle,
-                              ),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.send_rounded,
-                          color: _hasText
-                              ? Colors.white
-                              : (isDark
+                      Expanded(
+                        child: TextField(
+                          controller: _textController,
+                          focusNode: _focusNode,
+                          style: theme.textTheme.bodyMedium,
+                          decoration: InputDecoration(
+                            hintText: 'TTS나 비디오 생성 요청을 입력하세요...',
+                            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                              color: isDark
                                   ? AppColors.textTertiaryDark
-                                  : AppColors.textTertiary),
-                          size: 18,
+                                  : AppColors.textTertiary,
+                            ),
+                            border: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            filled: false,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                          onSubmitted: (_) => _handleSend(),
                         ),
-                        onPressed: _handleSend,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOutCubic,
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          gradient: _hasText
+                              ? const LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.secondary
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          color: _hasText
+                              ? null
+                              : (isDark
+                                  ? AppColors.surfaceContainerDark
+                                  : AppColors.surface),
+                          shape: BoxShape.circle,
+                          border: _hasText
+                              ? null
+                              : Border.all(
+                                  color: isDark
+                                      ? AppColors.dividerSubtleDark
+                                      : AppColors.dividerSubtle,
+                                ),
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.send_rounded,
+                            color: _hasText
+                                ? Colors.white
+                                : (isDark
+                                    ? AppColors.textTertiaryDark
+                                    : AppColors.textTertiary),
+                            size: 18,
+                          ),
+                          onPressed: _handleSend,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
           ],
         ),
       ),

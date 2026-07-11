@@ -12,7 +12,7 @@
 
 import 'dart:convert';
 
-import '../../domain/native_title_result.dart';
+import '../../domain/models/native_title_result.dart';
 import '../ports/llm_port.dart';
 import '../prompts/prompt_loader.dart';
 

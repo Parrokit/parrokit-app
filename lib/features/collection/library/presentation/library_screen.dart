@@ -12,7 +12,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:parrokit/core/state/provider/media_provider.dart';
+import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
+import 'package:parrokit/core/state/provider/clip_provider.dart';
 import 'package:parrokit/features/collection/library/presentation/providers/tag_filter_provider.dart';
 import 'package:parrokit/data/local/app_database.dart'; // Tag definition
 
@@ -20,6 +21,7 @@ import '../domain/library_mode.dart';
 import 'sections/library_folder_section.dart';
 import 'sections/library_tag_section.dart';
 import 'widgets/bookmark_tabs.dart';
+import 'widgets/storage_scope_tabs.dart';
 
 /// [역할]
 /// 라이브러리 메인 화면.
@@ -36,6 +38,7 @@ class LibraryScreen extends StatefulWidget {
     super.key,
     this.initialCollectionId,
     this.initialTab,
+    this.initialStorageMode,
   });
 
   /// 초기 선택할 Collection ID (옵션)
@@ -44,30 +47,50 @@ class LibraryScreen extends StatefulWidget {
   /// 초기 활성화할 탭 인덱스 (0: Folder, 1: Tag)
   final int? initialTab;
 
+  /// 초기 활성화할 저장위치 탭 (로컬/서버/클라우드, 옵션)
+  final String? initialStorageMode;
+
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
   LibraryTab tab = LibraryTab.folder;
+  late String _storageMode;
+
+  static const _validStorageModes = {
+    ClipStorageConstants.storageModeLocal,
+    ClipStorageConstants.storageModeServer,
+    ClipStorageConstants.storageModeGoogleDrive,
+  };
 
   @override
   void initState() {
     super.initState();
     tab = widget.initialTab == 1 ? LibraryTab.tag : LibraryTab.folder;
+    _storageMode = _validStorageModes.contains(widget.initialStorageMode)
+        ? widget.initialStorageMode!
+        : ClipStorageConstants.storageModeLocal;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final media = context.read<MediaProvider>();
+      final clipProvider = context.read<ClipProvider>();
       final tagProv = context.read<TagFilterProvider>();
 
       await tagProv.startWatching();
-      await media.loadCollections();
-      media.startWatchingDistinctTags();
+      clipProvider.startWatchingDistinctTags();
 
+      await clipProvider.setActiveStorageMode(_storageMode);
       if (widget.initialCollectionId != null) {
-        await media.selectCollection(widget.initialCollectionId);
+        await clipProvider.loadCollections();
+        await clipProvider.selectCollection(widget.initialCollectionId);
       }
     });
+  }
+
+  void _onStorageModeChanged(String mode) {
+    if (_storageMode == mode) return;
+    setState(() => _storageMode = mode);
+    context.read<ClipProvider>().setActiveStorageMode(mode);
   }
 
   // --- Tag Logic (Provider 위임) ---
@@ -81,11 +104,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   void _onSelectAllTags() {
-    final media = context.read<MediaProvider>();
-    if (media.distinctTags.isEmpty) return;
+    final clipProvider = context.read<ClipProvider>();
+    if (clipProvider.distinctTags.isEmpty) return;
 
     context.read<TagFilterProvider>().setTags(
-          media.distinctTags.map((t) => t.name),
+          clipProvider.distinctTags.map((t) => t.name),
         );
   }
 
@@ -93,28 +116,53 @@ class _LibraryScreenState extends State<LibraryScreen> {
     context.read<TagFilterProvider>().clearTags();
   }
 
+  /// 현재 저장위치 탭에 맞는 pull sync를 실행합니다. 로컬 탭은 당길 게
+  /// 없으므로 build()에서 애초에 RefreshIndicator를 안 붙입니다.
+  Future<void> _onRefreshRemoteClips() async {
+    final clipProvider = context.read<ClipProvider>();
+    if (_storageMode == ClipStorageConstants.storageModeServer) {
+      await clipProvider.pullRemoteServerClips();
+    } else if (_storageMode == ClipStorageConstants.storageModeGoogleDrive) {
+      await clipProvider.pullRemoteCloudClips();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final media = context.watch<MediaProvider>();
+    final clipProvider = context.watch<ClipProvider>();
     final tagProv = context.watch<TagFilterProvider>();
+    final isSelectionMode = clipProvider.isCollectionMenuOpen &&
+        clipProvider.selectedCollectionId != null;
 
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 8),
-            BookmarkTabs(
-              value: tab,
-              onChanged: (v) => setState(() => tab = v),
-            ),
-            const SizedBox(height: 10),
+            if (!isSelectionMode) ...[
+              const SizedBox(height: 8),
+              StorageScopeTabs(
+                value: _storageMode,
+                onChanged: _onStorageModeChanged,
+              ),
+              const SizedBox(height: 8),
+              BookmarkTabs(
+                value: tab,
+                onChanged: (v) => setState(() => tab = v),
+              ),
+              const SizedBox(height: 10),
+            ],
             Expanded(
               child: tab == LibraryTab.folder
-                  ? const LibraryFolderSection()
+                  ? (_storageMode == ClipStorageConstants.storageModeLocal
+                      ? const LibraryFolderSection()
+                      : RefreshIndicator(
+                          onRefresh: _onRefreshRemoteClips,
+                          child: const LibraryFolderSection(),
+                        ))
                   : LibraryTagSection(
-                      allTags: media.distinctTags,
+                      allTags: clipProvider.distinctTags,
                       selectedTags: tagProv.activeTagNames.toSet(),
                       onTagSelected: _onTagSelected,
                       onTagDeleted: _onTagDeleted,

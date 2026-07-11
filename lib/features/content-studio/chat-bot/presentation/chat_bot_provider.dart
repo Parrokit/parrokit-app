@@ -59,7 +59,8 @@ class ChatBotProvider extends ChangeNotifier {
   }
 
   List<String>? _pendingScriptRecommendations;
-  List<String>? get pendingScriptRecommendations => _pendingScriptRecommendations;
+  List<String>? get pendingScriptRecommendations =>
+      _pendingScriptRecommendations;
 
   void consumeScriptRecommendation() {
     if (_pendingScriptRecommendations != null) {
@@ -68,9 +69,22 @@ class ChatBotProvider extends ChangeNotifier {
     }
   }
 
+  List<Map<String, String>>? _pendingVideoRecommendations;
+  List<Map<String, String>>? get pendingVideoRecommendations =>
+      _pendingVideoRecommendations;
+
+  void consumeVideoRecommendations() {
+    if (_pendingVideoRecommendations != null) {
+      _pendingVideoRecommendations = null;
+      notifyListeners();
+    }
+  }
+
   void resetChatbot() {
     _chatbotMode = 'general';
     _hasPendingRouting = false;
+    _pendingScriptRecommendations = null;
+    _pendingVideoRecommendations = null;
     _messages.clear();
     _messages.insert(
       0,
@@ -90,41 +104,60 @@ class ChatBotProvider extends ChangeNotifier {
     final history = List<AiChatMessage>.from(_messages);
 
     // 사용자 메시지 추가
-    _messages.insert(0, AiChatMessage(text: text, isUser: true, chatbotMode: _chatbotMode));
+    _messages.insert(
+        0, AiChatMessage(text: text, isUser: true, chatbotMode: _chatbotMode));
     _isTyping = true;
     notifyListeners();
 
     try {
-      debugPrint('[Chatbot][Provider] Calling sendMessageUseCase text=$text chatbotMode=$_chatbotMode');
+      debugPrint(
+          '[Chatbot][Provider] Calling sendMessageUseCase text=$text chatbotMode=$_chatbotMode');
       // AI 응답 호출 (대화 히스토리, 모델 정보, 챗봇 모드 포함)
-      final aiResponse = await _sendMessageUseCase.call(text, history, _selectedModel, _chatbotMode);
-      
+      final aiResponse = await _sendMessageUseCase.call(
+          text, history, _selectedModel, _chatbotMode);
+
       // AI 응답의 actionType이 change_mode인 경우, 클라이언트의 챗봇 모드 전환 처리
-      if (aiResponse.actionType == 'change_mode' && aiResponse.actionData != null) {
+      if (aiResponse.actionType == 'change_mode' &&
+          aiResponse.actionData != null) {
         final targetMode = aiResponse.actionData!['targetMode'] as String?;
         if (targetMode != null) {
           _chatbotMode = targetMode;
-          debugPrint('[Chatbot][Provider] Mode changed dynamically targetMode=$_chatbotMode');
+          debugPrint(
+              '[Chatbot][Provider] Mode changed dynamically targetMode=$_chatbotMode');
         }
       }
-      
-      debugPrint('[Chatbot][Provider] AI Response actionType=${aiResponse.actionType} actionData=${aiResponse.actionData}');
+
+      debugPrint(
+          '[Chatbot][Provider] AI Response actionType=${aiResponse.actionType} actionData=${aiResponse.actionData}');
 
       if (aiResponse.actionType == 'ask_routing') {
         _hasPendingRouting = true;
-        debugPrint('[Chatbot][Provider] Routing action pending flag set to true');
-      } else if (aiResponse.actionType == 'script_recommendation' && aiResponse.actionData != null) {
+        debugPrint(
+            '[Chatbot][Provider] Routing action pending flag set to true');
+      } else if (aiResponse.actionType == 'script_recommendation' &&
+          aiResponse.actionData != null) {
         if (aiResponse.actionData!['scripts'] != null) {
           final rawScripts = aiResponse.actionData!['scripts'] as List<dynamic>;
-          _pendingScriptRecommendations = rawScripts.map((e) => e.toString()).toList();
+          _pendingScriptRecommendations =
+              rawScripts.map((e) => e.toString()).toList();
         } else if (aiResponse.actionData!['text'] != null) {
           // 호환성을 위해 text가 있으면 단일 항목 리스트로 만듦
-          _pendingScriptRecommendations = [aiResponse.actionData!['text'].toString()];
+          _pendingScriptRecommendations = [
+            aiResponse.actionData!['text'].toString()
+          ];
         }
-        debugPrint('[Chatbot][Provider] Script recommendation pending: $_pendingScriptRecommendations');
+        debugPrint(
+            '[Chatbot][Provider] Script recommendation pending: $_pendingScriptRecommendations');
+      } else if (aiResponse.actionType == 'video_prompt_recommendation' &&
+          aiResponse.actionData != null) {
+        _pendingVideoRecommendations =
+            _extractVideoRecommendations(aiResponse.actionData!);
+        debugPrint(
+            '[Chatbot][Provider] Video recommendations pending: $_pendingVideoRecommendations');
       }
 
-      debugPrint('[Chatbot][Provider] Send message success replyLength=${aiResponse.text.length} actionType=${aiResponse.actionType}');
+      debugPrint(
+          '[Chatbot][Provider] Send message success replyLength=${aiResponse.text.length} actionType=${aiResponse.actionType}');
       _messages.insert(0, aiResponse.copyWith(chatbotMode: _chatbotMode));
     } catch (e) {
       debugPrint('[Chatbot][Provider] Send message failed error=$e');
@@ -140,5 +173,53 @@ class ChatBotProvider extends ChangeNotifier {
       _isTyping = false;
       notifyListeners();
     }
+  }
+
+  List<Map<String, String>> _extractVideoRecommendations(
+    Map<String, dynamic> actionData,
+  ) {
+    final recommendations = <Map<String, String>>[];
+
+    final rawRecommendations = actionData['recommendations'];
+    if (rawRecommendations is List) {
+      for (final item in rawRecommendations) {
+        if (item is Map) {
+          final script = item['script']?.toString().trim() ?? '';
+          final prompt = item['prompt']?.toString().trim() ?? '';
+          if (script.isNotEmpty || prompt.isNotEmpty) {
+            recommendations.add({
+              'script': script,
+              'prompt': prompt,
+            });
+          }
+        }
+      }
+    }
+
+    if (recommendations.isNotEmpty) {
+      return recommendations;
+    }
+
+    final rawScripts = actionData['scripts'];
+    final rawPrompts = actionData['prompts'];
+    if (rawScripts is List) {
+      final promptSource =
+          rawPrompts is List && rawPrompts.isNotEmpty ? rawPrompts : rawScripts;
+      final count = rawScripts.length < promptSource.length
+          ? rawScripts.length
+          : promptSource.length;
+      for (var i = 0; i < count; i++) {
+        final script = rawScripts[i].toString().trim();
+        final prompt = promptSource[i].toString().trim();
+        if (script.isNotEmpty || prompt.isNotEmpty) {
+          recommendations.add({
+            'script': script,
+            'prompt': prompt,
+          });
+        }
+      }
+    }
+
+    return recommendations;
   }
 }

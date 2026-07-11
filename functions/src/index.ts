@@ -14,3 +14,4 @@ admin.initializeApp();
 export * from "./naverAuth";
 export * from "./communityNotifications";
 export * from "./contentStudioAi";
+export * from "./captioningAi";

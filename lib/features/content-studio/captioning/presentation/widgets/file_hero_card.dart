@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../domain/editor_state.dart';
+import '../models/edit_state.dart';
 
 class FileHeroCard extends StatelessWidget {
   const FileHeroCard({

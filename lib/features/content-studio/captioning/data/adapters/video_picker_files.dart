@@ -21,7 +21,14 @@ class VideoPickerFiles implements VideoPickerPort {
     if (from != PickSource.files) return null;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['mp4', 'mov', 'mkv', 'mp3'],
+      allowedExtensions: [
+        // Video formats
+        'mp4', 'mov', 'mkv', 'avi', 'webm', 'wmv', 'flv', '3gp', 'm4v', 'mpeg',
+        'mpg', 'ts', 'vob',
+        // Audio formats
+        'mp3', 'm4a', 'wav', 'aac', 'flac', 'ogg', 'caf', 'wma', 'alac', 'aiff',
+        'amr', 'opus', 'mid', 'midi',
+      ],
       allowMultiple: false,
     );
     if (result == null || result.files.isEmpty) return null;

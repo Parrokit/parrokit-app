@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/widgets.dart'; // ChangeNotifier
 import 'package:drift/drift.dart';
@@ -355,13 +356,22 @@ class TagFilterProvider extends ChangeNotifier {
 
       Uint8List? thumb;
       try {
-        final abs = await _absolutePathFor(clip.filePath);
-        thumb = await VideoThumbnail.thumbnailData(
-          video: abs,
-          imageFormat: ImageFormat.JPEG,
-          quality: 70,
-          timeMs: 0,
-        );
+        final thumbnailPath = clip.thumbnailFilePath;
+        if (thumbnailPath != null && thumbnailPath.isNotEmpty) {
+          final thumbnailFile = File(await _absolutePathFor(thumbnailPath));
+          if (await thumbnailFile.exists()) {
+            thumb = await thumbnailFile.readAsBytes();
+          }
+        }
+        if (thumb == null) {
+          final abs = await _absolutePathFor(clip.filePath);
+          thumb = await VideoThumbnail.thumbnailData(
+            video: abs,
+            imageFormat: ImageFormat.JPEG,
+            quality: 70,
+            timeMs: 0,
+          );
+        }
       } catch (_) {
         thumb = null;
       }

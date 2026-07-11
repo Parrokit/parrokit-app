@@ -12,8 +12,8 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/theme/app_radius.dart';
 import 'package:parrokit/core/shared/theme/app_spacing.dart';
 import '../../../../../core/shared/utils/show_toast.dart';
-import '../../data/services/time_code_service.dart';
-import '../../domain/editor_state.dart';
+import '../../domain/utils/timecode_service.dart';
+import '../models/edit_state.dart';
 import 'video_picker_sheet.dart';
 
 class PickedState extends StatefulWidget {
@@ -478,7 +478,6 @@ class _PickedStateState extends State<PickedState> {
 
 class _VideoSettingsBar extends StatefulWidget {
   const _VideoSettingsBar({
-    super.key,
     this.onSttRequest,
     required this.controller,
     required this.picked,
