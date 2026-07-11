@@ -19,6 +19,7 @@ import 'package:provider/provider.dart';
 import 'package:parrokit/core/app/router/app_router.dart';
 import 'package:parrokit/core/domain/collection_clip/data/constants/clip_storage_constants.dart';
 import 'package:parrokit/core/state/provider/clip_provider.dart';
+import 'package:parrokit/core/shared/widgets/expandable_action_fab.dart';
 import '../widgets/breadcrumb_bar.dart';
 import '../widgets/folder_grid.dart';
 import '../widgets/group_collection_manager_modal.dart';
@@ -1031,21 +1032,30 @@ class _LibraryFolderSectionState extends State<LibraryFolderSection> {
             right: 16,
             bottom: 16,
             child: Builder(
-              builder: (fabCtx) => _CollectionAnimatedFab(
-                isExtended: _isFabExtended,
-                icon: isAtClipList
-                    ? Icons.tune_rounded
-                    : Icons.more_horiz_rounded,
-                label: isAtClipList
-                    ? '클립 메뉴'
-                    : (isAtGroupRoot ? '그룹 메뉴' : '콜렉션 메뉴'),
-                onTap: isAtClipList
-                    ? () => _showClipFabMenu(
-                          fabCtx,
-                          selectedCollectionName: selectedCollectionName,
-                        )
-                    : () => _showFabMenu(fabCtx, isAtGroupRoot),
-              ),
+              builder: (fabCtx) {
+                final colorScheme = Theme.of(fabCtx).colorScheme;
+                return ExpandableActionFab(
+                  isExtended: _isFabExtended,
+                  icon: isAtClipList
+                      ? Icons.tune_rounded
+                      : Icons.more_horiz_rounded,
+                  label: isAtClipList
+                      ? '클립 메뉴'
+                      : (isAtGroupRoot ? '그룹 메뉴' : '콜렉션 메뉴'),
+                  onTap: isAtClipList
+                      ? () => _showClipFabMenu(
+                            fabCtx,
+                            selectedCollectionName: selectedCollectionName,
+                          )
+                      : () => _showFabMenu(fabCtx, isAtGroupRoot),
+                  backgroundColor: colorScheme.surface,
+                  foregroundColor: colorScheme.primary,
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  fontSize: 16,
+                );
+              },
             ),
           ),
       ],
@@ -1061,93 +1071,4 @@ class _StorageSegment {
 
   final int value;
   final Color color;
-}
-
-class _CollectionAnimatedFab extends StatelessWidget {
-  const _CollectionAnimatedFab({
-    required this.isExtended,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final bool isExtended;
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final accent = colorScheme.primary;
-    final border = colorScheme.outlineVariant.withValues(alpha: 0.5);
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
-      height: 56,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: border),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.14),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(28),
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: isExtended ? 20.0 : 16.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Icon(
-                    icon,
-                    color: accent,
-                    size: 22,
-                  ),
-                ),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  child: ClipRect(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: isExtended ? 1 : 0,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(width: 8),
-                          Text(
-                            label,
-                            style: TextStyle(
-                              color: accent,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.clip,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
