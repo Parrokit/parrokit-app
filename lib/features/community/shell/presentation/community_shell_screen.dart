@@ -10,8 +10,8 @@ import 'package:parrokit/features/community/shell/domain/data/community_filters.
 import 'package:parrokit/features/community/shell/presentation/sections/community_shell_filters_section.dart';
 import 'package:parrokit/features/community/shell/presentation/sections/community_shell_write_sheet.dart';
 import 'package:parrokit/features/community/shell/presentation/widgets/community_header_delegate.dart';
-import 'package:parrokit/features/community/shell/presentation/widgets/community_write_fab.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
+import 'package:parrokit/core/shared/widgets/expandable_action_fab.dart';
 
 class CommunityShellScreen extends StatefulWidget {
   const CommunityShellScreen({super.key});
@@ -109,9 +109,21 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
           ),
         ),
       ),
-      floatingActionButton: CommunityWriteFab(
+      floatingActionButton: ExpandableActionFab(
         isExtended: _isFabExtended,
+        icon: Icons.add,
+        label: '글쓰기',
         onTap: () => showCommunityWriteBottomSheet(context),
+        backgroundColor: AppColors.communityBoardAccent,
+        foregroundColor: colorScheme.onPrimary,
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.22),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        iconSize: 24,
       ),
     );
   }
