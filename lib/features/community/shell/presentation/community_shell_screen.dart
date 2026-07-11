@@ -12,7 +12,6 @@ import 'package:parrokit/features/community/shell/presentation/sections/communit
 import 'package:parrokit/features/community/shell/presentation/widgets/community_header_delegate.dart';
 import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:parrokit/core/shared/widgets/expandable_action_fab.dart';
-import 'package:parrokit/core/shared/widgets/shell_fab_padding.dart';
 
 class CommunityShellScreen extends StatefulWidget {
   const CommunityShellScreen({super.key});
@@ -110,23 +109,21 @@ class _CommunityShellScreenState extends State<CommunityShellScreen>
           ),
         ),
       ),
-      floatingActionButton: ShellFabPadding(
-        child: ExpandableActionFab(
-          isExtended: _isFabExtended,
-          icon: Icons.add,
-          label: '글쓰기',
-          onTap: () => showCommunityWriteBottomSheet(context),
-          backgroundColor: AppColors.communityBoardAccent,
-          foregroundColor: colorScheme.onPrimary,
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.22),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-          iconSize: 24,
-        ),
+      floatingActionButton: ExpandableActionFab(
+        isExtended: _isFabExtended,
+        icon: Icons.add,
+        label: '글쓰기',
+        onTap: () => showCommunityWriteBottomSheet(context),
+        backgroundColor: AppColors.communityBoardAccent,
+        foregroundColor: colorScheme.onPrimary,
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.22),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        iconSize: 24,
       ),
     );
   }

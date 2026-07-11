@@ -25,7 +25,6 @@ import 'package:parrokit/core/shared/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:parrokit/core/state/provider/clip_activity_provider.dart';
 import 'package:parrokit/core/shared/widgets/expandable_action_fab.dart';
-import 'package:parrokit/core/shared/widgets/shell_fab_padding.dart';
 
 import 'sections/header_section.dart';
 import 'sections/hero_section.dart';
@@ -108,17 +107,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: bg,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: ShellFabPadding(
-        child: ExpandableActionFab(
-          isExtended: _isContentStudioExtended,
-          icon: Icons.auto_awesome_rounded,
-          label: '콘텐츠 제작',
-          onTap: () => context.go(AppRoutes.contentStudioBridgePath),
-          backgroundColor: Colors.white,
-          foregroundColor: AppColors.primary,
-          border: Border.all(color: AppColors.dividerSubtle),
-          iconSize: 19,
-        ),
+      floatingActionButton: ExpandableActionFab(
+        isExtended: _isContentStudioExtended,
+        icon: Icons.auto_awesome_rounded,
+        label: '콘텐츠 제작',
+        onTap: () => context.go(AppRoutes.contentStudioBridgePath),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.primary,
+        border: Border.all(color: AppColors.dividerSubtle),
+        iconSize: 19,
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
